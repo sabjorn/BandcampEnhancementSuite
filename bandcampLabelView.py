@@ -44,7 +44,7 @@ if __name__ == "__main__":
     hrefs = [s.rsplit(hrefs_start)[-1].rstrip("\">'") for i, s in enumerate(body) if hrefs_start in s]
 
     ## Construct new page data
-    div = '<div style="margin: 0px 0px 5px 0px">'
+    div = '<div>'
     undiv = '</div>'
     iframe = '<iframe style="border: 10px; width: 400px; height: 472px;" src="http://bandcamp.com/EmbeddedPlayer/album=%s/size=large/bgcol=ffffff/linkcol=0687f5/artwork=small/transparent=true/" seamless><a href="%s"> by </a></iframe>'
     section = div + iframe + div

@@ -36,8 +36,8 @@ chrome.extension.sendMessage({}, function(response) {
             var url = 'https://bandcamp.com/EmbeddedPlayer/album='+id;
             url = url + '/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=small/transparent=true/"';
       
-            var style = 'style="border: 0; width: 400px; height: 240px;"';
-            var iframe_val = '<iframe '+style+' src='+url+' seamless></iframe>';
+            var iframe_style = 'style="margin: 10px; border: 0; width: 400px; height: 240px;"';
+            var iframe_val = '<iframe '+iframe_style+' src='+url+' seamless></iframe>';
             replace_val = '<div id='+id+'>'+iframe_val+'</div>';
         }
         else {
@@ -53,9 +53,11 @@ chrome.extension.sendMessage({}, function(response) {
             id = id.split("-")[1];
         }
         //console.log(id);
-
-        $(item).append('<a class="open-iframe" >Open iframe</a>');
-        $(item).append('<div id='+id+'></div>');
+        var button_string = '<button type="button" class="follow-unfollow compound-button open-iframe">'
+        button_string += '<div>Preview</div>'
+        button_string += '<div id='+id+'></div>'
+        button_string += '</button>';
+        $(item).append(button_string);
     });
 
     $('.open-iframe').toggleClick(

@@ -1,6 +1,6 @@
 {
   "name": "Bandcamp Label View",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "manifest_version": 2,
   "description": "Modifies Bandcamp Label Pages to Provide iFrame Previews for All Releases",
   "homepage_url": "https://github.com/sabjorn/bandcampLabelView",

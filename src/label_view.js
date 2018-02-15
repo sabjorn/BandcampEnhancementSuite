@@ -25,25 +25,21 @@ chrome.extension.sendMessage({}, function(response) {
 
         
     function fillframe(event, toggleval) {
-        var id = $(event.target).closest('li').attr('data-item-id');
-        if (id.split("-")[0] == "album"){
-            id = id.split("-")[1];
-        }
+        $('.bclv-frame').html(''); // clear all iframes
+
+        var $bclv = $(event.target).parent().find('.bclv-frame');
+        var id = $bclv.attr('id');
+        
         //console.log(id);
 
-        replace_val = '';
         if (toggleval) {
             var url = 'https://bandcamp.com/EmbeddedPlayer/album='+id;
             url = url + '/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=small/transparent=true/"';
-      
+
             var iframe_style = 'style="margin: 10px; border: 0; width: 400px; height: 240px;"';
             var iframe_val = '<iframe '+iframe_style+' src='+url+' seamless></iframe>';
-            replace_val = '<div id='+id+'>'+iframe_val+'</div>';
+            $bclv.html(iframe_val);
         }
-        else {
-            replace_val = '<div id='+id+'></div>';
-        }
-        $('#'+id).replaceWith(replace_val);
     }
 
     // Append .open-iframe links (also use for iFrames)
@@ -53,11 +49,38 @@ chrome.extension.sendMessage({}, function(response) {
             id = id.split("-")[1];
         }
         //console.log(id);
-        var button_string = '<button type="button" class="follow-unfollow compound-button open-iframe">'
-        button_string += '<div>Preview</div>'
-        button_string += '<div id='+id+'></div>'
-        button_string += '</button>';
-        $(item).append(button_string);
+        $button = $('<button>');
+        $button.attr('type', "button");
+        $button.attr('class', "follow-unfollow open-iframe");
+
+        $preview = $('<div>').html("Preview");
+        $button.append($preview);
+        
+        $bclvframe = $('<div>');
+        $bclvframe.attr('class', "bclv-frame").attr('id', id);
+        $button.append($bclvframe);
+
+        $(item).append($button);
+    });
+
+    // Append .open-iframe links (also use for iFrames)
+    $('li[data-tralbumid][data-tralbumtype="a"]').each(function(index, item){
+        var id = $(item).attr('data-tralbumid');
+        
+        // console.log(id);
+
+        $button = $('<button>');
+        $button.attr('type', "button");
+        $button.attr('class', "compound-button open-iframe");
+
+        $preview = $('<div>').html("Preview");
+        $button.append($preview);
+        
+        $bclvframe = $('<div>');
+        $bclvframe.attr('class', "bclv-frame").attr('id', id);
+        $button.append($bclvframe);
+        
+        $(item).append($button);
     });
 
     $('.open-iframe').toggleClick(

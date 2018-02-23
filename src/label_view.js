@@ -36,7 +36,7 @@ chrome.extension.sendMessage({}, function(response) {
             var url = 'https://bandcamp.com/EmbeddedPlayer/album='+id;
             url = url + '/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=small/transparent=true/"';
 
-            var iframe_style = 'style="margin: 10px; border: 0; width: 400px; height: 240px;"';
+            var iframe_style = 'style="margin: 10px; border: 0; width: 400px; height: 240px; position:relative; z-index:1;"';
             var iframe_val = '<iframe '+iframe_style+' src='+url+' seamless></iframe>';
             $bclv.html(iframe_val);
         }

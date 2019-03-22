@@ -27,16 +27,16 @@ chrome.extension.sendMessage({}, function(response) {
     function fillframe(event, toggleval) {
         $('.bclv-frame').html(''); // clear all iframes
 
-        var $bclv = $(event.target).parent().find('.bclv-frame');
+        var $bclv = $(event.target).parents('.music-grid-item').find('.bclv-frame');
         var id = $bclv.attr('id');
         
-        //console.log(id);
+        console.log(id);
 
         if (toggleval) {
             var url = 'https://bandcamp.com/EmbeddedPlayer/album='+id;
-            url = url + '/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=small/transparent=true/"';
+            url = url + '/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=none/transparent=true/"';
 
-            var iframe_style = 'style="margin: 10px; border: 0; width: 400px; height: 240px; position:relative; z-index:1;"';
+            var iframe_style = 'style="margin: 6px 0px 0px 0px; border: 0; width: 100%; height: 300px; position:relative; z-index:1;"';
             var iframe_val = '<iframe '+iframe_style+' src='+url+' seamless></iframe>';
             $bclv.html(iframe_val);
         }
@@ -49,6 +49,7 @@ chrome.extension.sendMessage({}, function(response) {
             id = id.split("-")[1];
         }
         //console.log(id);
+        $parent_div = $('<div>');
         $button = $('<button>');
         $button.attr('type', "button");
         $button.attr('class', "follow-unfollow open-iframe");
@@ -58,9 +59,10 @@ chrome.extension.sendMessage({}, function(response) {
         
         $bclvframe = $('<div>');
         $bclvframe.attr('class', "bclv-frame").attr('id', id);
-        $button.append($bclvframe);
 
-        $(item).append($button);
+        $parent_div.append($button)
+        $parent_div.append($bclvframe);
+        $(item).append($parent_div);
     });
 
     // Append .open-iframe links (also use for iFrames)
@@ -68,7 +70,7 @@ chrome.extension.sendMessage({}, function(response) {
         var id = $(item).attr('data-tralbumid');
         
         // console.log(id);
-
+        $parent_div = $('<div>')
         $button = $('<button>');
         $button.attr('type', "button");
         $button.attr('class', "compound-button open-iframe");
@@ -78,9 +80,12 @@ chrome.extension.sendMessage({}, function(response) {
         
         $bclvframe = $('<div>');
         $bclvframe.attr('class', "bclv-frame").attr('id', id);
-        $button.append($bclvframe);
+        // $button.append($bclvframe);
+        $parent_div.append($button)
+        $parent_div.append($bclvframe);
+        $(item).append($parent_div);
         
-        $(item).append($button);
+        // $(item).append($button);
     });
 
     $('.open-iframe').toggleClick(

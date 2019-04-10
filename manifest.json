@@ -33,7 +33,7 @@
         "https://*.com/*"
       ],
       "js": [
-        "js/jquery/jquery-3.3.1.min.js", "src/label_view.js"
+        "js/jquery/jquery.min.js", "src/label_view.js"
       ]
     }
   ]

@@ -19,7 +19,7 @@
   },
   "browser_action": {
     "default_icon": "icons/icon19.png",
-    "default_title": "browser action",
+    "default_title": "Bandcamp Label View",
     "default_popup": "src/browser_action/browser_action.html"
   },
   "permissions": [

@@ -1,23 +1,47 @@
-// GLOBALS
-var pluginState = window.localStorage;
+console.log = function() {}; // disable logging
 
 var preview_id; // globally stores which 'preview' button was last clicked
 var preview_open = false; // globally stores if preveiw window is open
 
-var defaultData = {previewed: false}
-var data = {}
+var storageCache = []
 
-chrome.storage.local.get('bandcamp', function(result) {
-   if(isEmpty(result)){
-       chrome.storage.local.set({'bandcamp': data})
-   }
-   else{
-       data = result
-   }
+// load storage backed
+var storageLoadedPromise = new Promise(function(resolve, reject) {
+    chrome.storage.sync.get("previews", function(result) {
+        // load storage
+        if(isEmpty(result)){
+            console.log("storage empty, storing new")
+            chrome.storage.sync.set({"previews": storageCache})
+        }
+        else{
+            console.log("storage exists, storing to variable 'storageCache'")
+            storageCache = result["previews"]
+        }
+
+        // migrate old storage
+        console.log("plugin state transfer")
+        var pluginState = window.localStorage;
+        Object.keys(pluginState).forEach(function(key) {
+        if(pluginState[key] === "true" && !(key.includes("-")))
+        {
+            console.log("storing key: ", key);
+            storeId(key);
+        }
+        });
+        
+        chrome.storage.sync.set({"previews": storageCache})
+        console.log(storageCache)
+    });
+    resolve();
 });
 
+chrome.storage.sync.getBytesInUse("previews", function(bytesInUse) {
+    console.log("current bytes in use: ", bytesInUse)
+    console.log("% of quota", (bytesInUse/102400))
+})
+
 function isEmpty(obj) {
-  return Object.keys(obj).length === 0;
+    return Object.keys(obj).length === 0;
 }
 
 function strBool(input){
@@ -33,27 +57,40 @@ function toggleHistorybox(target, state){
     return target
 }
 
-// chrome.storage.onChanged.addListener(function(changes, namespace) {
-//     console.log("Chrome Storage Changed")
-//     for (var key in changes) {
-//       var storageChange = changes[key];
-//       for(var innerkey in storageChange.newValue){
-//           console.log(storageChange.newValue[innerkey])
-//       }
-//     }
-// });
+function storeId(id)
+{
+    var val = storageCache.indexOf(id)
+    if(!(storageCache.includes(id))){
+        storageCache.push(id);
+        chrome.storage.sync.set({"previews": storageCache});
+        console.log("storing ID: ", id);
+    }
+
+}
 
 function boxclick(event)
 {
     /*
-        tracks boxclicks to set pluginState for 'id'
+        tracks boxclicks to store 'id'
     */       
     var id = $(event.target).parents('div').attr('id');
-    console.log(data)
-    data[[id]].previewed = !data[[id]].previewed
-    toggleHistorybox($(event.target), data[[id]].previewed)
+    console.log(storageCache)
 
-    chrome.storage.local.set({'bandcamp': data})
+    var previewState = false
+    var val = storageCache.indexOf(id)
+    if(val > -1){
+        console.log("removing element")
+        storageCache.splice(val, 1)
+    }
+    else{
+        console.log("adding element")
+        storageCache.push(id)
+        previewState = true
+    }
+    console.log(storageCache)
+    toggleHistorybox($(event.target), previewState)
+
+    chrome.storage.sync.set({"previews": storageCache})
 }
     
 function fillframe(event) {
@@ -72,12 +109,7 @@ function fillframe(event) {
     }
 
     if (preview_open) {
-        // preview opened, store this action in localstorage 'history'
-        // pluginState.setItem(id, true); // old way
-        // update state
-        data[[id]].previewed = true;
-
-        chrome.storage.local.set({'bandcamp': data})
+        storeId(id);
 
         // set checkbox to clicked
         $checkbox = $(event.target).parents(`[id='${id}']`).find('.historybox');
@@ -113,9 +145,14 @@ function generatePreview(id) {
     $checkbox = $('<button>');
     $checkbox.attr('style', "margin: 0px 0px 0px 5px; width: 28px; height: 28px; position: absolute;");
     
-    if(!(id in data))
-        data[id] = defaultData
-    $checkbox = toggleHistorybox($checkbox, data[[id]].previewed);
+    toggleState = false
+    if(storageCache.includes(id))
+    {
+        console.log("id exists: ", id);
+        toggleState = true;
+    }
+
+    $checkbox = toggleHistorybox($checkbox, toggleState);
 
     $parent_div.append($button);
     $parent_div.append($checkbox);
@@ -126,41 +163,44 @@ function generatePreview(id) {
 
 chrome.extension.sendMessage({}, function(response) {
 
- var readyStateCheckInterval = setInterval(function() {
- if (document.readyState === "complete") {
-    clearInterval(readyStateCheckInterval);
+    var readyStateCheckInterval = setInterval(function() {
+        if (document.readyState === "complete") {
+            clearInterval(readyStateCheckInterval);
 
-    // iterate over page to get album IDs and append buttons with value
-    $('li[data-item-id]').each(function(index, item){
-        var id = $(item).closest('li').attr('data-item-id');
-        if (id.split("-")[0] == "album"){
-            id = id.split("-")[1];
+            storageLoadedPromise.then(function() {
+                // iterate over page to get album IDs and append buttons with value
+                $('li[data-item-id]').each(function(index, item){
+                    var id = $(item).closest('li').attr('data-item-id');
+                    if (id.split("-")[0] == "album" || id.split("-")[0] == "track"){
+                        id = id.split("-")[1];
+                    }
+
+                    $preview_element = generatePreview(id);
+                    $(item).append($preview_element);
+                });
+
+                $('li[data-tralbumid][data-tralbumtype="a"]').each(function(index, item){
+                    var id = $(item).attr('data-tralbumid');
+                    
+                    $preview_element = generatePreview(id);
+                    $(item).append($preview_element);
+                });
+
+                // catched ID album pages
+                $('#pagedata').first().each(function(index, item){
+                    var data_blob = JSON.parse($(item).attr("data-blob"));
+                    try {
+                        var id = data_blob.fan_tralbum_data.tralbum_id;
+                        storeId(id.toString());
+                        console.log("id is: ", id);
+                    }
+                    catch{}
+                })
+
+                $('.open-iframe').on('click', function(event){ fillframe(event); });
+
+                $('.historybox').on('click', function(event) { boxclick(event); });
+            });
         }
-
-        $preview_element = generatePreview(id);
-        $(item).append($preview_element);
-    });
-
-    // iterate over page to get album IDs and append buttons with value
-    $('li[data-tralbumid][data-tralbumtype="a"]').each(function(index, item){
-        var id = $(item).attr('data-tralbumid');
-        
-        $preview_element = generatePreview(id);
-        $(item).append($preview_element);
-    });
-
-    $('.open-iframe').on('click', 
-        function(event){
-            fillframe(event);
-        }
-    );
-
-    $('.historybox').on('click', 
-        function(event){
-            boxclick(event);
-        }
-    );
-
- }
- }, 10);
+    }, 10);
 });

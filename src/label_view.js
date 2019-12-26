@@ -31,8 +31,8 @@ var storageLoadedPromise = new Promise(function(resolve, reject) {
         
         chrome.storage.sync.set({"previews": storageCache})
         console.log(storageCache)
+        resolve();
     });
-    resolve();
 });
 
 chrome.storage.sync.getBytesInUse("previews", function(bytesInUse) {

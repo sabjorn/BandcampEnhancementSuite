@@ -30,6 +30,10 @@
   ],
   "content_scripts": [
     {
+      "matches": [
+        "http://*.bandcamp.com/*",
+        "https://*.bandcamp.com/*"
+      ],
       "js": [
         "js/jquery/jquery.slim.min.js", "src/label_view.js"
       ]

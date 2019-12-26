@@ -1,6 +1,18 @@
-# Bandcamp Label View
+# Bandcamp Enhancement Suite
 ## About
-Chrome plugin parses bandcamp label pages and generates a page with all available albums rendered in `iframe` previews.
+Chrome extension adding extra features to the Bandcamp experience.
 
-## Install
+The goal of this extension is to make Bandcamp easier to use when navigating larger sets of music (e.g. label pages with large back catalogues). It has been designed with DJs in mind.
+
+## Features
+### Preview Button
+Provides a "Preview" button on pages with multiple albums. This button will open a player on the same page giving a quick and easy way to listen to tracks without having to navigate away from the page.
+
+### History Tracking
+Adds a history display element next to album. This element is a clickable toggle which persists between page loads thus providing a history. This toggle is automatically set when `preview` button is used and can be manually clicked.  
+
+## Installation
 Available from the [Chrome webstore](https://chrome.google.com/webstore/detail/bandcamp-label-view/padcfdpdlnpdojcihidkgjnmleeingep)
+
+## Feedback
+Feedback, feature requests, and bug reports are always welcome.

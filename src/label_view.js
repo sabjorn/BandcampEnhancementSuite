@@ -1,4 +1,4 @@
-//console.log = function() {}; // disable logging
+console.log = function() {}; // disable logging
 
 var preview_id; // globally stores which 'preview' button was last clicked
 var preview_open = false; // globally stores if preveiw window is open
@@ -175,6 +175,8 @@ chrome.extension.sendMessage({}, function(response) {
         storageLoadedPromise.then(function() {
             // iterate over page to get album IDs and append buttons with value
             $('li[data-item-id]').each(function(index, item){
+                $(item).show();
+
                 var idAndType = $(item).closest('li').attr('data-item-id');
                 var id = idAndType.split("-")[1]
                 var idType = idAndType.split("-")[0]
@@ -184,6 +186,8 @@ chrome.extension.sendMessage({}, function(response) {
             });
 
             $('li[data-tralbumid][data-tralbumtype="a"]').each(function(index, item){
+                $(item).show();
+
                 var id = $(item).attr('data-tralbumid');
                 
                 $preview_element = generatePreview(id, "album");

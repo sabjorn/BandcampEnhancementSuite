@@ -16,3 +16,15 @@ Available from the [Chrome webstore](https://chrome.google.com/webstore/detail/b
 
 ## Feedback
 Feedback, feature requests, and bug reports are always welcome.
+
+## Development
+
+Requires a NodeJS environment, using [nvm](https://github.com/nvm-sh/nvm) makes setup easy.
+
+```sh
+# Install CLI tooling
+npm install
+
+# Run the linter
+npm run lint
+```

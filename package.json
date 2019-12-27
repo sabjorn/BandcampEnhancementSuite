@@ -1,0 +1,31 @@
+{
+  "name": "bandcampenhancementsuite",
+  "version": "1.0.0",
+  "description": "Chrome extension adding extra features to the Bandcamp experience.",
+  "main": "index.js",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "prettier": "^1.19.1",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.9.0",
+    "eslint-plugin-prettier": "^3.1.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "npx eslint ./src/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sabjorn/BandcampEnhancementSuite.git"
+  },
+  "author": "S. A. Bjørn <info@sabjorn.net> (http://sabjorn.net/)",
+  "contributors": [
+    "Eric McNiece <hello@emc2innovation.com> (https://github.com/emcniece)"
+  ],
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sabjorn/BandcampEnhancementSuite/issues"
+  },
+  "homepage": "https://github.com/sabjorn/BandcampEnhancementSuite#readme"
+}

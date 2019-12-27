@@ -176,7 +176,7 @@ chrome.extension.sendMessage({}, function(response) {
     $( document ).ready(function() {
         storageLoadedPromise.then(function() {
             // iterate over page to get album IDs and append buttons with value
-            $('li[data-item-id]').each(function(index, item){
+            $('li.music-grid-item[data-item-id]').each(function(index, item){
                 $(item).show();
 
                 var idAndType = $(item).closest('li').attr('data-item-id');
@@ -187,7 +187,7 @@ chrome.extension.sendMessage({}, function(response) {
                 $(item).append($preview_element);
             });
 
-            $('li[data-tralbumid][data-tralbumtype="a"]').each(function(index, item){
+            $('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').each(function(index, item){
                 $(item).show();
 
                 var id = $(item).attr('data-tralbumid');

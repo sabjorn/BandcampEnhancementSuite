@@ -1,4 +1,4 @@
-// console.log = function() {}; // disable logging
+console.log = function() {}; // disable logging
 
 var preview_id; // globally stores which 'preview' button was last clicked
 var preview_open = false; // globally stores if preveiw window is open

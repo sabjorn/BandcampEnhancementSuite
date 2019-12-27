@@ -197,7 +197,9 @@ chrome.extension.sendMessage({}, function(response) {
                     storeId(id.toString());
                     console.log("id is: ", id);
                 }
-                catch{}
+                catch(e){
+                    console.log(e);
+                }
             })
 
             $('.open-iframe').on('click', function(event){ fillframe(event); });

@@ -1,4 +1,4 @@
-console.log = function() {}; // disable logging
+// console.log = function() {}; // disable logging
 
 var preview_id; // globally stores which 'preview' button was last clicked
 var preview_open = false; // globally stores if preveiw window is open
@@ -8,30 +8,36 @@ var storageCache = []
 // load storage backed
 var storageLoadedPromise = new Promise(function(resolve, reject) {
     chrome.storage.sync.get("previews", function(result) {
-        // load storage
-        if(isEmpty(result)){
-            console.log("storage empty, storing new")
-            chrome.storage.sync.set({"previews": storageCache})
-        }
-        else{
-            console.log("storage exists, storing to variable 'storageCache'")
-            storageCache = result["previews"]
-        }
+        try{
+            // load storage
+            if(isEmpty(result)){
+                console.log("storage empty, storing new")
+                chrome.storage.sync.set({"previews": storageCache})
+            }
+            else{
+                console.log("storage exists, storing to variable 'storageCache'")
+                storageCache = result["previews"]
+            }
 
-        // migrate old storage
-        console.log("plugin state transfer")
-        var pluginState = window.localStorage;
-        Object.keys(pluginState).forEach(function(key) {
-        if(pluginState[key] === "true" && !(key.includes("-")))
-        {
-            console.log("storing key: ", key);
-            storeId(key);
+            // migrate old storage
+            console.log("plugin state transfer")
+            var pluginState = window.localStorage;
+            Object.keys(pluginState).forEach(function(key) {
+            if(pluginState[key] === "true" && !(key.includes("-")))
+            {
+                console.log("storing key: ", key);
+                storeId(key);
+            }
+            });
+            
+            chrome.storage.sync.set({"previews": storageCache})
+            console.log(storageCache)
+            resolve();
         }
-        });
-        
-        chrome.storage.sync.set({"previews": storageCache})
-        console.log(storageCache)
-        resolve();
+        catch(e) {
+            console.error(e);
+            reject(e);
+        }
     });
 });
 

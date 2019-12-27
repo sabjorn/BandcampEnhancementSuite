@@ -169,44 +169,40 @@ function generatePreview(id) {
 
 chrome.extension.sendMessage({}, function(response) {
 
-    var readyStateCheckInterval = setInterval(function() {
-        if (document.readyState === "complete") {
-            clearInterval(readyStateCheckInterval);
+    $( document ).ready(function() {
+        storageLoadedPromise.then(function() {
+            // iterate over page to get album IDs and append buttons with value
+            $('li[data-item-id]').each(function(index, item){
+                var id = $(item).closest('li').attr('data-item-id');
+                if (id.split("-")[0] == "album" || id.split("-")[0] == "track"){
+                    id = id.split("-")[1];
+                }
 
-            storageLoadedPromise.then(function() {
-                // iterate over page to get album IDs and append buttons with value
-                $('li[data-item-id]').each(function(index, item){
-                    var id = $(item).closest('li').attr('data-item-id');
-                    if (id.split("-")[0] == "album" || id.split("-")[0] == "track"){
-                        id = id.split("-")[1];
-                    }
-
-                    $preview_element = generatePreview(id);
-                    $(item).append($preview_element);
-                });
-
-                $('li[data-tralbumid][data-tralbumtype="a"]').each(function(index, item){
-                    var id = $(item).attr('data-tralbumid');
-                    
-                    $preview_element = generatePreview(id);
-                    $(item).append($preview_element);
-                });
-
-                // catched ID album pages
-                $('#pagedata').first().each(function(index, item){
-                    var data_blob = JSON.parse($(item).attr("data-blob"));
-                    try {
-                        var id = data_blob.fan_tralbum_data.tralbum_id;
-                        storeId(id.toString());
-                        console.log("id is: ", id);
-                    }
-                    catch{}
-                })
-
-                $('.open-iframe').on('click', function(event){ fillframe(event); });
-
-                $('.historybox').on('click', function(event) { boxclick(event); });
+                $preview_element = generatePreview(id);
+                $(item).append($preview_element);
             });
-        }
-    }, 10);
+
+            $('li[data-tralbumid][data-tralbumtype="a"]').each(function(index, item){
+                var id = $(item).attr('data-tralbumid');
+                
+                $preview_element = generatePreview(id);
+                $(item).append($preview_element);
+            });
+
+            // catched ID album pages
+            $('#pagedata').first().each(function(index, item){
+                var data_blob = JSON.parse($(item).attr("data-blob"));
+                try {
+                    var id = data_blob.fan_tralbum_data.tralbum_id;
+                    storeId(id.toString());
+                    console.log("id is: ", id);
+                }
+                catch{}
+            })
+
+            $('.open-iframe').on('click', function(event){ fillframe(event); });
+
+            $('.historybox').on('click', function(event) { boxclick(event); });
+        });
+    });
 });

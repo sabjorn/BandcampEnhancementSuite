@@ -191,11 +191,14 @@ chrome.extension.sendMessage({}, function(response) {
 
             // catched ID album pages
             $('#pagedata').first().each(function(index, item){
-                var data_blob = JSON.parse($(item).attr("data-blob"));
+                var datablob = JSON.parse($(item).attr("data-blob"));
                 try {
-                    var id = data_blob.fan_tralbum_data.tralbum_id;
-                    storeId(id.toString());
-                    console.log("id is: ", id);
+                    var id = datablob.lo_querystr.split("item_id=")[1].split("&item_type=")[0]
+                    if(id)
+                    {
+                        storeId(id.toString());
+                        console.log("id is: ", id);
+                    }
                 }
                 catch(e){
                     console.log(e);

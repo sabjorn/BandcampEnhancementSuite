@@ -193,7 +193,8 @@ chrome.extension.sendMessage({}, function(response) {
             $('#pagedata').first().each(function(index, item){
                 var datablob = JSON.parse($(item).attr("data-blob"));
                 try {
-                    var id = datablob.lo_querystr.split("item_id=")[1].split("&item_type=")[0]
+                    var urlParams = new URLSearchParams(datablob.lo_querystr);
+                    var id = urlParams.get('item_id');
                     if(id)
                     {
                         storeId(id.toString());

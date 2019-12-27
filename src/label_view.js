@@ -201,7 +201,7 @@ chrome.extension.sendMessage({}, function(response) {
                     }
                 }
                 catch(e){
-                    console.log(e);
+                    console.error(e);
                 }
             })
 

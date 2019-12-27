@@ -139,6 +139,7 @@ function generatePreview(id, idType) {
     $parent_div.attr('id', id);
 
     $button = $('<button>');
+    $button.attr('title', "load preview player");
     $button.attr('type', "button");
     $button.attr('class', "follow-unfollow open-iframe");
     $button.attr('style', "width: 90%");
@@ -151,6 +152,7 @@ function generatePreview(id, idType) {
 
     // add checkbox with stores history of clicks
     $checkbox = $('<button>');
+    $checkbox.attr('title', "preview history (click to toggle)");
     $checkbox.attr('style', "margin: 0px 0px 0px 5px; width: 28px; height: 28px; position: absolute;");
     
     toggleState = false

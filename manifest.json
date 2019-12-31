@@ -1,7 +1,7 @@
 {
   "author": "Steven A. Bjornson",
   "name": "Bandcamp Enhancement Suite",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "manifest_version": 2,
   "description": "Provides extra functionality for Bandcamp ",
   "homepage_url": "https://github.com/sabjorn/BandcampEnhancementSuite",
@@ -28,7 +28,7 @@
         "https://*.bandcamp.com/*"
       ],
       "js": [
-        "js/jquery/jquery.slim.min.js", "src/label_view.js"
+        "js/jquery/jquery.slim.js", "src/label_view.js"
       ]
     }
   ]

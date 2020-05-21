@@ -14,13 +14,19 @@
   "browser_action": {
     "default_icon": "icons/icon19.png",
     "default_title": "Bandcamp Enhancement Suite",
-    "default_popup": "src/browser_action/browser_action.html"
+    "default_popup": "html/browser_action.html"
   },
   "permissions": [
     "http://*.bandcamp.com/*",
     "https://*.bandcamp.com/*",
     "storage"
   ],
+  "background": {
+       "scripts": [
+         "dist/background.js"
+       ],
+       "persistent": false
+  },
   "content_scripts": [
     {
       "matches": [
@@ -28,7 +34,7 @@
         "https://*.bandcamp.com/*"
       ],
       "js": [
-        "js/jquery/jquery.slim.js", "src/label_view.js"
+        "dist/content.js"
       ]
     }
   ]

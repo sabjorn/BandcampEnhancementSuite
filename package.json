@@ -2,18 +2,24 @@
   "name": "bandcampenhancementsuite",
   "version": "1.0.0",
   "description": "Chrome extension adding extra features to the Bandcamp experience.",
-  "main": "index.js",
   "dependencies": {
+    "webpack": "^4.43.0",
+    "idb": "^5.0.3",
+    "jquery": "^3.5.0"
   },
   "devDependencies": {
-    "prettier": "^1.19.1",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.9.0",
-    "eslint-plugin-prettier": "^3.1.2"
+    "eslint-plugin-prettier": "^3.1.2",
+    "prettier": "^1.19.1",
+    "webpack-cli": "^3.3.11"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "npx eslint ./src/"
+    "lint": "npx eslint ./src/",
+    "build": "webpack --config webpack.config.js",
+    "clean": "rm -fr ./node_modules ./dist",
+    "package": "npm run build && zip BandcampLabelView.zip LICENSE _locales/**/* icons/* dist/* manifest.json html/browser_action.html"
   },
   "repository": {
     "type": "git",
@@ -23,7 +29,7 @@
   "contributors": [
     "Eric McNiece <hello@emc2innovation.com> (https://github.com/emcniece)"
   ],
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/sabjorn/BandcampEnhancementSuite/issues"
   },

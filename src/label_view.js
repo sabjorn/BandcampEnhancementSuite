@@ -1,229 +1,171 @@
+import $ from "jquery";
+
 console.log = function() {}; // disable logging
 
-var preview_id; // globally stores which 'preview' button was last clicked
-var preview_open = false; // globally stores if preveiw window is open
+let previewId; // globally stores which 'preview' button was last clicked
+let previewOpen = false; // globally stores if preveiw window is open
 
-var storageCache = [];
+// connect to background
+let port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
+port.onMessage.addListener(function(msg) {
+  if (msg.id) setHistory(msg.id.key, msg.id.value);
+});
 
-// load storage backed
-var storageLoadedPromise = new Promise(function(resolve, reject) {
-  chrome.storage.sync.get("previews", function(result) {
-    try {
-      // load storage
-      if (isEmpty(result)) {
-        console.log("storage empty, storing new");
-        chrome.storage.sync.set({ previews: storageCache });
-      } else {
-        console.log("storage exists, storing to variable 'storageCache'");
-        storageCache = result["previews"];
-      }
+(async () => {
+  // migrates old local storage, will be deleted in future versions
+  var pluginState = window.localStorage;
 
-      // migrate old storage
-      console.log("plugin state transfer");
-      var pluginState = window.localStorage;
-      Object.keys(pluginState).forEach(function(key) {
-        if (pluginState[key] === "true" && !key.includes("-")) {
-          console.log("storing key: ", key);
-          storeId(key);
-        }
-      });
-
-      chrome.storage.sync.set({ previews: storageCache });
-      console.log(storageCache);
-      resolve();
-    } catch (e) {
-      console.error(e);
-      reject(e);
+  Object.keys(pluginState).forEach(function(key) {
+    if (pluginState[key] === "true" && !key.includes("-")) {
+      console.log("sending key: ", key);
+      setPreviewed(key);
     }
   });
-});
+})();
 
-chrome.storage.sync.getBytesInUse("previews", function(bytesInUse) {
-  console.log("current bytes in use: ", bytesInUse);
-  console.log("% of quota", bytesInUse / 102400);
-});
-
-function isEmpty(obj) {
-  return Object.keys(obj).length === 0;
+function setHistory(id, state) {
+  let historybox = $(`div.preview[id='${id}']`).find("button.historybox");
+  if (state)
+    $(historybox).attr("class", "follow-unfollow historybox following");
+  else $(historybox).attr("class", "follow-unfollow historybox");
 }
 
-function strBool(input) {
-  if (input === "true") return true;
-  return false;
+function setPreviewed(id) {
+  port.postMessage({ setTrue: id });
 }
 
-function toggleHistorybox(target, state) {
-  target.attr("class", "follow-unfollow historybox");
-  if (state) $(target).attr("class", "follow-unfollow historybox following");
-  return target;
-}
-
-function storeId(id) {
-  var val = storageCache.indexOf(id);
-  if (!storageCache.includes(id)) {
-    storageCache.push(id);
-    chrome.storage.sync.set({ previews: storageCache });
-    console.log("storing ID: ", id);
-  }
-}
-
-function boxclick(event) {
-  /*
-        tracks boxclicks to store 'id'
-    */
-
-  var id = $(event.target)
+function boxClicked(event) {
+  const id = $(event.target)
     .parents("div")
     .attr("id");
-  console.log(storageCache);
 
-  var previewState = false;
-  var val = storageCache.indexOf(id);
-  if (val > -1) {
-    console.log("removing element");
-    storageCache.splice(val, 1);
-  } else {
-    console.log("adding element");
-    storageCache.push(id);
-    previewState = true;
-  }
-  console.log(storageCache);
-  toggleHistorybox($(event.target), previewState);
-
-  chrome.storage.sync.set({ previews: storageCache });
+  port.postMessage({ toggle: id });
 }
 
-function fillframe(event) {
-  $(".bclv-frame").html(""); // clear all iframes
+function previewClicked(event) {
+  const id = $(event.target)
+    .parents("div")
+    .attr("id");
 
-  var $bclv = $(event.target)
+  setPreviewed(id);
+}
+
+function fillFrame(event) {
+  $(".preview-frame").html(""); // clear all iframes
+
+  let $preview = $(event.target)
     .parents(".music-grid-item")
-    .find(".bclv-frame");
-  var idAndType = $bclv.attr("id");
-  var id = idAndType.split("-")[1];
-  var idType = idAndType.split("-")[0];
+    .find(".preview-frame");
+  const idAndType = $preview.attr("id");
+  const id = idAndType.split("-")[1];
+  const idType = idAndType.split("-")[0];
 
   // determine if preview window needs to be open
-  if (preview_open == true && preview_id == id) {
-    preview_open = false;
+  if (previewOpen == true && previewId == id) {
+    previewOpen = false;
   } else {
-    preview_id = id;
-    preview_open = true;
+    previewId = id;
+    previewOpen = true;
   }
 
-  if (preview_open) {
-    storeId(id);
-
-    // set checkbox to clicked
-    $checkbox = $(event.target)
+  if (previewOpen) {
+    let $checkbox = $(event.target)
       .parents(`[id='${id}']`)
       .find(".historybox");
-    $checkbox = toggleHistorybox($checkbox, true);
 
-    // fill frame
-    var url = `https://bandcamp.com/EmbeddedPlayer/${idType}=${id}`;
+    let url = `https://bandcamp.com/EmbeddedPlayer/${idType}=${id}`;
     url +=
       '/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=none/transparent=true/"';
 
-    var iframe_style =
+    const iframe_style =
       "margin: 6px 0px 0px 0px; border: 0; width: 150%; height: 300px; position:relative; z-index:1;";
-    var iframe_val = `<iframe style="${iframe_style}" src="${url}" seamless></iframe>`;
-    $bclv.html(iframe_val);
+    const iframe_val = `<iframe style="${iframe_style}" src="${url}" seamless></iframe>`;
+    $preview.html(iframe_val);
   }
 }
 
-// helper function for creating preview button
 function generatePreview(id, idType) {
-  $parent_div = $("<div>");
-  $parent_div.attr("id", id);
+  let $button = $("<button>")
+    .attr("title", "load preview player")
+    .attr("type", "button")
+    .attr("class", "follow-unfollow open-iframe")
+    .attr("style", "width: 90%");
 
-  $button = $("<button>");
-  $button.attr("title", "load preview player");
-  $button.attr("type", "button");
-  $button.attr("class", "follow-unfollow open-iframe");
-  $button.attr("style", "width: 90%");
-
-  $preview = $("<div>").html("Preview");
+  let $preview = $("<div>").html("Preview");
   $button.append($preview);
 
-  $bclvframe = $("<div>");
-  $bclvframe.attr("class", "bclv-frame").attr("id", `${idType}-${id}`);
+  let $checkbox = $("<button>")
+    .attr("title", "preview history (click to toggle)")
+    .attr(
+      "style",
+      "margin: 0px 0px 0px 5px; width: 28px; height: 28px; position: absolute;"
+    )
+    .attr("class", "follow-unfollow historybox");
 
-  // add checkbox with stores history of clicks
-  $checkbox = $("<button>");
-  $checkbox.attr("title", "preview history (click to toggle)");
-  $checkbox.attr(
-    "style",
-    "margin: 0px 0px 0px 5px; width: 28px; height: 28px; position: absolute;"
-  );
+  $preview = $("<div>")
+    .attr("class", "preview-frame")
+    .attr("id", `${idType}-${id}`);
 
-  toggleState = false;
-  if (storageCache.includes(id)) {
-    console.log("id exists: ", id);
-    toggleState = true;
-  }
+  let $parent = $("<div>")
+    .attr("id", id)
+    .attr("class", "preview")
+    .append($button)
+    .append($checkbox)
+    .append($preview);
 
-  $checkbox = toggleHistorybox($checkbox, toggleState);
-
-  $parent_div.append($button);
-  $parent_div.append($checkbox);
-  $parent_div.append($bclvframe);
-
-  return $parent_div;
+  return $parent;
 }
 
-chrome.extension.sendMessage({}, function(response) {
-  $(document).ready(function() {
-    storageLoadedPromise.then(function() {
-      // iterate over page to get album IDs and append buttons with value
-      $("li.music-grid-item[data-item-id]").each(function(index, item) {
-        $(item).show();
+$(document).ready(function() {
+  // iterate over page to get album IDs and append buttons with value
+  $("li.music-grid-item[data-item-id]").each(function(index, item) {
+    const idAndType = $(item)
+      .closest("li")
+      .attr("data-item-id");
+    const id = idAndType.split("-")[1];
+    const idType = idAndType.split("-")[0];
 
-        var idAndType = $(item)
-          .closest("li")
-          .attr("data-item-id");
-        var id = idAndType.split("-")[1];
-        var idType = idAndType.split("-")[0];
+    let $preview = generatePreview(id, idType);
+    $(item).append($preview);
+    $(item).show();
 
-        $preview_element = generatePreview(id, idType);
-        $(item).append($preview_element);
-      });
+    port.postMessage({ query: id });
+  });
 
-      $('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').each(
-        function(index, item) {
-          $(item).show();
+  $('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').each(function(
+    index,
+    item
+  ) {
+    const id = $(item).attr("data-tralbumid");
 
-          var id = $(item).attr("data-tralbumid");
+    let $preview = generatePreview(id, "album");
+    $(item).append($preview);
+    $(item).show();
 
-          $preview_element = generatePreview(id, "album");
-          $(item).append($preview_element);
+    port.postMessage({ query: id });
+  });
+
+  $("#pagedata")
+    .first()
+    .each(function(index, item) {
+      const datablob = JSON.parse($(item).attr("data-blob"));
+      try {
+        const urlParams = new URLSearchParams(datablob.lo_querystr);
+        const id = urlParams.get("item_id");
+        if (id) {
+          setPreviewed(id);
         }
-      );
-
-      // catched ID album pages
-      $("#pagedata")
-        .first()
-        .each(function(index, item) {
-          var datablob = JSON.parse($(item).attr("data-blob"));
-          try {
-            var urlParams = new URLSearchParams(datablob.lo_querystr);
-            var id = urlParams.get("item_id");
-            if (id) {
-              storeId(id.toString());
-              console.log("id is: ", id);
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        });
-
-      $(".open-iframe").on("click", function(event) {
-        fillframe(event);
-      });
-
-      $(".historybox").on("click", function(event) {
-        boxclick(event);
-      });
+      } catch (e) {
+        console.error(e);
+      }
     });
+
+  $(".open-iframe").on("click", function(event) {
+    fillFrame(event);
+    previewClicked(event);
+  });
+
+  $(".historybox").on("click", function(event) {
+    boxClicked(event);
   });
 });

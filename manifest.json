@@ -21,6 +21,13 @@
     "https://*.bandcamp.com/*",
     "storage"
   ],
+  "background": {
+       "scripts": [
+         // "src/background.js",
+         "dist/main.js"
+       ],
+       "persistent": false
+  },
   "content_scripts": [
     {
       "matches": [

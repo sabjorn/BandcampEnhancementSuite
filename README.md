@@ -16,3 +16,32 @@ Available from the [Chrome webstore](https://chrome.google.com/webstore/detail/b
 
 ## Feedback
 Feedback, feature requests, and bug reports are always welcome.
+
+## Development
+This project uses `webpack` to generate the final project files from npm packages. This allows the use of `import` statements.
+
+### Quick Start
+From the root of the project run:
+
+```
+npm install
+```
+
+This will grab all of the js dependencies.
+
+Different `npm` commands defined in the `scripts` section of `package.json` can be used for to preform various tasks.
+
+#### build
+run:
+
+```
+npm run build
+```
+this will generate js files in `./dist`.
+
+#### linter
+
+run:
+```
+npm run lint
+```

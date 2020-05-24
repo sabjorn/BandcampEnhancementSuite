@@ -32,11 +32,11 @@
     {
       "matches": [
         "http://*.bandcamp.com/*",
-        "https://*.bandcamp.com/*",
-        "file:///Users/sabjorn/BandcampEnhancementSuite/*"
+        "https://*.bandcamp.com/*"
       ],
       "js": [
-        "js/jquery/jquery.slim.js", "src/label_view.js"
+        "js/jquery/jquery.slim.js", 
+        "src/label_view.js"
       ]
     }
   ]

@@ -78,4 +78,17 @@ chrome.runtime.onConnect.addListener(function(port) {
   });
 });
 
+chrome.runtime.onInstalled.addListener(function() {
+  // upgrade old storage
+  let storeName = "previews";
+  chrome.storage.sync.get(storeName, function(result) {
+    try{
+      result[storeName].forEach(function (item, index) {
+        setVal(storeName, true, item);
+      });
+    } catch (e) { console.error(e); }
+  });
+
+});
+
 

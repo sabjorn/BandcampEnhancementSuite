@@ -1,9 +1,13 @@
 const path = require('path');
 
 module.exports = {
-  entry: './src/label_view.js',
+  mode: 'development',
+  entry: {
+    content: './src/label_view.js',
+    background: './src/background.js',
+  },
   output: {
-    filename: 'main.js',
+    filename: '[name].js',
     path: path.resolve(__dirname, 'dist'),
   },
   optimization: {

@@ -10,6 +10,18 @@ port.onMessage.addListener(function(msg){
     setHistory(msg.id.key, msg.id.value)
 });
 
+(async () => { 
+  // migrates old local storage, will be deleted in future versions
+  var pluginState = window.localStorage;
+  
+  Object.keys(pluginState).forEach(function(key) {
+    if (pluginState[key] === "true" && !key.includes("-")) {
+      console.log("sending key: ", key);
+      setPreviewed(key);
+    }
+  });
+})();
+
 function setHistory(id, state){
   let historybox = $(`div.preview[id='${id}']`).find("button.historybox")
   if(state) 

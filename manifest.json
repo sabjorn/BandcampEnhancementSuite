@@ -36,8 +36,7 @@
       ],
       "js": [
         "js/jquery/jquery.slim.js", 
-        "src/label_view.js",
-        "src/upgrade_storage.js"
+        "src/label_view.js"
       ]
     }
   ]

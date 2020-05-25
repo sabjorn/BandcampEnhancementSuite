@@ -1,4 +1,4 @@
-import { $, jQuery } from 'jquery';
+import $ from 'jquery';
 
 console.log = function() {}; // disable logging
 
@@ -88,16 +88,16 @@ function fillFrame(event) {
 }
 
 function generatePreview(id, idType) {
-  $button = $("<button>")
+  let $button = $("<button>")
     .attr("title", "load preview player")
     .attr("type", "button")
     .attr("class", "follow-unfollow open-iframe")
     .attr("style", "width: 90%");
 
-  $preview = $("<div>").html("Preview");
+  let $preview = $("<div>").html("Preview");
   $button.append($preview);
 
-  $checkbox = $("<button>")
+  let $checkbox = $("<button>")
     .attr("title", "preview history (click to toggle)")
     .attr(
       "style",
@@ -109,7 +109,7 @@ function generatePreview(id, idType) {
     .attr("class", "preview-frame")
     .attr("id", `${idType}-${id}`);
 
-  $parent = $("<div>")
+  let $parent = $("<div>")
     .attr("id", id)
     .attr("class", "preview")
     .append($button)
@@ -118,7 +118,6 @@ function generatePreview(id, idType) {
 
   return $parent;
 }
-
 
 $(document).ready(function() {
   // iterate over page to get album IDs and append buttons with value
@@ -130,7 +129,7 @@ $(document).ready(function() {
       const id = idAndType.split("-")[1];
       const idType = idAndType.split("-")[0];
 
-      $preview = generatePreview(id, idType);
+      let $preview = generatePreview(id, idType);
       $(item).append($preview);
       $(item).show();
 
@@ -141,7 +140,7 @@ $(document).ready(function() {
     .each(function(index, item) {
       const id = $(item).attr("data-tralbumid");
 
-      $preview = generatePreview(id, "album");
+      let $preview = generatePreview(id, "album");
       $(item).append($preview);
       $(item).show();
 

@@ -1,3 +1,5 @@
+import $ from 'jquery';
+
 console.log = function() {}; // disable logging
 
 let previewId; // globally stores which 'preview' button was last clicked
@@ -54,7 +56,7 @@ function previewClicked(event) {
 function fillFrame(event) {
   $(".preview-frame").html(""); // clear all iframes
 
-  var $preview = $(event.target)
+  let $preview = $(event.target)
     .parents(".music-grid-item")
     .find(".preview-frame");
   const idAndType = $preview.attr("id");
@@ -70,11 +72,11 @@ function fillFrame(event) {
   }
 
   if (previewOpen) {
-    $checkbox = $(event.target)
+    let $checkbox = $(event.target)
       .parents(`[id='${id}']`)
       .find(".historybox");
 
-    var url = `https://bandcamp.com/EmbeddedPlayer/${idType}=${id}`;
+    let url = `https://bandcamp.com/EmbeddedPlayer/${idType}=${id}`;
     url +=
       '/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=none/transparent=true/"';
 
@@ -86,16 +88,16 @@ function fillFrame(event) {
 }
 
 function generatePreview(id, idType) {
-  $button = $("<button>")
+  let $button = $("<button>")
     .attr("title", "load preview player")
     .attr("type", "button")
     .attr("class", "follow-unfollow open-iframe")
     .attr("style", "width: 90%");
 
-  $preview = $("<div>").html("Preview");
+  let $preview = $("<div>").html("Preview");
   $button.append($preview);
 
-  $checkbox = $("<button>")
+  let $checkbox = $("<button>")
     .attr("title", "preview history (click to toggle)")
     .attr(
       "style",
@@ -107,7 +109,7 @@ function generatePreview(id, idType) {
     .attr("class", "preview-frame")
     .attr("id", `${idType}-${id}`);
 
-  $parent = $("<div>")
+  let $parent = $("<div>")
     .attr("id", id)
     .attr("class", "preview")
     .append($button)
@@ -116,7 +118,6 @@ function generatePreview(id, idType) {
 
   return $parent;
 }
-
 
 $(document).ready(function() {
   // iterate over page to get album IDs and append buttons with value
@@ -128,7 +129,7 @@ $(document).ready(function() {
       const id = idAndType.split("-")[1];
       const idType = idAndType.split("-")[0];
 
-      $preview = generatePreview(id, idType);
+      let $preview = generatePreview(id, idType);
       $(item).append($preview);
       $(item).show();
 
@@ -139,7 +140,7 @@ $(document).ready(function() {
     .each(function(index, item) {
       const id = $(item).attr("data-tralbumid");
 
-      $preview = generatePreview(id, "album");
+      let $preview = generatePreview(id, "album");
       $(item).append($preview);
       $(item).show();
 

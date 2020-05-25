@@ -1,7 +1,13 @@
 const path = require('path');
+const webpack = require('webpack');
 
 module.exports = {
-  mode: 'development',
+  plugins: [
+    new webpack.ProvidePlugin({
+        $: "jquery",
+        jQuery: "jquery"
+    })
+  ],
   entry: {
     content: './src/label_view.js',
     background: './src/background.js',

@@ -14,4 +14,5 @@ module.exports = {
     // We no not want to minimize our code.
     minimize: false
   },
+  devtool: "inline-source-map", //fixes "eval" error in chrome
 };

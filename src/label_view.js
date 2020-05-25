@@ -1,3 +1,5 @@
+import { $, jQuery } from 'jquery';
+
 console.log = function() {}; // disable logging
 
 let previewId; // globally stores which 'preview' button was last clicked

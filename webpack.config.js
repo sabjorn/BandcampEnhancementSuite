@@ -1,7 +1,6 @@
 const path = require('path');
 
 module.exports = {
-  mode: 'development',
   entry: {
     content: './src/label_view.js',
     background: './src/background.js',

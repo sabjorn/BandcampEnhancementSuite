@@ -1,4 +1,5 @@
-// console.log = function() {}; // disable logging
+console.log = function() {}; // disable logging
+
 import { openDB } from 'idb';
 
 async function getDB(storeName) {
@@ -94,5 +95,3 @@ chrome.runtime.onInstalled.addListener(function() {
   });
 
 });
-
-

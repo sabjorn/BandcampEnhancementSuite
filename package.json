@@ -1,6 +1,6 @@
 {
   "name": "bandcampenhancementsuite",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "Chrome extension adding extra features to the Bandcamp experience.",
   "dependencies": {
     "webpack": "^4.43.0",

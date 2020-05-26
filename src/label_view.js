@@ -1,4 +1,4 @@
-import $ from 'jquery';
+import $ from "jquery";
 
 console.log = function() {}; // disable logging
 
@@ -6,16 +6,15 @@ let previewId; // globally stores which 'preview' button was last clicked
 let previewOpen = false; // globally stores if preveiw window is open
 
 // connect to background
-let port = chrome.runtime.connect(null, {name: 'bandcamplabelview'});
-port.onMessage.addListener(function(msg){
-  if(msg.id)
-    setHistory(msg.id.key, msg.id.value)
+let port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
+port.onMessage.addListener(function(msg) {
+  if (msg.id) setHistory(msg.id.key, msg.id.value);
 });
 
-(async () => { 
+(async () => {
   // migrates old local storage, will be deleted in future versions
   var pluginState = window.localStorage;
-  
+
   Object.keys(pluginState).forEach(function(key) {
     if (pluginState[key] === "true" && !key.includes("-")) {
       console.log("sending key: ", key);
@@ -24,25 +23,23 @@ port.onMessage.addListener(function(msg){
   });
 })();
 
-function setHistory(id, state){
-  let historybox = $(`div.preview[id='${id}']`).find("button.historybox")
-  if(state) 
+function setHistory(id, state) {
+  let historybox = $(`div.preview[id='${id}']`).find("button.historybox");
+  if (state)
     $(historybox).attr("class", "follow-unfollow historybox following");
-  else
-    $(historybox).attr("class", "follow-unfollow historybox");
+  else $(historybox).attr("class", "follow-unfollow historybox");
 }
 
-function setPreviewed(id)
-{
-  port.postMessage({setTrue: id});
+function setPreviewed(id) {
+  port.postMessage({ setTrue: id });
 }
 
 function boxClicked(event) {
   const id = $(event.target)
     .parents("div")
     .attr("id");
-  
-  port.postMessage({toggle: id});
+
+  port.postMessage({ toggle: id });
 }
 
 function previewClicked(event) {
@@ -121,31 +118,32 @@ function generatePreview(id, idType) {
 
 $(document).ready(function() {
   // iterate over page to get album IDs and append buttons with value
-  $("li.music-grid-item[data-item-id]")
-    .each(function(index, item) {
-      const idAndType = $(item)
-        .closest("li")
-        .attr("data-item-id");
-      const id = idAndType.split("-")[1];
-      const idType = idAndType.split("-")[0];
+  $("li.music-grid-item[data-item-id]").each(function(index, item) {
+    const idAndType = $(item)
+      .closest("li")
+      .attr("data-item-id");
+    const id = idAndType.split("-")[1];
+    const idType = idAndType.split("-")[0];
 
-      let $preview = generatePreview(id, idType);
-      $(item).append($preview);
-      $(item).show();
+    let $preview = generatePreview(id, idType);
+    $(item).append($preview);
+    $(item).show();
 
-      port.postMessage({query: id});
-    });
+    port.postMessage({ query: id });
+  });
 
-  $('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]')
-    .each(function(index, item) {
-      const id = $(item).attr("data-tralbumid");
+  $('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').each(function(
+    index,
+    item
+  ) {
+    const id = $(item).attr("data-tralbumid");
 
-      let $preview = generatePreview(id, "album");
-      $(item).append($preview);
-      $(item).show();
+    let $preview = generatePreview(id, "album");
+    $(item).append($preview);
+    $(item).show();
 
-      port.postMessage({query: id});
-    });
+    port.postMessage({ query: id });
+  });
 
   $("#pagedata")
     .first()
@@ -162,14 +160,12 @@ $(document).ready(function() {
       }
     });
 
-  $(".open-iframe")
-    .on("click", function(event) {
-      fillFrame(event);
-      previewClicked(event);
-    });
+  $(".open-iframe").on("click", function(event) {
+    fillFrame(event);
+    previewClicked(event);
+  });
 
-  $(".historybox")
-    .on("click", function(event) {
-      boxClicked(event);
-    });
+  $(".historybox").on("click", function(event) {
+    boxClicked(event);
+  });
 });

@@ -75,13 +75,18 @@ chrome.runtime.onConnect.addListener(function(port) {
 });
 
 chrome.runtime.onInstalled.addListener(function() {
+  function isEmpty(obj) {
+    return Object.keys(obj).length === 0;
+  }
   // upgrade old storage
-  let storeName = "previews";
+  const storeName = "previews";
   chrome.storage.sync.get(storeName, function(result) {
     try {
-      result[storeName].forEach(function(item, index) {
-        setVal(storeName, true, item);
-      });
+      if(!isEmpty(result)){
+        result[storeName].forEach(function(item, index) {
+          setVal(storeName, true, item);
+        });
+      }
     } catch (e) {
       console.error(e);
     }

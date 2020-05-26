@@ -2,7 +2,7 @@
   "name": "bandcampenhancementsuite",
   "version": "1.0.0",
   "description": "Chrome extension adding extra features to the Bandcamp experience.",
-  "main": "index.js",
+  "main": "index.js", 
   "dependencies": {
     "webpack": "^4.43.0"
   },
@@ -17,7 +17,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "npx eslint ./src/",
-    "build": "webpack --config webpack.config.js"
+    "build": "webpack --config webpack.config.js",
+    "clean": "rm -fr ./node_modules ./dist",
+    "package": "npm run build && zip BandcampLabelView.zip LICENSE _locales/**/* icons/* dist/* manifest.json html/browser_action.html"
   },
   "repository": {
     "type": "git",

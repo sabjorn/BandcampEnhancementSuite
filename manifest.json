@@ -34,7 +34,8 @@
         "https://*.bandcamp.com/*"
       ],
       "js": [
-        "dist/content.js"
+        "dist/content.js",
+        "dist/download.js"
       ]
     }
   ]

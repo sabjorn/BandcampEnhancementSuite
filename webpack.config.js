@@ -19,6 +19,7 @@ module.exports = {
 
   entry: {
     content: './src/label_view.js',
+    download: './src/download_helper.js',
     background: './src/background.js',
   },
   output: {

@@ -45,3 +45,16 @@ run:
 ```
 npm run lint
 ```
+
+#### test
+
+run:
+
+```sh
+npm test
+```
+
+Testing documentation:
+
+- https://www.chaijs.com/api/assert/
+- https://www.npmjs.com/package/mocha-headless-chrome

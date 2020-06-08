@@ -82,7 +82,7 @@ chrome.runtime.onInstalled.addListener(function() {
   const storeName = "previews";
   chrome.storage.sync.get(storeName, function(result) {
     try {
-      if(!isEmpty(result)){
+      if (!isEmpty(result)) {
         result[storeName].forEach(function(item, index) {
           setVal(storeName, true, item);
         });

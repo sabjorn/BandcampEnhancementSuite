@@ -7,15 +7,20 @@
     "jquery": "^3.5.0"
   },
   "devDependencies": {
+    "chai": "^4.2.0",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.9.0",
     "eslint-plugin-prettier": "^3.1.2",
+    "jsdom": "16.2.2",
+    "jsdom-global": "3.0.2",
+    "mocha": "^7.2.0",
+    "mocha-headless-chrome": "^3.0.0",
     "prettier": "^1.19.1",
     "webpack-cli": "^3.3.11",
     "webpack": "^4.43.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npx mocha",
     "lint": "npx eslint ./src/",
     "build": "webpack --config webpack.config.js",
     "clean": "rm -fr ./node_modules ./dist",

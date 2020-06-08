@@ -20,7 +20,7 @@
     "webpack": "^4.43.0"
   },
   "scripts": {
-    "test": "npx mocha",
+    "test": "npx mocha ./test/test.js",
     "lint": "npx eslint ./src/",
     "build": "webpack --config webpack.config.js",
     "clean": "rm -fr ./node_modules ./dist",

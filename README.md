@@ -58,3 +58,4 @@ Testing documentation:
 
 - https://www.chaijs.com/api/assert/
 - https://www.npmjs.com/package/mocha-headless-chrome
+- https://github.com/acvetkov/sinon-chrome

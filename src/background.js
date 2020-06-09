@@ -1,4 +1,5 @@
-console.log = function() {}; // disable logging
+// This MUST be removed - it break test frameworks and NodeJS output!
+//console.log = function() {}; // disable logging
 
 import { openDB } from "idb";
 
@@ -62,33 +63,37 @@ async function setTrue(storeName, key, port) {
   port.postMessage({ id: { key: key, value: true } });
 }
 
-chrome.runtime.onConnect.addListener(function(port) {
-  console.log("connected to: ", port.name);
-  console.assert(port.name == "bandcamplabelview");
+const init = () => {
+  chrome.runtime.onConnect.addListener(function(port) {
+    console.log("connected to: ", port.name);
+    console.assert(port.name == "bandcamplabelview");
 
-  // get values of initial
-  port.onMessage.addListener(function(msg) {
-    if (msg.query) query("previews", msg.query, port);
-    if (msg.toggle) toggle("previews", msg.toggle, port);
-    if (msg.setTrue) setTrue("previews", msg.setTrue, port);
+    // get values of initial
+    port.onMessage.addListener(function(msg) {
+      if (msg.query) query("previews", msg.query, port);
+      if (msg.toggle) toggle("previews", msg.toggle, port);
+      if (msg.setTrue) setTrue("previews", msg.setTrue, port);
+    });
   });
-});
 
-chrome.runtime.onInstalled.addListener(function() {
-  function isEmpty(obj) {
-    return Object.keys(obj).length === 0;
-  }
-  // upgrade old storage
-  const storeName = "previews";
-  chrome.storage.sync.get(storeName, function(result) {
-    try {
-      if (!isEmpty(result)) {
-        result[storeName].forEach(function(item, index) {
-          setVal(storeName, true, item);
-        });
-      }
-    } catch (e) {
-      console.error(e);
+  chrome.runtime.onInstalled.addListener(function() {
+    function isEmpty(obj) {
+      return Object.keys(obj).length === 0;
     }
+    // upgrade old storage
+    const storeName = "previews";
+    chrome.storage.sync.get(storeName, function(result) {
+      try {
+        if (!isEmpty(result)) {
+          result[storeName].forEach(function(item, index) {
+            setVal(storeName, true, item);
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    });
   });
-});
+}
+
+window.onload = init;

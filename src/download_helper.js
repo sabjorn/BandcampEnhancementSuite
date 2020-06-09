@@ -1,9 +1,9 @@
-function generateDownloadList() {
-  filelist = "";
+export function generateDownloadList() {
+  let filelist = "";
   document
     .querySelectorAll('a[href^="https://p4.bcbits.com/download/"]')
     .forEach((item, index, list) => {
-      url = item.getAttribute("href");
+      const url = item.getAttribute("href");
       // Prevent duplicate URLs
       if (filelist.indexOf(url) === -1) {
         filelist += "curl -OJ " + url + " \\ &\n";
@@ -12,23 +12,14 @@ function generateDownloadList() {
   return filelist;
 }
 
-function download(filename, text) {
-  var element = document.createElement("a");
-
-  element.setAttribute("id", "bes-hidden-download");
-  element.setAttribute(
-    "href",
-    "data:text/plain;charset=utf-8," + encodeURIComponent(text)
-  );
-  element.setAttribute("download", filename);
-
-  element.style.display = "none";
-  document.body.appendChild(element);
-
-  element.click();
-
-  document.body.removeChild(element);
+export function download(filename, text) {
+  const url = "data:text/plain;charset=utf-8," + encodeURIComponent(text)
+  window.location.assign(url);
 }
 
-var list = generateDownloadList();
-download("files.txt", list);
+export const init = () => {
+  const list = generateDownloadList();
+  download("files.txt", list);
+}
+
+window.onload = init;

@@ -18,6 +18,7 @@
     "karma-coverage": "^2.0.2",
     "karma-mocha": "^2.0.1",
     "karma-mocha-reporter": "^2.2.5",
+    "karma-spec-reporter": "0.0.32",
     "karma-webpack": "^4.0.2",
     "mocha": "^7.2.0",
     "mochapack": "^2.0.0",
@@ -29,8 +30,8 @@
     "webpack-cli": "^3.3.11"
   },
   "scripts": {
-    "test": "npx mochapack 'test/**/*.js' --webpack-config webpack.test.config.js -r jsdom-global/register",
-    "test:watch": "npm run test -- --watch",
+    "test": "npx karma start --single-run",
+    "test:watch": "npx karma start",
     "lint": "npx eslint ./src/",
     "build": "webpack --config webpack.config.js",
     "clean": "rm -fr ./node_modules ./dist",

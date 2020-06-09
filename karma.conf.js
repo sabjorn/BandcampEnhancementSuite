@@ -4,17 +4,16 @@ module.exports = function(config) {
     frameworks: ['mocha', 'chai'],
     browsers: ['ChromeHeadless'],
     //singleRun: true,
-    // logLevel: 'debug',
-    reporters: ['progress'],
+    //logLevel: 'debug',
+    reporters: ['spec'],
     colors: true,
     //port: 9090
-
 
     files: [
       // each file acts as entry point for the webpack configuration
       //{ pattern: 'test/download_helper.js', watched: false },
       { pattern: 'test/background.js', watched: true },
-      // { pattern: 'test/*.js', watched: true },
+      // { pattern: 'test/**/*.js', watched: true },
     ],
 
     preprocessors: {
@@ -36,9 +35,6 @@ module.exports = function(config) {
 
         // require specific files after Mocha is initialized
         //require: [require.resolve('jsdom-global/register')],
-
-        // custom ui, defined in required file above
-        //ui: 'bdd-lazy-var/global',
       }
     }
   });

@@ -51,11 +51,19 @@ npm run lint
 run:
 
 ```sh
+# Single run:
 npm test
+
+# Watch & auto-rebuild:
+npm run test:watch
 ```
 
 Testing documentation:
 
-- https://www.chaijs.com/api/assert/
-- https://www.npmjs.com/package/mocha-headless-chrome
-- https://github.com/acvetkov/sinon-chrome
+- [Mocha: test runner](https://mochajs.org/)
+- [Mochapack: Webpack/Mocha wrapper](https://github.com/sysgears/mochapack)
+- [Chai: assertion logic](https://www.chaijs.com/api/assert/)
+- [JSDOM: Mock browser dom](https://github.com/rstacruz/jsdom-global)
+- [Sinon-Chrome: Mock Chrome extension methods](https://github.com/acvetkov/sinon-chrome)
+- [Sinon: mocks, spies, assertions](https://sinonjs.org/releases/v9.0.2/assertions/)
+- [fakeIndexedDB: IndexedDB Mock](https://github.com/dumbmatter/fakeIndexedDB)

@@ -1,9 +1,13 @@
 import { assert, expect } from 'chai';
 import { chrome } from 'sinon-chrome/extensions';
 
-//import { getDB } from '../src/background.js'
-import * as background from '../src/background.js';
+import * as bg from '../src/background.js';
 
-it('should add to numbers from an es module', () => {
-  assert.equal(8, 8);
+describe("Download Helper", () => {
+  describe("getDB()", () => {
+    it('should return an openDB', async () => {
+      const db = await bg.getDB('testdb')
+      console.log(db)
+    });
+  });
 });

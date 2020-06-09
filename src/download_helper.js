@@ -1,4 +1,4 @@
-export function generateDownloadList() {
+function generateDownloadList() {
   let filelist = "";
   document
     .querySelectorAll('a[href^="https://p4.bcbits.com/download/"]')
@@ -12,14 +12,29 @@ export function generateDownloadList() {
   return filelist;
 }
 
-export function download(filename, text) {
-  const url = "data:text/plain;charset=utf-8," + encodeURIComponent(text)
+function assignLocation(url){
   window.location.assign(url);
 }
 
-export const init = () => {
-  const list = generateDownloadList();
+function download(filename, text) {
+  const url = "data:text/plain;charset=utf-8," + encodeURIComponent(text)
+  helper.assignLocation(url);
+}
+
+const init = () => {
+  const list = helper.generateDownloadList();
   download("files.txt", list);
 }
+
+// Factory pattern:
+// Allows for in-module unit test stubs.
+const helper = {
+  generateDownloadList,
+  assignLocation,
+  download,
+  init
+}
+
+module.exports = helper
 
 window.onload = init;

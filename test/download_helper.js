@@ -85,33 +85,33 @@ describe("Download Helper", () => {
   });
 
   describe("download()", () => {
-    let assignSpy;
+    let assignStub;
 
     beforeEach(() => {
-      delete window.location;
-      assignSpy = sinon.spy();
-      window.location = {assign: assignSpy}
+      assignStub = sinon.stub(helper, 'assignLocation').returns(null);
     });
 
-    // These tests use `done()` so as to ensure the event listeners are
-    // triggered and processed before the test can be marked as complete.
+    afterEach(() => {
+        helper.assignLocation.restore(); // Unwraps the spy
+    });
+
     it("should trigger a window download", () => {
       helper.download("test", "test");
-      expect(assignSpy).to.have.been.called;
+      expect(assignStub).to.have.been.called;
     });
 
-    it("should URI Encode the input text to the href", () => {
+    it("should URI Encode the input text", () => {
       const plaintext = "text with spaces"
       const encoded = encodeURIComponent(plaintext)
 
       helper.download("test", plaintext);
-      const url = assignSpy.getCall(0).firstArg
+      const url = assignStub.getCall(0).firstArg
       expect(url.endsWith(encoded)).to.be.true;
     });
 
     it("should start href with data properties", () => {
       helper.download("test", "test");
-      const url = assignSpy.getCall(0).firstArg
+      const url = assignStub.getCall(0).firstArg
       expect(url.startsWith('data:text/plain;charset=utf-8,')).to.be.true;
     });
   });

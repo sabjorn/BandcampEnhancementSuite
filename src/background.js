@@ -45,7 +45,7 @@ export async function query(storeName, key, port) {
 
   if (!value) {
     value = false;
-    setVal(storeName, value, key);
+    await setVal(storeName, value, key);
   }
 
   port.postMessage({ id: { key: key, value: value } });
@@ -54,12 +54,12 @@ export async function query(storeName, key, port) {
 export async function toggle(storeName, key, port) {
   let value = await getVal(storeName, key);
   value = !value;
-  setVal(storeName, value, key);
+  await setVal(storeName, value, key);
   port.postMessage({ id: { key: key, value: value } });
 }
 
 export async function setTrue(storeName, key, port) {
-  setVal(storeName, true, key);
+  await setVal(storeName, true, key);
   port.postMessage({ id: { key: key, value: true } });
 }
 

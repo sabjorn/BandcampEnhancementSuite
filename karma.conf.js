@@ -11,9 +11,7 @@ module.exports = function(config) {
 
     files: [
       // each file acts as entry point for the webpack configuration
-      //{ pattern: 'test/download_helper.js', watched: false },
-      { pattern: 'test/background.js', watched: true },
-      // { pattern: 'test/**/*.js', watched: true },
+      { pattern: 'test/**/*.js', watched: true },
     ],
 
     preprocessors: {

@@ -51,10 +51,17 @@ npm run lint
 run:
 
 ```sh
+# Single run:
 npm test
+
+# Watch & auto-rebuild:
+npm run test:watch
 ```
 
 Testing documentation:
 
-- https://www.chaijs.com/api/assert/
-- https://www.npmjs.com/package/mocha-headless-chrome
+- [Mocha: test framework](https://mochajs.org/)
+- [Chai: assertion logic](https://www.chaijs.com/api/assert/)
+- [Sinon-Chrome: Mock Chrome extension methods](https://github.com/acvetkov/sinon-chrome)
+- [Sinon: mocks, spies, assertions](https://sinonjs.org/releases/v9.0.2/assertions/)
+- [Karma test runner](https://karma-runner.github.io/)

@@ -1,4 +1,4 @@
-// This MUST be removed - it break test frameworks and NodeJS output!
+// This MUST be removed - it breaks test frameworks and NodeJS output!
 //console.log = function() {}; // disable logging
 
 import { openDB } from "idb";
@@ -94,6 +94,6 @@ export const init = () => {
       }
     });
   });
-}
+};
 
 window.onload = init;

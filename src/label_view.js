@@ -1,8 +1,5 @@
 import $ from "jquery";
 
-// This MUST be removed - it breaks test frameworks and NodeJS output!
-//console.log = function() {}; // disable logging
-
 export default class LabelView {
   constructor() {
     this.previewId; // globally stores which 'preview' button was last clicked
@@ -21,7 +18,6 @@ export default class LabelView {
 
     Object.keys(pluginState).forEach(key => {
       if (pluginState[key] === "true" && !key.includes("-")) {
-        console.log("sending key: ", key);
         this.setPreviewed(key);
       }
     });

@@ -61,7 +61,6 @@ export default class LabelView {
       .parents(".music-grid-item")
       .find(".preview-frame");
     const idAndType = $preview.attr("id");
-    // Todo: what happens if id doesn't match this format?
     const id = idAndType.split("-")[1];
     const idType = idAndType.split("-")[0];
 
@@ -74,11 +73,6 @@ export default class LabelView {
     }
 
     if (this.previewOpen) {
-      // Todo: is $checkbox used?
-      let $checkbox = $(event.target)
-        .parents(`[id='${id}']`)
-        .find(".historybox");
-
       let url = `https://bandcamp.com/EmbeddedPlayer/${idType}=${id}`;
       url +=
         '/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=none/transparent=true/"';

@@ -10,7 +10,7 @@ import * as bg from '../src/background.js';
 // Sinon-chrome doesn't handle ports, so let's make our own
 const mockPort = {postMessage: sinon.spy()};
 
-describe("Download Helper", () => {
+describe("Background", () => {
   // Global db setup for use in all tests
   let db;
   before(async () => {
@@ -138,7 +138,7 @@ describe("Download Helper", () => {
   });
 
   describe("init()", () => {
-    before(function () {
+    beforeEach(() => {
         global.chrome = chrome;
     });
 

@@ -136,7 +136,6 @@ export default class LabelView {
       const idType = idAndType.split("-")[0];
       let $preview = this.generatePreview(id, idType);
       $(item).append($preview);
-      $(item).show();
 
       this.port.postMessage({ query: id });
     });
@@ -144,10 +143,8 @@ export default class LabelView {
     $('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').each(
       (index, item) => {
         const id = $(item).attr("data-tralbumid");
-
         let $preview = this.generatePreview(id, "album");
         $(item).append($preview);
-        $(item).show();
 
         this.port.postMessage({ query: id });
       }
@@ -157,14 +154,10 @@ export default class LabelView {
       .first()
       .each((index, item) => {
         const datablob = JSON.parse($(item).attr("data-blob"));
-        try {
-          const urlParams = new URLSearchParams(datablob.lo_querystr);
-          const id = urlParams.get("item_id");
-          if (id) {
-            this.setPreviewed(id);
-          }
-        } catch (e) {
-          console.error(e);
+        const urlParams = new URLSearchParams(datablob.lo_querystr);
+        const id = urlParams.get("item_id");
+        if (id) {
+          this.setPreviewed(id);
         }
       });
 

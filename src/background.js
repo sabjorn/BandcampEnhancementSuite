@@ -1,6 +1,3 @@
-// This MUST be removed - it break test frameworks and NodeJS output!
-//console.log = function() {}; // disable logging
-
 import { openDB } from "idb";
 
 export async function getDB(storeName) {
@@ -9,18 +6,11 @@ export async function getDB(storeName) {
 
   const db = await openDB(dbName, version, {
     upgrade(db, oldVersion, newVersion, transaction) {
-      console.log("creating store");
       const store = db.createObjectStore(storeName);
     },
-    blocked() {
-      console.log("blocked");
-    },
-    blocking() {
-      console.log("blocking");
-    },
-    terminated() {
-      console.log("terminated");
-    }
+    blocked() {},
+    blocking() {},
+    terminated() {}
   });
 
   return db;
@@ -65,7 +55,6 @@ export async function setTrue(storeName, key, port) {
 
 export const init = () => {
   chrome.runtime.onConnect.addListener(function(port) {
-    console.log("connected to: ", port.name);
     console.assert(port.name == "bandcamplabelview");
 
     // get values of initial
@@ -94,6 +83,6 @@ export const init = () => {
       }
     });
   });
-}
+};
 
 window.onload = init;

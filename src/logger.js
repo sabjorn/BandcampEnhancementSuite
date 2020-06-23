@@ -34,6 +34,7 @@ class Console extends Transport {
   log(info, next) {
     // styles a console log statement accordingly to the log level
     // log level colors are taken from levelcolors enum
+    // eslint-disable-next-line no-console
     console.log(
       `%c[%cBES ${info.level.toUpperCase()}%c]:`,
       this.defaultColor,

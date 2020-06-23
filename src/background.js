@@ -1,4 +1,6 @@
 import { openDB } from "idb";
+import Logger from "./logger";
+const log = new Logger();
 
 export async function getDB(storeName) {
   const dbName = "BandcampEnhancementSuite";
@@ -55,7 +57,9 @@ export async function setTrue(storeName, key, port) {
 
 export const init = () => {
   chrome.runtime.onConnect.addListener(function(port) {
-    console.assert(port.name == "bandcamplabelview");
+    if (port.name !== "bandcamplabelview") {
+      log.error(`Unexpected chrome.runtime.onConnect port name: ${port.name}`);
+    }
 
     // get values of initial
     port.onMessage.addListener(function(msg) {
@@ -79,7 +83,7 @@ export const init = () => {
           });
         }
       } catch (e) {
-        console.error(e);
+        log.error(e);
       }
     });
   });

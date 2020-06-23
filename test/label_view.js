@@ -1,16 +1,16 @@
-import chai from 'chai';
-import sinon from 'sinon';
-import sinonChai from 'sinon-chai'
-import { assert, expect } from 'chai';
+import chai from "chai";
+import sinon from "sinon";
+import sinonChai from "sinon-chai";
+import { assert, expect } from "chai";
 chai.use(sinonChai);
 
-import LabelView from '../src/label_view.js';
+import LabelView from "../src/label_view.js";
 
 const mockLogger = {
   info: () => {},
   debug: () => {},
-  error: () => {},
-}
+  error: () => {}
+};
 
 const mockPort = {
   postMessage: sinon.spy(),
@@ -23,36 +23,36 @@ const mockChrome = {
   runtime: {
     connect: (extensionId, connectInfo) => mockPort
   }
-}
+};
 
 /**
  * DOM node creation helper
  * Makes nodes with id='test-nodes' and adds the contents
  * in `tagString` as children.
  */
-const createDomNodes = (tagString) => {
-  const testNodes = document.createElement('div')
-  testNodes.setAttribute('id', 'test-nodes')
-  document.body.appendChild(testNodes)
+const createDomNodes = tagString => {
+  const testNodes = document.createElement("div");
+  testNodes.setAttribute("id", "test-nodes");
+  document.body.appendChild(testNodes);
 
   // Make the parent of the first div in the document becomes the context node
   const range = document.createRange();
   range.selectNode(testNodes);
   var documentFragment = range.createContextualFragment(tagString);
-  document.getElementById('test-nodes').appendChild(documentFragment);
-  return documentFragment
-}
+  document.getElementById("test-nodes").appendChild(documentFragment);
+  return documentFragment;
+};
 
 /**
  * DOM node cleanup helper.
  * Removes elements with id='test-nodes'
  */
 const cleanupTestNodes = () => {
-  var elem = document.getElementById('test-nodes');
-  if(elem){
+  var elem = document.getElementById("test-nodes");
+  if (elem) {
     elem.parentNode.removeChild(elem);
   }
-}
+};
 
 describe("Label View", () => {
   let lv;
@@ -79,11 +79,15 @@ describe("Label View", () => {
           <div id="testId" class="preview">
             <button class="historybox"></button>
           </div>
-        `)
-        lv.setHistory('testId', true)
-        const hbox = document.querySelector('#testId .historybox')
-        const hClass = hbox.getAttribute('class').split(' ')
-        expect(hClass).to.include.all.members(['follow-unfollow', 'historybox', 'following'])
+        `);
+        lv.setHistory("testId", true);
+        const hbox = document.querySelector("#testId .historybox");
+        const hClass = hbox.getAttribute("class").split(" ");
+        expect(hClass).to.include.all.members([
+          "follow-unfollow",
+          "historybox",
+          "following"
+        ]);
       });
     });
 
@@ -93,20 +97,20 @@ describe("Label View", () => {
           <div id="testId" class="preview">
             <button class="historybox"></button>
           </div>
-        `)
-        lv.setHistory('testId', false)
-        const hbox = document.querySelector('#testId .historybox')
-        expect(hbox.getAttribute('class')).to.not.include('following')
-        expect(hbox.getAttribute('class')).to.include('follow-unfollow')
-        expect(hbox.getAttribute('class')).to.include('historybox')
+        `);
+        lv.setHistory("testId", false);
+        const hbox = document.querySelector("#testId .historybox");
+        expect(hbox.getAttribute("class")).to.not.include("following");
+        expect(hbox.getAttribute("class")).to.include("follow-unfollow");
+        expect(hbox.getAttribute("class")).to.include("historybox");
       });
     });
   });
 
   describe("setPreviewed()", () => {
     it("should postMessage with setTrue:id", () => {
-      lv.setPreviewed(1)
-      expect(mockPort.postMessage).to.be.calledWith({setTrue: 1});
+      lv.setPreviewed(1);
+      expect(mockPort.postMessage).to.be.calledWith({ setTrue: 1 });
     });
   });
 
@@ -116,14 +120,16 @@ describe("Label View", () => {
         <div id="boxClickedParent">
           <div id="boxClickedChild">boxClicked() test</div>
         </div>
-      `)
+      `);
 
       const mockEvent = {
-        target: document.getElementById('boxClickedChild')
-      }
+        target: document.getElementById("boxClickedChild")
+      };
 
-      lv.boxClicked(mockEvent)
-      expect(mockPort.postMessage).to.be.calledWith({toggle: 'boxClickedParent'});
+      lv.boxClicked(mockEvent);
+      expect(mockPort.postMessage).to.be.calledWith({
+        toggle: "boxClickedParent"
+      });
     });
   });
 
@@ -133,15 +139,15 @@ describe("Label View", () => {
         <div id="previewClickedParent">
           <div id="previewClickedChild">previewClicked() test</div>
         </div>
-      `)
+      `);
 
       const mockEvent = {
-        target: document.getElementById('previewClickedChild')
-      }
+        target: document.getElementById("previewClickedChild")
+      };
 
-      sandbox.stub(lv, 'setPreviewed')
-      lv.previewClicked(mockEvent)
-      expect(lv.setPreviewed).to.be.calledWith('previewClickedParent');
+      sandbox.stub(lv, "setPreviewed");
+      lv.previewClicked(mockEvent);
+      expect(lv.setPreviewed).to.be.calledWith("previewClickedParent");
     });
   });
 
@@ -154,14 +160,14 @@ describe("Label View", () => {
             <div class="this-should-disappear"></div>
           </div>
         </div>
-      `)
+      `);
 
       const mockEvent = {
-        target: document.getElementById('fillFrameEventTarget')
-      }
+        target: document.getElementById("fillFrameEventTarget")
+      };
 
       lv.fillFrame(mockEvent);
-      const foundElems = document.querySelectorAll('.this-should-disappear')
+      const foundElems = document.querySelectorAll(".this-should-disappear");
       expect(foundElems.length).to.equal(0);
     });
 
@@ -173,14 +179,14 @@ describe("Label View", () => {
               <div id="fillFrameEventTarget"></div>
               <div id="type-fillFrameTest1" class="preview-frame"></div>
             </div>
-          `)
+          `);
 
           const mockEvent = {
-            target: document.getElementById('fillFrameEventTarget')
-          }
+            target: document.getElementById("fillFrameEventTarget")
+          };
 
           lv.previewOpen = true;
-          lv.previewId = 'fillFrameTest1';
+          lv.previewId = "fillFrameTest1";
           lv.fillFrame(mockEvent);
           expect(lv.previewOpen).to.be.false;
         });
@@ -193,14 +199,14 @@ describe("Label View", () => {
               <div id="fillFrameEventTarget"></div>
               <div id="type-fillFrameTest1" class="preview-frame"></div>
             </div>
-          `)
+          `);
 
           const mockEvent = {
-            target: document.getElementById('fillFrameEventTarget')
-          }
+            target: document.getElementById("fillFrameEventTarget")
+          };
 
           lv.previewOpen = true;
-          lv.previewId = 'doesnt-match-fillFrameTest1';
+          lv.previewId = "doesnt-match-fillFrameTest1";
           lv.fillFrame(mockEvent);
           expect(lv.previewOpen).to.be.true;
         });
@@ -213,16 +219,16 @@ describe("Label View", () => {
             <div id="type-fillFrameTest1" class="preview-frame"></div>
             <div class="historybox"></div>
           </div>
-        `)
+        `);
 
         const mockEvent = {
-          target: document.getElementById('fillFrameEventTarget')
-        }
+          target: document.getElementById("fillFrameEventTarget")
+        };
 
         lv.previewOpen = true;
-        lv.previewId = 'fillFrameTest1';
+        lv.previewId = "fillFrameTest1";
         lv.fillFrame(mockEvent);
-        const foundIframe = document.querySelector('#fillFrameTest1 iframe')
+        const foundIframe = document.querySelector("#fillFrameTest1 iframe");
         expect(foundIframe).to.be.null;
       });
     });
@@ -235,16 +241,16 @@ describe("Label View", () => {
             <div id="type-fillFrameTest1" class="preview-frame"></div>
             <div class="historybox"></div>
           </div>
-        `)
+        `);
 
         const mockEvent = {
-          target: document.getElementById('fillFrameEventTarget')
-        }
+          target: document.getElementById("fillFrameEventTarget")
+        };
 
         lv.previewOpen = false;
         lv.fillFrame(mockEvent);
         expect(lv.previewOpen).to.be.true;
-        expect(lv.previewId).to.equal('fillFrameTest1');
+        expect(lv.previewId).to.equal("fillFrameTest1");
       });
 
       describe("when it creates an iframe", () => {
@@ -255,20 +261,22 @@ describe("Label View", () => {
               <div id="type-fillFrameTest1" class="preview-frame"></div>
               <div class="historybox"></div>
             </div>
-          `)
+          `);
 
           const mockEvent = {
-            target: document.getElementById('fillFrameEventTarget')
-          }
+            target: document.getElementById("fillFrameEventTarget")
+          };
 
           lv.previewOpen = false;
           lv.fillFrame(mockEvent);
-          const foundIframe = document.querySelectorAll('.preview-frame iframe')
+          const foundIframe = document.querySelectorAll(
+            ".preview-frame iframe"
+          );
           expect(foundIframe.length).to.equal(1);
 
           it("and have type=id in the URL", () => {
             expect(true).to.be.true;
-          })
+          });
         });
 
         it("the iframe should have type=id in the URL", () => {
@@ -278,16 +286,16 @@ describe("Label View", () => {
               <div id="type-fillFrameTest1" class="preview-frame"></div>
               <div class="historybox"></div>
             </div>
-          `)
+          `);
 
           const mockEvent = {
-            target: document.getElementById('fillFrameEventTarget')
-          }
+            target: document.getElementById("fillFrameEventTarget")
+          };
 
           lv.previewOpen = false;
           lv.fillFrame(mockEvent);
-          const foundIframe = document.querySelector('.preview-frame iframe')
-          const url = foundIframe.getAttribute('src')
+          const foundIframe = document.querySelector(".preview-frame iframe");
+          const url = foundIframe.getAttribute("src");
           expect(url).to.contain("type=fillFrameTest1");
         });
       });
@@ -297,43 +305,43 @@ describe("Label View", () => {
   describe("generatePreview()", () => {
     it("should return a parent with properties", () => {
       // Todo: when jQuery is removed, change this to `const elem`
-      const $elem = lv.generatePreview('testId', 'testIdType')
-      const elem = $elem.get(0)
-      expect(elem.getAttribute('class')).to.equal('preview')
-      expect(elem.getAttribute('id')).to.equal('testId')
+      const $elem = lv.generatePreview("testId", "testIdType");
+      const elem = $elem.get(0);
+      expect(elem.getAttribute("class")).to.equal("preview");
+      expect(elem.getAttribute("id")).to.equal("testId");
     });
 
     it("should add a preview elem with properties", () => {
       // Todo: when jQuery is removed, change this to `const elem`
-      const $elem = lv.generatePreview('testId', 'testIdType')
-      const elem = $elem.get(0)
-      const preview = elem.querySelector('.preview-frame')
-      expect(preview).to.be.ok
-      expect(preview.getAttribute('id')).to.equal('testIdType-testId')
+      const $elem = lv.generatePreview("testId", "testIdType");
+      const elem = $elem.get(0);
+      const preview = elem.querySelector(".preview-frame");
+      expect(preview).to.be.ok;
+      expect(preview.getAttribute("id")).to.equal("testIdType-testId");
     });
 
     it("should add a button elem with properties", () => {
       // Todo: when jQuery is removed, change this to `const elem`
-      const $elem = lv.generatePreview('testId', 'testIdType')
-      const elem = $elem.get(0)
-      const btn = elem.querySelector('.open-iframe')
-      expect(btn).to.be.ok
-      expect(btn.getAttribute('title')).to.equal('load preview player')
-      expect(btn.getAttribute('class')).to.contain('follow-unfollow')
-      expect(btn.getAttribute('class')).to.contain('open-iframe')
+      const $elem = lv.generatePreview("testId", "testIdType");
+      const elem = $elem.get(0);
+      const btn = elem.querySelector(".open-iframe");
+      expect(btn).to.be.ok;
+      expect(btn.getAttribute("title")).to.equal("load preview player");
+      expect(btn.getAttribute("class")).to.contain("follow-unfollow");
+      expect(btn.getAttribute("class")).to.contain("open-iframe");
     });
 
     it("should add a checkbox elem with properties", () => {
       // Todo: when jQuery is removed, change this to `const elem`
-      const $elem = lv.generatePreview('testId', 'testIdType')
-      const elem = $elem.get(0)
-      const btn = elem.querySelector('.historybox')
-      expect(btn).to.be.ok
-      expect(btn.getAttribute('title')).to.contain('preview history')
-      expect(btn.getAttribute('class')).to.contain('follow-unfollow')
-      expect(btn.getAttribute('class')).to.contain('historybox')
+      const $elem = lv.generatePreview("testId", "testIdType");
+      const elem = $elem.get(0);
+      const btn = elem.querySelector(".historybox");
+      expect(btn).to.be.ok;
+      expect(btn.getAttribute("title")).to.contain("preview history");
+      expect(btn.getAttribute("class")).to.contain("follow-unfollow");
+      expect(btn.getAttribute("class")).to.contain("historybox");
     });
-  })
+  });
 
   describe("renderDom()", () => {
     it("should add preview panes to each .music-grid-item[data-item-id]", () => {
@@ -342,14 +350,14 @@ describe("Label View", () => {
           <li id="rdt1" class="music-grid-item" data-item-id="testIdType1-testId1"></li>
           <li id="rdt2" class="music-grid-item" data-item-id="testIdType2-testId2"></li>
         </ul>
-      `)
-      sandbox.stub(lv, 'generatePreview').callThrough()
-      lv.renderDom()
-      const gridItems = document.querySelectorAll('.music-grid-item')
-      expect(gridItems[0].querySelector('.preview')).to.be.ok
-      expect(gridItems[1].querySelector('.preview')).to.be.ok
-      expect(lv.generatePreview).to.be.calledWith('testId1', 'testIdType1');
-      expect(lv.generatePreview).to.be.calledWith('testId2', 'testIdType2');
+      `);
+      sandbox.stub(lv, "generatePreview").callThrough();
+      lv.renderDom();
+      const gridItems = document.querySelectorAll(".music-grid-item");
+      expect(gridItems[0].querySelector(".preview")).to.be.ok;
+      expect(gridItems[1].querySelector(".preview")).to.be.ok;
+      expect(lv.generatePreview).to.be.calledWith("testId1", "testIdType1");
+      expect(lv.generatePreview).to.be.calledWith("testId2", "testIdType2");
     });
 
     it("should call postMessage for each .music-grid-item[data-item-id]", () => {
@@ -358,10 +366,10 @@ describe("Label View", () => {
           <li id="rdt1" class="music-grid-item" data-item-id="testIdType1-testId1"></li>
           <li id="rdt2" class="music-grid-item" data-item-id="testIdType2-testId2"></li>
         </ul>
-      `)
-      lv.renderDom()
-      expect(mockPort.postMessage).to.be.calledWith({query: 'testId1'});
-      expect(mockPort.postMessage).to.be.calledWith({query: 'testId2'});
+      `);
+      lv.renderDom();
+      expect(mockPort.postMessage).to.be.calledWith({ query: "testId1" });
+      expect(mockPort.postMessage).to.be.calledWith({ query: "testId2" });
     });
 
     it("should add preview panes to each .music-grid-item[data-tralbumid]", () => {
@@ -370,14 +378,14 @@ describe("Label View", () => {
           <li id="rdt1" class="music-grid-item" data-tralbumid="tId1" data-tralbumtype="a"></li>
           <li id="rdt2" class="music-grid-item" data-tralbumid="tId2" data-tralbumtype="a"></li>
         </ul>
-      `)
-      sandbox.stub(lv, 'generatePreview').callThrough()
-      lv.renderDom()
-      const gridItems = document.querySelectorAll('.music-grid-item')
-      expect(gridItems[0].querySelector('.preview')).to.be.ok
-      expect(gridItems[1].querySelector('.preview')).to.be.ok
-      expect(lv.generatePreview).to.be.calledWith('tId1', 'album');
-      expect(lv.generatePreview).to.be.calledWith('tId2', 'album');
+      `);
+      sandbox.stub(lv, "generatePreview").callThrough();
+      lv.renderDom();
+      const gridItems = document.querySelectorAll(".music-grid-item");
+      expect(gridItems[0].querySelector(".preview")).to.be.ok;
+      expect(gridItems[1].querySelector(".preview")).to.be.ok;
+      expect(lv.generatePreview).to.be.calledWith("tId1", "album");
+      expect(lv.generatePreview).to.be.calledWith("tId2", "album");
     });
 
     it("should call postMessage for each .music-grid-item[data-tralbumid]", () => {
@@ -386,34 +394,34 @@ describe("Label View", () => {
           <li id="rdt1" class="music-grid-item" data-tralbumid="tId1" data-tralbumtype="a"></li>
           <li id="rdt2" class="music-grid-item" data-tralbumid="tId2" data-tralbumtype="a"></li>
         </ul>
-      `)
-      lv.renderDom()
-      expect(mockPort.postMessage).to.be.calledWith({query: 'testId1'});
-      expect(mockPort.postMessage).to.be.calledWith({query: 'testId2'});
+      `);
+      lv.renderDom();
+      expect(mockPort.postMessage).to.be.calledWith({ query: "testId1" });
+      expect(mockPort.postMessage).to.be.calledWith({ query: "testId2" });
     });
 
     describe("when data-blob has an item_id in urlParams", () => {
       it("should call setPreviewed", () => {
-        const querystr = '{"lo_querystr":"?item_id=testId&item_type="}'
+        const querystr = '{"lo_querystr":"?item_id=testId&item_type="}';
         createDomNodes(`
           <div id="pagedata" data-blob='${querystr}'>
           </div>
-        `)
-        sandbox.stub(lv, 'setPreviewed')
-        lv.renderDom()
-        expect(lv.setPreviewed).to.be.calledWith('testId');
+        `);
+        sandbox.stub(lv, "setPreviewed");
+        lv.renderDom();
+        expect(lv.setPreviewed).to.be.calledWith("testId");
       });
     });
 
     describe("when data-blob does not have an item_id in urlParams", () => {
       it("should not call setPreviewed", () => {
-        const querystr = '{"lo_querystr":"?item_id=&item_type="}'
+        const querystr = '{"lo_querystr":"?item_id=&item_type="}';
         createDomNodes(`
           <div id="pagedata" data-blob='${querystr}'>
           </div>
-        `)
-        sandbox.stub(lv, 'setPreviewed')
-        lv.renderDom()
+        `);
+        sandbox.stub(lv, "setPreviewed");
+        lv.renderDom();
         expect(lv.setPreviewed).to.not.be.called;
       });
     });

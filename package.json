@@ -32,7 +32,7 @@
   "scripts": {
     "test": "npx karma start --single-run",
     "test:watch": "npx karma start",
-    "lint": "npx eslint ./src/",
+    "lint": "npx eslint ./src/ ./test/",
     "lint:fix": "npm run lint -- --fix",
     "build": "webpack --config webpack.config.js",
     "build:dev": "npm run build -- --mode=development",

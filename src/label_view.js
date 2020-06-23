@@ -1,4 +1,6 @@
 import $ from "jquery";
+import Logger from "./logger";
+const log = new Logger();
 
 export default class LabelView {
   constructor() {
@@ -23,6 +25,7 @@ export default class LabelView {
     });
 
     $(document).ready(() => {
+      log.info("Rendering DOM...");
       this.renderDom();
     });
   }

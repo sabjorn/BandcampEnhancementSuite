@@ -8,6 +8,8 @@ module.exports = {
         jQuery: "jquery"
     })
   ],
+  node: { fs: 'empty' },
+  mode: 'production',
   entry: {
     content: './src/label_view.js',
     background: './src/background.js',
@@ -21,4 +23,9 @@ module.exports = {
     minimize: false
   },
   devtool: "inline-source-map", //fixes "eval" error in chrome
+
+  // Run with --watch to enable these options
+  watchOptions: {
+    ignored: /node_modules/
+  }
 };

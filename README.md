@@ -34,16 +34,27 @@ Different `npm` commands defined in the `scripts` section of `package.json` can 
 #### build
 run:
 
-```
+```sh
+# Defaults to --mode=production:
 npm run build
 ```
 this will generate js files in `./dist`.
 
+Continuous rebuild when files update:
+
+```sh
+# Defaults to --mode=development:
+npm run build:watch
+```
+
 #### linter
 
-run:
-```
+```sh
+# Show ESLint issues:
 npm run lint
+
+# Auto-fix ESLint issues, if possible:
+npm run lint:fix
 ```
 
 #### test
@@ -65,3 +76,13 @@ Testing documentation:
 - [Sinon-Chrome: Mock Chrome extension methods](https://github.com/acvetkov/sinon-chrome)
 - [Sinon: mocks, spies, assertions](https://sinonjs.org/releases/v9.0.2/assertions/)
 - [Karma test runner](https://karma-runner.github.io/)
+
+#### distribution
+
+run:
+
+```sh
+npm run package
+```
+
+This sets `NODE_ENV=production` which silences debug-level logging, and outputs a `.zip` file for distribution.

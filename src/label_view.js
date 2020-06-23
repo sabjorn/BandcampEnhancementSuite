@@ -1,9 +1,9 @@
 import $ from "jquery";
 import Logger from "./logger";
-const log = new Logger();
 
 export default class LabelView {
   constructor() {
+    this.log = new Logger();
     this.previewId; // globally stores which 'preview' button was last clicked
     this.previewOpen = false; // globally stores if preveiw window is open
 
@@ -25,7 +25,7 @@ export default class LabelView {
     });
 
     $(document).ready(() => {
-      log.info("Rendering DOM...");
+      this.log.info("Rendering DOM...");
       this.renderDom();
     });
   }

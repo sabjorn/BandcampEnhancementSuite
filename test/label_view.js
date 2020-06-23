@@ -1,11 +1,16 @@
 import chai from 'chai';
 import sinon from 'sinon';
-//import chrome from 'sinon-chrome';
 import sinonChai from 'sinon-chai'
 import { assert, expect } from 'chai';
 chai.use(sinonChai);
 
 import LabelView from '../src/label_view.js';
+
+const mockLogger = {
+  info: () => {},
+  debug: () => {},
+  error: () => {},
+}
 
 const mockPort = {
   postMessage: sinon.spy(),
@@ -16,7 +21,7 @@ const mockPort = {
 
 const mockChrome = {
   runtime: {
-    connect: () => mockPort
+    connect: (extensionId, connectInfo) => mockPort
   }
 }
 
@@ -57,7 +62,8 @@ describe("Label View", () => {
     // Reset state before each test run
     sandbox = sinon.createSandbox();
     global.chrome = mockChrome;
-    lv = new LabelView()
+    lv = new LabelView();
+    lv.log = mockLogger;
   });
 
   afterEach(() => {

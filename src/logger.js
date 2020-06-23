@@ -1,5 +1,5 @@
 // Custom browser logger.
-// Only prints when NODE_ENV is not 'production'.
+// Only prints errors when NODE_ENV is 'production'.
 // Inspiration: https://github.com/winstonjs/winston/issues/287#issuecomment-647196496
 //
 // Usage: https://github.com/winstonjs/winston#using-logging-levels

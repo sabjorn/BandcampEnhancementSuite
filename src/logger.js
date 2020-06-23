@@ -15,7 +15,7 @@ import { TransformableInfo } from "logform";
 import * as Transport from "winston-transport";
 
 // Customizing the Winston console transporter
-class Console extends Transport {
+class CustomConsole extends Transport {
   constructor(options = {}) {
     super(options);
 
@@ -51,14 +51,14 @@ class Console extends Transport {
 }
 
 export default class Logger extends winston.createLogger {
-  constructor() {
+  constructor(level) {
     // When in production, only show errors.
     const transportLevel =
-      process.env.NODE_ENV == "production" ? "error" : "debug";
+      level || process.env.NODE_ENV == "production" ? "error" : "debug";
 
     // Provide `winston.createLogger()` args as usual...
     super({
-      transports: [new Console({ level: transportLevel })]
+      transports: [new CustomConsole({ level: transportLevel })]
     });
   }
 }

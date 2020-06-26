@@ -3,10 +3,6 @@ const webpack = require('webpack');
 
 module.exports = {
   plugins: [
-    new webpack.ProvidePlugin({
-        $: "jquery",
-        jQuery: "jquery"
-    })
   ],
 
   // Since this is a browser app, explicitly disable NodeJS's `fs` methods.

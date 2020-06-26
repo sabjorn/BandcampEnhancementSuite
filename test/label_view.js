@@ -6,12 +6,6 @@ chai.use(sinonChai);
 
 import LabelView from "../src/label_view.js";
 
-const mockLogger = {
-  info: () => {},
-  debug: () => {},
-  error: () => {}
-};
-
 const mockPort = {
   postMessage: sinon.spy(),
   onMessage: {
@@ -23,6 +17,22 @@ const mockChrome = {
   runtime: {
     connect: (extensionId, connectInfo) => mockPort
   }
+};
+
+/**
+ * Pagedata creation helper
+ * Used in specific tests, but needed for most since renderDom()
+ * is called in the constructor.
+ */
+
+const createPagedata = () => {
+  const pagedata = document.createElement("div");
+  pagedata.setAttribute("id", "pagedata");
+  pagedata.setAttribute(
+    "data-blob",
+    '{"lo_querystr":"?item_id=testId&item_type="}'
+  );
+  document.body.appendChild(pagedata);
 };
 
 /**
@@ -57,13 +67,16 @@ const cleanupTestNodes = () => {
 describe("Label View", () => {
   let lv;
   let sandbox;
+  createPagedata();
 
   beforeEach(() => {
     // Reset state before each test run
     sandbox = sinon.createSandbox();
     global.chrome = mockChrome;
     lv = new LabelView();
-    lv.log = mockLogger;
+
+    // Prevent Logger output during tests
+    sandbox.stub(lv, "log");
   });
 
   afterEach(() => {
@@ -82,12 +95,8 @@ describe("Label View", () => {
         `);
         lv.setHistory("testId", true);
         const hbox = document.querySelector("#testId .historybox");
-        const hClass = hbox.getAttribute("class").split(" ");
-        expect(hClass).to.include.all.members([
-          "follow-unfollow",
-          "historybox",
-          "following"
-        ]);
+        expect(hbox.getAttribute("class")).to.include("following");
+        expect(hbox.getAttribute("class")).to.include("follow-unfollow");
       });
     });
 
@@ -102,7 +111,6 @@ describe("Label View", () => {
         const hbox = document.querySelector("#testId .historybox");
         expect(hbox.getAttribute("class")).to.not.include("following");
         expect(hbox.getAttribute("class")).to.include("follow-unfollow");
-        expect(hbox.getAttribute("class")).to.include("historybox");
       });
     });
   });
@@ -304,26 +312,20 @@ describe("Label View", () => {
 
   describe("generatePreview()", () => {
     it("should return a parent with properties", () => {
-      // Todo: when jQuery is removed, change this to `const elem`
-      const $elem = lv.generatePreview("testId", "testIdType");
-      const elem = $elem.get(0);
+      const elem = lv.generatePreview("testId", "testIdType");
       expect(elem.getAttribute("class")).to.equal("preview");
       expect(elem.getAttribute("id")).to.equal("testId");
     });
 
     it("should add a preview elem with properties", () => {
-      // Todo: when jQuery is removed, change this to `const elem`
-      const $elem = lv.generatePreview("testId", "testIdType");
-      const elem = $elem.get(0);
+      const elem = lv.generatePreview("testId", "testIdType");
       const preview = elem.querySelector(".preview-frame");
       expect(preview).to.be.ok;
       expect(preview.getAttribute("id")).to.equal("testIdType-testId");
     });
 
     it("should add a button elem with properties", () => {
-      // Todo: when jQuery is removed, change this to `const elem`
-      const $elem = lv.generatePreview("testId", "testIdType");
-      const elem = $elem.get(0);
+      const elem = lv.generatePreview("testId", "testIdType");
       const btn = elem.querySelector(".open-iframe");
       expect(btn).to.be.ok;
       expect(btn.getAttribute("title")).to.equal("load preview player");
@@ -332,9 +334,7 @@ describe("Label View", () => {
     });
 
     it("should add a checkbox elem with properties", () => {
-      // Todo: when jQuery is removed, change this to `const elem`
-      const $elem = lv.generatePreview("testId", "testIdType");
-      const elem = $elem.get(0);
+      const elem = lv.generatePreview("testId", "testIdType");
       const btn = elem.querySelector(".historybox");
       expect(btn).to.be.ok;
       expect(btn.getAttribute("title")).to.contain("preview history");
@@ -402,11 +402,6 @@ describe("Label View", () => {
 
     describe("when data-blob has an item_id in urlParams", () => {
       it("should call setPreviewed", () => {
-        const querystr = '{"lo_querystr":"?item_id=testId&item_type="}';
-        createDomNodes(`
-          <div id="pagedata" data-blob='${querystr}'>
-          </div>
-        `);
         sandbox.stub(lv, "setPreviewed");
         lv.renderDom();
         expect(lv.setPreviewed).to.be.calledWith("testId");
@@ -416,10 +411,9 @@ describe("Label View", () => {
     describe("when data-blob does not have an item_id in urlParams", () => {
       it("should not call setPreviewed", () => {
         const querystr = '{"lo_querystr":"?item_id=&item_type="}';
-        createDomNodes(`
-          <div id="pagedata" data-blob='${querystr}'>
-          </div>
-        `);
+        const pagedata = document.querySelector("#pagedata");
+        pagedata.setAttribute("data-blob", querystr);
+
         sandbox.stub(lv, "setPreviewed");
         lv.renderDom();
         expect(lv.setPreviewed).to.not.be.called;

@@ -1,4 +1,3 @@
-import $ from "jquery";
 import Logger from "./logger";
 
 export default class LabelView {

@@ -4,7 +4,8 @@
   "description": "Chrome extension adding extra features to the Bandcamp experience.",
   "dependencies": {
     "idb": "^5.0.3",
-    "jquery": "^3.5.0"
+    "jquery": "^3.5.0",
+    "winston": "^3.3.2"
   },
   "devDependencies": {
     "chai": "^4.2.0",
@@ -31,8 +32,11 @@
   "scripts": {
     "test": "npx karma start --single-run",
     "test:watch": "npx karma start",
-    "lint": "npx eslint ./src/",
+    "lint": "npx eslint ./src/ ./test/",
+    "lint:fix": "npm run lint -- --fix",
     "build": "webpack --config webpack.config.js",
+    "build:dev": "npm run build -- --mode=development",
+    "build:watch": "npm run build:dev -- --watch --progress",
     "clean": "rm -fr ./node_modules ./dist",
     "package": "npm run build && zip BandcampLabelView.zip LICENSE _locales/**/* icons/* dist/* manifest.json html/browser_action.html"
   },

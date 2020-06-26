@@ -26,7 +26,7 @@ module.exports = function(config) {
      * For slower machines you may need to have a longer browser
      * wait time . Uncomment the line below if required.
      */
-    // browserNoActivityTimeout: 30000
+    browserNoActivityTimeout: 300000,
 
     // 'karma-*' is default and loads all available plugins. Kept here
     // for visibility and to prevent accidental override.

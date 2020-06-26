@@ -1,18 +1,29 @@
 import $ from "jquery";
+import Logger from "./logger";
 
 export default class LabelView {
   constructor() {
+    this.log = new Logger();
     this.previewId; // globally stores which 'preview' button was last clicked
     this.previewOpen = false; // globally stores if preveiw window is open
 
-    // connect to background
-    this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
+    try {
+      // connect to background
+      this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
 
-    // kickstart
-    this.port.onMessage.addListener(msg => {
-      if (msg.id) this.setHistory(msg.id.key, msg.id.value);
-    });
-
+      // kickstart
+      this.port.onMessage.addListener(msg => {
+        if (msg.id) this.setHistory(msg.id.key, msg.id.value);
+      });
+    } catch (e) {
+      if (e.message.includes("Error in invocation of runtime.connect")) {
+        // This only occurs in testing, ignoring for now
+        this.log.error(e);
+      } else {
+        // Ensure other errors are escalated
+        throw e;
+      }
+    }
     // migrates old local storage, will be deleted in future versions
     var pluginState = window.localStorage;
 
@@ -23,6 +34,7 @@ export default class LabelView {
     });
 
     $(document).ready(() => {
+      this.log.info("Rendering DOM...");
       this.renderDom();
     });
   }

@@ -253,9 +253,7 @@ describe("Download Helper", () => {
 
       let nodes = document.querySelectorAll(".download-title .item-button");
       nodes.forEach(function(element, index) {
-        expect(
-          dh.observer.observe.calledWith(element, configExpectation)
-        ).to.be.true;
+          expect(dh.observer.observe).to.have.been.calledWith(element, configExpectation);
       });
     });
   });

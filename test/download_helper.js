@@ -135,10 +135,10 @@ describe("Download Helper", () => {
 
       dh.button.click();
 
-      expect(DownloadHelper.dateString.calledOnce).to.be.true;
-      expect(DownloadHelper.generateDownloadList.calledOnce).to.be.true;
+      expect(DownloadHelper.dateString).to.have.been.called;
+      expect(DownloadHelper.generateDownloadList).to.have.been.called;
 
-      expect(DownloadHelper.download.calledOnce).to.be.true;
+      expect(DownloadHelper.download).to.have.been.called;
       expect(DownloadHelper.download.getCall(0).args[0]).to.equal(
         "bandcamp_dateString.txt"
       );
@@ -164,7 +164,7 @@ describe("Download Helper", () => {
 
       dh.disableButton();
 
-      expect(dh.button.removeEventListener.calledOnce).to.be.true;
+      expect(dh.button.removeEventListener).to.have.been.called;
     });
     it("button should have specific properties", async () => {
       dh.button = document.createElement("button");
@@ -196,7 +196,7 @@ describe("Download Helper", () => {
       });
 
       dh.mutationCallback();
-      expect(dh.enableButton.calledOnce).to.be.true;
+      expect(dh.enableButton).to.have.been.called;
     });
 
     it('disables button when all style.display ""', async () => {
@@ -218,7 +218,7 @@ describe("Download Helper", () => {
       });
 
       dh.mutationCallback();
-      expect(dh.disableButton.calledOnce).to.be.true;
+      expect(dh.disableButton).to.have.been.called;
     });
   });
 
@@ -228,7 +228,7 @@ describe("Download Helper", () => {
 
       dh.init();
 
-      expect(dh.createButton.called).to.be.true;
+      expect(dh.createButton).to.have.been.called;
     });
 
     it("calls mutationCallback", async () => {
@@ -236,7 +236,7 @@ describe("Download Helper", () => {
 
       dh.init();
 
-      expect(dh.mutationCallback.called).to.be.true;
+      expect(dh.mutationCallback).to.have.been.called;
     });
 
     it("adds observers to nodes", async () => {

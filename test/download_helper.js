@@ -2,7 +2,6 @@ import chai from 'chai';
 import sinon from 'sinon';
 import sinonChai from 'sinon-chai'
 import { expect, assert } from 'chai';
-import chrome from 'sinon-chrome';
 chai.use(sinonChai);
 
 import {DownloadHelper, preamble} from '../src/download_helper.js';

@@ -179,9 +179,9 @@ describe("Download Helper", () => {
   describe("callback()", () => {
     it("enables button when all style.display blank", async () => {
       createDomNodes(`
-        <div id="testId" class="download-title"><div class="item-button" style="display: none"></div></div>
-        <div id="testId" class="download-title"><div class="item-button" style="display: none"></div></div>
-        <div id="testId" class="download-title"><div class="item-button" style="display: none"></div></div>
+        <div id="testId1" class="download-title"><div class="item-button" style="display: none"></div></div>
+        <div id="testId2" class="download-title"><div class="item-button" style="display: none"></div></div>
+        <div id="testId3" class="download-title"><div class="item-button" style="display: none"></div></div>
       `);
 
       dh.enableButton = sinon.spy();
@@ -201,9 +201,9 @@ describe("Download Helper", () => {
 
     it('disables button when all style.display ""', async () => {
       createDomNodes(`
-        <div id="testId" class="download-title"><div class="item-button" style="display:"></div></div>
-        <div id="testId" class="download-title"><div class="item-button" style="display:"></div></div>
-        <div id="testId" class="download-title"><div class="item-button" style="display:"></div></div>
+        <div id="testId1" class="download-title"><div class="item-button" style="display:"></div></div>
+        <div id="testId2" class="download-title"><div class="item-button" style="display:"></div></div>
+        <div id="testId3" class="download-title"><div class="item-button" style="display:"></div></div>
       `);
 
       dh.disableButton = sinon.spy();
@@ -241,9 +241,9 @@ describe("Download Helper", () => {
 
     it("adds observers to nodes", async () => {
       createDomNodes(`
-        <div id="testId" class="download-title"><div class="item-button"></div></div>
-        <div id="testId" class="download-title"><div class="item-button"></div></div>
-        <div id="testId" class="download-title"><div class="item-button"></div></div>
+        <div id="testId1" class="download-title"><div class="item-button"></div></div>
+        <div id="testId2" class="download-title"><div class="item-button"></div></div>
+        <div id="testId3" class="download-title"><div class="item-button"></div></div>
       `);
       dh.observer.observe = sinon.spy();
 

@@ -186,9 +186,3 @@ export default class LabelView {
       });
   }
 }
-
-window.onload = () => {
-  const lv = new LabelView();
-
-  lv.init();
-};

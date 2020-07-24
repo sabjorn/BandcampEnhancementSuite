@@ -5,7 +5,7 @@ import sinonChai from "sinon-chai";
 import { expect, assert } from "chai";
 chai.use(sinonChai);
 
-import { DownloadHelper, preamble } from "../src/download_helper.js";
+import DownloadHelper from "../src/download_helper.js";
 
 describe("Download Helper", () => {
   let dh;
@@ -32,9 +32,11 @@ describe("Download Helper", () => {
         <span id="testId" class="download-title">
           <a class="item-button" href="url1"></button>
           <a class="item-button" href="url2"></button>
+          <a class="item-button" href="url3"></button>
         </span>
       `);
-      const curlCommand = "curl -OJ url1 \\ &\ncurl -OJ url2";
+      const curlCommand =
+        "curl -OJ url1 && \\\ncurl -OJ url2 && \\\ncurl -OJ url3";
       const downloadList = DownloadHelper.generateDownloadList();
       expect(downloadList).to.equal(curlCommand);
     });
@@ -99,6 +101,7 @@ describe("Download Helper", () => {
     it("button should call functions on click", async () => {
       DownloadHelper.dateString = sinon.fake.returns("dateString");
       DownloadHelper.generateDownloadList = sinon.fake.returns("downloadList");
+      DownloadHelper.getDownloadPreamble = sinon.fake.returns("preamble");
       DownloadHelper.download = sinon.spy();
 
       dh.button = document.createElement("button");
@@ -109,13 +112,14 @@ describe("Download Helper", () => {
 
       expect(DownloadHelper.dateString).to.have.been.called;
       expect(DownloadHelper.generateDownloadList).to.have.been.called;
+      expect(DownloadHelper.getDownloadPreamble).to.have.been.called;
 
       expect(DownloadHelper.download).to.have.been.called;
       expect(DownloadHelper.download.getCall(0).args[0]).to.equal(
         "bandcamp_dateString.txt"
       );
       expect(DownloadHelper.download.getCall(0).args[1]).to.equal(
-        preamble + "downloadList"
+        "preamble" + "downloadList"
       );
     });
 

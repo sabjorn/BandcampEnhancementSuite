@@ -18,9 +18,7 @@ module.exports = {
   mode: 'production',
 
   entry: {
-    content: './src/label_view.js',
-    download: './src/download_helper.js',
-    background: './src/background.js',
+    main: './src/main.js'
   },
   output: {
     filename: '[name].js',

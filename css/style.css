@@ -1,0 +1,30 @@
+/* player.js Volume Slider */
+input[type="range" i].volume
+{
+     position:absolute;
+     width: 20% !important;
+     height: 8px;
+     left: 94%;
+     top: 35%;
+     cursor: pointer;
+     -webkit-appearance: none;
+     -webkit-transform: rotate(270deg);
+     overflow: hidden; /* needed for boxshadow hack */
+}
+
+input[type="range"].volume:focus
+{
+     border: 0 !imporant;
+     outline: none !important;
+}
+
+input[type="range"].volume::-webkit-slider-thumb
+{
+     -webkit-appearance: none;
+     overflow: visible;
+     width: 20px;
+     height: 12px;
+     background-color: #fff;
+     border: 1px solid #bebebe;
+     box-shadow: -100px 0 0 100px #f6f6f6;
+}

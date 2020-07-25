@@ -5,8 +5,10 @@ const stepSize = 10;
 export default class Player {
   constructor() {
     this.log = new Logger();
+
     this.boundKeydown = Player.keydownCallback.bind(this);
     this.boundMousedown = Player.mousedownCallback.bind(this);
+    this.boundVolume = Player.volumeSliderCallback.bind(this);
   }
 
   init() {
@@ -17,6 +19,26 @@ export default class Player {
     let progressBar = document.querySelector(".progbar");
     progressBar.style.cursor = "pointer";
     progressBar.addEventListener("click", this.boundMousedown);
+
+    this.addVolumeSlider();
+  }
+
+  addVolumeSlider() {
+    let input = document.createElement("input");
+    input.type = "range";
+    input.classList = "volume thumb progbar_empty";
+    input.min = 0.0;
+    input.max = 1.0;
+    input.step = 0.01;
+    input.title = "volume control";
+
+    let audio = document.querySelector("audio");
+    input.value = audio.volume;
+
+    input.addEventListener("input", this.boundVolume);
+
+    let inlineplayer = document.querySelector("div.inline_player");
+    if (!inlineplayer.classList.contains("hidden")) inlineplayer.append(input);
   }
 
   static keydownCallback(e) {
@@ -58,5 +80,13 @@ export default class Player {
     let audio = document.querySelector("audio");
     let audioDuration = audio.duration;
     audio.currentTime = scaleDurration * audioDuration;
+  }
+
+  static volumeSliderCallback(e) {
+    let volume = e.target.value;
+    let audio = document.querySelector("audio");
+    audio.volume = volume;
+
+    this.log.info("volume:", volume);
   }
 }

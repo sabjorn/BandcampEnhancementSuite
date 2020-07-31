@@ -1,3 +1,5 @@
+import WaveformBackend from "./background/waveform_backend.js";
+
 import { openDB } from "idb";
 import Logger from "./logger";
 const log = new Logger();
@@ -89,4 +91,9 @@ export const init = () => {
   });
 };
 
-window.onload = init;
+window.onload = () => {
+  init;
+
+  const wb = new WaveformBackend();
+  wb.init();
+};

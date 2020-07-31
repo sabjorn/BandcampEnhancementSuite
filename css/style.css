@@ -28,3 +28,9 @@ input[type="range"].volume::-webkit-slider-thumb
      border: 1px solid #bebebe;
      box-shadow: -100px 0 0 100px #f6f6f6;
 }
+
+/* waveform.js elements */
+input[type="checkbox"]
+{
+     width: 50px;
+}

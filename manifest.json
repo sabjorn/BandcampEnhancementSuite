@@ -35,7 +35,8 @@
       ],
       "js": [
         "dist/main.js"
-      ]
+      ],
+      "css": ["css/style.css"]
     }
   ]
 }

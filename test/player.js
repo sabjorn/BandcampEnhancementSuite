@@ -31,6 +31,8 @@ describe("Player", () => {
       createDomNodes(`
         <div id="testId" class="progbar"></div>
       `);
+
+      player.addVolumeSlider = sinon.spy();
     });
 
     it("binds global keydown method", () => {
@@ -63,6 +65,78 @@ describe("Player", () => {
       );
 
       document.querySelector.restore();
+    });
+
+    it("runs addVolumeSlider()", () => {
+      player.init();
+
+      expect(player.addVolumeSlider).to.have.been.called;
+    });
+  });
+
+  describe("addVolumeSlider", () => {
+    let input;
+    let audio;
+    let inlineplayer;
+
+    beforeEach(() => {
+      input = { addEventListener: sinon.spy() };
+
+      audio = {};
+
+      inlineplayer = {
+        classList: { contains: sinon.stub() },
+        append: sinon.spy()
+      };
+
+      sinon.stub(document, "querySelector");
+      document.querySelector.withArgs("audio").returns(audio);
+      document.querySelector
+        .withArgs("div.inline_player")
+        .returns(inlineplayer);
+
+      sinon.stub(document, "createElement").returns(input);
+    });
+    afterEach(() => {
+      document.querySelector.restore();
+      document.createElement.restore();
+    });
+
+    it("creates an input element with specific attributes", () => {
+      audio.volume = 123.45;
+
+      player.addVolumeSlider();
+
+      expect(input.type).is.equal("range");
+      expect(input.min).is.equal(0.0);
+      expect(input.max).is.equal(1.0);
+      expect(input.step).is.equal(0.01);
+      expect(input.value).is.equal(123.45);
+    });
+
+    it("binds boundVolume callback to input element", () => {
+      player.addVolumeSlider();
+
+      expect(input.addEventListener).to.have.been.calledWith(
+        "input",
+        player.boundVolume
+      );
+    });
+
+    it("appends input to document element if that element is not hidden", () => {
+      inlineplayer.classList.contains = sinon.stub().returns(false);
+
+      player.addVolumeSlider();
+
+      expect(inlineplayer.append).to.have.been.calledWith(input);
+    });
+
+    it("does not append input to document element if that element is hidden", () => {
+      inlineplayer.classList.contains = sinon.stub().returns(true);
+
+      player.addVolumeSlider();
+
+      expect(inlineplayer.append).to.not.have.been.called;
     });
   });
 

@@ -20,7 +20,7 @@ export default class Player {
   }
 
   static keydownCallback(e) {
-    this.log.info("Keydown");
+    this.log.info("Keydown: " + e.key);
     if (e.key == " " || e.key == "p")
     {
       e.preventDefault();

@@ -21,18 +21,17 @@ export default class Player {
 
   static keydownCallback(e) {
     this.log.info("Keydown: " + e.key);
-    if (e.key == " " || e.key == "p")
-    {
+    if (e.key == " " || e.key == "p") {
       e.preventDefault();
       document.querySelector("div.playbutton").click();
     }
 
-    if (e.key == "ArrowUp"){
+    if (e.key == "ArrowUp") {
       e.preventDefault();
       document.querySelector("div.prevbutton").click();
     }
 
-    if (e.key == "ArrowDown"){
+    if (e.key == "ArrowDown") {
       e.preventDefault();
       document.querySelector("div.nextbutton").click();
     }

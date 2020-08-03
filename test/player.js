@@ -67,10 +67,13 @@ describe("Player", () => {
   });
 
   describe("boundKeydown", () => {
-    const spyElement = { click: sinon.spy() };
-    let event = { key: "" };
+    let spyElement;
+    let event;
 
     beforeEach(() => {
+      event = { key: "", preventDefault: sinon.spy() };
+      spyElement = { click: sinon.spy() };
+
       sinon.stub(document, "querySelector").returns(spyElement);
     });
 
@@ -90,6 +93,7 @@ describe("Player", () => {
 
       expect(document.querySelector).to.be.calledWith("div.playbutton");
       expect(spyElement.click).to.have.been.called;
+      expect(event.preventDefault).to.have.been.called;
     });
 
     it("click prevbutton if 'ArrowUp'", () => {
@@ -98,6 +102,7 @@ describe("Player", () => {
 
       expect(document.querySelector).to.be.calledWith("div.prevbutton");
       expect(spyElement.click).to.have.been.called;
+      expect(event.preventDefault).to.have.been.called;
     });
 
     it("click nextbutton if 'ArrowDown'", () => {
@@ -106,6 +111,7 @@ describe("Player", () => {
 
       expect(document.querySelector).to.be.calledWith("div.nextbutton");
       expect(spyElement.click).to.have.been.called;
+      expect(event.preventDefault).to.have.been.called;
     });
 
     it("jump audio ahead 10s if 'ArrowRight'", () => {
@@ -116,6 +122,7 @@ describe("Player", () => {
 
       expect(document.querySelector).to.be.calledWith("audio");
       expect(spyElement.currentTime).to.be.equal(110);
+      expect(event.preventDefault).to.have.been.called;
     });
 
     it("jump audio back 10s if 'ArrowLeft'", () => {
@@ -126,16 +133,14 @@ describe("Player", () => {
 
       expect(document.querySelector).to.be.calledWith("audio");
       expect(spyElement.currentTime).to.be.equal(90);
+      expect(event.preventDefault).to.have.been.called;
     });
 
-    it("prevent all onpage buttons from being called", () => {
-      let event = {
-        target: document.body,
-        preventDefault: sinon.spy()
-      };
+    it("does not prevent other keys from being called", () => {
+      event.key = "null";
       player.boundKeydown(event);
 
-      expect(event.preventDefault).to.be.called;
+      expect(event.preventDefault).to.have.not.been.called;
     });
   });
 

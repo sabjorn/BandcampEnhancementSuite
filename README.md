@@ -11,6 +11,26 @@ Provides a "Preview" button on pages with multiple albums. This button will open
 ### History Tracking
 Adds a history display element next to album. This element is a clickable toggle which persists between page loads thus providing a history. This toggle is automatically set when `preview` button is used and can be manually clicked.  
 
+### Keyboard Bindings
+On album and track pages the following keyboard controls are supported:
+
+| Key Binding       | Action                    |
+|-------------------|---------------------------|
+| Space Bar and "p" | Play/Pause                |
+| Right Arrow       | Move Playhead Forward 10s |
+| Left Arrow        | Move Playhead Back 10s    |
+| Down Arrow        | Play Next Track           |
+| Up Arrow          | Play Previous Track       |
+
+### Advanced Mouse Playbar
+Click anywhere on the playbar to set the "playhead" of the player.
+
+### Volume Control
+Adds a slider on the right side of the player controls volume.
+
+### Bundle Purchase Download Button
+Adds a button to help automate the process of download a cart after purchase. Once all music download links are ready this button, when clicked, generate a `.txt` file which can be **pasted** into [terminal](https://en.wikipedia.org/wiki/List_of_terminal_emulators) to automate the downloading process. This `.txt` file uses [cURL](https://en.wikipedia.org/wiki/CURL).
+
 ## Installation
 Available from the [Chrome webstore](https://chrome.google.com/webstore/detail/bandcamp-label-view/padcfdpdlnpdojcihidkgjnmleeingep)
 

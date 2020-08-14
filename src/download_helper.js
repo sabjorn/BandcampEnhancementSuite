@@ -86,6 +86,7 @@ export default class DownloadHelper {
       }
     });
     filelist = filelist.substring(0, filelist.length - 6);
+    filelist += "\n";
     return filelist;
   }
 

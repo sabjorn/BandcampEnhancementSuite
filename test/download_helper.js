@@ -36,7 +36,7 @@ describe("Download Helper", () => {
         </span>
       `);
       const curlCommand =
-        "curl -OJ url1 && \\\ncurl -OJ url2 && \\\ncurl -OJ url3";
+        "curl -OJ url1 && \\\ncurl -OJ url2 && \\\ncurl -OJ url3\n";
       const downloadList = DownloadHelper.generateDownloadList();
       expect(downloadList).to.equal(curlCommand);
     });

@@ -88,7 +88,7 @@ describe("Download Helper", () => {
       expect(dh.button.className).to.equal(buttonClassName);
 
       const buttonTitleExpected =
-        "Generates a file for automating downloads using 'curl'";
+        "Generates a file for automating downloads using 'cURL'";
       expect(dh.button.title).to.equal(buttonTitleExpected);
 
       expect(dh.button.disabled).to.be.true;
@@ -129,7 +129,7 @@ describe("Download Helper", () => {
       dh.enableButton();
 
       expect(dh.button.disabled).to.be.false;
-      expect(dh.button.textContent).to.equal("Download curl File");
+      expect(dh.button.textContent).to.equal("Download cURL File");
     });
   });
 

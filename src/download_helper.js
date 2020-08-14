@@ -44,7 +44,7 @@ export default class DownloadHelper {
 
     this.button = document.createElement("button");
     this.button.title =
-      "Generates a file for automating downloads using 'curl'";
+      "Generates a file for automating downloads using 'cURL'";
     this.button.className = "downloadall";
     this.button.disabled = true;
     this.button.textContent = "preparing download";
@@ -56,7 +56,7 @@ export default class DownloadHelper {
     this.log.info("enableButton()");
 
     this.button.disabled = false;
-    this.button.textContent = "Download curl File";
+    this.button.textContent = "Download cURL File";
 
     this.button.addEventListener("click", function() {
       const date = DownloadHelper.dateString();

@@ -41,12 +41,14 @@ export default class LabelView {
   setHistory(id, state) {
     // CSS.escape() is required for integer-only CSS IDs
     const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
-    historybox.classList.add("follow-unfollow");
+    if (historybox) {
+      historybox.classList.add("follow-unfollow");
 
-    if (state) {
-      historybox.classList.add("following");
-    } else {
-      historybox.classList.remove("following");
+      if (state) {
+        historybox.classList.add("following");
+      } else {
+        historybox.classList.remove("following");
+      }
     }
   }
 

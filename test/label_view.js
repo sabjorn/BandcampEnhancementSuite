@@ -42,31 +42,45 @@ describe("Label View", () => {
   });
 
   describe("setHistory()", () => {
-    describe("when state is true", () => {
-      it("should add a class to historybox", () => {
+    describe("when historybox element does not exist", () => {
+      beforeEach(() => {
         createDomNodes(`
-          <div id="testId" class="preview">
-            <button class="historybox"></button>
-          </div>
-        `);
+            <div id="testId" class="preview">
+              <button class="NOThistorybox"></button>
+            </div>
+          `);
+      });
+      it("takes no action", () => {
         lv.setHistory("testId", true);
-        const hbox = document.querySelector("#testId .historybox");
-        expect(hbox.getAttribute("class")).to.include("following");
-        expect(hbox.getAttribute("class")).to.include("follow-unfollow");
+        const hbox = document.querySelector("#testId .NOThistorybox");
+        expect(hbox.getAttribute("class")).to.not.include("following");
+        expect(hbox.getAttribute("class")).to.not.include("follow-unfollow");
       });
     });
-
-    describe("when state is false", () => {
-      it("should add a class to historybox", () => {
+    describe("when historybox element exists", () => {
+      beforeEach(() => {
         createDomNodes(`
-          <div id="testId" class="preview">
-            <button class="historybox"></button>
-          </div>
-        `);
-        lv.setHistory("testId", false);
-        const hbox = document.querySelector("#testId .historybox");
-        expect(hbox.getAttribute("class")).to.not.include("following");
-        expect(hbox.getAttribute("class")).to.include("follow-unfollow");
+            <div id="testId" class="preview">
+              <button class="historybox"></button>
+            </div>
+          `);
+      });
+      describe("when state is true", () => {
+        it("should add a class to historybox", () => {
+          lv.setHistory("testId", true);
+          const hbox = document.querySelector("#testId .historybox");
+          expect(hbox.getAttribute("class")).to.include("following");
+          expect(hbox.getAttribute("class")).to.include("follow-unfollow");
+        });
+      });
+
+      describe("when state is false", () => {
+        it("should add a class to historybox", () => {
+          lv.setHistory("testId", false);
+          const hbox = document.querySelector("#testId .historybox");
+          expect(hbox.getAttribute("class")).to.not.include("following");
+          expect(hbox.getAttribute("class")).to.include("follow-unfollow");
+        });
       });
     });
   });

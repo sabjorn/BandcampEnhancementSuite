@@ -12,7 +12,7 @@
   },
   "default_locale": "en",
   "browser_action": {
-    "default_icon": "icons/icon19.png",
+    "default_icon": "icons/icon16.png",
     "default_title": "Bandcamp Enhancement Suite",
     "default_popup": "html/browser_action.html"
   },

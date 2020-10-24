@@ -58,6 +58,7 @@ export async function setTrue(storeName, key, port) {
 }
 
 export const init = () => {
+
   chrome.runtime.onConnect.addListener(function(port) {
     if (port.name !== "bandcamplabelview") {
       log.error(`Unexpected chrome.runtime.onConnect port name: ${port.name}`);
@@ -92,7 +93,7 @@ export const init = () => {
 };
 
 window.onload = () => {
-  init;
+  init();
 
   const wb = new WaveformBackend();
   wb.init();

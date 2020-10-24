@@ -31,6 +31,8 @@ export default class Waveform {
       this.log.info("waveform toggle: " + event.target.checked) 
       this.canvas.style.display = (event.target.checked ? "" : "none");
     });
+    this.canvasDisplayToggle.checked = true;
+    this.canvasDisplayToggle.dispatchEvent(new Event("change")); // defaults on for now
 
     let bg = document.querySelector("h2.trackTitle");
     this.waveformColour = window
@@ -101,15 +103,21 @@ export default class Waveform {
 
   static createCanvas() {
     let canvas = document.createElement("canvas");
-    canvas.style.width = "auto";
-    canvas.style.marginLeft = "10px";
-    canvas.style.marginRight = "10px";
+    canvas.style.width = "100%";
     canvas.height = 30;
     canvas.style.cursor = "pointer";
     canvas.style.display = "none";
+    
+    // configure element to properly hold canvas
+    let progbar = document.querySelector("div.progbar");
+    progbar.classList.remove("progbar");
+    progbar.style.position = "relative";
+    progbar.style.margin = "1px 0.83333333333333em 0";
+    // progbar.style.width = "100%";
 
-    let progbar = document.querySelector("td.progbar_cell");
-    progbar.insertBefore(canvas, progbar.childNodes[0]);
+    let div = document.createElement("div");
+    div.append(canvas)
+    progbar.prepend(div);
     return canvas;
   }
 

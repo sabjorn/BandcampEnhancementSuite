@@ -43,31 +43,33 @@ export default class Player {
 
   static keydownCallback(e) {
     this.log.info("Keydown: " + e.key);
-    if (e.key == " " || e.key == "p") {
-      e.preventDefault();
-      document.querySelector("div.playbutton").click();
-    }
+    if (e.target == document.body) {
+      if (e.key == " " || e.key == "p") {
+        e.preventDefault();
+        document.querySelector("div.playbutton").click();
+      }
 
-    if (e.key == "ArrowUp") {
-      e.preventDefault();
-      document.querySelector("div.prevbutton").click();
-    }
+      if (e.key == "ArrowUp") {
+        e.preventDefault();
+        document.querySelector("div.prevbutton").click();
+      }
 
-    if (e.key == "ArrowDown") {
-      e.preventDefault();
-      document.querySelector("div.nextbutton").click();
-    }
+      if (e.key == "ArrowDown") {
+        e.preventDefault();
+        document.querySelector("div.nextbutton").click();
+      }
 
-    if (e.key == "ArrowRight") {
-      e.preventDefault();
-      let audio = document.querySelector("audio");
-      audio.currentTime = audio.currentTime + stepSize;
-    }
+      if (e.key == "ArrowRight") {
+        e.preventDefault();
+        let audio = document.querySelector("audio");
+        audio.currentTime = audio.currentTime + stepSize;
+      }
 
-    if (e.key == "ArrowLeft") {
-      e.preventDefault();
-      let audio = document.querySelector("audio");
-      audio.currentTime = audio.currentTime - stepSize;
+      if (e.key == "ArrowLeft") {
+        e.preventDefault();
+        let audio = document.querySelector("audio");
+        audio.currentTime = audio.currentTime - stepSize;
+      }
     }
   }
 

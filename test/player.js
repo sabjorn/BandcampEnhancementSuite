@@ -145,7 +145,7 @@ describe("Player", () => {
     let event;
 
     beforeEach(() => {
-      event = { key: "", preventDefault: sinon.spy() };
+      event = { key: "", preventDefault: sinon.spy(), target: document.body };
       spyElement = { click: sinon.spy() };
 
       sinon.stub(document, "querySelector").returns(spyElement);

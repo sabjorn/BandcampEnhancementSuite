@@ -21,6 +21,7 @@ export default class Player {
     progressBar.addEventListener("click", this.boundMousedown);
 
     this.addVolumeSlider();
+    this.movePreviousNextButtons();
   }
 
   addVolumeSlider() {
@@ -39,6 +40,20 @@ export default class Player {
 
     let inlineplayer = document.querySelector("div.inline_player");
     if (!inlineplayer.classList.contains("hidden")) inlineplayer.append(input);
+  }
+
+  movePreviousNextButtons() {
+    let prev_cell = document.querySelector("td.prev_cell")
+    prev_cell.parentNode.removeChild(prev_cell);
+    prev_cell.style.padding = "5px 0px 5px 2px";
+
+    let next_cell = document.querySelector("td.next_cell")
+    next_cell.parentNode.removeChild(next_cell);
+    next_cell.style.padding = "5px 0px 5px 0px";
+
+    let play_cell = document.querySelector("td.play_cell")
+    play_cell.append(prev_cell)
+    play_cell.append(next_cell)
   }
 
   static keydownCallback(e) {

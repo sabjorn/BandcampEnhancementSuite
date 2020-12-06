@@ -123,12 +123,19 @@ export default class Waveform {
 
   static createCanvasDisplayToggle() {
     let toggle = document.createElement("input");
+
     toggle.setAttribute("title", "toggle waveform display");
     toggle.setAttribute("type", "checkbox");
     toggle.setAttribute("class", "waveform");
+    toggle.setAttribute("id",  "switch");
+
+    let label = document.createElement("label");
+    label.htmlFor = "switch";
+    label.innerHTML = "Toggle";
     
     let inlineplayer = document.querySelector("div.inline_player");
     inlineplayer.append(toggle)
+    inlineplayer.append(label);
 
     return toggle
   }

@@ -1,11 +1,11 @@
 /* player.js Volume Slider */
 input[type="range" i].volume
 {
-     position:absolute;
-     width: 20% !important;
+     position: absolute;
+     width: 80px !important;
      height: 8px;
-     left: 94%;
-     top: 35%;
+     left: -55px;
+     top: 40px;
      cursor: pointer;
      -webkit-appearance: none;
      -webkit-transform: rotate(270deg);

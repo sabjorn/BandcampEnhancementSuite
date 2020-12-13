@@ -1,38 +1,39 @@
 import Logger from "./logger";
+import { mousedownCallback } from "./utilities.js";
 
 export default class Waveform {
   constructor() {
     this.log = new Logger();
+
     this.currentTarget;
     this.canvas;
     this.canvasDisplayToggle;
     this.waveformColour;
     this.waveformOverlayColour;
+
+    this.boundToggleWaveformCanvas = Waveform.toggleWaveformCanvasCallback.bind(
+      this
+    );
+    this.boundMonitorAudioCanPlay = Waveform.monitorAudioCanPlayCallback.bind(
+      this
+    );
+    this.boundMonitorAudioTimeupdate = Waveform.monitorAudioTimeupdateCallback.bind(
+      this
+    );
   }
 
   init() {
     this.canvas = Waveform.createCanvas();
-    this.canvas.addEventListener("click", e => {
-      // TODO: duplicate code in player.js, pull out
-      const mousePositionX = e.offsetX;
-      this.log.info("offsetX: " + mousePositionX);
-      const elementWidth = event.target.width;
-      this.log.info("offsetWidth: " + elementWidth);
-      const scaleDurration = mousePositionX / elementWidth;
-      this.log.info("scaleDurration: " + scaleDurration);
+    this.canvas.addEventListener("click", mousedownCallback);
 
-      let audio = document.querySelector("audio");
-      let audioDuration = audio.duration;
-      audio.currentTime = scaleDurration * audioDuration;
-    });
+    this.canvasDisplayToggle = Waveform.createCanvasDisplayToggle();
+    this.canvasDisplayToggle.addEventListener(
+      "change",
+      this.boundToggleWaveformCanvas
+    );
 
-    this.canvasDisplayToggle = Waveform.createCanvasDisplayToggle()
-    this.canvasDisplayToggle.addEventListener("change", event => { 
-      this.log.info("waveform toggle: " + event.target.checked) 
-      this.canvas.style.display = (event.target.checked ? "" : "none");
-    });
-    this.canvasDisplayToggle.checked = true;
-    this.canvasDisplayToggle.dispatchEvent(new Event("change")); // defaults on for now
+    // this.canvasDisplayToggle.checked = true;
+    // this.canvasDisplayToggle.dispatchEvent(new Event("change")); // defaults on for now
 
     let bg = document.querySelector("h2.trackTitle");
     this.waveformColour = window
@@ -40,21 +41,13 @@ export default class Waveform {
       .getPropertyValue("color");
     this.waveformOverlayColour = Waveform.invertColour(this.waveformColour);
 
-    document.querySelector("audio").addEventListener("canplay", () => {
-      let audio = document.querySelector("audio");
-      if (!audio.paused && this.canvasDisplayToggle.checked) this.generateWaveform();
-    });
+    document
+      .querySelector("audio")
+      .addEventListener("canplay", this.boundMonitorAudioCanPlay);
 
-    document.querySelector("audio").addEventListener("timeupdate", event => {
-      let audio = event.target;
-      let progress = audio.currentTime / audio.duration;
-      Waveform.drawOverlay(
-        this.canvas,
-        progress,
-        this.waveformOverlayColour,
-        this.waveformColour
-      );
-    });
+    document
+      .querySelector("audio")
+      .addEventListener("timeupdate", this.boundMonitorAudioTimeupdate);
   }
 
   async generateWaveform() {
@@ -63,7 +56,7 @@ export default class Waveform {
 
     if (this.currentTarget != audio.src) {
       this.currentTarget = audio.src;
-      
+
       this.canvas
         .getContext("2d")
         .clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -71,7 +64,7 @@ export default class Waveform {
       const audioContext = new AudioContext();
       const fs = audioContext.sampleRate;
       const length = audio.duration;
-      const src = audio.src.split("stream/")[1]
+      const src = audio.src.split("stream/")[1];
 
       chrome.runtime.sendMessage(
         {
@@ -101,22 +94,39 @@ export default class Waveform {
     }
   }
 
+  static toggleWaveformCanvasCallback(event) {
+    this.log.info("waveform toggle: " + event.target.checked);
+    this.canvas.style.display = event.target.checked ? "" : "none";
+  }
+
+  static monitorAudioCanPlayCallback() {
+    let audio = document.querySelector("audio");
+    if (!audio.paused && this.canvasDisplayToggle.checked)
+      this.generateWaveform();
+  }
+
+  static monitorAudioTimeupdateCallback(e) {
+    let audio = e.target;
+    let progress = audio.currentTime / audio.duration;
+    Waveform.drawOverlay(
+      this.canvas,
+      progress,
+      this.waveformOverlayColour,
+      this.waveformColour
+    );
+  }
+
   static createCanvas() {
     let canvas = document.createElement("canvas");
-    canvas.style.width = "100%";
-    canvas.height = 30;
-    canvas.style.cursor = "pointer";
     canvas.style.display = "none";
-    
+    canvas.classList.add("waveform");
+
     // configure element to properly hold canvas
     let progbar = document.querySelector("div.progbar");
-    progbar.classList.remove("progbar");
-    progbar.style.position = "relative";
-    progbar.style.margin = "1px 0.83333333333333em 0";
-    // progbar.style.width = "100%";
+    progbar.classList.add("waveform");
 
     let div = document.createElement("div");
-    div.append(canvas)
+    div.append(canvas);
     progbar.prepend(div);
     return canvas;
   }
@@ -127,17 +137,17 @@ export default class Waveform {
     toggle.setAttribute("title", "toggle waveform display");
     toggle.setAttribute("type", "checkbox");
     toggle.setAttribute("class", "waveform");
-    toggle.setAttribute("id",  "switch");
+    toggle.setAttribute("id", "switch");
 
     let label = document.createElement("label");
     label.htmlFor = "switch";
     label.innerHTML = "Toggle";
-    
+
     let inlineplayer = document.querySelector("div.inline_player");
-    inlineplayer.append(toggle)
+    inlineplayer.append(toggle);
     inlineplayer.append(label);
 
-    return toggle
+    return toggle;
   }
 
   static fillBar(canvas, amplitude, index, numElements, colour = "white") {

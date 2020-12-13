@@ -75,3 +75,16 @@ input:checked + label:after {
 label:active:after {
      width: 20px;
 }
+
+/* waveform.js style */
+canvas.waveform {
+    width: 100%;
+    height: 30px;
+    cursor: "pointer";
+    display: "none";
+}
+
+div.waveform {
+     position: "relative";
+     margin: "1px 0.83333333333333em 0";
+}

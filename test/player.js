@@ -5,6 +5,7 @@ import sinonChai from "sinon-chai";
 import { assert, expect } from "chai";
 chai.use(sinonChai);
 
+import { mousedownCallback } from "../src/utilities.js";
 import Player from "../src/player.js";
 
 describe("Player", () => {
@@ -33,6 +34,7 @@ describe("Player", () => {
       `);
 
       player.addVolumeSlider = sinon.spy();
+      player.movePreviousNextButtons = sinon.spy();
     });
 
     it("binds global keydown method", () => {
@@ -61,7 +63,7 @@ describe("Player", () => {
       expect(progressbar.style.cursor).to.be.equal("pointer");
       expect(progressbar.addEventListener).to.have.been.calledWith(
         "click",
-        player.boundMousedown
+        mousedownCallback
       );
 
       document.querySelector.restore();
@@ -71,6 +73,12 @@ describe("Player", () => {
       player.init();
 
       expect(player.addVolumeSlider).to.have.been.called;
+    });
+
+    it("runs movePreviousNextButtons()", () => {
+      player.init();
+
+      expect(player.movePreviousNextButtons).to.have.been.called;
     });
   });
 
@@ -215,33 +223,6 @@ describe("Player", () => {
       player.boundKeydown(event);
 
       expect(event.preventDefault).to.have.not.been.called;
-    });
-  });
-
-  describe("boundMousedown", () => {
-    const spyElement = { click: sinon.spy() };
-
-    beforeEach(() => {
-      sinon.stub(document, "querySelector").returns(spyElement);
-    });
-
-    afterEach(() => {
-      document.querySelector.restore();
-    });
-
-    it("positions audio play position based on click", () => {
-      spyElement.duration = 100;
-      spyElement.currentTime = 0;
-
-      let event = {
-        offsetX: 1,
-        path: [{ offsetWidth: 0 }, { offsetWidth: 2 }]
-      };
-
-      player.boundMousedown(event);
-
-      expect(document.querySelector).to.be.calledWith("audio");
-      expect(spyElement.currentTime).to.be.equal(50);
     });
   });
 });

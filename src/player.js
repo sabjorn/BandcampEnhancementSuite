@@ -1,4 +1,5 @@
 import Logger from "./logger";
+import { mousedownCallback } from "./utilities.js";
 
 const stepSize = 10;
 
@@ -7,7 +8,6 @@ export default class Player {
     this.log = new Logger();
 
     this.boundKeydown = Player.keydownCallback.bind(this);
-    this.boundMousedown = Player.mousedownCallback.bind(this);
     this.boundVolume = Player.volumeSliderCallback.bind(this);
   }
 
@@ -18,7 +18,7 @@ export default class Player {
 
     let progressBar = document.querySelector(".progbar");
     progressBar.style.cursor = "pointer";
-    progressBar.addEventListener("click", this.boundMousedown);
+    progressBar.addEventListener("click", mousedownCallback);
 
     this.addVolumeSlider();
     this.movePreviousNextButtons();
@@ -43,17 +43,17 @@ export default class Player {
   }
 
   movePreviousNextButtons() {
-    let prev_cell = document.querySelector("td.prev_cell")
+    let prev_cell = document.querySelector("td.prev_cell");
     prev_cell.parentNode.removeChild(prev_cell);
     prev_cell.style.padding = "5px 0px 5px 2px";
 
-    let next_cell = document.querySelector("td.next_cell")
+    let next_cell = document.querySelector("td.next_cell");
     next_cell.parentNode.removeChild(next_cell);
     next_cell.style.padding = "5px 0px 5px 0px";
 
-    let play_cell = document.querySelector("td.play_cell")
-    play_cell.append(prev_cell)
-    play_cell.append(next_cell)
+    let play_cell = document.querySelector("td.play_cell");
+    play_cell.append(prev_cell);
+    play_cell.append(next_cell);
   }
 
   static keydownCallback(e) {

@@ -1,5 +1,4 @@
 import Logger from "../logger";
-const log = new Logger();
 
 export default class WaveformBackend {
   constructor() {
@@ -61,9 +60,3 @@ export default class WaveformBackend {
     }
   }
 }
-
-window.onload = () => {
-  const wf = new WaveformBackend();
-  wf.init();
-};
-

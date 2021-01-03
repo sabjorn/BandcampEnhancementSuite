@@ -41,8 +41,8 @@ label.waveform {
      cursor: pointer;
      text-indent: -9999px;
      top: -15px;
-     left: 10px;
-     width: 30px;
+     left: 25%;
+     width: 50%;
      height: 15px;
      background: grey;
      display: block;

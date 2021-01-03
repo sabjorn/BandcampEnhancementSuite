@@ -144,9 +144,12 @@ export default class Waveform {
     label.htmlFor = "switch";
     label.innerHTML = "Toggle";
 
-    let inlineplayer = document.querySelector("div.inline_player");
-    inlineplayer.append(toggle);
-    inlineplayer.append(label);
+    let toggle_div = document.createElement("div");
+    toggle_div.append(toggle);
+    toggle_div.append(label);
+
+    let inlineplayer = document.querySelector("div.controls");
+    inlineplayer.append(toggle_div);
 
     return toggle;
   }

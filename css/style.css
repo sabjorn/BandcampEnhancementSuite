@@ -2,9 +2,9 @@
 input[type="range" i].volume
 {
      position: absolute;
-     width: 80px !important;
+     width: 74px !important;
      height: 8px;
-     left: -55px;
+     left: -51px;
      top: 40px;
      cursor: pointer;
      -webkit-appearance: none;
@@ -85,6 +85,24 @@ canvas.waveform {
 }
 
 div.waveform {
-     position: "relative";
-     margin: "1px 0.83333333333333em 0";
+     position: relative;
+     margin: 1px 0.83333333333333em 0;
+}
+
+div.controls {
+     position: relative;
+     float: left;
+}
+
+div.prev {
+     display: inline-block;
+     padding-left: 3px;
+     padding-top: 5px;
+}
+
+div.next {
+     display: inline-block;
+     float: right;
+     padding-right: 5px;
+     padding-top: 5px;  
 }

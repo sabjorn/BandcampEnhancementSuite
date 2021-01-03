@@ -37,7 +37,7 @@ input[type=checkbox]{
 }
 
 /* housing */
-label {
+label.waveform {
      cursor: pointer;
      text-indent: -9999px;
      top: -15px;
@@ -51,7 +51,7 @@ label {
 }
 
 /* ball */
-label:after {
+label.waveform:after {
      content: '';
      position: absolute;
      top: 3px;
@@ -63,16 +63,16 @@ label:after {
      transition: 0.3s;
 }
 
-input:checked + label {
+input:checked + label.waveform {
      background: #619aa9;
 }
 
-input:checked + label:after {
+input:checked + label.waveform:after {
      left: calc(100% - 3px);
      transform: translateX(-100%);
 }
 
-label:active:after {
+label.waveform:active:after {
      width: 20px;
 }
 

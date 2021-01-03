@@ -140,6 +140,7 @@ export default class Waveform {
     toggle.setAttribute("id", "switch");
 
     let label = document.createElement("label");
+    label.setAttribute("class", "waveform");
     label.htmlFor = "switch";
     label.innerHTML = "Toggle";
 

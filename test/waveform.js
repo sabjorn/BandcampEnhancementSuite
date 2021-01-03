@@ -308,6 +308,7 @@ describe("Waveform", () => {
       expect(domToggle.getAttribute("id")).to.be.equal("switch");
 
       let domLabel = inlineplayerNodes.getElementsByTagName("label")[0];
+      expect(domLabel.getAttribute("class")).to.be.equal("waveform");
       expect(domLabel.htmlFor).to.be.equal("switch");
       expect(domLabel.innerHTML).to.be.equal("Toggle");
 

@@ -20,9 +20,6 @@ export default class Player {
     progressBar.style.cursor = "pointer";
     progressBar.addEventListener("click", mousedownCallback);
 
-
-    // this.addVolumeSlider();
-    // this.movePreviousNextButtons();
     this.updatePlayerControlInterface();
   }
 

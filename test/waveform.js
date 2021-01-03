@@ -291,7 +291,7 @@ describe("Waveform", () => {
   describe("createCanvasDisplayToggle()", () => {
     beforeEach(() => {
       createDomNodes(`
-        <div class="inline_player"></div>
+        <div class="controls"></div>
       `);
     });
     afterEach(() => {
@@ -301,7 +301,7 @@ describe("Waveform", () => {
     it("should call create a toggle in the DOM", () => {
       let toggle = Waveform.createCanvasDisplayToggle();
 
-      let inlineplayerNodes = document.querySelector("div.inline_player");
+      let inlineplayerNodes = document.querySelector("div.controls");
 
       let domToggle = inlineplayerNodes.getElementsByTagName("input")[0];
       expect(domToggle.getAttribute("title")).to.be.equal(

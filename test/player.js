@@ -33,8 +33,7 @@ describe("Player", () => {
         <div id="testId" class="progbar"></div>
       `);
 
-      player.addVolumeSlider = sinon.spy();
-      player.movePreviousNextButtons = sinon.spy();
+      player.updatePlayerControlInterface = sinon.spy();
     });
 
     it("binds global keydown method", () => {
@@ -69,82 +68,187 @@ describe("Player", () => {
       document.querySelector.restore();
     });
 
-    it("runs addVolumeSlider()", () => {
+    it("calls updatePlayerControlInterface()", () => {
       player.init();
 
-      expect(player.addVolumeSlider).to.have.been.called;
-    });
+      expect(player.updatePlayerControlInterface).to.have.been.called;
 
-    it("runs movePreviousNextButtons()", () => {
-      player.init();
-
-      expect(player.movePreviousNextButtons).to.have.been.called;
     });
   });
 
-  describe("addVolumeSlider", () => {
-    let input;
-    let audio;
+  describe("updatePlayerControlInterface()", () => {
     let inlineplayer;
+    let input;
 
+    let controls = document.createElement("div");
+    let volumeSlider = document.createElement("input");
+    let playButton = document.createElement("div");
+    let prevNext = document.createElement("div");
+    
     beforeEach(() => {
       input = { addEventListener: sinon.spy() };
-
-      audio = {};
-
       inlineplayer = {
         classList: { contains: sinon.stub() },
-        append: sinon.spy()
+        prepend: sinon.spy()
       };
 
-      sinon.stub(document, "querySelector");
-      document.querySelector.withArgs("audio").returns(audio);
+      volumeSlider.addEventListener = sinon.spy();
+      sandbox.stub(Player, "createVolumeSlider").returns(volumeSlider);
+      sandbox.stub(Player, "transferPlayButton").returns(playButton);      
+      sandbox.stub(Player, "transferPreviousNextButtons").returns(prevNext);
+
+      sandbox.stub(document, "querySelector");
       document.querySelector
         .withArgs("div.inline_player")
         .returns(inlineplayer);
 
-      sinon.stub(document, "createElement").returns(input);
+      sandbox.stub(document, "createElement");
+      document.createElement
+        .withArgs("div")
+        .returns(controls);
+
+      sandbox.spy(controls, "append");
+
     });
     afterEach(() => {
-      document.querySelector.restore();
-      document.createElement.restore();
+      sandbox.restore();
+    });
+    
+    it("runs createVolumeSlider() and adds to eventListener", () => {
+      player.updatePlayerControlInterface();
+
+      expect(Player.createVolumeSlider).to.have.been.called;
+      expect(volumeSlider.addEventListener).to.have.been.calledWith("input", player.boundVolume);
     });
 
-    it("creates an input element with specific attributes", () => {
-      audio.volume = 123.45;
+    it("runs transferPlayButton()", () => {
+      player.updatePlayerControlInterface();
 
-      player.addVolumeSlider();
-
-      expect(input.type).is.equal("range");
-      expect(input.min).is.equal(0.0);
-      expect(input.max).is.equal(1.0);
-      expect(input.step).is.equal(0.01);
-      expect(input.value).is.equal(123.45);
+      expect(Player.transferPlayButton).to.have.been.called;
     });
 
-    it("binds boundVolume callback to input element", () => {
-      player.addVolumeSlider();
+    it("runs transferPreviousNextButtons()", () => {
+      player.updatePlayerControlInterface();
 
-      expect(input.addEventListener).to.have.been.calledWith(
-        "input",
-        player.boundVolume
-      );
+      expect(Player.transferPreviousNextButtons).to.have.been.called;
     });
 
-    it("appends input to document element if that element is not hidden", () => {
-      inlineplayer.classList.contains = sinon.stub().returns(false);
+    it("appends input to document element if that element is not hidden \
+      and the returned item added to the DOM contains the added elements", () => {
+      inlineplayer.classList.contains.returns(false);
 
-      player.addVolumeSlider();
+      player.updatePlayerControlInterface();
 
-      expect(inlineplayer.append).to.have.been.calledWith(input);
+      expect(inlineplayer.prepend).to.have.been.calledWith(controls);
+      expect(controls.append).to.have.been.calledWith(volumeSlider);
+      expect(controls.append).to.have.been.calledWith(playButton);
+      expect(controls.append).to.have.been.calledWith(prevNext);
+
     });
 
     it("does not append input to document element if that element is hidden", () => {
-      inlineplayer.classList.contains = sinon.stub().returns(true);
+      inlineplayer.classList.contains.returns(true);
 
-      player.addVolumeSlider();
+      player.updatePlayerControlInterface();
 
-      expect(inlineplayer.append).to.not.have.been.called;
+      expect(inlineplayer.prepend).to.not.have.been.called;
+    });
+  });
+
+  describe("createVolumeSlider", () => {
+    const audio = {volume: 0.1};
+
+    beforeEach(() => {
+      sandbox.stub(document, "querySelector");
+      document.querySelector.withArgs("audio").returns(audio);
+    });
+    afterEach(() => {
+      sandbox.restore();
+    });
+
+    it("creates an input element with specific attributes", () => {
+      let volumeSlider = Player.createVolumeSlider();
+
+      expect(volumeSlider.type).is.equal("range");
+      expect(volumeSlider.min).is.equal("0");
+      expect(volumeSlider.max).is.equal("1");
+      expect(volumeSlider.step).is.equal("0.01");
+      expect(volumeSlider.title).is.equal("volume control");
+      expect(volumeSlider.value).is.equal("0.1");
+    });
+  });
+
+  describe("transferPlayButton", () => {
+    let expected_a = document.createElement("a"); 
+    let play_cell = 
+    { 
+      parentNode: { removeChild: sinon.spy() },
+      querySelector: sinon.stub().returns(expected_a)
+    };
+
+    beforeEach(() => {
+      sandbox.stub(document, "querySelector");
+      document.querySelector.withArgs("td.play_cell").returns(play_cell);
+    });
+    afterEach(() => {
+      sandbox.restore();
+    });
+
+    it("removes the td.play_cell element from DOM", () => {
+      let playdiv = Player.transferPlayButton();
+
+      expect(play_cell.parentNode.removeChild).to.be.calledWith(play_cell);
+    });
+
+    it("creates a div with specific attributes", () => {
+      let playdiv = Player.transferPlayButton();
+
+      const playdiv_a = playdiv.querySelector("a");
+      expect(playdiv_a).is.equal(expected_a);
+      expect(playdiv.className).is.equal("play_cell");
+    });
+  });
+
+  describe("transferPrevNexButton", () => {
+    let expected_prev_a = document.createElement("a"); 
+    let prev_cell = 
+    { 
+      parentNode: { removeChild: sinon.spy() },
+      querySelector: sinon.stub().returns(expected_prev_a)
+    };
+
+    let expected_next_a = document.createElement("a"); 
+    let next_cell = 
+    { 
+      parentNode: { removeChild: sinon.spy() },
+      querySelector: sinon.stub().returns(expected_next_a)
+    };
+
+    beforeEach(() => {
+      sandbox.stub(document, "querySelector");
+      document.querySelector.withArgs("td.prev_cell").returns(prev_cell);
+      document.querySelector.withArgs("td.next_cell").returns(next_cell);
+    });
+    afterEach(() => {
+      sandbox.restore();
+    });
+
+    it("removes the td.prev_cell and td.next_cell from DOM", () => {
+      let prevNext = Player.transferPreviousNextButtons();
+
+      expect(prev_cell.parentNode.removeChild).to.be.calledWith(prev_cell);
+      expect(next_cell.parentNode.removeChild).to.be.calledWith(next_cell);
+    });
+
+    it("creates a div with specific attributes", () => {
+      let prevNext = Player.transferPreviousNextButtons();
+
+      const divs = prevNext.querySelectorAll("div");
+      expect(divs[0].querySelector('a')).is.equal(expected_prev_a);
+      expect(divs[0].className).is.equal("prev");
+      
+      expect(divs[1].querySelector('a')).is.equal(expected_next_a);
+      expect(divs[1].className).is.equal("next");
     });
   });
 

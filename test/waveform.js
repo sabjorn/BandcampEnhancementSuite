@@ -12,7 +12,6 @@ chai.use(sinonChai);
 import { mousedownCallback } from "../src/utilities.js";
 import Waveform from "../src/waveform.js";
 
-
 describe("Waveform", () => {
   let wf;
   let sandbox;
@@ -127,17 +126,17 @@ describe("Waveform", () => {
 
   describe("generateWaveform()", () => {
     before(() => {
-        global.chrome = chrome;
+      global.chrome = chrome;
     });
 
     let audioContext = {
       sampleRate: 44100
-    }
+    };
 
     let audioSpy = {
       src: "stream/nothing",
-      duration: 10.
-    }
+      duration: 10
+    };
 
     beforeEach(() => {
       chrome.runtime.sendMessage.flush();
@@ -166,7 +165,7 @@ describe("Waveform", () => {
     });
 
     it("updates target to audio.source if they do not match", () => {
-      audioSpy.src = "a/specific/src"
+      audioSpy.src = "a/specific/src";
       wf.currentTarget = "";
 
       wf.generateWaveform();
@@ -174,7 +173,7 @@ describe("Waveform", () => {
     });
 
     it("sends a message with chrome.runtime.sendMessage", () => {
-      audioSpy.src = "stream/src"
+      audioSpy.src = "stream/src";
       wf.currentTarget = "";
 
       wf.generateWaveform();
@@ -182,15 +181,15 @@ describe("Waveform", () => {
       let expectedMessage = {
         contentScriptQuery: "renderBuffer",
         fs: 44100,
-        length: 10.,
+        length: 10,
         url: "src",
         datapoints: 100
-      }
+      };
       expect(chrome.runtime.sendMessage).to.be.calledWith(expectedMessage);
     });
   });
 
-  // "bound" functions are tested instead of the static version 
+  // "bound" functions are tested instead of the static version
   describe("boundToggleWaveformCanvas()", () => {
     it("should toggle canvas visibility", () => {
       let canvasSpy = {
@@ -250,16 +249,21 @@ describe("Waveform", () => {
     it("should update waveform overlay by calling Waveform.drawOverlay", () => {
       sandbox.stub(Waveform, "drawOverlay");
 
-      const event = { 
-        target: { 
-            currentTime: 1,
-            duration: 10
-          }
+      const event = {
+        target: {
+          currentTime: 1,
+          duration: 10
+        }
       };
 
       wf.boundMonitorAudioTimeupdate(event);
       const expectedProgress = 0.1;
-      expect(Waveform.drawOverlay).to.be.calledWith(wf.canvas, expectedProgress, wf.waveformOverlayColour, wf.waveformColour);
+      expect(Waveform.drawOverlay).to.be.calledWith(
+        wf.canvas,
+        expectedProgress,
+        wf.waveformOverlayColour,
+        wf.waveformColour
+      );
     });
   });
 

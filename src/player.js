@@ -38,7 +38,8 @@ export default class Player {
     controls.append(prevNext);
 
     let inlineplayer = document.querySelector("div.inline_player");
-    if (!inlineplayer.classList.contains("hidden")) inlineplayer.prepend(controls);
+    if (!inlineplayer.classList.contains("hidden"))
+      inlineplayer.prepend(controls);
   }
 
   static createVolumeSlider() {

@@ -72,7 +72,6 @@ describe("Player", () => {
       player.init();
 
       expect(player.updatePlayerControlInterface).to.have.been.called;
-
     });
   });
 
@@ -84,7 +83,7 @@ describe("Player", () => {
     let volumeSlider = document.createElement("input");
     let playButton = document.createElement("div");
     let prevNext = document.createElement("div");
-    
+
     beforeEach(() => {
       input = { addEventListener: sinon.spy() };
       inlineplayer = {
@@ -94,7 +93,7 @@ describe("Player", () => {
 
       volumeSlider.addEventListener = sinon.spy();
       sandbox.stub(Player, "createVolumeSlider").returns(volumeSlider);
-      sandbox.stub(Player, "transferPlayButton").returns(playButton);      
+      sandbox.stub(Player, "transferPlayButton").returns(playButton);
       sandbox.stub(Player, "transferPreviousNextButtons").returns(prevNext);
 
       sandbox.stub(document, "querySelector");
@@ -103,22 +102,22 @@ describe("Player", () => {
         .returns(inlineplayer);
 
       sandbox.stub(document, "createElement");
-      document.createElement
-        .withArgs("div")
-        .returns(controls);
+      document.createElement.withArgs("div").returns(controls);
 
       sandbox.spy(controls, "append");
-
     });
     afterEach(() => {
       sandbox.restore();
     });
-    
+
     it("runs createVolumeSlider() and adds to eventListener", () => {
       player.updatePlayerControlInterface();
 
       expect(Player.createVolumeSlider).to.have.been.called;
-      expect(volumeSlider.addEventListener).to.have.been.calledWith("input", player.boundVolume);
+      expect(volumeSlider.addEventListener).to.have.been.calledWith(
+        "input",
+        player.boundVolume
+      );
     });
 
     it("runs transferPlayButton()", () => {
@@ -143,7 +142,6 @@ describe("Player", () => {
       expect(controls.append).to.have.been.calledWith(volumeSlider);
       expect(controls.append).to.have.been.calledWith(playButton);
       expect(controls.append).to.have.been.calledWith(prevNext);
-
     });
 
     it("does not append input to document element if that element is hidden", () => {
@@ -156,7 +154,7 @@ describe("Player", () => {
   });
 
   describe("createVolumeSlider", () => {
-    const audio = {volume: 0.1};
+    const audio = { volume: 0.1 };
 
     beforeEach(() => {
       sandbox.stub(document, "querySelector");
@@ -179,9 +177,8 @@ describe("Player", () => {
   });
 
   describe("transferPlayButton", () => {
-    let expected_a = document.createElement("a"); 
-    let play_cell = 
-    { 
+    let expected_a = document.createElement("a");
+    let play_cell = {
       parentNode: { removeChild: sinon.spy() },
       querySelector: sinon.stub().returns(expected_a)
     };
@@ -210,16 +207,14 @@ describe("Player", () => {
   });
 
   describe("transferPrevNexButton", () => {
-    let expected_prev_a = document.createElement("a"); 
-    let prev_cell = 
-    { 
+    let expected_prev_a = document.createElement("a");
+    let prev_cell = {
       parentNode: { removeChild: sinon.spy() },
       querySelector: sinon.stub().returns(expected_prev_a)
     };
 
-    let expected_next_a = document.createElement("a"); 
-    let next_cell = 
-    { 
+    let expected_next_a = document.createElement("a");
+    let next_cell = {
       parentNode: { removeChild: sinon.spy() },
       querySelector: sinon.stub().returns(expected_next_a)
     };
@@ -244,10 +239,10 @@ describe("Player", () => {
       let prevNext = Player.transferPreviousNextButtons();
 
       const divs = prevNext.querySelectorAll("div");
-      expect(divs[0].querySelector('a')).is.equal(expected_prev_a);
+      expect(divs[0].querySelector("a")).is.equal(expected_prev_a);
       expect(divs[0].className).is.equal("prev");
-      
-      expect(divs[1].querySelector('a')).is.equal(expected_next_a);
+
+      expect(divs[1].querySelector("a")).is.equal(expected_next_a);
       expect(divs[1].className).is.equal("next");
     });
   });

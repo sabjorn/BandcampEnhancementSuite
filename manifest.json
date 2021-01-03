@@ -39,8 +39,5 @@
       ],
       "css": ["css/style.css"]
     }
-  ],
-  "web_accessible_resources": [
-    "dist/worklet.js"
   ]
 }

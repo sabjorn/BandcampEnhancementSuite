@@ -96,7 +96,7 @@ export default class Waveform {
 
   static toggleWaveformCanvasCallback(event) {
     this.log.info("waveform toggle: " + event.target.checked);
-    this.canvas.style.display = event.target.checked ? "" : "none";
+    this.canvas.style.display = event.target.checked ? "inherit" : "none";
   }
 
   static monitorAudioCanPlayCallback() {

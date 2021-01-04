@@ -48,7 +48,7 @@ describe("Waveform", () => {
   describe("init()", () => {
     let canvasSpy = {
       addEventListener: sinon.spy(),
-      style: { display: "" }
+      style: { display: "inherit" }
     };
 
     let toggleSpy = {
@@ -200,7 +200,7 @@ describe("Waveform", () => {
 
       let event = { target: { checked: true } };
       wf.boundToggleWaveformCanvas(event);
-      expect(canvasSpy.style.display).to.be.equal("");
+      expect(canvasSpy.style.display).to.be.equal("inherit");
 
       event.target.checked = false;
       wf.boundToggleWaveformCanvas(event);

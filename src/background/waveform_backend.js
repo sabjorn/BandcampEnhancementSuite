@@ -12,7 +12,7 @@ export default class WaveformBackend {
   }
 
   static processAudio(request, sender, sendResponse) {
-    if (!(request.contentScriptQuery == "renderBuffer")) return;
+    if (request.contentScriptQuery != "renderBuffer") return;
 
     this.log.info("url recieved, beginning processing audio.");
 

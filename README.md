@@ -25,6 +25,10 @@ On album and track pages the following keyboard controls are supported:
 ### Advanced Mouse Playbar
 Click anywhere on the playbar to set the "playhead" of the player.
 
+### Waveform Display
+Adds a wavform display similar to visualization of Soundcloud. A toggle belo the "play button" on album pages will enable/disable the display.
+**Note**: The waveform is processed browserside.
+
 ### Volume Control
 Adds a slider on the right side of the player controls volume.
 

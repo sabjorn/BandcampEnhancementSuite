@@ -84,11 +84,6 @@ canvas.waveform {
     display: "none";
 }
 
-div.waveform {
-     position: relative;
-     margin: 1px 0.83333333333333em 0;
-}
-
 div.controls {
      position: relative;
      float: left;

@@ -89,15 +89,8 @@ div.controls {
      float: left;
 }
 
-div.prev {
+div .prev, .next {
      display: inline-block;
-     padding-left: 3px;
+     padding-left: 5px;
      padding-top: 5px;
-}
-
-div.next {
-     display: inline-block;
-     float: right;
-     padding-right: 5px;
-     padding-top: 5px;  
 }

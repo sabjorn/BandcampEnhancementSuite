@@ -30,7 +30,7 @@ input[type="range"].volume::-webkit-slider-thumb
 }
 
 /* waveform.js elements */
-input[type=checkbox]{
+input[type=checkbox].waveform{
      height: 0;
      width: 0;
      visibility: hidden;

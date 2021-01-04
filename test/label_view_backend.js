@@ -1,3 +1,4 @@
+import { createDomNodes, cleanupTestNodes } from "./utils.js";
 import chai from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
@@ -5,16 +6,50 @@ import { assert, expect } from "chai";
 import chrome from "sinon-chrome";
 chai.use(sinonChai);
 
-import * as bg from "../src/background.js";
+import LabelViewBackend from "../src/background/label_view_backend.js";
 
 // Sinon-chrome doesn't handle ports, so let's make our own
 const mockPort = { postMessage: sinon.spy() };
 
-describe("Background", () => {
+describe("LabelViewBackend", () => {
+  let lvb;
+  let sandbox;
+
   // Global db setup for use in all tests
   let db;
   before(async () => {
-    db = await bg.getDB("testStore");
+    db = await LabelViewBackend.getDB("testStore");
+  });
+
+  beforeEach(() => {
+    // Reset state before each test run
+    sandbox = sinon.createSandbox();
+    lvb = new LabelViewBackend();
+
+    // Prevent Logger output during tests
+    sandbox.stub(lvb, "log");
+  });
+
+  afterEach(() => {
+    // Preemptive removal of any test-nodes
+    cleanupTestNodes();
+    sandbox.restore();
+  });
+
+  describe("init()", () => {
+    beforeEach(() => {
+      global.chrome = chrome;
+    });
+
+    it("should call chrome.runtime.onConnect", () => {
+      lvb.init();
+      expect(chrome.runtime.onConnect.addListener).to.be.called;
+    });
+
+    it("should call chrome.runtime.onInstalled", () => {
+      lvb.init();
+      expect(chrome.runtime.onInstalled.addListener).to.be.called;
+    });
   });
 
   describe("getDB()", () => {
@@ -29,7 +64,7 @@ describe("Background", () => {
 
   describe("setVal()", () => {
     it("should set a db value", async () => {
-      await bg.setVal("testStore", "testKey", "testVal");
+      await LabelViewBackend.setVal("testStore", "testKey", "testVal");
       const fetched = await db.get("testStore", "testVal");
       expect(fetched).to.equal("testKey");
     });
@@ -38,7 +73,7 @@ describe("Background", () => {
   describe("getVal()", () => {
     it("should get a db value", async () => {
       await db.put("testStore", "testVal2", "testKey2");
-      const fetched = await bg.getVal("testStore", "testKey2");
+      const fetched = await LabelViewBackend.getVal("testStore", "testKey2");
       expect(fetched).to.equal("testVal2");
     });
   });
@@ -55,13 +90,13 @@ describe("Background", () => {
         expect(initialVal).to.be.undefined;
 
         // Confirm it gets set to false
-        await bg.query("testStore", "testKey", mockPort);
+        await LabelViewBackend.query("testStore", "testKey", mockPort);
         const finalVal = await db.get("testStore", "testKey");
         expect(finalVal).to.be.false;
       });
 
       it("should postMessage with value=false", async () => {
-        await bg.query("testStore", "testKey", mockPort);
+        await LabelViewBackend.query("testStore", "testKey", mockPort);
         expect(mockPort.postMessage).to.be.calledWith({
           id: { key: "testKey", value: false }
         });
@@ -73,7 +108,7 @@ describe("Background", () => {
         // Load expected value into key
         await db.put("testStore", "testVal", "testKey");
 
-        await bg.query("testStore", "testKey", mockPort);
+        await LabelViewBackend.query("testStore", "testKey", mockPort);
         expect(mockPort.postMessage).to.be.calledWith({
           id: { key: "testKey", value: "testVal" }
         });
@@ -86,14 +121,14 @@ describe("Background", () => {
       it("should set it to false", async () => {
         // Load expected value into key
         await db.put("testStore", true, "testKey");
-        await bg.toggle("testStore", "testKey", mockPort);
+        await LabelViewBackend.toggle("testStore", "testKey", mockPort);
         const finalVal = await db.get("testStore", "testKey");
         expect(finalVal).to.be.false;
       });
 
       it("should postMessage with value=false", async () => {
         await db.put("testStore", true, "testKey");
-        await bg.toggle("testStore", "testKey", mockPort);
+        await LabelViewBackend.toggle("testStore", "testKey", mockPort);
         expect(mockPort.postMessage).to.be.calledWith({
           id: { key: "testKey", value: false }
         });
@@ -104,14 +139,14 @@ describe("Background", () => {
       it("should set it to true", async () => {
         // Load expected value into key
         await db.put("testStore", false, "testKey");
-        await bg.toggle("testStore", "testKey", mockPort);
+        await LabelViewBackend.toggle("testStore", "testKey", mockPort);
         const finalVal = await db.get("testStore", "testKey");
         expect(finalVal).to.be.true;
       });
 
       it("should postMessage with value=true", async () => {
         await db.put("testStore", false, "testKey");
-        await bg.toggle("testStore", "testKey", mockPort);
+        await LabelViewBackend.toggle("testStore", "testKey", mockPort);
         expect(mockPort.postMessage).to.be.calledWith({
           id: { key: "testKey", value: true }
         });
@@ -124,32 +159,16 @@ describe("Background", () => {
       // Pre-populate non-true value to ensure update
       await db.put("testStore", false, "testKey");
 
-      await bg.setTrue("testStore", "testKey", mockPort);
+      await LabelViewBackend.setTrue("testStore", "testKey", mockPort);
       const finalVal = await db.get("testStore", "testKey");
       expect(finalVal).to.be.true;
     });
 
     it("should postMessage with value=true", async () => {
-      await bg.setTrue("testStore", "testKey", mockPort);
+      await LabelViewBackend.setTrue("testStore", "testKey", mockPort);
       expect(mockPort.postMessage).to.be.calledWith({
         id: { key: "testKey", value: true }
       });
-    });
-  });
-
-  describe("init()", () => {
-    beforeEach(() => {
-      global.chrome = chrome;
-    });
-
-    it("should call chrome.runtime.onConnect", () => {
-      bg.init();
-      expect(chrome.runtime.onConnect.addListener).to.be.called;
-    });
-
-    it("should call chrome.runtime.onInstalled", () => {
-      bg.init();
-      expect(chrome.runtime.onInstalled.addListener).to.be.called;
     });
   });
 });

@@ -1,6 +1,7 @@
 import LabelView from "./label_view.js";
 import DownloadHelper from "./download_helper.js";
 import Player from "./player.js";
+import Waveform from "./waveform.js";
 
 window.onload = () => {
   const lv = new LabelView();
@@ -16,5 +17,8 @@ window.onload = () => {
   if (checkIsPageWithPlayer) {
     const player = new Player();
     player.init();
+
+    let waveform = new Waveform();
+    waveform.init();
   }
 };

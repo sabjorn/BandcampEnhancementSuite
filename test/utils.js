@@ -42,3 +42,14 @@ export const cleanupTestNodes = () => {
     elem.parentNode.removeChild(elem);
   }
 };
+
+/**
+ * Mock API Response
+ * used with sinon.stub of 'fetch'
+ */
+export function mockApiResponse(body = {}) {
+  return new window.Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "Content-type": "application/json" }
+  });
+}

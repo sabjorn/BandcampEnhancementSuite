@@ -184,6 +184,6 @@ export default class Waveform {
     let g = parseInt(255 - rgb[1]);
     let b = parseInt(255 - rgb[2]);
 
-    return "rgb(" + r + "," + g + "," + b + ")";
+    return `rgb(${r},${g},${b})`;
   }
 }

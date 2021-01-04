@@ -1,4 +1,5 @@
 import Logger from "./logger";
+import { mousedownCallback } from "./utilities.js";
 
 const stepSize = 10;
 
@@ -7,7 +8,6 @@ export default class Player {
     this.log = new Logger();
 
     this.boundKeydown = Player.keydownCallback.bind(this);
-    this.boundMousedown = Player.mousedownCallback.bind(this);
     this.boundVolume = Player.volumeSliderCallback.bind(this);
   }
 
@@ -18,12 +18,31 @@ export default class Player {
 
     let progressBar = document.querySelector(".progbar");
     progressBar.style.cursor = "pointer";
-    progressBar.addEventListener("click", this.boundMousedown);
+    progressBar.addEventListener("click", mousedownCallback);
 
-    this.addVolumeSlider();
+    this.updatePlayerControlInterface();
   }
 
-  addVolumeSlider() {
+  updatePlayerControlInterface() {
+    let controls = document.createElement("div");
+    controls.classList.add("controls");
+
+    let volumeSlider = Player.createVolumeSlider();
+    volumeSlider.addEventListener("input", this.boundVolume);
+    controls.append(volumeSlider);
+
+    let playButton = Player.transferPlayButton();
+    controls.append(playButton);
+
+    let prevNext = Player.transferPreviousNextButtons();
+    controls.append(prevNext);
+
+    let inlineplayer = document.querySelector("div.inline_player");
+    if (!inlineplayer.classList.contains("hidden"))
+      inlineplayer.prepend(controls);
+  }
+
+  static createVolumeSlider() {
     let input = document.createElement("input");
     input.type = "range";
     input.classList = "volume thumb progbar_empty";
@@ -35,10 +54,39 @@ export default class Player {
     let audio = document.querySelector("audio");
     input.value = audio.volume;
 
-    input.addEventListener("input", this.boundVolume);
+    return input;
+  }
 
-    let inlineplayer = document.querySelector("div.inline_player");
-    if (!inlineplayer.classList.contains("hidden")) inlineplayer.append(input);
+  static transferPlayButton() {
+    let play_cell = document.querySelector("td.play_cell");
+    play_cell.parentNode.removeChild(play_cell);
+    let play_button = play_cell.querySelector("a");
+    let play_div = document.createElement("div");
+    play_div.classList.add("play_cell");
+    play_div.append(play_button);
+
+    return play_div;
+  }
+
+  static transferPreviousNextButtons() {
+    let prev_cell = document.querySelector("td.prev_cell");
+    prev_cell.parentNode.removeChild(prev_cell);
+    let prev_button = prev_cell.querySelector("a");
+    let prev_div = document.createElement("div");
+    prev_div.classList.add("prev");
+    prev_div.append(prev_button);
+
+    let next_cell = document.querySelector("td.next_cell");
+    next_cell.parentNode.removeChild(next_cell);
+    let next_button = next_cell.querySelector("a");
+    let next_div = document.createElement("div");
+    next_div.classList.add("next");
+    next_div.append(next_button);
+
+    let div = document.createElement("div");
+    div.append(prev_div);
+    div.append(next_div);
+    return div;
   }
 
   static keydownCallback(e) {

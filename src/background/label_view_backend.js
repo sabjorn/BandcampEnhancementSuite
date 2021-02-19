@@ -1,4 +1,4 @@
-import { openDB } from "idb";
+import DBUtils from "../utilities";
 import Logger from "../logger";
 const log = new Logger();
 
@@ -45,56 +45,31 @@ export default class LabelViewBackend {
     });
   }
 
-  static async getDB(storeName) {
-    const dbName = "BandcampEnhancementSuite";
-    const version = 1;
-
-    const db = await openDB(dbName, version, {
-      upgrade(db, oldVersion, newVersion, transaction) {
-        const store = db.createObjectStore(storeName);
-      },
-      blocked() {},
-      blocking() {},
-      terminated() {}
-    });
-
-    return db;
-  }
-
-  static async setVal(storeName, val, key) {
-    let db = await LabelViewBackend.getDB(storeName);
-    const tx = db.transaction(storeName, "readwrite");
-    const store = await tx.store;
-    const value = await store.put(val, key);
-    await tx.done;
-  }
-
-  static async getVal(storeName, key) {
-    let db = await LabelViewBackend.getDB(storeName);
-    const value = await db.get(storeName, key);
-    return value;
-  }
-
-  static async query(storeName, key, port) {
-    let value = await LabelViewBackend.getVal(storeName, key);
+  static async query(storeName, key, port, dbUtils = new DBUtils()) {
+    let db = await dbUtils.getDB(storeName);
+    let value = await db.get(storeName, key);
 
     if (!value) {
       value = false;
-      await LabelViewBackend.setVal(storeName, value, key);
+      await db.put(storeName, value, key);
     }
 
     port.postMessage({ id: { key: key, value: value } });
   }
 
-  static async toggle(storeName, key, port) {
-    let value = await LabelViewBackend.getVal(storeName, key);
+  static async toggle(storeName, key, port, dbUtils = new DBUtils()) {
+    let db = await dbUtils.getDB(storeName);
+    let value = await db.get(storeName, key);
+
     value = !value;
-    await LabelViewBackend.setVal(storeName, value, key);
+
+    await db.put(storeName, value, key);
     port.postMessage({ id: { key: key, value: value } });
   }
 
-  static async setTrue(storeName, key, port) {
-    await LabelViewBackend.setVal(storeName, true, key);
+  static async setTrue(storeName, key, port, dbUtils = new DBUtils()) {
+    let db = await dbUtils.getDB(storeName);
+    await db.put(storeName, true, key);
     port.postMessage({ id: { key: key, value: true } });
   }
 }

@@ -6,32 +6,23 @@ import { assert, expect } from "chai";
 import chrome from "sinon-chrome";
 chai.use(sinonChai);
 
+import DBUtils from "../src/utilities.js";
 import LabelViewBackend from "../src/background/label_view_backend.js";
 
-// Sinon-chrome doesn't handle ports, so let's make our own
-const mockPort = { postMessage: sinon.spy() };
+const mockPort = { postMessage: sinon.stub() };
 
 describe("LabelViewBackend", () => {
   let lvb;
   let sandbox;
 
-  // Global db setup for use in all tests
-  let db;
-  before(async () => {
-    db = await LabelViewBackend.getDB("testStore");
-  });
-
   beforeEach(() => {
-    // Reset state before each test run
     sandbox = sinon.createSandbox();
     lvb = new LabelViewBackend();
 
-    // Prevent Logger output during tests
     sandbox.stub(lvb, "log");
   });
 
   afterEach(() => {
-    // Preemptive removal of any test-nodes
     cleanupTestNodes();
     sandbox.restore();
   });
@@ -52,122 +43,154 @@ describe("LabelViewBackend", () => {
     });
   });
 
-  describe("getDB()", () => {
-    it("should return an IDBDatabase", async () => {
-      expect(db instanceof IDBDatabase).to.be.true;
+  describe("static methods", () => {
+    let dbStub;
+    let dbUtilsStub;
+
+    beforeEach(() => {
+      dbStub = { get: sinon.stub(), put: sinon.spy() };
+
+      dbUtilsStub = new DBUtils();
+      sinon.stub(dbUtilsStub, "getDB").resolves(dbStub);
     });
 
-    it('should name the database "BandcampEnhancementSuite"', async () => {
-      expect(db.name).to.equal("BandcampEnhancementSuite");
-    });
-  });
+    describe("query()", () => {
+      describe("when key does not have a value", () => {
+        it("should set the DB key to false", () => {
+          dbStub.get.resolves();
 
-  describe("setVal()", () => {
-    it("should set a db value", async () => {
-      await LabelViewBackend.setVal("testStore", "testKey", "testVal");
-      const fetched = await db.get("testStore", "testVal");
-      expect(fetched).to.equal("testKey");
-    });
-  });
+          return LabelViewBackend.query(
+            "testStore",
+            "testKey",
+            mockPort,
+            dbUtilsStub
+          ).then(() => {
+            expect(dbStub.get).to.be.calledWith("testStore", "testKey");
+            expect(dbStub.put).to.be.calledWith("testStore", false, "testKey");
+          });
+        });
 
-  describe("getVal()", () => {
-    it("should get a db value", async () => {
-      await db.put("testStore", "testVal2", "testKey2");
-      const fetched = await LabelViewBackend.getVal("testStore", "testKey2");
-      expect(fetched).to.equal("testVal2");
-    });
-  });
+        it("should postMessage with value=false", () => {
+          dbStub.get.resolves();
 
-  describe("query()", () => {
-    describe("when key does not have a value", () => {
-      beforeEach(async () => {
-        await db.delete("testStore", "testKey");
+          return LabelViewBackend.query(
+            "testStore",
+            "testKey",
+            mockPort,
+            dbUtilsStub
+          ).then(() => {
+            expect(mockPort.postMessage).to.be.calledWith({
+              id: { key: "testKey", value: false }
+            });
+          });
+        });
       });
 
-      it("should set the DB key to false", async () => {
-        // Initial check: confirm key is unset
-        const initialVal = await db.get("testStore", "testKey");
-        expect(initialVal).to.be.undefined;
+      describe("when key has a value", () => {
+        it("should call portMessage with fetched value", async () => {
+          dbStub.get.resolves("testValue");
 
-        // Confirm it gets set to false
-        await LabelViewBackend.query("testStore", "testKey", mockPort);
-        const finalVal = await db.get("testStore", "testKey");
-        expect(finalVal).to.be.false;
-      });
-
-      it("should postMessage with value=false", async () => {
-        await LabelViewBackend.query("testStore", "testKey", mockPort);
-        expect(mockPort.postMessage).to.be.calledWith({
-          id: { key: "testKey", value: false }
+          return LabelViewBackend.query(
+            "testStore",
+            "testKey",
+            mockPort,
+            dbUtilsStub
+          ).then(() => {
+            expect(mockPort.postMessage).to.be.calledWith({
+              id: { key: "testKey", value: "testValue" }
+            });
+          });
         });
       });
     });
 
-    describe("when key has a value", () => {
-      it("should call portMessage with fetched value", async () => {
-        // Load expected value into key
-        await db.put("testStore", "testVal", "testKey");
+    describe("toggle()", () => {
+      describe("when the value is true", () => {
+        beforeEach(() => {
+          dbStub.get.resolves(true);
+        });
 
-        await LabelViewBackend.query("testStore", "testKey", mockPort);
-        expect(mockPort.postMessage).to.be.calledWith({
-          id: { key: "testKey", value: "testVal" }
+        it("should set it to false", () => {
+          return LabelViewBackend.toggle(
+            "testStore",
+            "testKey",
+            mockPort,
+            dbUtilsStub
+          ).then(() => {
+            expect(dbStub.get).to.be.calledWith("testStore", "testKey");
+            expect(dbStub.put).to.be.calledWith("testStore", false, "testKey");
+          });
+        });
+
+        it("should postMessage with value=false", () => {
+          return LabelViewBackend.toggle(
+            "testStore",
+            "testKey",
+            mockPort,
+            dbUtilsStub
+          ).then(() => {
+            expect(mockPort.postMessage).to.be.calledWith({
+              id: { key: "testKey", value: false }
+            });
+          });
+        });
+      });
+
+      describe("when the value is false", () => {
+        beforeEach(() => {
+          dbStub.get.resolves(false);
+        });
+
+        it("should set it to true", () => {
+          return LabelViewBackend.toggle(
+            "testStore",
+            "testKey",
+            mockPort,
+            dbUtilsStub
+          ).then(() => {
+            expect(dbStub.get).to.be.calledWith("testStore", "testKey");
+            expect(dbStub.put).to.be.calledWith("testStore", true, "testKey");
+          });
+        });
+
+        it("should postMessage with value=true", () => {
+          return LabelViewBackend.toggle(
+            "testStore",
+            "testKey",
+            mockPort,
+            dbUtilsStub
+          ).then(() => {
+            expect(mockPort.postMessage).to.be.calledWith({
+              id: { key: "testKey", value: true }
+            });
+          });
         });
       });
     });
-  });
 
-  describe("toggle()", () => {
-    describe("when the value is true", () => {
-      it("should set it to false", async () => {
-        // Load expected value into key
-        await db.put("testStore", true, "testKey");
-        await LabelViewBackend.toggle("testStore", "testKey", mockPort);
-        const finalVal = await db.get("testStore", "testKey");
-        expect(finalVal).to.be.false;
-      });
-
-      it("should postMessage with value=false", async () => {
-        await db.put("testStore", true, "testKey");
-        await LabelViewBackend.toggle("testStore", "testKey", mockPort);
-        expect(mockPort.postMessage).to.be.calledWith({
-          id: { key: "testKey", value: false }
+    describe("setTrue()", () => {
+      it("should set the key to true", () => {
+        return LabelViewBackend.setTrue(
+          "testStore",
+          "testKey",
+          mockPort,
+          dbUtilsStub
+        ).then(() => {
+          expect(dbStub.put).to.be.calledWith("testStore", true, "testKey");
         });
       });
-    });
 
-    describe("when the value is false", () => {
-      it("should set it to true", async () => {
-        // Load expected value into key
-        await db.put("testStore", false, "testKey");
-        await LabelViewBackend.toggle("testStore", "testKey", mockPort);
-        const finalVal = await db.get("testStore", "testKey");
-        expect(finalVal).to.be.true;
-      });
-
-      it("should postMessage with value=true", async () => {
-        await db.put("testStore", false, "testKey");
-        await LabelViewBackend.toggle("testStore", "testKey", mockPort);
-        expect(mockPort.postMessage).to.be.calledWith({
-          id: { key: "testKey", value: true }
+      it("should postMessage with value=true", () => {
+        return LabelViewBackend.setTrue(
+          "testStore",
+          "testKey",
+          mockPort,
+          dbUtilsStub
+        ).then(() => {
+          expect(mockPort.postMessage).to.be.calledWith({
+            id: { key: "testKey", value: true }
+          });
         });
-      });
-    });
-  });
-
-  describe("setTrue()", () => {
-    it("should set the key to true", async () => {
-      // Pre-populate non-true value to ensure update
-      await db.put("testStore", false, "testKey");
-
-      await LabelViewBackend.setTrue("testStore", "testKey", mockPort);
-      const finalVal = await db.get("testStore", "testKey");
-      expect(finalVal).to.be.true;
-    });
-
-    it("should postMessage with value=true", async () => {
-      await LabelViewBackend.setTrue("testStore", "testKey", mockPort);
-      expect(mockPort.postMessage).to.be.calledWith({
-        id: { key: "testKey", value: true }
       });
     });
   });

@@ -1,6 +1,5 @@
 import DBUtils from "../utilities";
 import Logger from "../logger";
-const log = new Logger();
 
 export default class LabelViewBackend {
   constructor() {

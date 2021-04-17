@@ -9,11 +9,11 @@ chai.use(sinonChai);
 import DBUtils from "../src/utilities.js";
 import LabelViewBackend from "../src/background/label_view_backend.js";
 
-const mockPort = { postMessage: sinon.stub() };
-
 describe("LabelViewBackend", () => {
   let lvb;
   let sandbox;
+
+  const mockPort = { postMessage: sinon.stub() };
 
   beforeEach(() => {
     sandbox = sinon.createSandbox();

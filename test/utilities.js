@@ -47,11 +47,11 @@ describe("DBUtils", () => {
   });
   describe("getDB", () => {
     it("should call idb openDB with specific args", async () => {
-      const db = await dbu.getDB("somename"); //, openDBStub);
+      const db = await dbu.getDB("somename");
 
       expect(openDBStub).to.be.calledWith(
         "BandcampEnhancementSuite",
-        1,
+        2,
         sinon.match.any
       );
     });

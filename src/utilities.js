@@ -17,7 +17,7 @@ export default class DBUtils {
 
   async getDB(storeName) {
     const dbName = "BandcampEnhancementSuite";
-    const version = 1;
+    const version = 2;
 
     const db = await this.openDB(dbName, version, {
       upgrade(db, oldVersion, newVersion, transaction) {

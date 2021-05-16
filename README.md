@@ -26,11 +26,19 @@ On album and track pages the following keyboard controls are supported:
 Click anywhere on the playbar to set the "playhead" of the player.
 
 ### Waveform Display
-Adds a wavform display similar to visualization of Soundcloud. A toggle belo the "play button" on album pages will enable/disable the display.
+Adds a wavform display similar to visualization of Soundcloud. A toggle below the "play button" on album pages will enable/disable the display.
 **Note**: The waveform is processed browserside.
 
 ### Volume Control
 Adds a slider on the right side of the player controls volume.
+
+### Control Relocation
+Moves the forward/back buttons for the player (on album and track pages) to right under the play/pause button.
+
+### Tracklist Relocation
+Moves the tracklist on an album's page directly below the player.
+
+
 
 ### Bundle Purchase Download Button
 Adds a button to help automate the process of download a cart after purchase. Once all music download links are ready this button, when clicked, generate a `.txt` file which can be **pasted** into [terminal](https://en.wikipedia.org/wiki/List_of_terminal_emulators) to automate the downloading process. This `.txt` file uses [cURL](https://en.wikipedia.org/wiki/CURL).

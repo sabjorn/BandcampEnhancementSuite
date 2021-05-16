@@ -20,6 +20,8 @@ export default class Player {
     progressBar.style.cursor = "pointer";
     progressBar.addEventListener("click", mousedownCallback);
 
+    Player.movePlaylist();
+
     this.updatePlayerControlInterface();
   }
 
@@ -40,6 +42,15 @@ export default class Player {
     let inlineplayer = document.querySelector("div.inline_player");
     if (!inlineplayer.classList.contains("hidden"))
       inlineplayer.prepend(controls);
+  }
+
+  static movePlaylist() {
+    const playlist = document.querySelector("table#track_table");
+    if(playlist)
+    {
+      const player = document.querySelector("div.inline_player")
+      player.after(playlist);
+    }
   }
 
   static createVolumeSlider() {

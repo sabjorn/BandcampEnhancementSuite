@@ -13,32 +13,40 @@ describe("Player", () => {
   let sandbox;
 
   beforeEach(() => {
-    // Reset state before each test run
     sandbox = sinon.createSandbox();
     player = new Player();
 
-    // Prevent Logger output during tests
     sandbox.stub(player, "log");
   });
 
   afterEach(() => {
-    // Preemptive removal of any test-nodes
     cleanupTestNodes();
     sandbox.restore();
   });
 
   describe("init()", () => {
-    beforeEach(() => {
-      createDomNodes(`
-        <div id="testId" class="progbar"></div>
-      `);
+    let progressbar;
 
+    beforeEach(() => {
+      sandbox.spy(document, "addEventListener");
+      sandbox.spy(Player, "movePlaylist");
       player.updatePlayerControlInterface = sinon.spy();
+
+      progressbar = {
+        style: { cursor: "none" },
+        addEventListener: sinon.spy()
+      };
+      sandbox.stub(document, "querySelector")
+        .withArgs(".progbar")
+        .returns(progressbar);
+    });
+
+    afterEach(() => {
+      sandbox.restore();
+      // player.updatePlayerControlInterface.restore();
     });
 
     it("binds global keydown method", () => {
-      sinon.spy(document, "addEventListener");
-
       player.init();
 
       expect(document.addEventListener).to.have.been.calledWith(
@@ -48,15 +56,6 @@ describe("Player", () => {
     });
 
     it("initializes and binds progressbar", () => {
-      let progressbar = {
-        style: { cursor: "none" },
-        addEventListener: sinon.spy()
-      };
-      sinon
-        .stub(document, "querySelector")
-        .withArgs(".progbar")
-        .returns(progressbar);
-
       player.init();
 
       expect(progressbar.style.cursor).to.be.equal("pointer");
@@ -64,14 +63,56 @@ describe("Player", () => {
         "click",
         mousedownCallback
       );
+    });
 
-      document.querySelector.restore();
+    it("calls movePlaylist()", () => {
+      player.init();
+
+      expect(Player.movePlaylist).to.have.been.called;
     });
 
     it("calls updatePlayerControlInterface()", () => {
       player.init();
 
       expect(player.updatePlayerControlInterface).to.have.been.called;
+    });
+  });
+  
+  describe("movePlaylist()", () => {
+    let playerSpy;
+
+    beforeEach(() => {
+      sandbox.stub(document, "querySelector");
+
+      playerSpy = { after: sinon.spy() };
+      document.querySelector
+        .withArgs("div.inline_player")
+        .returns(playerSpy);
+    });
+
+    afterEach(() => {
+      sandbox.restore();
+    })
+
+    it("moves playlist below player if playlist exists", () => {
+      let playlist = {};
+      document.querySelector
+        .withArgs("table#track_table")
+        .returns(playlist);
+
+      Player.movePlaylist();
+
+      expect(playerSpy.after).to.be.calledWith(playlist);
+    });
+
+    it("does not move playlist if it does not exists", () => {
+      document.querySelector
+        .withArgs("table#track_table")
+        .returns(null);
+
+      Player.movePlaylist();
+
+      expect(playerSpy.after).to.not.be.called;
     });
   });
 
@@ -255,11 +296,11 @@ describe("Player", () => {
       event = { key: "", preventDefault: sinon.spy(), target: document.body };
       spyElement = { click: sinon.spy() };
 
-      sinon.stub(document, "querySelector").returns(spyElement);
+      sandbox.stub(document, "querySelector").returns(spyElement);
     });
 
     afterEach(() => {
-      document.querySelector.restore();
+      sandbox.restore();
     });
 
     it("click play button if space or 'p' pushed", () => {

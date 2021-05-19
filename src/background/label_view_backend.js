@@ -45,7 +45,7 @@ export default class LabelViewBackend {
   }
 
   static async query(storeName, key, port, dbUtils = new DBUtils()) {
-    let db = await dbUtils.getDB(storeName);
+    let db = await dbUtils.getDB();
     let value = await db.get(storeName, key);
 
     if (!value) {
@@ -57,7 +57,7 @@ export default class LabelViewBackend {
   }
 
   static async toggle(storeName, key, port, dbUtils = new DBUtils()) {
-    let db = await dbUtils.getDB(storeName);
+    let db = await dbUtils.getDB();
     let value = await db.get(storeName, key);
 
     value = !value;
@@ -67,7 +67,7 @@ export default class LabelViewBackend {
   }
 
   static async setTrue(storeName, key, port, dbUtils = new DBUtils()) {
-    let db = await dbUtils.getDB(storeName);
+    let db = await dbUtils.getDB();
     await db.put(storeName, true, key);
     port.postMessage({ id: { key: key, value: true } });
   }

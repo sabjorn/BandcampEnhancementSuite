@@ -15,13 +15,19 @@ export default class DBUtils {
     this.openDB = openDB;
   }
 
-  async getDB(storeName) {
+  async getDB() {
     const dbName = "BandcampEnhancementSuite";
     const version = 2;
 
     const db = await this.openDB(dbName, version, {
       upgrade(db, oldVersion, newVersion, transaction) {
-        const store = db.createObjectStore(storeName);
+        const stores = db.objectStoreNames 
+        
+        if(!stores.contains("previews"))
+          db.createObjectStore("previews");
+
+        if(!stores.contains("config"))
+          db.createObjectStore("config");
       },
       blocked() {},
       blocking() {},

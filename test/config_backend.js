@@ -82,7 +82,7 @@ describe("ConfigBackend", () => {
     it("creates a db handle", () => {
       const msg = { config: {} };
       return cb.boundPortListenerCallback(msg).then(() => {
-        expect(cb.dbUtils.getDB).to.be.calledWith("config");
+        expect(cb.dbUtils.getDB).to.be.called;
       });
     });
 

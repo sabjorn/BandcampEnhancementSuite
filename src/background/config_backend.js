@@ -41,7 +41,7 @@ export default class ConfigBackend {
   static async portListenerCallback(msg) {
     this.log.info("port listener callback");
 
-    const db = await this.dbUtils.getDB("config");
+    const db = await this.dbUtils.getDB();
 
     this.setupDB(db);
 

@@ -45,7 +45,7 @@ export default class ConfigBackend {
 
     this.setupDB(db);
 
-    if (msg.config) this.synchronizeConfig(db, msg.config); //todo: remove this, it's not used
+    if (msg.config) this.synchronizeConfig(db, msg.config);
 
     if (msg.toggleWaveformDisplay) this.toggleWaveformDisplay(db);
 

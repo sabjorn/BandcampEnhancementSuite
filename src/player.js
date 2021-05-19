@@ -46,9 +46,8 @@ export default class Player {
 
   static movePlaylist() {
     const playlist = document.querySelector("table#track_table");
-    if(playlist)
-    {
-      const player = document.querySelector("div.inline_player")
+    if (playlist) {
+      const player = document.querySelector("div.inline_player");
       player.after(playlist);
     }
   }

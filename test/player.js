@@ -36,7 +36,8 @@ describe("Player", () => {
         style: { cursor: "none" },
         addEventListener: sinon.spy()
       };
-      sandbox.stub(document, "querySelector")
+      sandbox
+        .stub(document, "querySelector")
         .withArgs(".progbar")
         .returns(progressbar);
     });
@@ -77,7 +78,7 @@ describe("Player", () => {
       expect(player.updatePlayerControlInterface).to.have.been.called;
     });
   });
-  
+
   describe("movePlaylist()", () => {
     let playerSpy;
 
@@ -85,20 +86,16 @@ describe("Player", () => {
       sandbox.stub(document, "querySelector");
 
       playerSpy = { after: sinon.spy() };
-      document.querySelector
-        .withArgs("div.inline_player")
-        .returns(playerSpy);
+      document.querySelector.withArgs("div.inline_player").returns(playerSpy);
     });
 
     afterEach(() => {
       sandbox.restore();
-    })
+    });
 
     it("moves playlist below player if playlist exists", () => {
       let playlist = {};
-      document.querySelector
-        .withArgs("table#track_table")
-        .returns(playlist);
+      document.querySelector.withArgs("table#track_table").returns(playlist);
 
       Player.movePlaylist();
 
@@ -106,9 +103,7 @@ describe("Player", () => {
     });
 
     it("does not move playlist if it does not exists", () => {
-      document.querySelector
-        .withArgs("table#track_table")
-        .returns(null);
+      document.querySelector.withArgs("table#track_table").returns(null);
 
       Player.movePlaylist();
 

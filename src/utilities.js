@@ -21,13 +21,11 @@ export default class DBUtils {
 
     const db = await this.openDB(dbName, version, {
       upgrade(db, oldVersion, newVersion, transaction) {
-        const stores = db.objectStoreNames 
-        
-        if(!stores.contains("previews"))
-          db.createObjectStore("previews");
+        const stores = db.objectStoreNames;
 
-        if(!stores.contains("config"))
-          db.createObjectStore("config");
+        if (!stores.contains("previews")) db.createObjectStore("previews");
+
+        if (!stores.contains("config")) db.createObjectStore("config");
       },
       blocked() {},
       blocking() {},

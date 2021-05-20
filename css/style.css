@@ -38,6 +38,7 @@ input[type=checkbox].waveform{
 
 /* housing */
 label.waveform {
+     pointer-events: none;
      cursor: pointer;
      text-indent: -9999px;
      top: -15px;

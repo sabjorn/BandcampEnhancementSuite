@@ -29,8 +29,17 @@ describe("Waveform", () => {
     height: 100
   };
 
+  const mockPort = {
+    onMessage: { addListener: sinon.stub() },
+    postMessage: sinon.spy()
+  };
+
   beforeEach(() => {
     sandbox = sinon.createSandbox();
+
+    global.chrome = chrome;
+    chrome.runtime.connect.returns(mockPort);
+
     wf = new Waveform();
 
     sandbox.stub(wf, "log");
@@ -45,15 +54,49 @@ describe("Waveform", () => {
     sandbox.restore();
   });
 
+  describe("constructor", () => {
+    describe("chrome communication configuration", () => {
+      it("configures chrome.runtime.connection", () => {
+        new Waveform();
+
+        expect(chrome.runtime.connect).to.be.calledWith(null, {
+          name: "bandcamplabelview"
+        });
+      });
+
+      it("does not throw error if 'Error in invocation'", () => {
+        const error = new Error("Error in invocation of runtime.connect");
+        chrome.runtime.connect.throws(error);
+
+        const throwCheck = () => new Waveform();
+
+        expect(throwCheck).to.not.throw();
+      });
+
+      it("should throw error for all other errors from chrome'", () => {
+        const error = new Error("some error message");
+        chrome.runtime.connect.throws(error);
+
+        const throwCheck = () => new Waveform();
+
+        expect(throwCheck).to.throw();
+      });
+    });
+  });
+
   describe("init()", () => {
     let canvasSpy = {
       addEventListener: sinon.spy(),
       style: { display: "inherit" }
     };
 
+    let toggleDivSpy = {
+      addEventListener: sinon.spy()
+    };
+
     let toggleSpy = {
-      addEventListener: sinon.spy(),
-      checked: false
+      checked: false,
+      parentNode: toggleDivSpy
     };
 
     let trackTitleElement;
@@ -77,6 +120,7 @@ describe("Waveform", () => {
       });
       document.querySelector.withArgs("audio").returns(audioSpy);
     });
+
     afterEach(() => {
       sandbox.restore();
     });
@@ -90,11 +134,15 @@ describe("Waveform", () => {
       );
     });
 
-    it("creates toggle which can toggle waveform canvas", () => {
+    it("creates toggle which acts as a display for toggle state", () => {
       wf.init();
       expect(Waveform.createCanvasDisplayToggle).to.be.called;
-      expect(toggleSpy.addEventListener).to.have.been.calledWith(
-        "change",
+    });
+
+    it("creates div which can beclicked on to trigger state changes", () => {
+      wf.init();
+      expect(toggleDivSpy.addEventListener).to.have.been.calledWith(
+        "click",
         wf.boundToggleWaveformCanvas
       );
     });
@@ -121,6 +169,24 @@ describe("Waveform", () => {
         "timeupdate",
         wf.boundMonitorAudioTimeupdate
       );
+    });
+
+    it("adds listener to port.onMessage", () => {
+      wf.init();
+      expect(mockPort.onMessage.addListener).to.have.been.calledWith(
+        wf.boundApplyConfig
+      );
+    });
+
+    it("posts message to request configs from backend AFTER canvasDisplayToggle", () => {
+      wf.init();
+      sinon.assert.callOrder(
+        toggleDivSpy.addEventListener,
+        mockPort.postMessage
+      );
+      expect(mockPort.postMessage).to.have.been.calledWith({
+        requestConfig: {}
+      });
     });
   });
 
@@ -189,22 +255,45 @@ describe("Waveform", () => {
     });
   });
 
+  describe("applyConfig()", () => {
+    const canvasFake = {
+      style: { display: "inherit" }
+    };
+    const displayToggle = { checked: false };
+
+    beforeEach(() => {
+      wf.canvas = canvasFake;
+      wf.canvasDisplayToggle = displayToggle;
+    });
+
+    it("sets the display value of the waveform from config object", () => {
+      wf.boundApplyConfig({ config: { displayWaveform: false } });
+      expect(canvasFake.style.display).to.be.equal("none");
+
+      wf.boundApplyConfig({ config: { displayWaveform: true } });
+      expect(canvasFake.style.display).to.be.equal("inherit");
+    });
+
+    it("sets the display of the onscreen toggle", () => {
+      wf.boundApplyConfig({ config: { displayWaveform: false } });
+      expect(canvasFake.style.display).to.be.equal("none");
+
+      wf.boundApplyConfig({ config: { displayWaveform: true } });
+      expect(canvasFake.style.display).to.be.equal("inherit");
+    });
+  });
+
   // "bound" functions are tested instead of the static version
   describe("boundToggleWaveformCanvas()", () => {
-    it("should toggle canvas visibility", () => {
-      let canvasSpy = {
-        style: { display: "something" }
-      };
+    it("should send command to backend to invert waveformDisplay", () => {
+      const expectedMessage = { toggleWaveformDisplay: {} };
+      wf.port = mockPort;
 
-      wf.canvas = canvasSpy;
+      wf.boundToggleWaveformCanvas();
 
-      let event = { target: { checked: true } };
-      wf.boundToggleWaveformCanvas(event);
-      expect(canvasSpy.style.display).to.be.equal("inherit");
-
-      event.target.checked = false;
-      wf.boundToggleWaveformCanvas(event);
-      expect(canvasSpy.style.display).to.be.equal("none");
+      expect(mockPort.postMessage).to.be.calledWith(
+        sinon.match(expectedMessage)
+      );
     });
   });
 

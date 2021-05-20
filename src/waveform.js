@@ -20,6 +20,19 @@ export default class Waveform {
     this.boundMonitorAudioTimeupdate = Waveform.monitorAudioTimeupdateCallback.bind(
       this
     );
+
+    this.boundApplyConfig = Waveform.applyConfig.bind(this);
+
+    try {
+      this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
+    } catch (e) {
+      if (e.message.includes("Error in invocation of runtime.connect")) {
+        this.log.error(e);
+        return;
+      } else {
+        throw e;
+      }
+    }
   }
 
   init() {
@@ -27,13 +40,11 @@ export default class Waveform {
     this.canvas.addEventListener("click", mousedownCallback);
 
     this.canvasDisplayToggle = Waveform.createCanvasDisplayToggle();
-    this.canvasDisplayToggle.addEventListener(
-      "change",
+    this.canvasDisplayDiv = this.canvasDisplayToggle.parentNode;
+    this.canvasDisplayDiv.addEventListener(
+      "click",
       this.boundToggleWaveformCanvas
     );
-
-    // this.canvasDisplayToggle.checked = true;
-    // this.canvasDisplayToggle.dispatchEvent(new Event("change")); // defaults on for now
 
     let bg = document.querySelector("h2.trackTitle");
     this.waveformColour = window
@@ -48,6 +59,9 @@ export default class Waveform {
     document
       .querySelector("audio")
       .addEventListener("timeupdate", this.boundMonitorAudioTimeupdate);
+
+    this.port.onMessage.addListener(this.boundApplyConfig);
+    this.port.postMessage({ requestConfig: {} }); // TO DO: this must be at end of init, write test
   }
 
   async generateWaveform() {
@@ -94,9 +108,14 @@ export default class Waveform {
     }
   }
 
-  static toggleWaveformCanvasCallback(event) {
-    this.log.info("waveform toggle: " + event.target.checked);
-    this.canvas.style.display = event.target.checked ? "inherit" : "none";
+  static applyConfig(msg) {
+    this.log.info("config recieved from backend" + JSON.stringify(msg.config));
+    this.canvas.style.display = msg.config.displayWaveform ? "inherit" : "none";
+    this.canvasDisplayToggle.checked = msg.config.displayWaveform;
+  }
+
+  static toggleWaveformCanvasCallback() {
+    this.port.postMessage({ toggleWaveformDisplay: {} });
   }
 
   static monitorAudioCanPlayCallback() {

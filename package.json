@@ -37,7 +37,7 @@
     "build:dev": "npm run build -- --mode=development",
     "build:watch": "npm run build:dev -- --watch --progress",
     "clean": "rm -fr ./node_modules ./dist",
-    "package": "npm run build && zip BandcampLabelView.zip LICENSE _locales/**/* icons/* css/* dist/* manifest.json html/browser_action.html"
+    "package": "npm run build && zip BandcampEnhancementSuite.zip LICENSE _locales/**/* icons/* css/* dist/* manifest.json html/browser_action.html"
   },
   "repository": {
     "type": "git",

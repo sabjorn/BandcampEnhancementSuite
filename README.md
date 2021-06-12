@@ -38,10 +38,14 @@ Moves the forward/back buttons for the player (on album and track pages) to righ
 ### Tracklist Relocation
 Moves the tracklist on an album's page directly below the player.
 
-
-
 ### Bundle Purchase Download Button
 Adds a button to help automate the process of download a cart after purchase. Once all music download links are ready this button, when clicked, generate a `.txt` file which can be **pasted** into [terminal](https://en.wikipedia.org/wiki/List_of_terminal_emulators) to automate the downloading process. This `.txt` file uses [cURL](https://en.wikipedia.org/wiki/CURL).
+
+Additionally, while the generated file is a `.txt`, it can be run directly in terminal with the command:
+````
+. ./bandcamp_*.txt
+```
+This will download the files into the same directory the terminal session is in.
 
 ## Installation
 Available from the [Chrome webstore](https://chrome.google.com/webstore/detail/bandcamp-label-view/padcfdpdlnpdojcihidkgjnmleeingep)

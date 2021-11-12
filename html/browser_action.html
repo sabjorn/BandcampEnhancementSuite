@@ -14,6 +14,17 @@
         padding-bottom: 1em;
         font-family: Helvetica, Ubuntu, Arial, sans-serif;
     }
+    button a, a:hover, a:visited, a:active {
+        color: inherit;
+        text-decoration: none;
+    }
+    .stack-left {
+        display: block;
+        float: left;
+    }
+    .space {
+        margin-bottom: 10px;
+    }
 </style>
 
 <div id="mainPopup">
@@ -41,20 +52,32 @@
     </div>
 
 <h2>Links</h2>
-<ul>
-    <li>
+<div class="stack-left">
+    <div class="space">
+    <button>
+        <a href="https://github.com/sponsors/sabjorn" target="_blank">Sponsor This Project</a>
+    </button>
+    </div>
+    <div class="space">
+    <button>
+        <a href="https://halfpastvibe.bandcamp.com/" target="_blank">Buy My Music</a>
+    </button>
+    </div>
+    <div class="space">
+    <button>
         <a href="https://github.com/sabjorn/BandcampEnhancementSuite" target="_blank">
-            Project Homepage
-        </a>
-    </li>
-    <li>
-        <a href="https://sabjorn.net/bandcampenhancementsuite/privacy.html" target="_blank">
-            Privacy Policy
-        </a>
-    </li>
-    <li>
-        <a href="https://chrome.google.com/webstore/detail/bandcamp-enhancement-suit/padcfdpdlnpdojcihidkgjnmleeingep" target="_blank">
-            Support
-        </a>
-    </li>
+        Project Homepage</a>
+    </button>
+    </div>
+    <div class="space">
+    <button>
+        <a href="https://sabjorn.net/bandcampenhancementsuite/privacy.html" target="_blank">Privacy Policy</a>
+    </button>
+    </div>
+    <div class="space">
+    <button>
+        <a href="https://chrome.google.com/webstore/detail/bandcamp-enhancement-suit/padcfdpdlnpdojcihidkgjnmleeingep" target="_blank">Help</a>
+    </button>
+    </div>
+</div>
 </div>

@@ -2,6 +2,7 @@ import LabelView from "./label_view.js";
 import DownloadHelper from "./download_helper.js";
 import Player from "./player.js";
 import Waveform from "./waveform.js";
+import Checkout from "./checkout.js";
 
 window.onload = () => {
   const lv = new LabelView();
@@ -23,5 +24,8 @@ window.onload = () => {
 
     let waveform = new Waveform();
     waveform.init();
+
+    let checkout = new Checkout();
+    checkout.init();
   }
 };

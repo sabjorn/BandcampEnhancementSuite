@@ -39,13 +39,12 @@ describe("WaveformBackend", () => {
     it("should call chrome.runtime.onConnect", () => {
       wb.init();
       expect(chrome.runtime.onMessage.addListener).to.be.calledWith(
-        wb.boundProcessAudio
+        wb.processAudio
       );
     });
   });
 
-  // we test wb.boundProcessAudio because "log" is stubbed there
-  describe("boundProcessAudio()", () => {
+  describe("processAudio()", () => {
     let request;
 
     let sendResponseSpy = sinon.spy();
@@ -73,7 +72,7 @@ describe("WaveformBackend", () => {
     });
 
     it("should return without doing anything", () => {
-      wb.boundProcessAudio(request, null, sendResponseSpy);
+      wb.processAudio(request, null, sendResponseSpy);
 
       expect(sendResponseSpy).to.be.not.called;
       expect(window.OfflineAudioContext).to.be.not.called;
@@ -81,7 +80,7 @@ describe("WaveformBackend", () => {
 
     it("should call AudioContext", () => {
       request.contentScriptQuery = "renderBuffer";
-      let returnValue = wb.boundProcessAudio(request, null, sendResponseSpy);
+      let returnValue = wb.processAudio(request, null, sendResponseSpy);
 
       expect(window.OfflineAudioContext).to.be.called;
       expect(stubedFetch).to.be.calledWith(

@@ -7,14 +7,14 @@ export default class Player {
   constructor() {
     this.log = new Logger();
 
-    this.boundKeydown = Player.keydownCallback.bind(this);
-    this.boundVolume = Player.volumeSliderCallback.bind(this);
+    this.keydownCallback = Player.keydownCallback.bind(this);
+    this.volumeSliderCallback = Player.volumeSliderCallback.bind(this);
   }
 
   init() {
     this.log.info("Starting BES Player");
 
-    document.addEventListener("keydown", this.boundKeydown);
+    document.addEventListener("keydown", this.keydownCallback);
 
     let progressBar = document.querySelector(".progbar");
     progressBar.style.cursor = "pointer";
@@ -30,7 +30,7 @@ export default class Player {
     controls.classList.add("controls");
 
     let volumeSlider = Player.createVolumeSlider();
-    volumeSlider.addEventListener("input", this.boundVolume);
+    volumeSlider.addEventListener("input", this.volumeSliderCallback);
     controls.append(volumeSlider);
 
     let playButton = Player.transferPlayButton();

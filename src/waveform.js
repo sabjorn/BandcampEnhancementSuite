@@ -11,17 +11,17 @@ export default class Waveform {
     this.waveformColour;
     this.waveformOverlayColour;
 
-    this.boundToggleWaveformCanvas = Waveform.toggleWaveformCanvasCallback.bind(
+    this.toggleWaveformCanvasCallback = Waveform.toggleWaveformCanvasCallback.bind(
       this
     );
-    this.boundMonitorAudioCanPlay = Waveform.monitorAudioCanPlayCallback.bind(
+    this.monitorAudioCanPlayCallback = Waveform.monitorAudioCanPlayCallback.bind(
       this
     );
-    this.boundMonitorAudioTimeupdate = Waveform.monitorAudioTimeupdateCallback.bind(
+    this.monitorAudioTimeupdateCallback = Waveform.monitorAudioTimeupdateCallback.bind(
       this
     );
 
-    this.boundApplyConfig = Waveform.applyConfig.bind(this);
+    this.applyConfig = Waveform.applyConfig.bind(this);
 
     try {
       this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
@@ -43,7 +43,7 @@ export default class Waveform {
     this.canvasDisplayDiv = this.canvasDisplayToggle.parentNode;
     this.canvasDisplayDiv.addEventListener(
       "click",
-      this.boundToggleWaveformCanvas
+      this.toggleWaveformCanvasCallback
     );
 
     let bg = document.querySelector("h2.trackTitle");
@@ -54,13 +54,13 @@ export default class Waveform {
 
     document
       .querySelector("audio")
-      .addEventListener("canplay", this.boundMonitorAudioCanPlay);
+      .addEventListener("canplay", this.monitorAudioCanPlayCallback);
 
     document
       .querySelector("audio")
-      .addEventListener("timeupdate", this.boundMonitorAudioTimeupdate);
+      .addEventListener("timeupdate", this.monitorAudioTimeupdateCallback);
 
-    this.port.onMessage.addListener(this.boundApplyConfig);
+    this.port.onMessage.addListener(this.applyConfig);
     this.port.postMessage({ requestConfig: {} }); // TO DO: this must be at end of init, write test
   }
 

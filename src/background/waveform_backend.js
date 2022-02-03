@@ -3,12 +3,12 @@ import Logger from "../logger";
 export default class WaveformBackend {
   constructor() {
     this.log = new Logger();
-    this.boundProcessAudio = WaveformBackend.processAudio.bind(this);
+    this.processAudio = WaveformBackend.processAudio.bind(this);
   }
 
   init() {
     this.log.info("starting waveform backend.");
-    chrome.runtime.onMessage.addListener(this.boundProcessAudio);
+    chrome.runtime.onMessage.addListener(this.processAudio);
   }
 
   static processAudio(request, sender, sendResponse) {

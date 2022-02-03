@@ -96,3 +96,37 @@ div .prev, .next {
      padding-left: 5px;
      padding-top: 5px;
 }
+
+#bes_dialog {
+     outline: 0px; 
+     z-index: 1002; 
+     position: absolute; 
+     height: auto; 
+     width: 500px; 
+     top: 50%;
+     left: 50%;
+     transform: translateX(-50%) translateY(-50%);
+}
+
+#bes_user_price {
+    display: inline-block;
+    font-size: 20px;
+    margin: 0 5px 0 0;
+    padding: 8px 5px 8px 25px;
+    width: 75px;
+    transition: box-shadow ease-in-out 0.2s;
+}
+
+.buy-dlg #bes_download_buttons button {
+    width: 100%;
+}
+
+.buy-dlg #bes_download_buttons .ft > * {
+    display: inline-block;
+    text-align: center;
+    vertical-align: top;
+}
+
+.ieLte7 .buy-dlg #bes_download_buttons .ft > * {
+    display: inline;
+}

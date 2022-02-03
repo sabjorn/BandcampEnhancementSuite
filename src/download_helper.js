@@ -83,7 +83,7 @@ export default class DownloadHelper {
       const url = item.getAttribute("href");
       // Prevent duplicate URLs
       if (filelist.indexOf(url) === -1) {
-        filelist += "curl -OJ \"" + url + "\" && \\\n";
+        filelist += 'curl -OJ "' + url + '" && \\\n';
       }
     });
     filelist = filelist.substring(0, filelist.length - 6);

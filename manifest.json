@@ -19,7 +19,6 @@
   "permissions": [
     "http://*.bandcamp.com/*",
     "https://*.bandcamp.com/*",
-    "storage",
     "https://t4.bcbits.com/stream/*"
   ],
   "background": {

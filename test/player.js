@@ -52,7 +52,7 @@ describe("Player", () => {
 
       expect(document.addEventListener).to.have.been.calledWith(
         "keydown",
-        player.boundKeydown
+        player.keydownCallback
       );
     });
 
@@ -152,7 +152,7 @@ describe("Player", () => {
       expect(Player.createVolumeSlider).to.have.been.called;
       expect(volumeSlider.addEventListener).to.have.been.calledWith(
         "input",
-        player.boundVolume
+        player.volumeSliderCallback
       );
     });
 
@@ -283,7 +283,7 @@ describe("Player", () => {
     });
   });
 
-  describe("boundKeydown", () => {
+  describe("keydownCallback", () => {
     let spyElement;
     let event;
 
@@ -300,13 +300,13 @@ describe("Player", () => {
 
     it("click play button if space or 'p' pushed", () => {
       event.key = "p";
-      player.boundKeydown(event);
+      player.keydownCallback(event);
 
       expect(document.querySelector).to.be.calledWith("div.playbutton");
       expect(spyElement.click).to.have.been.called;
 
       event.key = " ";
-      player.boundKeydown(event);
+      player.keydownCallback(event);
 
       expect(document.querySelector).to.be.calledWith("div.playbutton");
       expect(spyElement.click).to.have.been.called;
@@ -315,7 +315,7 @@ describe("Player", () => {
 
     it("click prevbutton if 'ArrowUp'", () => {
       event.key = "ArrowUp";
-      player.boundKeydown(event);
+      player.keydownCallback(event);
 
       expect(document.querySelector).to.be.calledWith("div.prevbutton");
       expect(spyElement.click).to.have.been.called;
@@ -324,7 +324,7 @@ describe("Player", () => {
 
     it("click nextbutton if 'ArrowDown'", () => {
       event.key = "ArrowDown";
-      player.boundKeydown(event);
+      player.keydownCallback(event);
 
       expect(document.querySelector).to.be.calledWith("div.nextbutton");
       expect(spyElement.click).to.have.been.called;
@@ -335,7 +335,7 @@ describe("Player", () => {
       spyElement.currentTime = 100;
 
       event.key = "ArrowRight";
-      player.boundKeydown(event);
+      player.keydownCallback(event);
 
       expect(document.querySelector).to.be.calledWith("audio");
       expect(spyElement.currentTime).to.be.equal(110);
@@ -346,7 +346,7 @@ describe("Player", () => {
       spyElement.currentTime = 100;
 
       event.key = "ArrowLeft";
-      player.boundKeydown(event);
+      player.keydownCallback(event);
 
       expect(document.querySelector).to.be.calledWith("audio");
       expect(spyElement.currentTime).to.be.equal(90);
@@ -355,7 +355,7 @@ describe("Player", () => {
 
     it("does not prevent other keys from being called", () => {
       event.key = "null";
-      player.boundKeydown(event);
+      player.keydownCallback(event);
 
       expect(event.preventDefault).to.have.not.been.called;
     });

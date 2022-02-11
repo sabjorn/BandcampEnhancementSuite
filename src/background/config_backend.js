@@ -2,7 +2,9 @@ import Logger from "../logger.js";
 import DBUtils from "../utilities.js";
 
 const defaultConfig = {
-  displayWaveform: false
+  displayWaveform: false,
+  albumPurchasedDuringCheckout: false,
+  albumOnCheckoutDisabled: false
 };
 
 export default class ConfigBackend {
@@ -10,19 +12,19 @@ export default class ConfigBackend {
     this.log = new Logger();
     this.dbUtils = new DBUtils();
 
-    this.boundConnectionListenerCallback = ConfigBackend.connectionListenerCallback.bind(
+    this.defaultConfig = defaultConfig;
+
+    this.connectionListenerCallback = ConfigBackend.connectionListenerCallback.bind(
       this
     );
 
-    this.boundPortListenerCallback = ConfigBackend.portListenerCallback.bind(
-      this
-    );
+    this.portListenerCallback = ConfigBackend.portListenerCallback.bind(this);
   }
 
   init() {
     this.log.info("initializing ConfigBackend");
 
-    chrome.runtime.onConnect.addListener(this.boundConnectionListenerCallback);
+    chrome.runtime.onConnect.addListener(this.connectionListenerCallback);
   }
 
   static connectionListenerCallback(port) {
@@ -35,7 +37,7 @@ export default class ConfigBackend {
     }
 
     this.port = port;
-    this.port.onMessage.addListener(this.boundPortListenerCallback);
+    this.port.onMessage.addListener(this.portListenerCallback);
   }
 
   static async portListenerCallback(msg) {
@@ -78,7 +80,8 @@ export default class ConfigBackend {
 
   async setupDB(db) {
     const dbConfig = await db.get("config", "config");
-    if (!dbConfig) await db.put("config", defaultConfig, "config");
+    const mergedConfig = ConfigBackend.mergeData(this.defaultConfig, dbConfig);
+    await db.put("config", mergedConfig, "config");
   }
 
   static mergeData(reference_config, new_config) {

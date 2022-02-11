@@ -9,16 +9,17 @@ import ConfigBackend from "../src/background/config_backend.js";
 
 describe("ConfigBackend", () => {
   let cb;
-  let dbStub;
   let sandbox;
+
+  const dbStub = { get: sinon.stub(), put: sinon.spy() };
+  const fakeDefaultConfig = { something: true, value: 123 };
 
   beforeEach(() => {
     sandbox = sinon.createSandbox();
     cb = new ConfigBackend();
 
-    dbStub = { get: sinon.stub(), put: sinon.spy() };
     sinon.stub(cb.dbUtils, "getDB").resolves(dbStub);
-
+    cb.defaultConfig = fakeDefaultConfig;
     sandbox.stub(cb, "log");
   });
 
@@ -34,12 +35,11 @@ describe("ConfigBackend", () => {
     it("should call chrome.runtime.onConnect when correct port name", () => {
       cb.init();
       expect(chrome.runtime.onConnect.addListener).to.be.calledWith(
-        cb.boundConnectionListenerCallback
+        cb.connectionListenerCallback
       );
     });
   });
 
-  // NOTE: must call 'bound' members instead of static versions
   describe("connectionListenerCallback()", () => {
     const port = {
       name: "",
@@ -53,7 +53,7 @@ describe("ConfigBackend", () => {
     it("will not attach listener to port if incorrect port name", () => {
       port.name = "not the right name";
 
-      cb.boundConnectionListenerCallback(port);
+      cb.connectionListenerCallback(port);
 
       expect(cb.port).to.not.equal(port);
       expect(port.onMessage.addListener).to.not.be.called;
@@ -62,11 +62,11 @@ describe("ConfigBackend", () => {
     it("will attach listener to port if incorrect port name", () => {
       port.name = "bandcamplabelview";
 
-      cb.boundConnectionListenerCallback(port);
+      cb.connectionListenerCallback(port);
 
       expect(cb.port).to.equal(port);
       expect(port.onMessage.addListener).to.be.calledWith(
-        cb.boundPortListenerCallback
+        cb.portListenerCallback
       );
     });
   });
@@ -81,20 +81,20 @@ describe("ConfigBackend", () => {
 
     it("creates a db handle", () => {
       const msg = { config: {} };
-      return cb.boundPortListenerCallback(msg).then(() => {
+      return cb.portListenerCallback(msg).then(() => {
         expect(cb.dbUtils.getDB).to.be.called;
       });
     });
 
     it("calls setupDB method", () => {
-      return cb.boundPortListenerCallback({}).then(() => {
+      return cb.portListenerCallback({}).then(() => {
         expect(cb.setupDB).to.be.calledWith(sinon.match(dbStub));
       });
     });
 
     it("will call synchronizeConfig() if msg contains config", () => {
       const msg = { config: {} };
-      return cb.boundPortListenerCallback(msg).then(() => {
+      return cb.portListenerCallback(msg).then(() => {
         expect(cb.synchronizeConfig).to.be.calledWith(dbStub, msg.config);
         expect(cb.toggleWaveformDisplay).to.not.be.called;
         expect(cb.broadcastConfig).to.not.be.called;
@@ -103,7 +103,7 @@ describe("ConfigBackend", () => {
 
     it("will call toggleWaveformDisplay() if msg contains toggleWaveformDisplay", () => {
       const msg = { toggleWaveformDisplay: {} };
-      return cb.boundPortListenerCallback(msg).then(() => {
+      return cb.portListenerCallback(msg).then(() => {
         expect(cb.synchronizeConfig).to.not.be.called;
         expect(cb.toggleWaveformDisplay).to.be.calledWith(dbStub);
         expect(cb.broadcastConfig).to.not.be.called;
@@ -112,7 +112,7 @@ describe("ConfigBackend", () => {
 
     it("will call broadcastConfig() if msg contains requestConfig", () => {
       const msg = { requestConfig: {} };
-      return cb.boundPortListenerCallback(msg).then(() => {
+      return cb.portListenerCallback(msg).then(() => {
         expect(cb.synchronizeConfig).to.not.be.called;
         expect(cb.toggleWaveformDisplay).to.not.be.called;
         expect(cb.broadcastConfig).to.be.calledWith(dbStub);
@@ -208,28 +208,57 @@ describe("ConfigBackend", () => {
   });
 
   describe("setupDB()", () => {
-    it("provides write a default config to db if no entry exists", () => {
+    it("writes default config to db if no entry exists", () => {
       dbStub.get.resolves();
 
       return cb.setupDB(dbStub).then(() => {
         expect(dbStub.get).to.be.calledWith("config", "config");
 
-        const defaultConfig = { displayWaveform: false };
         expect(dbStub.put).to.be.calledWith(
           "config",
-          sinon.match(defaultConfig),
+          sinon.match(fakeDefaultConfig),
           "config"
         );
       });
     });
 
-    it("provides write a default config to db if no entry exists", () => {
-      const validConfig = { some: false };
+    it("writes a single value change change to db", () => {
+      const validConfig = {
+        something: false
+      };
       dbStub.get.resolves(validConfig);
 
       return cb.setupDB(dbStub).then(() => {
         expect(dbStub.get).to.be.calledWith("config", "config");
-        expect(dbStub.put).to.not.be.called;
+
+        let mergedConfig = fakeDefaultConfig;
+        mergedConfig["something"] = false;
+
+        expect(dbStub.put).to.be.calledWith(
+          "config",
+          sinon.match(mergedConfig),
+          "config"
+        );
+      });
+    });
+
+    it("adds new fields to db if config has new fields", () => {
+      const validConfig = {
+        something_new: 123
+      };
+      dbStub.get.resolves(validConfig);
+
+      return cb.setupDB(dbStub).then(() => {
+        expect(dbStub.get).to.be.calledWith("config", "config");
+
+        const mergedConfig = fakeDefaultConfig;
+        mergedConfig["something_new"] = 123;
+
+        expect(dbStub.put).to.be.calledWith(
+          "config",
+          sinon.match(mergedConfig),
+          "config"
+        );
       });
     });
   });
@@ -246,12 +275,19 @@ describe("ConfigBackend", () => {
     });
 
     it("will combine two config dictionaries and overwrite same key with new_dict values", () => {
-      const ref_dict = { one: 1, two: 2, three: 3 };
-      const new_dict = { one: 11, two: 12 };
+      const ref_dict = {
+        one: 1,
+        element: { two: 2, three: 3 },
+        four: 4
+      };
+      const new_dict = {
+        one: 11,
+        element: { two: 12 }
+      };
 
       const merged = ConfigBackend.mergeData(ref_dict, new_dict);
       expect(JSON.stringify(merged)).to.equal(
-        JSON.stringify({ one: 11, two: 12, three: 3 })
+        JSON.stringify({ one: 11, element: { two: 12 }, four: 4 })
       );
     });
   });

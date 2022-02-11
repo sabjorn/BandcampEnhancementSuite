@@ -143,7 +143,7 @@ describe("Waveform", () => {
       wf.init();
       expect(toggleDivSpy.addEventListener).to.have.been.calledWith(
         "click",
-        wf.boundToggleWaveformCanvas
+        wf.toggleWaveformCanvasCallback
       );
     });
 
@@ -159,7 +159,7 @@ describe("Waveform", () => {
       wf.init();
       expect(audioSpy.addEventListener).to.have.been.calledWith(
         "canplay",
-        wf.boundMonitorAudioCanPlay
+        wf.monitorAudioCanPlayCallback
       );
     });
 
@@ -167,14 +167,14 @@ describe("Waveform", () => {
       wf.init();
       expect(audioSpy.addEventListener).to.have.been.calledWith(
         "timeupdate",
-        wf.boundMonitorAudioTimeupdate
+        wf.monitorAudioTimeupdateCallback
       );
     });
 
     it("adds listener to port.onMessage", () => {
       wf.init();
       expect(mockPort.onMessage.addListener).to.have.been.calledWith(
-        wf.boundApplyConfig
+        wf.applyConfig
       );
     });
 
@@ -267,29 +267,28 @@ describe("Waveform", () => {
     });
 
     it("sets the display value of the waveform from config object", () => {
-      wf.boundApplyConfig({ config: { displayWaveform: false } });
+      wf.applyConfig({ config: { displayWaveform: false } });
       expect(canvasFake.style.display).to.be.equal("none");
 
-      wf.boundApplyConfig({ config: { displayWaveform: true } });
+      wf.applyConfig({ config: { displayWaveform: true } });
       expect(canvasFake.style.display).to.be.equal("inherit");
     });
 
     it("sets the display of the onscreen toggle", () => {
-      wf.boundApplyConfig({ config: { displayWaveform: false } });
+      wf.applyConfig({ config: { displayWaveform: false } });
       expect(canvasFake.style.display).to.be.equal("none");
 
-      wf.boundApplyConfig({ config: { displayWaveform: true } });
+      wf.applyConfig({ config: { displayWaveform: true } });
       expect(canvasFake.style.display).to.be.equal("inherit");
     });
   });
 
-  // "bound" functions are tested instead of the static version
-  describe("boundToggleWaveformCanvas()", () => {
+  describe("wf.toggleWaveformCanvasCallback()", () => {
     it("should send command to backend to invert waveformDisplay", () => {
       const expectedMessage = { toggleWaveformDisplay: {} };
       wf.port = mockPort;
 
-      wf.boundToggleWaveformCanvas();
+      wf.toggleWaveformCanvasCallback();
 
       expect(mockPort.postMessage).to.be.calledWith(
         sinon.match(expectedMessage)
@@ -297,7 +296,7 @@ describe("Waveform", () => {
     });
   });
 
-  describe("boundMonitorAudioCanPlay()", () => {
+  describe("monitorAudioCanPlayCallback()", () => {
     let audioSpy = { paused: true };
     let displayToggle = { checked: false };
     let generateWaveformSpy;
@@ -314,7 +313,7 @@ describe("Waveform", () => {
     it("should call generateWaveform() ", () => {
       audioSpy.paused = false;
       displayToggle.checked = true;
-      wf.boundMonitorAudioCanPlay();
+      wf.monitorAudioCanPlayCallback();
 
       expect(wf.generateWaveform).to.be.called;
     });
@@ -322,19 +321,19 @@ describe("Waveform", () => {
     it("should not call generateWaveform() ", () => {
       audioSpy.paused = true;
       displayToggle.checked = true;
-      wf.boundMonitorAudioCanPlay();
+      wf.monitorAudioCanPlayCallback();
 
       expect(wf.generateWaveform).to.not.be.called;
 
       audioSpy.paused = true;
       displayToggle.checked = false;
-      wf.boundMonitorAudioCanPlay();
+      wf.monitorAudioCanPlayCallback();
 
       expect(wf.generateWaveform).to.not.be.called;
     });
   });
 
-  describe("boundMonitorAudioTimeupdate()", () => {
+  describe("monitorAudioTimeupdateCallback()", () => {
     it("should update waveform overlay by calling Waveform.drawOverlay", () => {
       sandbox.stub(Waveform, "drawOverlay");
 
@@ -345,7 +344,7 @@ describe("Waveform", () => {
         }
       };
 
-      wf.boundMonitorAudioTimeupdate(event);
+      wf.monitorAudioTimeupdateCallback(event);
       const expectedProgress = 0.1;
       expect(Waveform.drawOverlay).to.be.calledWith(
         wf.canvas,

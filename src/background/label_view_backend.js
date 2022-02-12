@@ -28,19 +28,6 @@ export default class LabelViewBackend {
       function isEmpty(obj) {
         return Object.keys(obj).length === 0;
       }
-      // upgrade old storage
-      const storeName = "previews";
-      chrome.storage.sync.get(storeName, function(result) {
-        try {
-          if (!isEmpty(result)) {
-            result[storeName].forEach(function(item, index) {
-              LabelViewBackend.setVal(storeName, true, item);
-            });
-          }
-        } catch (e) {
-          this.log.error(e);
-        }
-      });
     });
   }
 

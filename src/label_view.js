@@ -23,14 +23,6 @@ export default class LabelView {
         throw e;
       }
     }
-    // migrates old local storage, will be deleted in future versions
-    var pluginState = window.localStorage;
-
-    Object.keys(pluginState).forEach(key => {
-      if (pluginState[key] === "true" && !key.includes("-")) {
-        this.setPreviewed(key);
-      }
-    });
   }
 
   init() {

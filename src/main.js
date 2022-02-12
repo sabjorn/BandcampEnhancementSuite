@@ -25,7 +25,7 @@ window.onload = () => {
     let waveform = new Waveform();
     waveform.init();
 
-    let checkout = new Checkout();
-    checkout.init();
+    // let checkout = new Checkout();
+    // checkout.init();
   }
 };

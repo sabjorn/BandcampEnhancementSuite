@@ -2,7 +2,7 @@ import Logger from "./logger";
 import { mousedownCallback } from "./utilities.js";
 
 export default class Waveform {
-  constructor() {
+  constructor(port) {
     this.log = new Logger();
 
     this.currentTarget;
@@ -22,17 +22,7 @@ export default class Waveform {
     );
 
     this.applyConfig = Waveform.applyConfig.bind(this);
-
-    try {
-      this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
-    } catch (e) {
-      if (e.message.includes("Error in invocation of runtime.connect")) {
-        this.log.error(e);
-        return;
-      } else {
-        throw e;
-      }
-    }
+    this.port = port;
   }
 
   init() {

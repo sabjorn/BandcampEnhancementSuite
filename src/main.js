@@ -1,3 +1,4 @@
+import Logger from "./logger";
 import LabelView from "./label_view.js";
 import DownloadHelper from "./download_helper.js";
 import Player from "./player.js";
@@ -5,6 +6,8 @@ import Waveform from "./waveform.js";
 import Checkout from "./checkout.js";
 
 window.onload = () => {
+  const log = new Logger();
+
   const lv = new LabelView();
   lv.init();
 
@@ -22,10 +25,23 @@ window.onload = () => {
     const player = new Player();
     player.init();
 
-    let waveform = new Waveform();
+
+    let config_port;
+    try {
+      config_port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
+    } catch (e) {
+      if (e.message.includes("Error in invocation of runtime.connect in main.js")) {
+        log.error(e);
+        return;
+      } else {
+        throw e;
+      }
+    }
+
+    let waveform = new Waveform(config_port);
     waveform.init();
 
-    // let checkout = new Checkout();
-    // checkout.init();
+    let checkout = new Checkout(config_port);
+    checkout.init();
   }
 };

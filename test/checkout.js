@@ -23,47 +23,13 @@ describe("Checkout", () => {
       postMessage: sinon.spy()
     };
 
-    global.chrome = chrome;
-    chrome.runtime.connect.returns(mockPort);
-
-    c = new Checkout();
+    c = new Checkout(mockPort);
 
     sandbox.stub(c, "log");
   });
 
   afterEach(() => {
     sandbox.restore();
-  });
-
-  // NOTE: this is borrowed from waveform tests
-  describe("constructor", () => {
-    describe("chrome communication configuration", () => {
-      it("configures chrome.runtime.connection", () => {
-        new Checkout();
-
-        expect(chrome.runtime.connect).to.be.calledWith(null, {
-          name: "bandcamplabelview"
-        });
-      });
-
-      it("does not throw error if 'Error in invocation'", () => {
-        const error = new Error("Error in invocation of runtime.connect");
-        chrome.runtime.connect.throws(error);
-
-        const throwCheck = () => new Checkout();
-
-        expect(throwCheck).to.not.throw();
-      });
-
-      it("should throw error for all other errors from chrome'", () => {
-        const error = new Error("some error message");
-        chrome.runtime.connect.throws(error);
-
-        const throwCheck = () => new Checkout();
-
-        expect(throwCheck).to.throw();
-      });
-    });
   });
 
   describe("init()", () => {

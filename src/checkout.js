@@ -6,7 +6,7 @@ import Logger from "./logger";
 const albumsToPurchase = [1609998585];
 
 export default class Checkout {
-  constructor() {
+  constructor(port) {
     this.log = new Logger();
 
     this.config;
@@ -21,16 +21,7 @@ export default class Checkout {
     this.yesButtonClicked = Checkout.yesButtonClicked.bind(this);
     this.noButtonClicked = Checkout.noButtonClicked.bind(this);
 
-    try {
-      this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
-    } catch (e) {
-      if (e.message.includes("Error in invocation of runtime.connect")) {
-        this.log.error(e);
-        return;
-      } else {
-        throw e;
-      }
-    }
+    this.port = port;
   }
 
   init() {

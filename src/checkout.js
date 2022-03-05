@@ -131,7 +131,7 @@ export default class Checkout {
     const element = document.createElement("div");
     element.insertAdjacentHTML("beforeend", html);
 
-    const dialog = element.querySelector(".ui-dialog");
+    const dialog = element.querySelector("#bes_wrapper");
 
     window.document.body.appendChild(dialog);
 

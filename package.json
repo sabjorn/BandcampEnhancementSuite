@@ -7,6 +7,8 @@
     "winston": "^3.3.2"
   },
   "devDependencies": {
+    "@percy/cli": "^1.0.0-beta.76",
+    "@percy/puppeteer": "^2.0.0",
     "chai": "^4.2.0",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.9.0",
@@ -21,6 +23,7 @@
     "karma-webpack": "^4.0.2",
     "mocha": "^7.2.0",
     "prettier": "^1.19.1",
+    "puppeteer": "^13.5.1",
     "raw-loader": "^4.0.2",
     "sinon": "^9.0.2",
     "sinon-chai": "^3.5.0",
@@ -37,6 +40,7 @@
     "build": "webpack --config webpack.config.js",
     "build:dev": "npm run build -- --mode=development",
     "build:watch": "npm run build:dev -- --watch --progress",
+    "snapshots": "percy exec -- node snapshots.js",
     "clean": "rm -fr ./node_modules ./dist",
     "package": "npm run build && zip BandcampEnhancementSuite.zip LICENSE _locales/**/* icons/* css/* dist/* manifest.json html/browser_action.html"
   },

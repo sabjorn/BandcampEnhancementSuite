@@ -1,4 +1,5 @@
 import Logger from "./logger";
+import Sortable from 'sortablejs';
 
 export default class Playlist {
   constructor() {
@@ -12,6 +13,7 @@ export default class Playlist {
     this.form = document.querySelector("input");
     this.audio = document.querySelector("audio");
     this.playlist = document.querySelector(".playlist").querySelector("ul");
+    Sortable.create(this.playlist);
 
     this.button.addEventListener("click", () => {
       this.port.postMessage({ url: this.form.value });
@@ -28,7 +30,8 @@ export default class Playlist {
               this.audio.src = element["file"]["mp3-128"];
               this.audio.play();
           });
-            this.playlist.appendChild(li);
+         
+          this.playlist.appendChild(li);
         });
     });
   }

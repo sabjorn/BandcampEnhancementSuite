@@ -44,7 +44,10 @@ export default class Playlist {
         const artist_name = element["artist"] ? element["artist"] : mes["album_artist"];
         const text = document.createTextNode(`${element["track_num"]} : ${artist_name} - ${element["title"]}`);
         
-        const link = document.createElement("a"); // needs to come back with "mess"
+        const link = document.createElement("a");
+        const base_url = mes["album_url"].split("/track")[0].split("/album")[0];
+        link.href = `${base_url}${element["title_link"]}`;
+        link.target = '_blank';
         link.appendChild(text);
 
         div.appendChild(play_button);

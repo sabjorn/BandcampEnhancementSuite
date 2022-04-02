@@ -29,6 +29,10 @@ export default class Playlist {
         const play_button = document.createElement("div")
         play_button.classList.add("play_status");
         play_button.addEventListener("click", (event) => {
+          const album_art = document.querySelector(".album_art");
+          album_art.style.display = "block";
+          album_art.querySelector("img").src = `https://f4.bcbits.com/img/a${mes["album_art"]}_10.jpg`;
+
           if(event.target.classList.contains("playing")) {
             event.target.classList.remove("playing");
             this.audio.pause();

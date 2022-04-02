@@ -28,7 +28,11 @@ export default class PlaylistBackend {
           .querySelector("script[data-tralbum]")
           .getAttribute("data-tralbum");
         const mp3data = JSON.parse(album_collection);
-        this.port.postMessage(mp3data["trackinfo"]);
+        this.port.postMessage({
+          "album_artist": mp3data["artist"],
+          "album_url": mp3data["url"],
+          "track_data": mp3data["trackinfo"]
+        });
       })
       .catch(error => {
         this.log.error("Error:", error);
@@ -49,4 +53,5 @@ export default class PlaylistBackend {
     this.port = port;
     this.port.onMessage.addListener(this.fetchPlaylistData);
   }
+
 }

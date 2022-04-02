@@ -20,7 +20,7 @@ export default class Playlist {
     });
 
     this.port.onMessage.addListener(mes => {
-      mes.forEach(element => {
+      mes["track_data"].forEach(element => {
         let li = document.createElement("li");
         li.style.cursor = "pointer";
 
@@ -41,8 +41,10 @@ export default class Playlist {
           this.audio.play();
         });
 
+        const artist_name = element["artist"] ? element["artist"] : mes["album_artist"];
+        const text = document.createTextNode(`${element["track_num"]} : ${artist_name} - ${element["title"]}`);
+        
         const link = document.createElement("a"); // needs to come back with "mess"
-        const text = document.createTextNode(`${element["track_num"]} : ${element["title"]}`);
         link.appendChild(text);
 
         div.appendChild(play_button);

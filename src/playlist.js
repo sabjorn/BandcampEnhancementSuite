@@ -20,18 +20,24 @@ export default class Playlist {
       this.port.postMessage({ url: this.form.value });
     });
 
-    this.add_button.addEventListener("click", () => {
-        // eventually db call
-        //const yaml = "tracks:\n";
-        //document.querySelectorAll("li").forEach((element) => {
-        //    const element_yaml = "";
-        //    
-        //    const link = element.querySelector("a");
-        //    const track_text = `\turl: ${link.href}\n`;
-        //    const track_metadata = `\tmeta: ${link.innerHTML}\n`;
-        //    element_yaml.concat(track_text);
-        //    element_yaml.concat
-        //});
+    this.export_button.addEventListener("click", () => {
+      // eventually db call
+      let tracks = [];
+      document.querySelectorAll("li").forEach((element) => {
+        this.log.info(element);
+
+        const link = element.querySelector("a");
+        const play_button = element.querySelector(".play_status");
+
+        const track_data = { 
+          "url": link.href,
+          "meta": link.innerHTML,
+          "img_id": play_button.getAttribute("img_id"),
+        };
+        tracks.push(track_data);
+      });
+
+      Playlist.download("playlist.json", JSON.stringify(tracks))
     });
 
     this.port.onMessage.addListener(mes => {
@@ -78,5 +84,23 @@ export default class Playlist {
         this.playlist.appendChild(li);
       });
     });
+  }
+  
+  static download(filename, text) {
+    // COPIED FROM download_helper.js, should eventually be moved to utilities.js
+    var element = document.createElement("a");
+
+    element.setAttribute(
+      "href",
+      "data:text/plain;charset=utf-8," + encodeURIComponent(text)
+    );
+    element.setAttribute("download", filename);
+
+    element.style.display = "none";
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
   }
 }

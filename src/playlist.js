@@ -9,29 +9,45 @@ export default class Playlist {
 
   init() {
     this.log.info("Loaded Playlist");
-    this.button = document.querySelector("button");
+    this.add_button = document.querySelector("#add");
+    this.export_button = document.querySelector("#export");
     this.form = document.querySelector("input");
     this.audio = document.querySelector("audio");
     this.playlist = document.querySelector(".playlist").querySelector("ul");
     Sortable.create(this.playlist);
 
-    this.button.addEventListener("click", () => {
+    this.add_button.addEventListener("click", () => {
       this.port.postMessage({ url: this.form.value });
+    });
+
+    this.add_button.addEventListener("click", () => {
+        // eventually db call
+        //const yaml = "tracks:\n";
+        //document.querySelectorAll("li").forEach((element) => {
+        //    const element_yaml = "";
+        //    
+        //    const link = element.querySelector("a");
+        //    const track_text = `\turl: ${link.href}\n`;
+        //    const track_metadata = `\tmeta: ${link.innerHTML}\n`;
+        //    element_yaml.concat(track_text);
+        //    element_yaml.concat
+        //});
     });
 
     this.port.onMessage.addListener(mes => {
       mes["track_data"].forEach(element => {
-        let li = document.createElement("li");
-        li.style.cursor = "pointer";
+        const li = document.createElement("li");
 
         const div = document.createElement("div");
 
         const play_button = document.createElement("div")
+        play_button.setAttribute("img_id", mes["album_art"]);
         play_button.classList.add("play_status");
         play_button.addEventListener("click", (event) => {
           const album_art = document.querySelector(".album_art");
           album_art.style.display = "block";
-          album_art.querySelector("img").src = `https://f4.bcbits.com/img/a${mes["album_art"]}_10.jpg`;
+          const img_id = event.target.getAttribute("img_id"); 
+          album_art.querySelector("img").src = `https://f4.bcbits.com/img/a${img_id}_10.jpg`;
 
           if(event.target.classList.contains("playing")) {
             event.target.classList.remove("playing");

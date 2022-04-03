@@ -106,8 +106,10 @@ export default class Playlist {
 
         document.querySelectorAll(".play_status").forEach(element => {
           element.classList.remove("playing");
+          element.parentElement.parentElement.style.backgroundColor = "#FFFFFF";
         });
         event.target.classList.add("playing");
+        event.target.parentElement.parentElement.style.backgroundColor = "#FFFF00";
         this.audio.src = event.target.getAttribute("mp3-128");
         this.audio.play();
       });

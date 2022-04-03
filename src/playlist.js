@@ -23,11 +23,10 @@ export default class Playlist {
     });
 
     this.export_button.addEventListener("click", () => {
+      this.log.info("Exporting JSON");
       // eventually db call
       let tracks = [];
       document.querySelectorAll("li").forEach(element => {
-        this.log.info(element);
-
         const link = element.querySelector("a");
         const play_button = element.querySelector(".play_status");
 
@@ -44,6 +43,7 @@ export default class Playlist {
     });
 
     this.import_button.addEventListener("change", event => {
+      this.log.info("Importing JSON");
       let file = event.target.files[0];
 
       let reader = new FileReader();
@@ -83,6 +83,7 @@ export default class Playlist {
   }
 
   static appendTracks(mes) {
+    this.log.info("Appending Tracks");
     mes["track_data"].forEach(element => {
       const li = document.createElement("li");
 

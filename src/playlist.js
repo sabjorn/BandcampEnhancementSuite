@@ -56,11 +56,11 @@ export default class Playlist {
         parsed.forEach(track => {
           let track_data = [];
           const track_num = track["meta"].split(" : ")[0];
-          const artist_name = track["meta"].split(" : ")[1].split(" - ")[0];
+          const artist = track["meta"].split(" : ")[1].split(" - ")[0];
           const title = track["meta"].split(" - ")[1];
           const title_link = track["url"].split(".com")[1];
           track_data.push({
-            artist_name: artist_name,
+            artist: artist,
             track_num: track_num,
             title: title,
             title_link: title_link,

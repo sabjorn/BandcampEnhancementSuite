@@ -54,23 +54,19 @@ export default class Playlist {
         const parsed = JSON.parse(reader.result);
 
         parsed.forEach(track => {
-          let track_data = [];
-          const track_num = track["meta"].split(" : ")[0];
-          const artist = track["meta"].split(" : ")[1].split(" - ")[0];
-          const title = track["meta"].split(" - ")[1];
-          const title_link = track["url"].split(".com")[1];
-          track_data.push({
-            artist: artist,
-            track_num: track_num,
-            title: title,
-            title_link: title_link,
-            file: { "mp3-128": track["mp3-128"] }
-          });
+          const track_data = [
+            {
+              artist: track["meta"].split(" : ")[1].split(" - ")[0],
+              track_num: track["meta"].split(" : ")[0],
+              title: track["meta"].split(" - ")[1],
+              title_link: track["url"].split(".com")[1],
+              file: { "mp3-128": track["mp3-128"] }
+            }
+          ];
 
-          const album_url = `${track["url"].split(".com")[0]}.com`;
           const tracks = {
             track_data: track_data,
-            album_url: album_url,
+            album_url: `${track["url"].split(".com")[0]}.com`,
             album_art: track["img_id"]
           };
 

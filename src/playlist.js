@@ -112,6 +112,13 @@ export default class Playlist {
         this.audio.play();
       });
 
+      const delete_button = document.createElement("button");
+      delete_button.innerHTML = "x";
+      delete_button.style.height = "15px";
+      delete_button.addEventListener("click", event => {
+        event.target.parentElement.parentElement.remove();
+      });
+
       const artist_name = element["artist"]
         ? element["artist"]
         : mes["album_artist"];
@@ -127,6 +134,7 @@ export default class Playlist {
 
       div.appendChild(play_button);
       div.appendChild(link);
+      div.appendChild(delete_button);
 
       li.appendChild(div);
 

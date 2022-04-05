@@ -91,12 +91,10 @@ export default class Playlist {
       play_button.classList.add("play_status");
 
       play_button.addEventListener("click", event => {
-        const album_art = document.querySelector(".album_art");
+        const album_art = document.querySelector(".album_art").querySelector("img");
         album_art.style.display = "block";
         const img_id = event.target.getAttribute("img_id");
-        album_art.querySelector(
-          "img"
-        ).src = `https://f4.bcbits.com/img/a${img_id}_10.jpg`;
+        album_art.src = `https://f4.bcbits.com/img/a${img_id}_10.jpg`;
 
         if (event.target.classList.contains("playing")) {
           event.target.classList.remove("playing");

@@ -18,6 +18,33 @@ export default class Playlist {
     this.playlist = document.querySelector(".playlist").querySelector("ul");
     Sortable.create(this.playlist);
 
+    document.addEventListener("keydown", (e) => {
+      this.log.info("Keydown: " + e.key);
+      if (e.target == document.body) {
+        const playing = document.querySelector(".playing");
+        if(playing == null) return;
+        if (e.key == "x") {
+          playing.closest("li").querySelector("button").click();
+        }
+        if (e.key == " " || e.key == "p") {
+          // play/pause
+          e.preventDefault();
+          this.audio.paused ? this.audio.play() : this.audio.pause();
+        }
+
+        if (e.key == "ArrowUp") {
+          // previous
+          // playing.closest("li").previousElementSibling.querySelector("button").click(); //doesn't work for some reason
+        }
+
+        if (e.key == "ArrowDown") {
+          // next
+          e.preventDefault();
+          playing.closest("li").nextElementSibling.querySelector(".play_status").click();
+        }
+      }
+    });
+
     this.add_button.addEventListener("click", () => {
       this.port.postMessage({ url: this.form.value });
     });

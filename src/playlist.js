@@ -116,7 +116,10 @@ export default class Playlist {
       delete_button.innerHTML = "x";
       delete_button.style.height = "15px";
       delete_button.addEventListener("click", event => {
-        event.target.parentElement.parentElement.remove();
+        // gross hack to get next play on clicking x!!!
+        event.target.closest("li").nextElementSibling.querySelector(".play_status").click();
+
+        event.target.closest("li").remove();
       });
 
       const artist_name = element["artist"]

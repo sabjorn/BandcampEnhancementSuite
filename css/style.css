@@ -138,3 +138,7 @@ div .prev, .next {
 .ieLte7 .buy-dlg #bes_download_buttons .ft > * {
     display: inline;
 }
+
+#bes_currently_playing {
+    background-color: #FFFF00;
+}

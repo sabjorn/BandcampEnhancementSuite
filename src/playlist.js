@@ -18,13 +18,16 @@ export default class Playlist {
     this.playlist = document.querySelector(".playlist").querySelector("ul");
     Sortable.create(this.playlist);
 
-    document.addEventListener("keydown", (e) => {
+    document.addEventListener("keydown", e => {
       this.log.info("Keydown: " + e.key);
       if (e.target == document.body) {
         const playing = document.querySelector(".playing");
-        if(playing == null) return;
+        if (playing == null) return;
         if (e.key == "x") {
-          playing.closest("li").querySelector("button").click();
+          playing
+            .closest("li")
+            .querySelector("button")
+            .click();
         }
         if (e.key == " " || e.key == "p") {
           // play/pause
@@ -40,7 +43,10 @@ export default class Playlist {
         if (e.key == "ArrowDown") {
           // next
           e.preventDefault();
-          playing.closest("li").nextElementSibling.querySelector(".play_status").click();
+          playing
+            .closest("li")
+            .nextElementSibling.querySelector(".play_status")
+            .click();
         }
       }
     });
@@ -56,12 +62,16 @@ export default class Playlist {
       document.querySelectorAll("li").forEach(element => {
         const link = element.querySelector("a");
         const play_button = element.querySelector(".play_status");
-
         const track_data = {
           url: link.href,
           meta: link.innerHTML,
           img_id: play_button.getAttribute("img_id"),
-          "mp3-128": play_button.getAttribute("mp3-128")
+          "mp3-128": play_button.getAttribute("mp3-128"),
+          bes_currently_playing:
+            play_button.closest("li").getAttribute("id") ==
+            "bes_currently_playing"
+              ? true
+              : false
         };
         tracks.push(track_data);
       });
@@ -87,7 +97,8 @@ export default class Playlist {
               track_num: track["meta"].split(" : ")[0],
               title: track["meta"].split(" - ")[1],
               title_link: track["url"].split(".com")[1],
-              file: { "mp3-128": track["mp3-128"] }
+              file: { "mp3-128": track["mp3-128"] },
+              bes_currently_playing: track["bes_currently_playing"]
             }
           ];
 
@@ -110,6 +121,9 @@ export default class Playlist {
     mes["track_data"].forEach(element => {
       const li = document.createElement("li");
 
+      if (element["bes_currently_playing"])
+        li.setAttribute("id", "bes_currently_playing");
+
       const div = document.createElement("div");
 
       const play_button = document.createElement("div");
@@ -118,7 +132,9 @@ export default class Playlist {
       play_button.classList.add("play_status");
 
       play_button.addEventListener("click", event => {
-        const album_art = document.querySelector(".album_art").querySelector("img");
+        const album_art = document
+          .querySelector(".album_art")
+          .querySelector("img");
         album_art.style.display = "block";
         const img_id = event.target.getAttribute("img_id");
         album_art.src = `https://f4.bcbits.com/img/a${img_id}_10.jpg`;
@@ -131,10 +147,14 @@ export default class Playlist {
 
         document.querySelectorAll(".play_status").forEach(element => {
           element.classList.remove("playing");
-          element.parentElement.parentElement.style.backgroundColor = "#FFFFFF";
+
+          element.parentElement.parentElement.removeAttribute("id");
         });
         event.target.classList.add("playing");
-        event.target.parentElement.parentElement.style.backgroundColor = "#FFFF00";
+        event.target.parentElement.parentElement.setAttribute(
+          "id",
+          "bes_currently_playing"
+        );
         this.audio.src = event.target.getAttribute("mp3-128");
         this.audio.play();
       });
@@ -144,7 +164,10 @@ export default class Playlist {
       delete_button.style.height = "15px";
       delete_button.addEventListener("click", event => {
         // gross hack to get next play on clicking x!!!
-        event.target.closest("li").nextElementSibling.querySelector(".play_status").click();
+        event.target
+          .closest("li")
+          .nextElementSibling.querySelector(".play_status")
+          .click();
 
         event.target.closest("li").remove();
       });

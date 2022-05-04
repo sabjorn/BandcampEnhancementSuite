@@ -298,6 +298,15 @@ describe("Player", () => {
       sandbox.restore();
     });
 
+    it("if Meta (CMD on Mac) is pressed, nothing happens", () => {
+      event.key = "Meta";
+      player.keydownCallback(event);
+
+      expect(event.preventDefault).to.have.not.been.called;
+      expect(document.querySelector).to.have.not.been.called;
+      expect(spyElement.click).to.have.not.been.called;
+    });
+
     it("click play button if space or 'p' pushed", () => {
       event.key = "p";
       player.keydownCallback(event);

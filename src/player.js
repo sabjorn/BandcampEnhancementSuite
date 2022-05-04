@@ -102,6 +102,9 @@ export default class Player {
   static keydownCallback(e) {
     this.log.info("Keydown: " + e.key);
     if (e.target == document.body) {
+      if (e.key == "Meta") {
+        return;
+      }
       if (e.key == " " || e.key == "p") {
         e.preventDefault();
         document.querySelector("div.playbutton").click();

@@ -155,6 +155,25 @@ export default class Playlist {
           "id",
           "bes_currently_playing"
         );
+
+        // check if expired
+        const mp3_url = event.target.getAttribute("mp3-128");
+        const expiration = mp3_url.split("ts=")[1].split("&")[0];
+        const now = Math.floor(Date.now() / 1000);
+        if (now > expiration) {
+          const track_url = event.target.parentElement.querySelector("a").href;
+          this.log.info(`track url expired, updating from ${track_url}`);
+          chrome.runtime.sendMessage({ url: track_url }, response => {
+            this.log.info("updated url received");
+            event.target.setAttribute(
+              "mp3-128",
+              response["track_data"][0]["file"]["mp3-128"]
+            );
+            this.audio.src = event.target.getAttribute("mp3-128");
+            this.audio.play();
+          });
+          return;
+        }
         this.audio.src = event.target.getAttribute("mp3-128");
         this.audio.play();
       });

@@ -12,6 +12,7 @@ export default class PlaylistBackend {
   init() {
     this.log.info("starting playlist backend.");
     chrome.runtime.onConnect.addListener(this.connectionListenerCallback);
+    chrome.runtime.onMessage.addListener(this.fetchPlaylistData); // for one off messages
   }
 
   static fetchPlaylistData(request, sender, sendResponse) {
@@ -28,12 +29,20 @@ export default class PlaylistBackend {
           .querySelector("script[data-tralbum]")
           .getAttribute("data-tralbum");
         const mp3data = JSON.parse(album_collection);
-        this.port.postMessage({
+
+        sendResponse({
           album_artist: mp3data["artist"],
           album_url: mp3data["url"],
           album_art: mp3data["art_id"],
           track_data: mp3data["trackinfo"]
         });
+        // reconcile this!
+        //this.port.postMessage({
+        //  album_artist: mp3data["artist"],
+        //  album_url: mp3data["url"],
+        //  album_art: mp3data["art_id"],
+        //  track_data: mp3data["trackinfo"]
+        //});
       })
       .catch(error => {
         this.log.error("Error:", error);

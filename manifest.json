@@ -24,11 +24,9 @@
     "https://*.bandcamp.com/*",
     "https://t4.bcbits.com/stream/*"
   ],
+  "minimum_chrome_version": "93",
   "background": {
-       "scripts": [
-         "dist/background.js"
-       ],
-       "persistent": false
+       "service_worker": "dist/background.js"
   },
   "content_scripts": [
     {

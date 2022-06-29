@@ -46,7 +46,7 @@ window.onload = () => {
   //  let checkout = new Checkout(config_port);
   //  checkout.init();
   //}
-    
+
   let playlist = new Playlist();
   playlist.init();
 };

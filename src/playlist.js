@@ -1,4 +1,5 @@
 import Logger from "./logger";
+import { addAlbumToCart } from "./utilities"; 
 import Sortable from "sortablejs";
 
 export default class Playlist {
@@ -174,6 +175,7 @@ export default class Playlist {
           });
           return;
         }
+
         this.audio.src = event.target.getAttribute("mp3-128");
         this.audio.play();
       });
@@ -187,6 +189,16 @@ export default class Playlist {
           .closest("li")
           .nextElementSibling.querySelector(".play_status")
           .click();
+
+        event.target.closest("li").remove();
+      });
+
+      const purchase_button = document.createElement("button");
+      purchase_button.innerHTML = "+";
+      purchase_button.style.height = "15px";
+      purchase_button.addEventListener("click", event => {
+        item_id = event.target.getAttribute("img_id");
+        addAlbumToCart(item_id, unit_price, "t", "bandcamp")
 
         event.target.closest("li").remove();
       });

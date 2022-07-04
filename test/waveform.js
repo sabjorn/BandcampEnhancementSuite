@@ -180,6 +180,9 @@ describe("Waveform", () => {
       sandbox.stub(window, "AudioContext");
       window.AudioContext.returns(audioContext);
 
+      sandbox.stub(window, "OfflineAudioContext");
+      window.OfflineAudioContext.callThroughWithNew().returns(sinon.spy());
+
       wf.canvas = canvas;
     });
     afterEach(() => {
@@ -213,12 +216,22 @@ describe("Waveform", () => {
 
       let expectedMessage = {
         contentScriptQuery: "renderBuffer",
-        fs: 44100,
-        length: 10,
         url: "src",
-        datapoints: 100
       };
       expect(chrome.runtime.sendMessage).to.be.calledWith(expectedMessage);
+    });
+
+    it("calls 'offlineAudioContext.startRendering'", () => {
+      audioSpy.src = "stream/src";
+      wf.currentTarget = "";
+
+      wf.generateWaveform();
+
+      let expectedMessage = {
+        contentScriptQuery: "renderBuffer",
+        url: "src",
+      };
+      expect(window.OfflineAudioContext).to.be.called;
     });
   });
 

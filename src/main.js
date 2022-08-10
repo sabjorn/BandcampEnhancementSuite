@@ -25,12 +25,13 @@ window.onload = () => {
     const player = new Player();
     player.init();
 
-
     let config_port;
     try {
       config_port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
     } catch (e) {
-      if (e.message.includes("Error in invocation of runtime.connect in main.js")) {
+      if (
+        e.message.includes("Error in invocation of runtime.connect in main.js")
+      ) {
         log.error(e);
         return;
       } else {

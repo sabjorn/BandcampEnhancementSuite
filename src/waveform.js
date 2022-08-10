@@ -74,7 +74,7 @@ export default class Waveform {
       chrome.runtime.sendMessage(
         {
           contentScriptQuery: "renderBuffer",
-          url: src,
+          url: src
         },
         audioData => {
           const audioBuffer = new Uint8Array(audioData.data).buffer;

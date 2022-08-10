@@ -216,7 +216,7 @@ describe("Waveform", () => {
 
       let expectedMessage = {
         contentScriptQuery: "renderBuffer",
-        url: "src",
+        url: "src"
       };
       expect(chrome.runtime.sendMessage).to.be.calledWith(expectedMessage);
     });
@@ -229,7 +229,7 @@ describe("Waveform", () => {
 
       let expectedMessage = {
         contentScriptQuery: "renderBuffer",
-        url: "src",
+        url: "src"
       };
       expect(window.OfflineAudioContext).to.be.called;
     });

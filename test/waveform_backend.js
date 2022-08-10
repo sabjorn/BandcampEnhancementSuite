@@ -50,7 +50,7 @@ describe("WaveformBackend", () => {
     let sendResponseSpy = sinon.spy();
 
     let stubedFetch;
-    
+
     const buffer = new Uint8Array([0, 1, 2, 3]);
 
     beforeEach(() => {
@@ -67,13 +67,13 @@ describe("WaveformBackend", () => {
       stubedFetch.restore();
     });
 
-// TODO: 'sendResponseSpy' will never be called in this test
-//    it("should return without doing anything", () => {
-//      let returnValue = wb.processRequest(request, null, sendResponseSpy);
-//
-//      expect(returnValue).to.be.false;
-//      expect(sendResponseSpy).to.be.not.called;
-//    });
+    // TODO: 'sendResponseSpy' will never be called in this test
+    //    it("should return without doing anything", () => {
+    //      let returnValue = wb.processRequest(request, null, sendResponseSpy);
+    //
+    //      expect(returnValue).to.be.false;
+    //      expect(sendResponseSpy).to.be.not.called;
+    //    });
 
     // TODO: 'sendResponseSpy' will never be called in this test
     it("should send a Buffer back with 'sendResponse'", () => {

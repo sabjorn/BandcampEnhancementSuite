@@ -133,6 +133,7 @@ export default class Waveform {
   }
 
   static toggleWaveformCanvasCallback() {
+    this.log.info("toggling");
     this.port.postMessage({ toggleWaveformDisplay: {} });
   }
 

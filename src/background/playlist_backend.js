@@ -23,11 +23,11 @@ export default class PlaylistBackend {
     fetch(url)
       .then(response => response.text())
       .then(text => {
-        const parser = new DOMParser();
-        const htmlDocument = parser.parseFromString(text, "text/html");
-        const album_collection = htmlDocument.documentElement
-          .querySelector("script[data-tralbum]")
-          .getAttribute("data-tralbum");
+        const regex = 'data-tralbum="([^"]*)"';
+        const album_collection = text
+          .match(regex)[1]
+          .replaceAll('"', "'")
+          .replaceAll("&quot;", '"');
         const mp3data = JSON.parse(album_collection);
 
         sendResponse({

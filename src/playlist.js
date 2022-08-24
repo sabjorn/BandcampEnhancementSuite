@@ -1,5 +1,5 @@
 import Logger from "./logger";
-import { addAlbumToCart } from "./utilities"; 
+import { addAlbumToCart } from "./utilities";
 import Sortable from "sortablejs";
 
 export default class Playlist {
@@ -198,7 +198,7 @@ export default class Playlist {
       purchase_button.style.height = "15px";
       purchase_button.addEventListener("click", event => {
         item_id = event.target.getAttribute("img_id");
-        addAlbumToCart(item_id, unit_price, "t", "bandcamp")
+        addAlbumToCart(item_id, unit_price, "t", "bandcamp");
 
         event.target.closest("li").remove();
       });

@@ -14,4 +14,3 @@ import PlaylistBackend from "./background/playlist_backend.js";
 
 const pb = new PlaylistBackend();
 pb.init();
-

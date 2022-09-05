@@ -1,4 +1,5 @@
 import Logger from "./logger";
+import preview_player from "../html/preview_player.html";
 
 export default class LabelView {
   constructor() {
@@ -83,18 +84,9 @@ export default class LabelView {
     }
 
     if (this.previewOpen) {
-      let url = `https://bandcamp.com/EmbeddedPlayer/${idType}=${id}`;
-      url +=
-        '/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=none/transparent=true/"';
-
-      const iframe_style =
-        "margin: 6px 0px 0px 0px; border: 0; width: 150%; height: 300px; position:relative; z-index:1;";
-
-      const iframe = document.createElement("iframe");
-      iframe.setAttribute("style", iframe_style);
-      iframe.setAttribute("src", url);
-      iframe.setAttribute("seamless", "");
-      preview.appendChild(iframe);
+      const element = document.createElement("div");
+      element.insertAdjacentHTML("beforeend", preview_player);
+      preview.appendChild(element);
     }
   }
 

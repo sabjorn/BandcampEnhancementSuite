@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    </head>
+    <body>
+        <div class="player_container">
+            <div class="player">
+                <div class="player_components">
+                    <div class="waveform"></div>
+                    <div class="controls">
+                        <div class="transport">
+                            <div class="play_button"></div>
+                            <div class="back_button"></div>
+                            <div class="forward_button"></div>
+                        </div>
+                        <div class="volume_slider"></div>
+                    </div>
+                    <div class="track_info">
+                        <div class="track_title"></div>
+                        <div class="track_time"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="playlist"></div>
+        </div>
+    </body>
+</html> 
+
+<style>* {
+  box-sizing: border-box;
+}
+body {
+  font-size: 14px;
+}
+.player_container {
+  width: 232px;
+  height: 300px;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  background: #000000;
+  opacity: 1;
+  position: relative;
+  top: 0px;
+  left: 0px;
+  overflow: hidden;
+}
+
+.player {
+  width: 232px;
+  height: 100px;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  opacity: 1;
+  position: relative;
+  top: 4px;
+  left: 4px;
+  overflow: hidden;
+}
+.player_components {
+  width: 223px;
+  height: 93px;
+  background: url("../images/v1_9.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  opacity: 1;
+  position: relative;
+  top: 0px;
+  left: 0px;
+  overflow: hidden;
+}
+.waveform {
+  width: 100%;
+  height: 55px;
+  background: rgba(217,217,217,1);
+  opacity: 1;
+  position: absolute;
+  top: 38px;
+  left: 16px;
+  border: 1px solid rgba(0,0,0,1);
+  overflow: hidden;
+}
+.controls {
+  width: 56px;
+  height: 93px;
+  background: url("../images/v1_13.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  opacity: 1;
+  position: relative;
+  top: 0px;
+  left: 0px;
+  overflow: hidden;
+}
+.transport {
+  width: 40px;
+  height: 35px;
+  background: url("../images/v7_2.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  opacity: 1;
+  position: absolute;
+  top: 0px;
+  left: 16px;
+  overflow: hidden;
+}
+.play_button {
+  width: 40px;
+  height: 22px;
+  background: rgba(217,217,217,1);
+  opacity: 1;
+  position: relative;
+  top: 0px;
+  left: 0px;
+  border: 1px solid rgba(0,0,0,1);
+  overflow: hidden;
+}
+.back_button {
+  width: 18px;
+  height: 11px;
+  background: rgba(217,217,217,1);
+  opacity: 1;
+  position: absolute;
+  top: 24px;
+  left: 0px;
+  border: 1px solid rgba(0,0,0,1);
+}
+.forward_button {
+  width: 18px;
+  height: 11px;
+  background: rgba(217,217,217,1);
+  opacity: 1;
+  position: absolute;
+  top: 24px;
+  left: 22px;
+  border: 1px solid rgba(0,0,0,1);
+}
+.volume_slider {
+  width: 13px;
+  height: 93px;
+  background: rgba(217,217,217,1);
+  opacity: 1;
+  position: relative;
+  top: 0px;
+  left: 0px;
+  border: 1px solid rgba(0,0,0,1);
+}
+.track_info {
+  width: 100%;
+  height: 20px;
+  background: url("../images/v1_17.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  opacity: 1;
+  position: absolute;
+  top: 15px;
+  left: 61px;
+  overflow: hidden;
+}
+.track_time {
+  width: 37px;
+  height: 100%;
+  background: rgba(217,217,217,1);
+  opacity: 1;
+  position: absolute;
+  top: 0px;
+  left: 127px;
+  border: 1px solid rgba(0,0,0,1);
+  overflow: hidden;
+}
+.track_title {
+  width: 122px;
+  height: 100%;
+  background: rgba(217,217,217,1);
+  opacity: 1;
+  position: relative;
+  top: 0px;
+  left: 0px;
+  border: 1px solid rgba(0,0,0,1);
+  overflow: hidden;
+}
+.playlist {
+  width: 232px;
+  height: 200px;
+  background: rgba(255,255,255,1);
+  opacity: 1;
+  position: absolute;
+  top: 100px;
+  left: 0px;
+  border: 1px solid rgba(0,0,0,1);
+  overflow: hidden;
+}
+</style>

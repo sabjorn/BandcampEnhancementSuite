@@ -17,6 +17,44 @@ export default class PlaylistBackend {
 
   static fetchPlaylistData(request, sender, sendResponse) {
     //if (request.contentScriptQuery != "renderBuffer") return;
+    if (request.route === "wishlist") {
+      const now = Math.floor(Date.now() / 1000);
+      const count = 1000;
+      const body = {
+        fan_id: 896389,
+        older_than_token: `${now}::a::`,
+        count: count
+      };
+      fetch("https://bandcamp.com/api/fancollection/1/wishlist_items", {
+        body: JSON.stringify(body),
+        method: "POST",
+        mode: "cors",
+        credentials: "include"
+      })
+        .then(response => response.text())
+        .then(text => {
+          const data = JSON.parse(text);
+          const items = data["items"];
+
+          items.forEach(item => {
+            const item_type = item["item_type"].charAt(0);
+            const item_index = `${item_type}${item["item_id"]}`;
+            const tracklist = data["tracklists"];
+            const trackinfo = tracklist[item_index];
+            const response = {
+              album_artist: item["band_name"],
+              album_url: item["item_url"],
+              album_art: item["item_art_id"],
+              track_data: trackinfo
+            };
+            this.port.postMessage(response);
+          });
+        })
+        .catch(error => {
+          this.log.error("Error:", error);
+        });
+      return true;
+    }
     this.log.info("url recieved, grabbing track data.");
     const url = request.url;
     this.log.info(url);

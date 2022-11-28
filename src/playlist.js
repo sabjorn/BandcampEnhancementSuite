@@ -14,6 +14,7 @@ export default class Playlist {
     this.add_button = document.querySelector("#add");
     this.export_button = document.querySelector("#export");
     this.import_button = document.querySelector("#import");
+    this.wishlist_button = document.querySelector("#wishlist");
     this.form = document.querySelector("input");
     this.audio = document.querySelector("audio");
     this.playlist = document.querySelector(".playlist").querySelector("ul");
@@ -87,7 +88,6 @@ export default class Playlist {
       let reader = new FileReader();
 
       reader.readAsText(file);
-
       reader.onload = () => {
         const parsed = JSON.parse(reader.result);
 
@@ -112,6 +112,10 @@ export default class Playlist {
           this.appendTracks(tracks);
         });
       };
+    });
+
+    this.wishlist_button.addEventListener("click", () => {
+      this.port.postMessage({ route: "wishlist" });
     });
 
     this.port.onMessage.addListener(this.appendTracks);
@@ -161,7 +165,9 @@ export default class Playlist {
         const mp3_url = event.target.getAttribute("mp3-128");
         const expiration = mp3_url.split("ts=")[1].split("&")[0];
         const now = Math.floor(Date.now() / 1000);
-        if (now > expiration) {
+
+        // expiration scheme is different for Wishlist API
+        if (mp3_url.includes("bcbits") && now > expiration) {
           const track_url = event.target.parentElement.querySelector("a").href;
           this.log.info(`track url expired, updating from ${track_url}`);
           chrome.runtime.sendMessage({ url: track_url }, response => {

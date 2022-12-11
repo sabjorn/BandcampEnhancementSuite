@@ -11,11 +11,10 @@ export default class Playlist {
 
   init() {
     this.log.info("Loaded Playlist");
-    this.add_button = document.querySelector("#add");
     this.export_button = document.querySelector("#export");
     this.import_button = document.querySelector("#import");
     this.wishlist_button = document.querySelector("#wishlist");
-    this.form = document.querySelector("input");
+    this.fan_activity_button = document.querySelector("#fan_activity");
     this.audio = document.querySelector("audio");
     this.playlist = document.querySelector(".playlist").querySelector("ul");
     Sortable.create(this.playlist);
@@ -51,10 +50,6 @@ export default class Playlist {
             .click();
         }
       }
-    });
-
-    this.add_button.addEventListener("click", () => {
-      this.port.postMessage({ url: this.form.value });
     });
 
     this.export_button.addEventListener("click", () => {
@@ -116,6 +111,10 @@ export default class Playlist {
 
     this.wishlist_button.addEventListener("click", () => {
       this.port.postMessage({ route: "wishlist" });
+    });
+
+    this.fan_activity_button.addEventListener("click", () => {
+      this.port.postMessage({ route: "fan_activity" });
     });
 
     this.port.onMessage.addListener(this.appendTracks);

@@ -17,6 +17,46 @@ export default class PlaylistBackend {
 
   static fetchPlaylistData(request, sender, sendResponse) {
     //if (request.contentScriptQuery != "renderBuffer") return;
+    if (request.route === "fan_activity") {
+      const now = Math.floor(Date.now() / 1000);
+      const body = `fan_id=896389&older_than=${now}`;
+      fetch("https://bandcamp.com/fan_dash_feed_updates", {
+        headers: {
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        body: body,
+        method: "POST",
+        mode: "cors",
+        credentials: "include"
+      })
+        .then(response => response.text())
+        .then(text => {
+          const data = JSON.parse(text);
+          const entries = data["stories"]["entries"];
+          const track_list = data["stories"]["track_list"];
+
+          entries.forEach((item, index) => {
+            const track_data = [
+              {
+                album_art: item["item_art"],
+                file: track_list[index]["streaming_url"]
+              }
+            ];
+
+            const response = {
+              album_artist: item["band_name"],
+              album_url: item["item_url"],
+              album_art: item["item_art_id"],
+              track_data: track_data
+            };
+            this.port.postMessage(response);
+          });
+        })
+        .catch(error => {
+          this.log.error("Error:", error);
+        });
+      return true;
+    }
     if (request.route === "wishlist") {
       const now = Math.floor(Date.now() / 1000);
       const count = 1000;

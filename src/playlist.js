@@ -134,7 +134,6 @@ export default class Playlist {
       play_button.setAttribute("img_id", mes["album_art"]);
       play_button.setAttribute("mp3-128", element["file"]["mp3-128"]);
       play_button.setAttribute("unit_price", element["price"]);
-      play_button.setAttribute("currency", element["currency"]);
 
       play_button.classList.add("play_status");
 
@@ -206,6 +205,7 @@ export default class Playlist {
       purchase_button.style.height = "15px";
       purchase_button.addEventListener("click", event => {
         item_id = event.target.getAttribute("img_id");
+        const unit_price = event.target.getAttribute("unit_price");
         addAlbumToCart(item_id, unit_price, "t", "bandcamp");
 
         event.target.closest("li").remove();
@@ -215,7 +215,7 @@ export default class Playlist {
         ? element["artist"]
         : mes["album_artist"];
       const text = document.createTextNode(
-        `${artist_name} - ${element["title"]} - ${element["label"]}`
+        `${artist_name} - ${element["title"]} - ${element["label"]} - ${element["price"]}${element["currency"]}`
       );
 
       const link = document.createElement("a");

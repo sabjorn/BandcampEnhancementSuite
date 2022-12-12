@@ -142,6 +142,7 @@ function recursiveFanFeedUpdates(port, count, timestamp = null) {
               track_data["label"] = track_list[index]["label"];
               track_data["price"] = track_list[index]["price"];
               track_data["currency"] = track_list[index]["currency"];
+              track_data["track_id"] = track_list[index]["track_id"];
 
               const title_link = `${item["item_url"].split("/")[3]}/${
                 item["item_url"].split("/")[4]

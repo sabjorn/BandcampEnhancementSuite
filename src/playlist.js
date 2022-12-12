@@ -133,7 +133,6 @@ export default class Playlist {
       const play_button = document.createElement("div");
       play_button.setAttribute("img_id", mes["album_art"]);
       play_button.setAttribute("mp3-128", element["file"]["mp3-128"]);
-      play_button.setAttribute("unit_price", element["price"]);
 
       play_button.classList.add("play_status");
 
@@ -203,12 +202,20 @@ export default class Playlist {
       const purchase_button = document.createElement("button");
       purchase_button.innerHTML = "+";
       purchase_button.style.height = "15px";
-      purchase_button.addEventListener("click", event => {
-        item_id = event.target.getAttribute("img_id");
-        const unit_price = event.target.getAttribute("unit_price");
-        addAlbumToCart(item_id, unit_price, "t", "bandcamp");
 
-        event.target.closest("li").remove();
+      purchase_button.setAttribute("price", element["price"]);
+      purchase_button.setAttribute("track_id", element["track_id"]);
+      purchase_button.addEventListener("click", event => {
+        // doesn't work becase of CORS
+        const track_id = event.target.getAttribute("track_id");
+        const price = event.target.getAttribute("price");
+        addAlbumToCart(
+          track_id,
+          price,
+          "t",
+          "bandcamp.com",
+          "967A03A40B04DBA8F3BFB6D5F5030828B94A4F199C4CE1E6085AA67F263D45E2"
+        );
       });
 
       const artist_name = element["artist"]
@@ -226,6 +233,7 @@ export default class Playlist {
 
       div.appendChild(play_button);
       div.appendChild(link);
+      div.appendChild(purchase_button);
       div.appendChild(delete_button);
 
       li.appendChild(div);

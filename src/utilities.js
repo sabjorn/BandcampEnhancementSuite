@@ -54,7 +54,7 @@ export function addAlbumToCart(
   url = getUrl(),
   client_id = getClientId()
 ) {
-  return fetch(`https://${url}/cart/cb`, {
+  fetch(`https://${url}/cart/cb`, {
     headers: {
       accept: "application/json, text/javascript, */*; q=0.01",
       "content-type": "application/x-www-form-urlencoded",
@@ -67,6 +67,7 @@ export function addAlbumToCart(
     referrerPolicy: "no-referrer-when-downgrade",
     body: `req=add&item_type=${item_type}&item_id=${item_id}&unit_price=${unit_price}&quantity=1&client_id=${client_id}&sync_num=1`,
     method: "POST",
-    mode: "cors"
-  });
+    mode: "cors",
+    credentials: "include"
+  }).catch();
 }

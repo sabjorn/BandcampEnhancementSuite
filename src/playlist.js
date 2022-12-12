@@ -133,6 +133,9 @@ export default class Playlist {
       const play_button = document.createElement("div");
       play_button.setAttribute("img_id", mes["album_art"]);
       play_button.setAttribute("mp3-128", element["file"]["mp3-128"]);
+      play_button.setAttribute("unit_price", element["price"]);
+      play_button.setAttribute("currency", element["currency"]);
+
       play_button.classList.add("play_status");
 
       play_button.addEventListener("click", event => {
@@ -212,7 +215,7 @@ export default class Playlist {
         ? element["artist"]
         : mes["album_artist"];
       const text = document.createTextNode(
-        `${element["track_num"]} : ${artist_name} - ${element["title"]}`
+        `${artist_name} - ${element["title"]} - ${element["label"]}`
       );
 
       const link = document.createElement("a");

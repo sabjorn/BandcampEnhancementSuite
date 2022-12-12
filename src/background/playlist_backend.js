@@ -134,12 +134,14 @@ function recursiveFanFeedUpdates(port, count, timestamp = null) {
             const new_timestamp = data["stories"]["oldest_story_date"];
             const entries = data["stories"]["entries"];
             const track_list = data["stories"]["track_list"];
-
             entries.forEach((item, index) => {
               const track_data = item;
               track_data["file"] = track_list[index]["streaming_url"];
               track_data["track_num"] = track_list[index]["track_num"];
               track_data["title"] = track_list[index]["title"];
+              track_data["label"] = track_list[index]["label"];
+              track_data["price"] = track_list[index]["price"];
+              track_data["currency"] = track_list[index]["currency"];
 
               const title_link = `${item["item_url"].split("/")[3]}/${
                 item["item_url"].split("/")[4]

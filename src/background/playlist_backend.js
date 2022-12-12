@@ -18,43 +18,10 @@ export default class PlaylistBackend {
   static fetchPlaylistData(request, sender, sendResponse) {
     //if (request.contentScriptQuery != "renderBuffer") return;
     if (request.route === "fan_activity") {
-      const now = Math.floor(Date.now() / 1000);
-      const body = `fan_id=896389&older_than=${now}`;
-      fetch("https://bandcamp.com/fan_dash_feed_updates", {
-        headers: {
-          "content-type": "application/x-www-form-urlencoded"
-        },
-        body: body,
-        method: "POST",
-        mode: "cors",
-        credentials: "include"
-      })
-        .then(response => response.text())
-        .then(text => {
-          const data = JSON.parse(text);
-          const entries = data["stories"]["entries"];
-          const track_list = data["stories"]["track_list"];
-
-          entries.forEach((item, index) => {
-            const track_data = [
-              {
-                album_art: item["item_art"],
-                file: track_list[index]["streaming_url"]
-              }
-            ];
-
-            const response = {
-              album_artist: item["band_name"],
-              album_url: item["item_url"],
-              album_art: item["item_art_id"],
-              track_data: track_data
-            };
-            this.port.postMessage(response);
-          });
-        })
-        .catch(error => {
-          this.log.error("Error:", error);
-        });
+      this.log.info("fan_activity");
+      recursiveFanFeedUpdates(this.port, 5).catch(error => {
+        this.log.error("Error:", error);
+      });
       return true;
     }
     if (request.route === "wishlist") {
@@ -141,4 +108,62 @@ export default class PlaylistBackend {
     this.port = port;
     this.port.onMessage.addListener(this.fetchPlaylistData);
   }
+}
+
+function recursiveFanFeedUpdates(port, count, timestamp = null) {
+  return new Promise((resolve, reject) => {
+    if (timestamp === null) timestamp = Math.floor(Date.now() / 1000);
+
+    const body = `fan_id=896389&older_than=${timestamp}`;
+    fetch("https://bandcamp.com/fan_dash_feed_updates", {
+      headers: {
+        "content-type": "application/x-www-form-urlencoded"
+      },
+      body: body,
+      method: "POST",
+      mode: "cors",
+      credentials: "include"
+    })
+      .then(response => {
+        if (response.status !== 200) {
+          throw `${response.status}: ${response.statusText}`;
+        }
+        response
+          .json()
+          .then(data => {
+            const new_timestamp = data["stories"]["oldest_story_date"];
+            const entries = data["stories"]["entries"];
+            const track_list = data["stories"]["track_list"];
+
+            entries.forEach((item, index) => {
+              const track_data = item;
+              track_data["file"] = track_list[index]["streaming_url"];
+              track_data["track_num"] = track_list[index]["track_num"];
+              track_data["title"] = track_list[index]["title"];
+
+              const title_link = `${item["item_url"].split("/")[3]}/${
+                item["item_url"].split("/")[4]
+              }`;
+              track_data["title_link"] = `/${title_link}`;
+
+              const response = {
+                album_artist: item["band_name"],
+                album_url: item["item_url"],
+                album_art: item["item_art_id"],
+                track_data: [track_data]
+              };
+              port.postMessage(response);
+            });
+            if (count > 0) {
+              recursiveFanFeedUpdates(port, --count, new_timestamp)
+                .then(resolve)
+                .catch(reject);
+            } else {
+              resolve(true);
+            }
+          })
+          .catch(reject);
+      })
+      .catch(reject);
+  });
 }

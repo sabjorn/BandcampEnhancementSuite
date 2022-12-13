@@ -135,6 +135,9 @@ function recursiveFanFeedUpdates(port, count, timestamp = null) {
             const entries = data["stories"]["entries"];
             const track_list = data["stories"]["track_list"];
             entries.forEach((item, index) => {
+              if (item['item_type'] === "a") // for now we ignore albums because price is wrong
+                return
+
               const track_data = item;
               track_data["file"] = track_list[index]["streaming_url"];
               track_data["track_num"] = track_list[index]["track_num"];

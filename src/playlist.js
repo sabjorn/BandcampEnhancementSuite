@@ -1,6 +1,7 @@
 import Logger from "./logger";
 import { addAlbumToCart } from "./utilities";
 import Sortable from "sortablejs";
+import html from "../html/player.html";
 
 export default class Playlist {
   constructor() {
@@ -11,10 +12,12 @@ export default class Playlist {
 
   init() {
     this.log.info("Loaded Playlist");
+    const element = document.querySelector("#stories-vm");
+    element.innerHTML = html;
+
     this.export_button = document.querySelector("#export");
     this.import_button = document.querySelector("#import");
     this.wishlist_button = document.querySelector("#wishlist");
-    this.fan_activity_button = document.querySelector("#fan_activity");
     this.audio = document.querySelector("audio");
     this.playlist = document.querySelector(".playlist").querySelector("ul");
     Sortable.create(this.playlist);
@@ -113,11 +116,8 @@ export default class Playlist {
       this.port.postMessage({ route: "wishlist" });
     });
 
-    this.fan_activity_button.addEventListener("click", () => {
-      this.port.postMessage({ route: "fan_activity" });
-    });
-
     this.port.onMessage.addListener(this.appendTracks);
+    this.port.postMessage({ route: "fan_activity" });
   }
 
   static appendTracks(mes) {
@@ -206,16 +206,18 @@ export default class Playlist {
       purchase_button.setAttribute("price", element["price"]);
       purchase_button.setAttribute("track_id", element["track_id"]);
       purchase_button.addEventListener("click", event => {
-        // doesn't work becase of CORS
         const track_id = event.target.getAttribute("track_id");
+
+        // need default price
         const price = event.target.getAttribute("price");
-        addAlbumToCart(
-          track_id,
-          price,
-          "t",
-          "bandcamp.com",
-          "967A03A40B04DBA8F3BFB6D5F5030828B94A4F199C4CE1E6085AA67F263D45E2"
-        );
+
+        // need to capture response from a
+        addAlbumToCart(track_id, price, "t").then(response => {
+          if (response.status === 200)
+            event.target.parentElement.parentElement.classList.add(
+              "bes_purchased"
+            );
+        });
       });
 
       const artist_name = element["artist"]

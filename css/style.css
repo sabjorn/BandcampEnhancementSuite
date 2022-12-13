@@ -142,3 +142,7 @@ div .prev, .next {
 #bes_currently_playing {
     background-color: #FFFF00;
 }
+
+.bes_purchased {
+    text-decoration: line-through;
+}

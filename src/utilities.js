@@ -54,7 +54,7 @@ export function addAlbumToCart(
   url = getUrl(),
   client_id = getClientId()
 ) {
-  fetch(`https://${url}/cart/cb`, {
+  return fetch(`https://${url}/cart/cb`, {
     headers: {
       accept: "application/json, text/javascript, */*; q=0.01",
       "content-type": "application/x-www-form-urlencoded",
@@ -69,5 +69,5 @@ export function addAlbumToCart(
     method: "POST",
     mode: "cors",
     credentials: "include"
-  }).catch();
+  });
 }

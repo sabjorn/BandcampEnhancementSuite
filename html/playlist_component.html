@@ -1,0 +1,24 @@
+<div class="bes_player">
+    <div class="album_art" style="display: inline-flex; width: 150px; height: 150px">
+        <img width="100%" src="" style="display: none">
+    </div>
+
+    <div class="audio" style="display: inline-flex">
+        <audio controls></audio>
+    </div>
+    
+    <!-- these are just faking the elements needed by Waveform,
+    however: you're going to want to abstract the waveform display out to a reusable component
+    and then have a wrapper class to input it into a page...
+    -->
+    <div style="width: 400px">
+        <h2 class="trackTitle" style="color: FF00FF"></h2>
+        <div class="progbar" style="width: 200px"></div>
+        <div class="controls" style="width: 50px"></div>
+    </div>
+
+    <div class="playlist" style="overflow-y: scroll; height:400px;">
+        <ul style="list-style: none; padding-left: 5px;">
+        </ul>
+    </div>
+</div>

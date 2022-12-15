@@ -48,8 +48,9 @@ window.onload = () => {
   //  checkout.init();
   //}
 
-  //let playlist = new Playlist();
-  //playlist.init();
+  let playlist = new Playlist();
+  playlist.init();
+  return;
   let playlist_component = new PlaylistComponent(
     () => {
       console.log("play button callback");

@@ -30,7 +30,7 @@ export default class Playlist {
         if (e.key == "x") {
           playing
             .closest("li")
-            .querySelector("button")
+            .querySelector(".bes_delete")
             .click();
         }
         if (e.key == " " || e.key == "p") {
@@ -189,6 +189,7 @@ export default class Playlist {
       const delete_button = document.createElement("button");
       delete_button.innerHTML = "x";
       delete_button.style.height = "15px";
+      delete_button.classList.add("bes_delete");
       delete_button.addEventListener("click", event => {
         // gross hack to get next play on clicking x!!!
         event.target

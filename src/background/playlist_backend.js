@@ -19,7 +19,7 @@ export default class PlaylistBackend {
     //if (request.contentScriptQuery != "renderBuffer") return;
     if (request.route === "fan_activity") {
       this.log.info("fan_activity");
-      recursiveFanFeedUpdates(this.port, 5).catch(error => {
+      recursiveFanFeedUpdates(this.port, 50).catch(error => {
         this.log.error("Error:", error);
       });
       return true;

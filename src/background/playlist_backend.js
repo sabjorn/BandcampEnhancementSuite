@@ -139,27 +139,23 @@ function recursiveFanFeedUpdates(port, count, timestamp = null) {
                 // for now we ignore albums because price is wrong
                 return;
 
-              const track_data = item;
-              track_data["file"] = track_list[index]["streaming_url"];
-              track_data["track_num"] = track_list[index]["track_num"];
-              track_data["title"] = track_list[index]["title"];
-              track_data["label"] = track_list[index]["label"];
-              track_data["price"] = track_list[index]["price"];
-              track_data["currency"] = track_list[index]["currency"];
-              track_data["track_id"] = track_list[index]["track_id"];
-
-              const title_link = `${item["item_url"].split("/")[3]}/${
-                item["item_url"].split("/")[4]
-              }`;
-              track_data["title_link"] = `/${title_link}`;
-
-              const response = {
-                album_artist: item["band_name"],
-                album_url: item["item_url"],
-                album_art: item["item_art_id"],
-                track_data: [track_data]
+              const selected_track = track_list[index];
+              const track_data = {
+                track_id: selected_track["track_id"],
+                artist: selected_track["band_name"],
+                title: selected_track["title"],
+                album_title: item["album_title"],
+                label: selected_track["label"],
+                price: selected_track["price"],
+                currency: selected_track["currency"],
+                link_url: item["item_url"],
+                stream_url: selected_track["streaming_url"],
+                album_art_url: item["item_art_url"],
+                is_purchasable: item["is_purchasable"],
+                timestamp: Date.parse(item["story_date"]) / 1000
               };
-              port.postMessage(response);
+
+              port.postMessage(track_data);
             });
             if (count > 0) {
               recursiveFanFeedUpdates(port, --count, new_timestamp)

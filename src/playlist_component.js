@@ -1,18 +1,21 @@
+import html from "../html/playlist_component.html";
 import Logger from "./logger";
 import Sortable from "sortablejs";
-import html from "../html/playlist_component.html";
 
 let track = {
   track_id: 1234,
-  price: 1.12,
-  currency: "CAD",
   artist: "",
   title: "",
+  album_title: "", // currently unused
   label: "",
-  currently_playing: false,
-  album_art_url: "",
+  price: 1.12,
+  currency: "CAD",
+  link_url: "",
   stream_url: "",
-  link_url: ""
+  album_art_url: "",
+  timestamp: 123, // currently unused
+  is_purchasable: true, // currently unused
+  currently_playing: false
 };
 
 export default class PlaylistComponent {
@@ -29,13 +32,28 @@ export default class PlaylistComponent {
     this.enable_purchase_button = enable_purchase_button;
     this.purchase_button_callback = purchase_button_callback;
     this.check_url_callback = check_url_callback;
+
+    this.actions = {}; // an array of methods that will allow us to do function chaining for setting callbacks - https://levelup.gitconnected.com/learn-how-to-create-chainable-methods-in-javascript-with-a-practical-example-da8ed81d560d
+    this.actions.set_play_button_callback = callback => {
+      this.play_button_callback = callback;
+      return this.actions;
+    };
+    this.actions.set_delete_button_callback = callback => {
+      this.delete_button_callback = callback;
+      return this.actions;
+    };
+    this.actions.set_purchase_button_callback = callback => {
+      this.purchase_button_callback = callback;
+      return this.actions;
+    };
+    this.actions.set_check_url_callback = callback => {
+      this.check_url_callback = callback;
+      return this.actions;
+    };
   }
 
   init() {
     this.log.info("Loaded PlaylistComponent");
-    // temporary
-    const element = document.querySelector("#stories-vm");
-    element.innerHTML = html;
 
     this.audio = document.querySelector("audio");
     this.playlist = document.querySelector(".playlist").querySelector("ul");
@@ -47,7 +65,7 @@ export default class PlaylistComponent {
   }
 
   appendTracks(tracks) {
-    this.log.info("Appending Tracks");
+    //this.log.info("Appending Tracks");
     tracks.forEach(track => {
       const li = document.createElement("li");
 
@@ -151,5 +169,9 @@ export default class PlaylistComponent {
 
       this.playlist.appendChild(li);
     });
+  }
+
+  static getHtml() {
+    return html;
   }
 }

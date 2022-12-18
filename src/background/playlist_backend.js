@@ -135,7 +135,7 @@ function recursiveFanFeedUpdates(port, count, timestamp = null) {
             const entries = data["stories"]["entries"];
             const track_list = data["stories"]["track_list"];
 
-            let tracks = []
+            let tracks = [];
             entries.forEach((item, index) => {
               if (item["item_type"] === "a")
                 // for now we ignore albums because price is wrong

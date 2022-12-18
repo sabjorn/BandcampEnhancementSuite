@@ -18,8 +18,11 @@ export default class Playlist {
       },
       mp3_url => {
         console.log(mp3_url);
-        return
-
+      },
+      (li_index_current, li_total) => {
+        // do something like
+        // if greater than 50%, get oldest_date from bottom li and
+        // run this.port.postMessage({ route: "fan_activity", oldest_date: }) }
       }
     );
     this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
@@ -31,22 +34,10 @@ export default class Playlist {
     const element = document.querySelector("#stories-vm");
     this.playlist_component.init(element);
 
+    // get pre-loaded page data
+
     this.port.onMessage.addListener(this.playlist_component.appendTracks);
+    // set oldest_date with current pre-loaded page data -- or attach to scroll_callback...
     this.port.postMessage({ route: "fan_activity" });
-    //let track = {
-    //  track_id: 1234,
-    //  artist: "dataist",
-    //  title: "suppar",
-    //  label: "HPR",
-    //  price: 1.12,
-    //  currency: "CAD",
-    //  currently_playing: false,
-    //  album_art_url: "https://f4.bcbits.com/img/a3459425415_16.jpg",
-    //  stream_url:
-    //    "https://t4.bcbits.com/stream/df7edd0d34e6f2889d7a5b42fc55a4f1/mp3-128/310533014?p=0&ts=1671164046&t=727e8d383b64c81df6c1e70d94d351525b274054&token=1671164046_ed35dc738c6944d01fa8114bdcf6db37a066ef30",
-    //  link_url:
-    //    "https://halfpastvibe.bandcamp.com/track/lusttropfen-hidonash-remix"
-    //};
-    //this.playlist_component.appendTracks([track, track]);
   }
 }

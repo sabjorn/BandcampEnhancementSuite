@@ -83,16 +83,17 @@ export default class PlaylistComponent {
   static appendTracks(tracks) {
     this.log.info("Appending Tracks");
     tracks.forEach(track => {
-      const li = document.createElement("li");
+      // check for already existing track id
+      if (document.querySelector(`[track_id=\"${track["track_id"]}\"]`)) return;
 
-      const div = document.createElement("div");
+      const li = document.createElement("li");
+      li.setAttribute("track_id", track["track_id"]);
 
       const play_button = document.createElement("div");
       play_button.setAttribute("album_art_url", track["album_art_url"]);
       play_button.setAttribute("stream_url", track["stream_url"]);
 
       play_button.classList.add("play_status");
-
       play_button.addEventListener("click", event => {
         const album_art = document
           .querySelector(".album_art")
@@ -172,12 +173,10 @@ export default class PlaylistComponent {
       link.target = "_blank";
       link.appendChild(text);
 
-      div.appendChild(play_button);
-      div.appendChild(link);
-      div.appendChild(purchase_button);
-      div.appendChild(delete_button);
-
-      li.appendChild(div);
+      li.appendChild(play_button);
+      li.appendChild(link);
+      li.appendChild(purchase_button);
+      li.appendChild(delete_button);
 
       this.playlist.appendChild(li);
     });

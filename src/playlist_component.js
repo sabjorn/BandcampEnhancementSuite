@@ -15,7 +15,6 @@ let track = {
   album_art_url: "",
   timestamp: 123, // currently unused
   is_purchasable: true, // currently unused
-  currently_playing: false
 };
 
 export default class PlaylistComponent {
@@ -27,6 +26,7 @@ export default class PlaylistComponent {
     check_url_callback
   ) {
     this.log = new Logger();
+    this.appendTracks = PlaylistComponent.appendTracks.bind(this);
     this.play_button_callback = play_button_callback;
     this.delete_button_callback = delete_button_callback;
     this.enable_purchase_button = enable_purchase_button;
@@ -52,25 +52,26 @@ export default class PlaylistComponent {
     };
   }
 
-  init() {
+  init(element) {
     this.log.info("Loaded PlaylistComponent");
 
+    element.innerHTML = html;
     this.audio = document.querySelector("audio");
+
     this.playlist = document.querySelector(".playlist").querySelector("ul");
     Sortable.create(this.playlist);
 
     document.addEventListener("keydown", e => {
       // re-add later
     });
+
   }
 
-  appendTracks(tracks) {
-    //this.log.info("Appending Tracks");
+  static appendTracks(tracks) {
+    this.log.info("Appending Tracks");
     tracks.forEach(track => {
-      const li = document.createElement("li");
 
-      if (track["currently_playing"])
-        li.setAttribute("id", "bes_currently_playing");
+      const li = document.createElement("li");
 
       const div = document.createElement("div");
 
@@ -107,11 +108,10 @@ export default class PlaylistComponent {
         // check if expired
         let mp3_url = event.target.getAttribute("stream_url");
         const new_mp3_url = this.check_url_callback(mp3_url);
-        console.log("\n\nnew_mp3_url");
         if (new_mp3_url) mp3_url = new_mp3_url;
-        event.target.setAttribute("stream_url", new_mp3_url);
+        event.target.setAttribute("stream_url", mp3_url);
 
-        this.audio.src = new_mp3_url;
+        this.audio.src = mp3_url;
         this.audio.play();
 
         this.play_button_callback();
@@ -169,9 +169,5 @@ export default class PlaylistComponent {
 
       this.playlist.appendChild(li);
     });
-  }
-
-  static getHtml() {
-    return html;
   }
 }

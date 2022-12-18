@@ -19,7 +19,7 @@ export default class PlaylistBackend {
     //if (request.contentScriptQuery != "renderBuffer") return;
     if (request.route === "fan_activity") {
       this.log.info("fan_activity");
-      recursiveFanFeedUpdates(this.port, 50).catch(error => {
+      recursiveFanFeedUpdates(this.port, 1).catch(error => {
         this.log.error("Error:", error);
       });
       return true;
@@ -134,13 +134,15 @@ function recursiveFanFeedUpdates(port, count, timestamp = null) {
             const new_timestamp = data["stories"]["oldest_story_date"];
             const entries = data["stories"]["entries"];
             const track_list = data["stories"]["track_list"];
+
+            let tracks = []
             entries.forEach((item, index) => {
               if (item["item_type"] === "a")
                 // for now we ignore albums because price is wrong
                 return;
 
               const selected_track = track_list[index];
-              const track_data = {
+              const track = {
                 track_id: selected_track["track_id"],
                 artist: selected_track["band_name"],
                 title: selected_track["title"],
@@ -149,14 +151,14 @@ function recursiveFanFeedUpdates(port, count, timestamp = null) {
                 price: selected_track["price"],
                 currency: selected_track["currency"],
                 link_url: item["item_url"],
-                stream_url: selected_track["streaming_url"],
+                stream_url: selected_track["streaming_url"]["mp3-128"],
                 album_art_url: item["item_art_url"],
                 is_purchasable: item["is_purchasable"],
                 timestamp: Date.parse(item["story_date"]) / 1000
               };
-
-              port.postMessage(track_data);
+              tracks.push(track);
             });
+            port.postMessage(tracks);
             if (count > 0) {
               recursiveFanFeedUpdates(port, --count, new_timestamp)
                 .then(resolve)

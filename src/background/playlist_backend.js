@@ -25,7 +25,7 @@ export default class PlaylistBackend {
       return true;
     }
     if (request.route === "wishlist") {
-      const now = Math.floor(Date.now() / 1000);
+      const now = request.oldest_story_date;
       const count = 1000;
       const body = {
         fan_id: 896389,
@@ -113,7 +113,7 @@ export default class PlaylistBackend {
 function recursiveFanFeedUpdates(port, count, timestamp = null) {
   return new Promise((resolve, reject) => {
     if (timestamp === null) timestamp = Math.floor(Date.now() / 1000);
-
+    
     const body = `fan_id=896389&older_than=${timestamp}`;
     fetch("https://bandcamp.com/fan_dash_feed_updates", {
       headers: {
@@ -138,6 +138,7 @@ function recursiveFanFeedUpdates(port, count, timestamp = null) {
             let tracks = [];
             entries.forEach((item, index) => {
               if (item["item_type"] === "a")
+                // a to have a fetch that gets the tracks...
                 // for now we ignore albums because price is wrong
                 return;
 

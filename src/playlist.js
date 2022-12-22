@@ -60,7 +60,8 @@ export default class Playlist {
           this.log.info(`load button clicked with timestamp: ${timestamp}`);
           this.port.postMessage({
             route: "fan_activity",
-            oldest_story_date: timestamp
+            oldest_story_date: timestamp,
+            tracks: 40
           });
         }).bind(this)
       );
@@ -108,7 +109,8 @@ export default class Playlist {
     const oldest_date = preload["oldest_story_date"];
     this.port.postMessage({
       route: "fan_activity",
-      oldest_story_date: oldest_date
+      oldest_story_date: oldest_date,
+      tracks: 40
     });
   }
 }

@@ -19,39 +19,21 @@ let track = {
 
 export default class PlaylistComponent {
   constructor(
-    play_button_callback,
-    delete_button_callback,
-    enable_purchase_button,
-    purchase_button_callback,
-    check_url_callback,
-    scroll_callback
+    enable_purchase_button = false,
+    play_button_callback = () => {},
+    delete_button_callback = () => {},
+    purchase_button_callback = () => {},
+    check_url_callback = () => {},
+    scroll_callback = () => {}
   ) {
     this.log = new Logger();
     this.appendTracks = PlaylistComponent.appendTracks.bind(this);
+    this.enable_purchase_button = enable_purchase_button;
     this.play_button_callback = play_button_callback;
     this.delete_button_callback = delete_button_callback;
-    this.enable_purchase_button = enable_purchase_button;
     this.purchase_button_callback = purchase_button_callback;
     this.check_url_callback = check_url_callback;
     this.scroll_callback = scroll_callback;
-
-    this.actions = {}; // an array of methods that will allow us to do function chaining for setting callbacks - https://levelup.gitconnected.com/learn-how-to-create-chainable-methods-in-javascript-with-a-practical-example-da8ed81d560d
-    this.actions.set_play_button_callback = callback => {
-      this.play_button_callback = callback;
-      return this.actions;
-    };
-    this.actions.set_delete_button_callback = callback => {
-      this.delete_button_callback = callback;
-      return this.actions;
-    };
-    this.actions.set_purchase_button_callback = callback => {
-      this.purchase_button_callback = callback;
-      return this.actions;
-    };
-    this.actions.set_check_url_callback = callback => {
-      this.check_url_callback = callback;
-      return this.actions;
-    };
   }
 
   init(element) {
@@ -72,12 +54,34 @@ export default class PlaylistComponent {
       const li_total = event.target.querySelectorAll("li").length;
       const li_index_current = Math.trunc(percent * li_total);
 
-      this.scroll_callback(li_index_current, li_total);
+      this.scroll_callback(event, li_index_current, li_total);
     });
 
     document.addEventListener("keydown", e => {
       // re-add later
     });
+  }
+
+  set_play_button_callback(callback) {
+    this.play_button_callback = callback;
+    return this;
+  }
+  set_delete_button_callback(callback) {
+    this.delete_button_callback = callback;
+    return this;
+  }
+
+  set_purchase_button_callback(callback) {
+    this.purchase_button_callback = callback;
+    return this;
+  }
+  set_check_url_callback(callback) {
+    this.check_url_callback = callback;
+    return this;
+  }
+  set_scroll_callback(callback) {
+    this.scroll_callback = callback;
+    return this;
   }
 
   static appendTracks(tracks) {

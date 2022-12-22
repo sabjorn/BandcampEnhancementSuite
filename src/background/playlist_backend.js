@@ -113,7 +113,7 @@ export default class PlaylistBackend {
 function recursiveFanFeedUpdates(port, count, timestamp = null) {
   return new Promise((resolve, reject) => {
     if (timestamp === null) timestamp = Math.floor(Date.now() / 1000);
-    
+
     const body = `fan_id=896389&older_than=${timestamp}`;
     fetch("https://bandcamp.com/fan_dash_feed_updates", {
       headers: {

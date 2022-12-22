@@ -113,13 +113,10 @@ export default class PlaylistComponent {
 
         document.querySelectorAll(".play_status").forEach(element => {
           element.classList.remove("playing");
-          element.parentElement.parentElement.removeAttribute("id");
+          element.parentElement.removeAttribute("id");
         });
         event.target.classList.add("playing");
-        event.target.parentElement.parentElement.setAttribute(
-          "id",
-          "bes_currently_playing"
-        );
+        event.target.parentElement.setAttribute("id", "bes_currently_playing");
 
         // re-add later
         // check if expired

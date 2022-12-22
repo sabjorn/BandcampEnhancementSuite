@@ -20,20 +20,23 @@ let track = {
 export default class PlaylistComponent {
   constructor(
     enable_purchase_button = false,
-    play_button_callback = () => {},
+    pre_play_callback = () => {},
+    post_play_callback = () => {},
     delete_button_callback = () => {},
     purchase_button_callback = () => {},
-    check_url_callback = () => {},
-    scroll_callback = () => {}
+    scroll_callback = () => {},
+    load_button_callback = () => {}
   ) {
     this.log = new Logger();
     this.appendTracks = PlaylistComponent.appendTracks.bind(this);
+
     this.enable_purchase_button = enable_purchase_button;
-    this.play_button_callback = play_button_callback;
+    this.pre_play_callback = pre_play_callback;
+    this.post_play_callback = post_play_callback;
     this.delete_button_callback = delete_button_callback;
     this.purchase_button_callback = purchase_button_callback;
-    this.check_url_callback = check_url_callback;
     this.scroll_callback = scroll_callback;
+    this.load_button_callback = this.load_button_callback;
   }
 
   init(element) {
@@ -60,27 +63,33 @@ export default class PlaylistComponent {
     document.addEventListener("keydown", e => {
       // re-add later
     });
+
+    const load_button = document.querySelector("#load");
+    load_button.onclick = this.load_button_callback;
   }
 
-  set_play_button_callback(callback) {
-    this.play_button_callback = callback;
+  set_pre_play_callback(callback) {
+    this.pre_play_callback = callback;
+    return this;
+  }
+  set_post_play_callback(callback) {
+    this.post_play_callback = callback;
     return this;
   }
   set_delete_button_callback(callback) {
     this.delete_button_callback = callback;
     return this;
   }
-
   set_purchase_button_callback(callback) {
     this.purchase_button_callback = callback;
     return this;
   }
-  set_check_url_callback(callback) {
-    this.check_url_callback = callback;
-    return this;
-  }
   set_scroll_callback(callback) {
     this.scroll_callback = callback;
+    return this;
+  }
+  set_load_button_callback(callback) {
+    this.load_button_callback = callback;
     return this;
   }
 
@@ -92,6 +101,7 @@ export default class PlaylistComponent {
 
       const li = document.createElement("li");
       li.setAttribute("track_id", track["track_id"]);
+      li.setAttribute("timestamp", track["timestamp"]);
 
       const play_button = document.createElement("div");
       play_button.setAttribute("album_art_url", track["album_art_url"]);
@@ -121,14 +131,14 @@ export default class PlaylistComponent {
         // re-add later
         // check if expired
         let mp3_url = event.target.getAttribute("stream_url");
-        const new_mp3_url = this.check_url_callback(mp3_url);
+        const new_mp3_url = this.pre_play_callback(mp3_url);
         if (new_mp3_url) mp3_url = new_mp3_url;
         event.target.setAttribute("stream_url", mp3_url);
 
         this.audio.src = mp3_url;
         this.audio.play();
 
-        this.play_button_callback();
+        this.post_play_callback();
       });
 
       const delete_button = document.createElement("button");

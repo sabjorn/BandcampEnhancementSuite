@@ -5,33 +5,65 @@ import { addAlbumToCart } from "./utilities";
 export default class Playlist {
   constructor() {
     this.log = new Logger();
+    this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
     this.playlist_component = new PlaylistComponent(true);
     this.playlist_component
-      .set_play_button_callback(() => {
-        console.log("play button callback");
-      })
-      .set_delete_button_callback(target => {
-        console.log("delete button callback");
-        console.log(target);
-      })
-      .set_purchase_button_callback((track_id, price) => {
-        console.log("purchase button callback");
-        console.log(`${track_id}, ${price}`);
-      })
-      .set_check_url_callback(mp3_url => {
-        console.log("check url callback");
-        console.log(mp3_url);
-      })
-      .set_scroll_callback((event, li_index_current, li_total) => {
-        console.log("scroll callback");
-        console.log(event.target);
-        console.log(`${li_index_current}, ${li_total}`);
-        // do something like
-        // if greater than 50%, get oldest_date from bottom li and
-        // run this.port.postMessage({ route: "fan_activity", oldest_date: }) }
-      });
+      .set_pre_play_callback(
+        (mp3_url => {
+          this.log.info("pre play callback");
+          this.log.info(`mp3_url: ${mp3_url}`);
+        }).bind(this)
+      )
+      .set_post_play_callback(
+        (() => {
+          this.log.info("post play callback");
+        }).bind(this)
+      )
+      .set_delete_button_callback(
+        (target => {
+          this.log.info("delete button callback");
+          this.log.info(target);
+        }).bind(this)
+      )
+      .set_purchase_button_callback(
+        ((track_id, price) => {
+          this.log.info("puchase button callback");
+          this.log.info(`${track_id}, ${price}`);
+        }).bind(this)
+      )
+      .set_scroll_callback(
+        ((event, li_index_current, li_total) => {
+          if (li_index_current != li_total) return;
 
-    this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
+          this.log.info("scroll callback");
+          this.log.info(`${li_index_current}, ${li_total}`);
+
+          const last_playlist_element = event.target.querySelectorAll("li")[
+            li_total - 1
+          ];
+          const oldest_date = last_playlist_element.getAttribute("timestamp");
+
+          this.log.info(oldest_date);
+          //this.port.postMessage({
+          //  route: "fan_activity",
+          //  oldest_story_date: oldest_date
+          //});
+        }).bind(this)
+      )
+      .set_load_button_callback(
+        (() => {
+          const playlists = document.querySelector(".bes_player");
+          const tracks = playlists.querySelectorAll("li");
+          if (!tracks) return;
+          const last_track = tracks[tracks.length - 1];
+          const timestamp = last_track.getAttribute("timestamp");
+          this.log.info(`load button clicked with timestamp: ${timestamp}`);
+          this.port.postMessage({
+            route: "fan_activity",
+            oldest_story_date: timestamp
+          });
+        }).bind(this)
+      );
   }
 
   init() {
@@ -44,7 +76,6 @@ export default class Playlist {
     // copied from playlist_backend
     const entries = preload["stories"];
     const track_list = preload["track_list"];
-
     let tracks = [];
     entries.forEach((item, index) => {
       if (item["item_type"] === "a")

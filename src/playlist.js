@@ -33,7 +33,7 @@ export default class Playlist {
       )
       .set_scroll_callback(
         ((event, li_index_current, li_total) => {
-          if (li_index_current != li_total) return;
+          if (li_index_current != (li_total - 1)) return;
 
           this.log.info("scroll callback");
           this.log.info(`${li_index_current}, ${li_total}`);

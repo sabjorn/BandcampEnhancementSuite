@@ -36,7 +36,7 @@ export default class PlaylistComponent {
     this.delete_button_callback = delete_button_callback;
     this.purchase_button_callback = purchase_button_callback;
     this.scroll_callback = scroll_callback;
-    this.load_button_callback = this.load_button_callback;
+    this.load_button_callback = load_button_callback;
   }
 
   init(element) {

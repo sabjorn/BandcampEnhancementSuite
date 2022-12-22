@@ -22,7 +22,11 @@ export default class PlaylistBackend {
       const count = request.tracks / 20;
       this.log.info(`fetching ${request.tracks} tracks, with ${count} loops`);
 
-      recursiveFanFeedUpdates(this.port, count, request.oldest_story_date).catch(error => {
+      recursiveFanFeedUpdates(
+        this.port,
+        count,
+        request.oldest_story_date
+      ).catch(error => {
         this.log.error("Error:", error);
       });
       return true;

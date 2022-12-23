@@ -23,9 +23,10 @@ export default class Playlist {
 
           this.log.info(audio);
           this.log.info(canvas);
-            // maybe, instead of generating waveform, could pass back
-            // the data -- or set data in attribute of link
-            // and then component can be responsible for filling?
+          // maybe, instead of generating waveform, could pass back
+          // the data -- or set data in attribute of link
+          // and then component can be responsible for filling?
+          if (link.hasAttribute("waveform-data")) return;
           this.generateWaveform(audio, canvas, link).catch(error => {
             this.log.error("Error:", error);
           });
@@ -174,39 +175,18 @@ export default class Playlist {
                 rms += audioSample ** 2;
               }
               rmsBuffer.push(Math.sqrt(rms / rmsSize));
-
-              this.log.info("visualizing");
-              let max = rmsBuffer.reduce(function(a, b) {
-                return Math.max(a, b);
-              });
-              for (let i = 0; i < rmsBuffer.length; i++) {
-                let amplitude = rmsBuffer[i] / max;
-                Playlist.fillBar(canvas, amplitude, i, datapoints);
-              }
+            }
+            this.log.info("visualizing");
+            let max = rmsBuffer.reduce(function(a, b) {
+              return Math.max(a, b);
+            });
+            for (let i = 0; i < rmsBuffer.length; i++) {
+              rmsBuffer[i] /= max;
             }
             audio_link.setAttribute("waveform-data", rmsBuffer);
           });
         });
       }
     );
-  }
-  static fillBar(canvas, amplitude, index, numElements, colour = "white") {
-    let ctx = canvas.getContext("2d");
-    ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = colour;
-
-    let graphHeight = canvas.height * amplitude;
-    let barWidth = canvas.width / numElements;
-    let position = index * barWidth;
-    ctx.fillRect(position, canvas.height, barWidth, -graphHeight);
-  }
-
-  static drawOverlay(canvas, progress, colour = "red", clearColour = "black") {
-    let ctx = canvas.getContext("2d");
-    ctx.globalCompositeOperation = "source-atop";
-    ctx.fillStyle = clearColour;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = colour;
-    ctx.fillRect(0, 0, canvas.width * progress, canvas.height);
   }
 }

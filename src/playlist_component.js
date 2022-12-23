@@ -139,8 +139,25 @@ export default class PlaylistComponent {
         this.audio.play();
         this.audio.addEventListener("loadeddata", () => {
           // guarantees data from audio is available
-          this.post_play_callback(this.audio, document.querySelector("canvas"), event.target);
+          this.post_play_callback(
+            this.audio,
+            document.querySelector("canvas"),
+            event.target
+          );
         });
+
+        if (!event.target.hasAttribute("waveform-data")) return;
+        const waveform_data = event.target.getAttribute("waveform-data").split(",");
+
+        const canvas = document.querySelector("canvas");
+        for (let i = 0; i < waveform_data.length; ++i)
+          PlaylistComponent.fillBar(
+            canvas,
+            waveform_data[i],
+            i,
+            waveform_data.length,
+            "red"
+          );
       });
 
       const delete_button = document.createElement("button");
@@ -193,5 +210,25 @@ export default class PlaylistComponent {
 
       this.playlist.appendChild(li);
     });
+  }
+
+  static fillBar(canvas, amplitude, index, numElements, colour = "white") {
+    let ctx = canvas.getContext("2d");
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = colour;
+
+    let graphHeight = canvas.height * amplitude;
+    let barWidth = canvas.width / numElements;
+    let position = index * barWidth;
+    ctx.fillRect(position, canvas.height, barWidth, -graphHeight);
+  }
+
+  static drawOverlay(canvas, progress, colour = "red", clearColour = "black") {
+    let ctx = canvas.getContext("2d");
+    ctx.globalCompositeOperation = "source-atop";
+    ctx.fillStyle = clearColour;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = colour;
+    ctx.fillRect(0, 0, canvas.width * progress, canvas.height);
   }
 }

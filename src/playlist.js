@@ -10,13 +10,20 @@ export default class Playlist {
     this.playlist_component
       .set_pre_play_callback(
         (mp3_url => {
+          // check if URL is still valid -- if not, send to get updated
           this.log.info("pre play callback");
           this.log.info(`mp3_url: ${mp3_url}`);
         }).bind(this)
       )
       .set_post_play_callback(
-        (() => {
+        ((audio, canvas) => {
           this.log.info("post play callback");
+
+          this.log.info(audio);
+          this.log.info(canvas);
+          this.generateWaveform(audio, canvas).catch(error => {
+            this.log.error("Error:", error);
+          });
         }).bind(this)
       )
       .set_delete_button_callback(
@@ -118,5 +125,82 @@ export default class Playlist {
       oldest_story_date: oldest_date,
       tracks: 40
     });
+  }
+
+  async generateWaveform(audio, canvas) {
+    const datapoints = 100;
+    canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+
+    const audioContext = new AudioContext();
+    const fs = audioContext.sampleRate;
+    const length = audio.duration;
+    this.log.info(`audio length: ${length}`);
+
+    chrome.runtime.sendMessage(
+      {
+        contentScriptQuery: "renderBuffer",
+        url: audio.src
+      },
+      audioData => {
+        const audioBuffer = new Uint8Array(audioData.data).buffer;
+        const offlineAudioContext = new OfflineAudioContext(2, fs * length, fs);
+        offlineAudioContext.decodeAudioData(audioBuffer, buffer => {
+          this.log.info("processing with audio node");
+          let source = offlineAudioContext.createBufferSource();
+          source.buffer = buffer;
+          source.connect(offlineAudioContext.destination);
+          source.start();
+
+          offlineAudioContext.startRendering().then(audioBuffer => {
+            this.log.info("calculating rms");
+
+            let leftChannel = audioBuffer.getChannelData(0);
+            const stepSize = Math.round(audioBuffer.length / datapoints);
+
+            const rmsSize = Math.min(stepSize, 128);
+            const subStepSize = Math.round(stepSize / rmsSize); // used to do RMS over subset of each buffer step
+
+            let rmsBuffer = [];
+            for (let i = 0; i < datapoints; i++) {
+              let rms = 0.0;
+              for (let sample = 0; sample < rmsSize; sample++) {
+                const sampleIndex = i * stepSize + sample * subStepSize;
+                let audioSample = leftChannel[sampleIndex];
+                rms += audioSample ** 2;
+              }
+              rmsBuffer.push(Math.sqrt(rms / rmsSize));
+
+              this.log.info("visualizing");
+              let max = rmsBuffer.reduce(function(a, b) {
+                return Math.max(a, b);
+              });
+              for (let i = 0; i < rmsBuffer.length; i++) {
+                let amplitude = rmsBuffer[i] / max;
+                Playlist.fillBar(canvas, amplitude, i, datapoints);
+              }
+            }
+          });
+        });
+      }
+    );
+  }
+  static fillBar(canvas, amplitude, index, numElements, colour = "white") {
+    let ctx = canvas.getContext("2d");
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = colour;
+
+    let graphHeight = canvas.height * amplitude;
+    let barWidth = canvas.width / numElements;
+    let position = index * barWidth;
+    ctx.fillRect(position, canvas.height, barWidth, -graphHeight);
+  }
+
+  static drawOverlay(canvas, progress, colour = "red", clearColour = "black") {
+    let ctx = canvas.getContext("2d");
+    ctx.globalCompositeOperation = "source-atop";
+    ctx.fillStyle = clearColour;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = colour;
+    ctx.fillRect(0, 0, canvas.width * progress, canvas.height);
   }
 }

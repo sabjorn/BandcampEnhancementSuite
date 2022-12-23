@@ -16,9 +16,10 @@ export default class WaveformBackend {
 
     this.log.info("url recieved, beginning processing audio.");
 
-    const url = "https://t4.bcbits.com/stream/" + request.url;
+    // TODO: fixme
+    //const url = "https://t4.bcbits.com/stream/" + request.url;
 
-    fetch(url)
+    fetch(request.url)
       .then(response => response.arrayBuffer())
       .then(arrayBuffer => {
         let jsonResult = Buffer.from(arrayBuffer).toJSON();

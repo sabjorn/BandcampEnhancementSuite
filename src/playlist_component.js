@@ -137,8 +137,10 @@ export default class PlaylistComponent {
 
         this.audio.src = mp3_url;
         this.audio.play();
-
-        this.post_play_callback();
+        this.audio.addEventListener("loadeddata", () => {
+          // guarantees data from audio is available
+          this.post_play_callback(this.audio, document.querySelector("canvas"));
+        });
       });
 
       const delete_button = document.createElement("button");

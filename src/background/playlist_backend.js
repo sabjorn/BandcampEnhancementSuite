@@ -16,7 +16,7 @@ export default class PlaylistBackend {
   }
 
   static fetchPlaylistData(request, sender, sendResponse) {
-    //if (request.contentScriptQuery != "renderBuffer") return;
+    if (request.contentScriptQuery == "renderBuffer") return;
     if (request.route === "fan_activity") {
       this.log.info("fan_activity");
       const count = request.tracks / 20;

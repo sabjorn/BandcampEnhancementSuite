@@ -6,8 +6,8 @@ import PlaylistBackend from "./background/playlist_backend.js";
 //const lvb = new LabelViewBackend();
 //lvb.init();
 //
-//const wb = new WaveformBackend();
-//wb.init();
+const wb = new WaveformBackend();
+wb.init();
 //
 //const cb = new ConfigBackend();
 //cb.init();

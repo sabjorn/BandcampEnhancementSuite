@@ -37,6 +37,33 @@ export default class PlaylistComponent {
     this.purchase_button_callback = purchase_button_callback;
     this.scroll_callback = scroll_callback;
     this.load_button_callback = load_button_callback;
+    this.observer = new MutationObserver(
+      ((mutationList, mutation_observer) => {
+        mutationList.forEach(mutation => {
+          if (mutation.type != "attributes") return;
+
+          if (!mutation.target.hasAttribute("waveform-data")) return;
+
+          if (mutation.target.parentElement.id != "bes_currently_playing")
+            return;
+
+          const waveform_data = mutation.target
+            .getAttribute("waveform-data")
+            .split(",");
+
+          const canvas = document.querySelector("canvas");
+          for (let i = 0; i < waveform_data.length; ++i)
+            PlaylistComponent.fillBar(
+              canvas,
+              waveform_data[i],
+              i,
+              waveform_data.length,
+              "red"
+            );
+          //mutation_observer.disconnect(); //might not need this
+        });
+      }).bind(this)
+    );
   }
 
   init(element) {
@@ -139,17 +166,23 @@ export default class PlaylistComponent {
         this.audio.play();
         this.audio.addEventListener("loadeddata", () => {
           // guarantees data from audio is available
-          this.post_play_callback(
-            this.audio,
-            document.querySelector("canvas"),
-            event.target
-          );
+          this.post_play_callback(this.audio, event.target);
         });
 
-        if (!event.target.hasAttribute("waveform-data")) return;
-        const waveform_data = event.target.getAttribute("waveform-data").split(",");
-
         const canvas = document.querySelector("canvas");
+        canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+
+        if (!event.target.hasAttribute("waveform-data")) {
+          // should handle if waveform-data is added as attribute
+          this.observer.observe(event.target, {
+            attributes: true
+          });
+          return;
+        }
+        const waveform_data = event.target
+          .getAttribute("waveform-data")
+          .split(",");
+
         for (let i = 0; i < waveform_data.length; ++i)
           PlaylistComponent.fillBar(
             canvas,
@@ -215,6 +248,7 @@ export default class PlaylistComponent {
   static fillBar(canvas, amplitude, index, numElements, colour = "white") {
     let ctx = canvas.getContext("2d");
     ctx.globalCompositeOperation = "source-over";
+
     ctx.fillStyle = colour;
 
     let graphHeight = canvas.height * amplitude;

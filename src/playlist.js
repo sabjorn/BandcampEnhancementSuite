@@ -18,16 +18,11 @@ export default class Playlist {
         }).bind(this)
       )
       .set_post_play_callback(
-        ((audio, canvas, link) => {
+        ((audio, target) => {
           this.log.info("post play callback");
 
-          this.log.info(audio);
-          this.log.info(canvas);
-          // maybe, instead of generating waveform, could pass back
-          // the data -- or set data in attribute of link
-          // and then component can be responsible for filling?
-          if (link.hasAttribute("waveform-data")) return;
-          this.generateWaveform(audio, canvas, link).catch(error => {
+          if (target.hasAttribute("waveform-data")) return;
+          this.generateWaveform(audio, target).catch(error => {
             this.log.error("Error:", error);
           });
         }).bind(this)
@@ -133,9 +128,8 @@ export default class Playlist {
     });
   }
 
-  async generateWaveform(audio, canvas, audio_link) {
+  async generateWaveform(audio, target) {
     const datapoints = 100;
-    canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
 
     const audioContext = new AudioContext();
     const fs = audioContext.sampleRate;
@@ -183,7 +177,7 @@ export default class Playlist {
             for (let i = 0; i < rmsBuffer.length; i++) {
               rmsBuffer[i] /= max;
             }
-            audio_link.setAttribute("waveform-data", rmsBuffer);
+            target.setAttribute("waveform-data", rmsBuffer);
           });
         });
       }

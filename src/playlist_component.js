@@ -139,7 +139,7 @@ export default class PlaylistComponent {
         this.audio.play();
         this.audio.addEventListener("loadeddata", () => {
           // guarantees data from audio is available
-          this.post_play_callback(this.audio, document.querySelector("canvas"));
+          this.post_play_callback(this.audio, document.querySelector("canvas"), event.target);
         });
       });
 

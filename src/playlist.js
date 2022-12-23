@@ -33,7 +33,7 @@ export default class Playlist {
       )
       .set_scroll_callback(
         ((event, li_index_current, li_total) => {
-          if (li_index_current != (li_total - 1)) return;
+          if (li_index_current != li_total - 1) return;
 
           this.log.info("scroll callback");
           this.log.info(`${li_index_current}, ${li_total}`);
@@ -103,8 +103,14 @@ export default class Playlist {
     this.playlist_component.appendTracks(tracks);
 
     // get pre-loaded page data
-
-    this.port.onMessage.addListener(this.playlist_component.appendTracks);
+    // this might work for blocking scrollbar until filled
+    this.port.onMessage.addListener(
+      (tracks => {
+        //this.scrollbar_enabled = false;
+        this.playlist_component.appendTracks(tracks);
+        //this.scrollbar_enabled = true;
+      }).bind(this)
+    );
     // set oldest_date with current pre-loaded page data -- or attach to scroll_callback...
     const oldest_date = preload["oldest_story_date"];
     this.port.postMessage({

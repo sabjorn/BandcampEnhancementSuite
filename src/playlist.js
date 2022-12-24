@@ -17,16 +17,7 @@ export default class Playlist {
           // mark played in DB
         }).bind(this)
       )
-      .set_post_play_callback(
-        ((audio, target) => {
-          this.log.info("post play callback");
-
-          if (target.hasAttribute("waveform-data")) return;
-          this.generateWaveform(audio, target).catch(error => {
-            this.log.error("Error:", error);
-          });
-        }).bind(this)
-      )
+      .set_post_play_callback(this.getAudioBuffer)
       .set_delete_button_callback(
         (target => {
           this.log.info("delete button callback");
@@ -128,59 +119,17 @@ export default class Playlist {
     });
   }
 
-  async generateWaveform(audio, target) {
-    const datapoints = 100;
-
-    const audioContext = new AudioContext();
-    const fs = audioContext.sampleRate;
-    const length = audio.duration;
-    this.log.info(`audio length: ${length}`);
-
-    chrome.runtime.sendMessage(
-      {
-        contentScriptQuery: "renderBuffer",
-        url: audio.src
-      },
-      audioData => {
-        const audioBuffer = new Uint8Array(audioData.data).buffer;
-        const offlineAudioContext = new OfflineAudioContext(2, fs * length, fs);
-        offlineAudioContext.decodeAudioData(audioBuffer, buffer => {
-          this.log.info("processing with audio node");
-          let source = offlineAudioContext.createBufferSource();
-          source.buffer = buffer;
-          source.connect(offlineAudioContext.destination);
-          source.start();
-
-          offlineAudioContext.startRendering().then(audioBuffer => {
-            this.log.info("calculating rms");
-
-            let leftChannel = audioBuffer.getChannelData(0);
-            const stepSize = Math.round(audioBuffer.length / datapoints);
-
-            const rmsSize = Math.min(stepSize, 128);
-            const subStepSize = Math.round(stepSize / rmsSize); // used to do RMS over subset of each buffer step
-
-            let rmsBuffer = [];
-            for (let i = 0; i < datapoints; i++) {
-              let rms = 0.0;
-              for (let sample = 0; sample < rmsSize; sample++) {
-                const sampleIndex = i * stepSize + sample * subStepSize;
-                let audioSample = leftChannel[sampleIndex];
-                rms += audioSample ** 2;
-              }
-              rmsBuffer.push(Math.sqrt(rms / rmsSize));
-            }
-            this.log.info("visualizing");
-            let max = rmsBuffer.reduce(function(a, b) {
-              return Math.max(a, b);
-            });
-            for (let i = 0; i < rmsBuffer.length; i++) {
-              rmsBuffer[i] /= max;
-            }
-            target.setAttribute("waveform-data", rmsBuffer);
-          });
-        });
-      }
-    );
+  getAudioBuffer(src) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(
+        {
+          contentScriptQuery: "renderBuffer",
+          url: src
+        },
+        response => {
+          return resolve(response);
+        }
+      );
+    });
   }
 }

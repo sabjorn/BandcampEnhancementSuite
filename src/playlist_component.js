@@ -20,12 +20,12 @@ let track = {
 export default class PlaylistComponent {
   constructor(
     enable_purchase_button = false,
-    pre_play_callback = () => {},
-    post_play_callback = () => {},
-    delete_button_callback = () => {},
-    purchase_button_callback = () => {},
-    scroll_callback = () => {},
-    load_button_callback = () => {}
+    pre_play_callback = async () => {},
+    post_play_callback = async () => {},
+    delete_button_callback = async () => {},
+    purchase_button_callback = async () => {},
+    scroll_callback = async () => {},
+    load_button_callback = async () => {}
   ) {
     this.log = new Logger();
     this.appendTracks = PlaylistComponent.appendTracks.bind(this);
@@ -37,33 +37,6 @@ export default class PlaylistComponent {
     this.purchase_button_callback = purchase_button_callback;
     this.scroll_callback = scroll_callback;
     this.load_button_callback = load_button_callback;
-    this.observer = new MutationObserver(
-      ((mutationList, mutation_observer) => {
-        mutationList.forEach(mutation => {
-          if (mutation.type != "attributes") return;
-
-          if (!mutation.target.hasAttribute("waveform-data")) return;
-
-          if (mutation.target.parentElement.id != "bes_currently_playing")
-            return;
-
-          const waveform_data = mutation.target
-            .getAttribute("waveform-data")
-            .split(",");
-
-          const canvas = document.querySelector("canvas");
-          for (let i = 0; i < waveform_data.length; ++i)
-            PlaylistComponent.fillBar(
-              canvas,
-              waveform_data[i],
-              i,
-              waveform_data.length,
-              "red"
-            );
-          //mutation_observer.disconnect(); //might not need this
-        });
-      }).bind(this)
-    );
   }
 
   init(element) {
@@ -159,38 +132,106 @@ export default class PlaylistComponent {
         // check if expired
         let mp3_url = event.target.getAttribute("stream_url");
         const new_mp3_url = this.pre_play_callback(mp3_url);
+        this.log.info(`mpr_url: ${mp3_url}`);
         if (new_mp3_url) mp3_url = new_mp3_url;
         event.target.setAttribute("stream_url", mp3_url);
 
         this.audio.src = mp3_url;
         this.audio.play();
-        this.audio.addEventListener("loadeddata", () => {
-          // guarantees data from audio is available
-          this.post_play_callback(this.audio, event.target);
-        });
 
         const canvas = document.querySelector("canvas");
         canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
 
-        if (!event.target.hasAttribute("waveform-data")) {
-          // should handle if waveform-data is added as attribute
-          this.observer.observe(event.target, {
-            attributes: true
-          });
+        if (event.target.hasAttribute("waveform-data")) {
+          const waveform_data = event.target
+            .getAttribute("waveform-data")
+            .split(",");
+
+          for (let i = 0; i < waveform_data.length; ++i) {
+            PlaylistComponent.fillBar(
+              canvas,
+              waveform_data[i],
+              i,
+              waveform_data.length,
+              "red"
+            );
+          }
+
           return;
         }
-        const waveform_data = event.target
-          .getAttribute("waveform-data")
-          .split(",");
+        this.audio.addEventListener("loadeddata", () => {
+          if (event.target.hasAttribute("waveform-data")) return;
 
-        for (let i = 0; i < waveform_data.length; ++i)
-          PlaylistComponent.fillBar(
-            canvas,
-            waveform_data[i],
-            i,
-            waveform_data.length,
-            "red"
-          );
+          const datapoints = 100;
+
+          const audioContext = new AudioContext();
+          const fs = audioContext.sampleRate;
+          const length = this.audio.duration;
+
+          this.post_play_callback(this.audio.src).then(audioData => {
+            const audioBuffer = new Uint8Array(audioData.data).buffer;
+            const offlineAudioContext = new OfflineAudioContext(
+              2,
+              fs * length,
+              fs
+            );
+
+            offlineAudioContext.decodeAudioData(audioBuffer, buffer => {
+              let source = offlineAudioContext.createBufferSource();
+              source.buffer = buffer;
+              source.connect(offlineAudioContext.destination);
+              source.start();
+
+              offlineAudioContext
+                .startRendering()
+                .then(audioBuffer => {
+                  let leftChannel = audioBuffer.getChannelData(0);
+                  const stepSize = Math.round(audioBuffer.length / datapoints);
+
+                  const rmsSize = Math.min(stepSize, 128);
+                  const subStepSize = Math.round(stepSize / rmsSize); // used to do RMS over subset of each buffer step
+
+                  const rmsBuffer = [];
+                  for (let i = 0; i < datapoints; i++) {
+                    let rms = 0.0;
+                    for (let sample = 0; sample < rmsSize; sample++) {
+                      const sampleIndex = i * stepSize + sample * subStepSize;
+                      let audioSample = leftChannel[sampleIndex];
+                      rms += audioSample ** 2;
+                    }
+                    rmsBuffer.push(Math.sqrt(rms / rmsSize));
+                  }
+                  let max = rmsBuffer.reduce(function(a, b) {
+                    return Math.max(a, b);
+                  });
+                  for (let i = 0; i < rmsBuffer.length; i++) {
+                    rmsBuffer[i] /= max;
+                  }
+                  return rmsBuffer;
+                })
+                .then(waveform_data => {
+                  const canvas = document.querySelector("canvas");
+                  canvas
+                    .getContext("2d")
+                    .clearRect(0, 0, canvas.width, canvas.height);
+
+                  for (let i = 0; i < waveform_data.length; ++i) {
+                    PlaylistComponent.fillBar(
+                      canvas,
+                      waveform_data[i],
+                      i,
+                      waveform_data.length,
+                      "red"
+                    );
+                  }
+                  return waveform_data;
+                })
+                .then(waveform_data => {
+                  event.target.setAttribute("waveform-data", waveform_data);
+                });
+            });
+          });
+        });
       });
 
       const delete_button = document.createElement("button");

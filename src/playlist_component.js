@@ -1,6 +1,7 @@
 import html from "../html/playlist_component.html";
 import Logger from "./logger";
 import Sortable from "sortablejs";
+import WaveformComponent from "./waveform_component";
 
 let track = {
   track_id: 1234,
@@ -37,15 +38,20 @@ export default class PlaylistComponent {
     this.purchase_button_callback = purchase_button_callback;
     this.scroll_callback = scroll_callback;
     this.load_button_callback = load_button_callback;
+
+    this.waveform = new WaveformComponent();
   }
 
   init(element) {
     this.log.info("Loaded PlaylistComponent");
 
     element.innerHTML = html;
-    this.audio = document.querySelector("audio");
 
-    this.playlist = document.querySelector(".playlist").querySelector("ul");
+    this.audio = element.querySelector("audio");
+    const canvas = element.querySelector("canvas");
+    this.waveform.init(this.audio, canvas);
+
+    this.playlist = element.querySelector(".playlist").querySelector("ul");
     Sortable.create(this.playlist);
 
     document.querySelector(".playlist").addEventListener("scroll", event => {
@@ -139,97 +145,19 @@ export default class PlaylistComponent {
         this.audio.src = mp3_url;
         this.audio.play();
 
-        const canvas = document.querySelector("canvas");
-        canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
-
-        if (event.target.hasAttribute("waveform-data")) {
-          const waveform_data = event.target
-            .getAttribute("waveform-data")
-            .split(",");
-
-          for (let i = 0; i < waveform_data.length; ++i) {
-            PlaylistComponent.fillBar(
-              canvas,
-              waveform_data[i],
-              i,
-              waveform_data.length,
-              "red"
-            );
+        this.audio.addEventListener("loadeddata", () => {
+          if (event.target.hasAttribute("waveform-data")) {
+            const waveform_data = event.target
+              .getAttribute("waveform-data")
+              .split(",");
+            this.waveform.fillBar(waveform_data, "red");
+            return;
           }
 
-          return;
-        }
-        this.audio.addEventListener("loadeddata", () => {
-          if (event.target.hasAttribute("waveform-data")) return;
-
-          const datapoints = 100;
-
-          const audioContext = new AudioContext();
-          const fs = audioContext.sampleRate;
-          const length = this.audio.duration;
-
+          // loading animation?
           this.post_play_callback(this.audio.src).then(audioData => {
-            const audioBuffer = new Uint8Array(audioData.data).buffer;
-            const offlineAudioContext = new OfflineAudioContext(
-              2,
-              fs * length,
-              fs
-            );
-
-            offlineAudioContext.decodeAudioData(audioBuffer, buffer => {
-              let source = offlineAudioContext.createBufferSource();
-              source.buffer = buffer;
-              source.connect(offlineAudioContext.destination);
-              source.start();
-
-              offlineAudioContext
-                .startRendering()
-                .then(audioBuffer => {
-                  let leftChannel = audioBuffer.getChannelData(0);
-                  const stepSize = Math.round(audioBuffer.length / datapoints);
-
-                  const rmsSize = Math.min(stepSize, 128);
-                  const subStepSize = Math.round(stepSize / rmsSize); // used to do RMS over subset of each buffer step
-
-                  const rmsBuffer = [];
-                  for (let i = 0; i < datapoints; i++) {
-                    let rms = 0.0;
-                    for (let sample = 0; sample < rmsSize; sample++) {
-                      const sampleIndex = i * stepSize + sample * subStepSize;
-                      let audioSample = leftChannel[sampleIndex];
-                      rms += audioSample ** 2;
-                    }
-                    rmsBuffer.push(Math.sqrt(rms / rmsSize));
-                  }
-                  let max = rmsBuffer.reduce(function(a, b) {
-                    return Math.max(a, b);
-                  });
-                  for (let i = 0; i < rmsBuffer.length; i++) {
-                    rmsBuffer[i] /= max;
-                  }
-                  return rmsBuffer;
-                })
-                .then(waveform_data => {
-                  const canvas = document.querySelector("canvas");
-                  canvas
-                    .getContext("2d")
-                    .clearRect(0, 0, canvas.width, canvas.height);
-
-                  for (let i = 0; i < waveform_data.length; ++i) {
-                    PlaylistComponent.fillBar(
-                      canvas,
-                      waveform_data[i],
-                      i,
-                      waveform_data.length,
-                      "red"
-                    );
-                  }
-                  return waveform_data;
-                })
-                .then(waveform_data => {
-                  event.target.setAttribute("waveform-data", waveform_data);
-                });
-            });
+            this.log.debug("post play");
+            return this.waveform.fillWaveform(event.target, audioData);
           });
         });
       });
@@ -284,18 +212,6 @@ export default class PlaylistComponent {
 
       this.playlist.appendChild(li);
     });
-  }
-
-  static fillBar(canvas, amplitude, index, numElements, colour = "white") {
-    let ctx = canvas.getContext("2d");
-    ctx.globalCompositeOperation = "source-over";
-
-    ctx.fillStyle = colour;
-
-    let graphHeight = canvas.height * amplitude;
-    let barWidth = canvas.width / numElements;
-    let position = index * barWidth;
-    ctx.fillRect(position, canvas.height, barWidth, -graphHeight);
   }
 
   static drawOverlay(canvas, progress, colour = "red", clearColour = "black") {

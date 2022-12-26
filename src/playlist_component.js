@@ -142,14 +142,13 @@ export default class PlaylistComponent {
             const waveform_data = event.target
               .getAttribute("waveform-data")
               .split(",");
-            this.waveform.fillBar(waveform_data, "red");
+            this.waveform.fillBar(waveform_data, "black");
             return;
           }
 
           // loading animation?
           this.post_play_callback(this.audio.src).then(audioData => {
-            this.log.debug("post play");
-            return this.waveform.fillWaveform(event.target, audioData);
+            this.waveform.fillWaveform(event.target, audioData);
           });
         });
       });

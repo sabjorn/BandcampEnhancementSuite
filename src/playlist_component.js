@@ -19,25 +19,17 @@ let track = {
 };
 
 export default class PlaylistComponent {
-  constructor(
-    enable_purchase_button = false,
-    pre_play_callback = async () => {},
-    post_play_callback = async () => {},
-    delete_button_callback = async () => {},
-    purchase_button_callback = async () => {},
-    scroll_callback = async () => {},
-    load_button_callback = async () => {}
-  ) {
+  constructor(enable_purchase_button = false) {
     this.log = new Logger();
     this.appendTracks = PlaylistComponent.appendTracks.bind(this);
 
     this.enable_purchase_button = enable_purchase_button;
-    this.pre_play_callback = pre_play_callback;
-    this.post_play_callback = post_play_callback;
-    this.delete_button_callback = delete_button_callback;
-    this.purchase_button_callback = purchase_button_callback;
-    this.scroll_callback = scroll_callback;
-    this.load_button_callback = load_button_callback;
+    this.pre_play_callback = () => {};
+    this.post_play_callback = () => {};
+    this.delete_button_callback = () => {};
+    this.purchase_button_callback = () => {};
+    this.scroll_callback = () => {};
+    this.load_button_callback = () => {};
 
     this.waveform = new WaveformComponent();
   }

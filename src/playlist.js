@@ -7,6 +7,12 @@ export default class Playlist {
     this.log = new Logger();
     this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
     this.playlist_component = new PlaylistComponent(true);
+
+    const data_blob = JSON.parse(
+      document.querySelector("#pagedata").getAttribute("data-blob")
+    );
+    this.fan_id = data_blob["fan_info"]["fan_id"];
+
     this.playlist_component
       .set_pre_play_callback(
         (mp3_url => {
@@ -60,7 +66,7 @@ export default class Playlist {
           this.port.postMessage({
             route: "fan_activity",
             oldest_story_date: timestamp,
-            fan_id: 896389,
+            fan_id: this.fan_id,
             tracks: 40
           });
         }).bind(this)
@@ -102,10 +108,6 @@ export default class Playlist {
     });
     this.playlist_component.appendTracks(tracks);
 
-    const data_blob = JSON.parse(
-      document.querySelector("#pagedata").getAttribute("data-blob")
-    );
-
     this.port.onMessage.addListener(
       (tracks => {
         this.playlist_component.appendTracks(tracks);
@@ -114,10 +116,9 @@ export default class Playlist {
 
     // set oldest_date with current pre-loaded page data -- or attach to scroll_callback...
     const oldest_date = preload["oldest_story_date"];
-    const fan_id = data_blob["fan_info"]["fan_id"];
     this.port.postMessage({
       route: "fan_activity",
-      fan_id: fan_id,
+      fan_id: this.fan_id,
       oldest_story_date: oldest_date,
       tracks: 40
     });

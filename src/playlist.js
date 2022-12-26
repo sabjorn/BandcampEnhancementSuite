@@ -67,10 +67,10 @@ export default class Playlist {
       );
   }
 
-  init() {
+  init(item_to_replace) {
     this.log.info("Loaded Playlist");
 
-    const element = document.querySelector("#stories-vm");
+    const element = document.querySelector(item_to_replace);
     this.playlist_component.init(element);
 
     const preload = JSON.parse(element.getAttribute("data-initial-values"));
@@ -106,15 +106,12 @@ export default class Playlist {
       document.querySelector("#pagedata").getAttribute("data-blob")
     );
 
-    // get pre-loaded page data
-    // this might work for blocking scrollbar until filled
     this.port.onMessage.addListener(
       (tracks => {
-        //this.scrollbar_enabled = false;
         this.playlist_component.appendTracks(tracks);
-        //this.scrollbar_enabled = true;
       }).bind(this)
     );
+
     // set oldest_date with current pre-loaded page data -- or attach to scroll_callback...
     const oldest_date = preload["oldest_story_date"];
     const fan_id = data_blob["fan_info"]["fan_id"];

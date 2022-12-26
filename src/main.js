@@ -48,5 +48,5 @@ window.onload = () => {
   //}
 
   const playlist = new Playlist();
-  playlist.init();
+  playlist.init("#stories-vm");
 };

@@ -60,6 +60,7 @@ export default class Playlist {
           this.port.postMessage({
             route: "fan_activity",
             oldest_story_date: timestamp,
+            fan_id: 896389,
             tracks: 40
           });
         }).bind(this)
@@ -101,6 +102,10 @@ export default class Playlist {
     });
     this.playlist_component.appendTracks(tracks);
 
+    const data_blob = JSON.parse(
+      document.querySelector("#pagedata").getAttribute("data-blob")
+    );
+
     // get pre-loaded page data
     // this might work for blocking scrollbar until filled
     this.port.onMessage.addListener(
@@ -112,8 +117,10 @@ export default class Playlist {
     );
     // set oldest_date with current pre-loaded page data -- or attach to scroll_callback...
     const oldest_date = preload["oldest_story_date"];
+    const fan_id = data_blob["fan_info"]["fan_id"];
     this.port.postMessage({
       route: "fan_activity",
+      fan_id: fan_id,
       oldest_story_date: oldest_date,
       tracks: 40
     });

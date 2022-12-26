@@ -24,6 +24,7 @@ export default class PlaylistBackend {
 
       recursiveFanFeedUpdates(
         this.port,
+        request.fan_id,
         count,
         request.oldest_story_date
       ).catch(error => {
@@ -117,11 +118,9 @@ export default class PlaylistBackend {
   }
 }
 
-function recursiveFanFeedUpdates(port, count, timestamp = null) {
+function recursiveFanFeedUpdates(port, fan_id, count, timestamp) {
   return new Promise((resolve, reject) => {
-    if (timestamp === null) timestamp = Math.floor(Date.now() / 1000);
-
-    const body = `fan_id=896389&older_than=${timestamp}`;
+    const body = `fan_id=${fan_id}&older_than=${timestamp}`;
     fetch("https://bandcamp.com/fan_dash_feed_updates", {
       headers: {
         "content-type": "application/x-www-form-urlencoded"
@@ -168,7 +167,7 @@ function recursiveFanFeedUpdates(port, count, timestamp = null) {
             });
             port.postMessage(tracks);
             if (count > 0) {
-              recursiveFanFeedUpdates(port, --count, new_timestamp)
+              recursiveFanFeedUpdates(port, fan_id, --count, new_timestamp)
                 .then(resolve)
                 .catch(reject);
             } else {

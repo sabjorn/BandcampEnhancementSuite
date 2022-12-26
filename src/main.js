@@ -47,6 +47,6 @@ window.onload = () => {
   //  checkout.init();
   //}
 
-  let playlist = new Playlist();
+  const playlist = new Playlist();
   playlist.init();
 };

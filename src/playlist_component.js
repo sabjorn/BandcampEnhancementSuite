@@ -155,7 +155,7 @@ export default class PlaylistComponent {
 
       const delete_button = document.createElement("button");
       delete_button.innerHTML = "x";
-      delete_button.style.height = "15px";
+      delete_button.classList.add("bes_button");
       delete_button.addEventListener("click", event => {
         // gross hack to get next play on clicking x!!!
         try {
@@ -175,7 +175,7 @@ export default class PlaylistComponent {
       if (this.enable_purchase_button) {
         purchase_button.style.visibility = "visible";
         purchase_button.innerHTML = "+";
-        purchase_button.style.height = "15px";
+        purchase_button.classList.add("bes_button");
 
         purchase_button.setAttribute("price", track["price"]);
         purchase_button.setAttribute("track_id", track["track_id"]);

@@ -34,15 +34,15 @@ export default class Playlist {
         ((event, li_index_current, li_total) => {
           if (li_index_current != li_total - 1) return;
 
-          this.log.info("scroll callback");
-          this.log.info(`${li_index_current}, ${li_total}`);
+          //this.log.info("scroll callback");
+          //this.log.info(`${li_index_current}, ${li_total}`);
 
           const last_playlist_element = event.target.querySelectorAll("li")[
             li_total - 1
           ];
           const oldest_date = last_playlist_element.getAttribute("timestamp");
 
-          this.log.info(oldest_date);
+          //this.log.info(oldest_date);
           //this.port.postMessage({
           //  route: "fan_activity",
           //  oldest_story_date: oldest_date

@@ -33,7 +33,7 @@ export default class PlaylistBackend {
       return true;
     }
     if (request.route === "tralbum_details") {
-      this.log.info("tralbum_details")
+      this.log.info("tralbum_details");
       const body = {
         tralbum_type: request.tralbum_type,
         band_id: request.band_id,
@@ -52,6 +52,7 @@ export default class PlaylistBackend {
 
           let tracks = [];
           items.forEach(item => {
+            const track_url = data["bandcamp_url"];
             const track = {
               track_id: item["track_id"],
               artist: item["band_name"],
@@ -60,7 +61,7 @@ export default class PlaylistBackend {
               label: item["label"],
               price: item["price"],
               currency: item["currency"],
-              link_url: item["item_url"],
+              link_url: track_url,
               stream_url: item["streaming_url"]["mp3-128"],
               album_art_url: `https://f4.bcbits.com/img/${data["type"]}${data["art_id"]}_8.jpg`,
               is_purchasable: item["is_purchasable"],
@@ -74,7 +75,7 @@ export default class PlaylistBackend {
         .catch(error => {
           this.log.error("Error:", error);
         });
-        return true;
+      return true;
     }
     if (request.route === "wishlist") {
       const now = request.oldest_story_date;

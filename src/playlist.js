@@ -120,7 +120,6 @@ export default class Playlist {
     });
     this.playlist_component.appendTracks(tracks);
 
-
     // set oldest_date with current pre-loaded page data -- or attach to scroll_callback...
     const oldest_date = preload["oldest_story_date"];
     this.port.postMessage({

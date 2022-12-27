@@ -175,14 +175,14 @@ export default class PlaylistComponent {
       const has_digital_download = true;
       const has_price = track["price"] > 0;
       const purchase_button = document.createElement("button");
-      purchase_button.style.visibility = "hidden";
+      purchase_button.style.display = "none";
       if (
         this.enable_purchase_button &
         is_purchasable &
         has_digital_download &
         has_price
       ) {
-        purchase_button.style.visibility = "visible";
+        purchase_button.style.display = "";
         purchase_button.innerHTML = "+";
         purchase_button.classList.add("bes_button");
 
@@ -196,14 +196,17 @@ export default class PlaylistComponent {
         });
       }
 
-      const text = document.createTextNode(
-        `${track["artist"]} - ${track["title"]} - ${track["label"]} - ${track["price"]}${track["currency"]}`
+      const text = `${track["artist"]} - ${track["title"]} - ${track["label"]} - ${track["price"]}${track["currency"]}`.replace(
+        "- null",
+        ""
       );
+
+      const textNode = document.createTextNode(text);
 
       const link = document.createElement("a");
       link.href = `${track["link_url"]}`;
       link.target = "_blank";
-      link.appendChild(text);
+      link.appendChild(textNode);
 
       li.appendChild(play_button);
       li.appendChild(link);

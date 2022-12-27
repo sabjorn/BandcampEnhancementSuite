@@ -216,13 +216,4 @@ export default class PlaylistComponent {
       this.playlist.appendChild(li);
     });
   }
-
-  static drawOverlay(canvas, progress, colour = "red", clearColour = "black") {
-    let ctx = canvas.getContext("2d");
-    ctx.globalCompositeOperation = "source-atop";
-    ctx.fillStyle = clearColour;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = colour;
-    ctx.fillRect(0, 0, canvas.width * progress, canvas.height);
-  }
 }

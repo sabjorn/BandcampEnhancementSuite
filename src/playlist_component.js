@@ -171,9 +171,17 @@ export default class PlaylistComponent {
         this.delete_button_callback(event.target);
       });
 
+      const is_purchasable = track["is_purchasable"];
+      const has_digital_download = true;
+      const has_price = track["price"] > 0;
       const purchase_button = document.createElement("button");
       purchase_button.style.visibility = "hidden";
-      if (this.enable_purchase_button) {
+      if (
+        this.enable_purchase_button &
+        is_purchasable &
+        has_digital_download &
+        has_price
+      ) {
         purchase_button.style.visibility = "visible";
         purchase_button.innerHTML = "+";
         purchase_button.classList.add("bes_button");

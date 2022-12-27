@@ -60,7 +60,54 @@ export default class PlaylistComponent {
     });
 
     document.addEventListener("keydown", e => {
-      // re-add later
+      this.log.info("Keydown: " + e.key);
+      if (e.target == document.body) {
+        const playing = document.querySelector(".playing");
+        if (playing == null) return;
+        if (e.key == "x") {
+          try {
+            playing
+              .closest("li")
+              .querySelector(".bes_delete")
+              .click();
+          } catch (e) {}
+        }
+        if (e.key == " " || e.key == "p") {
+          // play/pause
+          e.preventDefault();
+          this.audio.paused ? this.audio.play() : this.audio.pause();
+        }
+
+        if (e.key == "ArrowUp") {
+          e.preventDefault();
+          try {
+            playing
+              .closest("li")
+              .previousElementSibling.querySelector(".play_status")
+              .click();
+          } catch (e) {}
+        }
+
+        if (e.key == "ArrowDown") {
+          e.preventDefault();
+          try {
+            playing
+              .closest("li")
+              .nextElementSibling.querySelector(".play_status")
+              .click();
+          } catch (e) {}
+        }
+
+        if (e.key == "ArrowLeft") {
+          e.preventDefault();
+          this.audio.currentTime -= 10;
+        }
+
+        if (e.key == "ArrowRight") {
+          e.preventDefault();
+          this.audio.currentTime += 10;
+        }
+      }
     });
 
     const load_button = document.querySelector("#load");
@@ -157,6 +204,7 @@ export default class PlaylistComponent {
       const delete_button = document.createElement("button");
       delete_button.innerHTML = "x";
       delete_button.classList.add("bes_button");
+      delete_button.classList.add("bes_delete");
       delete_button.addEventListener("click", event => {
         this.log.debug(`delete button clicked: ${event.target}`);
 

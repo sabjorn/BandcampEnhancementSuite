@@ -158,15 +158,18 @@ export default class PlaylistComponent {
       delete_button.innerHTML = "x";
       delete_button.classList.add("bes_button");
       delete_button.addEventListener("click", event => {
-        // gross hack to get next play on clicking x!!!
-        try {
-          event.target
-            .closest("li")
-            .nextElementSibling.querySelector(".play_status")
-            .click();
+        this.log.debug(`delete button clicked: ${event.target}`);
 
-          event.target.closest("li").remove();
+        this.audio.pause();
+        try {
+          // gross hack to get next play on clicking x!!!
+          if (event.target.closest("li").id == "bes_currently_playing")
+            event.target
+              .closest("li")
+              .nextElementSibling.querySelector(".play_status")
+              .click();
         } catch (e) {}
+        event.target.closest("li").remove();
 
         this.delete_button_callback(event.target);
       });

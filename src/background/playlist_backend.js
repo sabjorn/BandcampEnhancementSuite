@@ -32,6 +32,50 @@ export default class PlaylistBackend {
       });
       return true;
     }
+    if (request.route === "tralbum_details") {
+      this.log.info("tralbum_details")
+      const body = {
+        tralbum_type: request.tralbum_type,
+        band_id: request.band_id,
+        tralbum_id: request.tralbum_id
+      };
+      fetch("https://bandcamp.com/api/mobile/25/tralbum_details", {
+        body: JSON.stringify(body),
+        method: "POST",
+        mode: "cors",
+        credentials: "include"
+      })
+        .then(response => response.text())
+        .then(text => {
+          const data = JSON.parse(text);
+          const items = data["tracks"];
+
+          let tracks = [];
+          items.forEach(item => {
+            const track = {
+              track_id: item["track_id"],
+              artist: item["band_name"],
+              title: item["title"],
+              album_title: item["album_title"],
+              label: item["label"],
+              price: item["price"],
+              currency: item["currency"],
+              link_url: item["item_url"],
+              stream_url: item["streaming_url"]["mp3-128"],
+              album_art_url: `https://f4.bcbits.com/img/${data["type"]}${data["art_id"]}_8.jpg`,
+              is_purchasable: item["is_purchasable"],
+              has_digital_download: item["has_digital_download"],
+              timestamp: Date.parse(data["release_date"]) / 1000
+            };
+            tracks.push(track);
+          });
+          this.port.postMessage(tracks);
+        })
+        .catch(error => {
+          this.log.error("Error:", error);
+        });
+        return true;
+    }
     if (request.route === "wishlist") {
       const now = request.oldest_story_date;
       const count = 1000;

@@ -79,15 +79,27 @@ export default class Playlist {
     const element = document.querySelector(item_to_replace);
     this.playlist_component.init(element);
 
+    this.port.onMessage.addListener(
+      (tracks => {
+        this.playlist_component.appendTracks(tracks);
+      }).bind(this)
+    );
+
     const preload = JSON.parse(element.getAttribute("data-initial-values"));
     // copied from playlist_backend
     const entries = preload["stories"];
     const track_list = preload["track_list"];
     let tracks = [];
     entries.forEach((item, index) => {
-      if (item["item_type"] === "a")
-        // for now we ignore albums because price is wrong
+      if (item["item_type"] === "a") {
+        this.port.postMessage({
+          route: "tralbum_details",
+          tralbum_type: "a",
+          band_id: item["band_id"],
+          tralbum_id: item["tralbum_id"]
+        });
         return;
+      }
 
       const selected_track = track_list[index];
       const track = {
@@ -108,11 +120,6 @@ export default class Playlist {
     });
     this.playlist_component.appendTracks(tracks);
 
-    this.port.onMessage.addListener(
-      (tracks => {
-        this.playlist_component.appendTracks(tracks);
-      }).bind(this)
-    );
 
     // set oldest_date with current pre-loaded page data -- or attach to scroll_callback...
     const oldest_date = preload["oldest_story_date"];

@@ -15,7 +15,8 @@ let track = {
   stream_url: "",
   album_art_url: "",
   timestamp: 123, // currently unused
-  is_purchasable: true // currently unused
+  is_purchasable: true, // currently unused
+  has_digital_download: true // currently unused
 };
 
 export default class PlaylistComponent {

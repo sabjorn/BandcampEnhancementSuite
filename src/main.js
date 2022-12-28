@@ -47,6 +47,8 @@ window.onload = () => {
   //  checkout.init();
   //}
 
-  const playlist = new Playlist();
-  playlist.init("#stories-vm");
+  if (window.location.href.includes("feed")) {
+    const playlist = new Playlist();
+    playlist.init("#stories-vm");
+  }
 };

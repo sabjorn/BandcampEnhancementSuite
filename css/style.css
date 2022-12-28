@@ -155,3 +155,10 @@ div .prev, .next {
 .bes_noclick {
   pointer-events: none;
 }
+
+img.bes_thumbnail {
+    display: inline;
+    height: 50px;
+    margin-bottom: -15px;
+    margin-right: 5px;
+}

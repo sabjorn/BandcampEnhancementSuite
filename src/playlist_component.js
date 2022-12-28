@@ -272,19 +272,21 @@ export default class PlaylistComponent {
             });
         });
       }
+      const album_art_thumb = document.createElement("img");
+      album_art_thumb.classList.add("bes_thumbnail");
+      album_art_thumb.src = track["album_art_url"];
 
       const text = `${track["artist"]} - ${track["title"]} - ${track["label"]} - ${track["price"]}${track["currency"]}`.replace(
         "- null",
         ""
       );
-
       const textNode = document.createTextNode(text);
-
       const link = document.createElement("a");
       link.href = `${track["link_url"]}`;
       link.target = "_blank";
       link.appendChild(textNode);
 
+      li.appendChild(album_art_thumb);
       li.appendChild(play_button);
       li.appendChild(link);
       li.appendChild(wishlist_button);

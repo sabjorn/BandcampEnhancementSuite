@@ -186,7 +186,6 @@ export default class PlaylistComponent {
         // check if expired
         let mp3_url = event.target.getAttribute("stream_url");
         const new_mp3_url = this.pre_play_callback(mp3_url);
-        this.log.info(`mpr_url: ${mp3_url}`);
         if (new_mp3_url) mp3_url = new_mp3_url;
         event.target.setAttribute("stream_url", mp3_url);
 

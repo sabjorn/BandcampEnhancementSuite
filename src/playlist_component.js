@@ -281,7 +281,8 @@ export default class PlaylistComponent {
       const text = `${track["artist"]} - ${track["title"]} - ${track["label"]} - ${track["price"]}${track["currency"]}`.replace(
         "- null",
         ""
-      );
+      ).replace(`- null${track["currency"]}`, "");
+
       const textNode = document.createTextNode(text);
       const link = document.createElement("a");
       link.href = `${track["link_url"]}`;

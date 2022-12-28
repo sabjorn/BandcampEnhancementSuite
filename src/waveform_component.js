@@ -101,9 +101,10 @@ export default class WaveformComponent {
   }
 
   clearWaveform() {
-    this.canvas
-      .getContext("2d")
-      .clearRect(0, 0, this.canvas.width, this.canvas.height);
+    const ctx = this.canvas.getContext("2d");
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = this.backColor;
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
   static monitorAudioTimeupdateCallback(e) {

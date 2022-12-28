@@ -143,8 +143,8 @@ div .prev, .next {
     background-color: #FFFF00;
 }
 
-.bes_purchased {
-    text-decoration: line-through;
+.bes_has_been_played {
+    background-color: #CCCCCC;
 }
 
 .bes_button {

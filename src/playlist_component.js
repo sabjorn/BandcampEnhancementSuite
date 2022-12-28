@@ -233,7 +233,7 @@ export default class PlaylistComponent {
       wishlist_button.classList.add("collection-item-actions");
       wishlist_button.classList.add("wishlist"); // wishlist || wishlisted || purchased
       wishlist_button.style.visibility = "unset";
-      //wishlist_button.style.display = "none";
+      wishlist_button.style.display = "none";
       wishlist_button.innerHTML = wishlistHtml;
       wishlist_button.addEventListener("click", event => {
         this.wishlist_button_callback(event.target);
@@ -251,7 +251,7 @@ export default class PlaylistComponent {
         has_price
       ) {
         purchase_button.style.display = "";
-        purchase_button.innerHTML = "+";
+        purchase_button.innerHTML = "$";
         purchase_button.classList.add("bes_button");
 
         purchase_button.setAttribute("price", track["price"]);
@@ -260,7 +260,22 @@ export default class PlaylistComponent {
           const track_id = event.target.getAttribute("track_id");
           const price = event.target.getAttribute("price");
 
-          this.purchase_button_callback(track_id, price);
+          this.purchase_button_callback(track_id, price)
+            .then(() => {
+              this.log.debug("track successfully added to cart");
+            })
+            .then(() => {
+              const wishlist_button = event.target.parentElement.querySelector(
+                ".collection-item-actions"
+              );
+              wishlist_button.classList.replace("wishlist", "purchased");
+              wishlist_button.style.display = "";
+
+              event.target.remove();
+            })
+            .catch(error => {
+              this.log.error(`error adding track to cart: ${error}`);
+            });
         });
       }
 

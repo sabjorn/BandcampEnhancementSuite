@@ -1,6 +1,7 @@
+import { add } from "winston";
 import Logger from "./logger";
 import PlaylistComponent from "./playlist_component";
-import { addAlbumToCart } from "./utilities";
+import { getUrl, getClientId } from "./utilities";
 
 export default class Playlist {
   constructor() {
@@ -34,6 +35,7 @@ export default class Playlist {
         ((track_id, price) => {
           this.log.info("puchase button callback");
           this.log.info(`${track_id}, ${price}`);
+          return Playlist.addAlbumToCart(track_id, price, "t");
         }).bind(this)
       )
       .set_scroll_callback(
@@ -146,6 +148,40 @@ export default class Playlist {
           return resolve(response);
         }
       );
+    });
+  }
+
+  static addAlbumToCart(
+    item_id,
+    unit_price,
+    item_type = "a",
+    url = getUrl(),
+    client_id = getClientId()
+  ) {
+    return new Promise((resolve, reject) => {
+      fetch(`https://${url}/cart/cb`, {
+        headers: {
+          accept: "application/json, text/javascript, */*; q=0.01",
+          "content-type": "application/x-www-form-urlencoded",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "same-origin",
+          "x-requested-with": "XMLHttpRequest"
+        },
+        referrer: "https://halfpastvibe.bandcamp.com/album/vielen-dank",
+        referrerPolicy: "no-referrer-when-downgrade",
+        body: `req=add&item_type=${item_type}&item_id=${item_id}&unit_price=${unit_price}&quantity=1&client_id=${client_id}&sync_num=1`,
+        method: "POST",
+        mode: "cors",
+        credentials: "include"
+      })
+        .then(response => {
+          if (response.status !== 200) {
+            throw `${response.status}: ${response.statusText}`;
+          }
+          resolve();
+        })
+        .catch(reject);
     });
   }
 }

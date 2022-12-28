@@ -65,7 +65,8 @@ export default class WaveformComponent {
           return rmsBuffer;
         })
         .then(waveform_data => {
-          this.fillBar(waveform_data, "red");
+          if (element.parentElement.id == "bes_currently_playing")
+            this.fillBar(waveform_data, "red");
           return waveform_data;
         })
         .then(waveform_data => {

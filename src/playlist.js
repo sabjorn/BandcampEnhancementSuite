@@ -70,6 +70,11 @@ export default class Playlist {
             tracks: 40
           });
         }).bind(this)
+      )
+      .set_wishlist_button_callback(
+        (target => {
+          this.log.debug(`wishlist callback on: ${target}`);
+        }).bind(this)
       );
   }
 

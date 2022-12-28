@@ -151,3 +151,7 @@ div .prev, .next {
     margin-right: 0px;
     margin-left: 5px;
 }
+
+.bes_noclick {
+  pointer-events: none;
+}

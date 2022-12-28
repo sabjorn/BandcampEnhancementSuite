@@ -1,3 +1,4 @@
+import wishlistHtml from "../html/wishlist_component.html";
 import html from "../html/playlist_component.html";
 import Logger from "./logger";
 import Sortable from "sortablejs";
@@ -31,6 +32,7 @@ export default class PlaylistComponent {
     this.purchase_button_callback = () => {};
     this.scroll_callback = () => {};
     this.load_button_callback = () => {};
+    this.wishlist_button_callback = () => {};
 
     this.waveform = new WaveformComponent();
   }
@@ -138,6 +140,10 @@ export default class PlaylistComponent {
     this.load_button_callback = callback;
     return this;
   }
+  set_wishlist_button_callback(callback) {
+    this.wishlist_button_callback = callback;
+    return this;
+  }
 
   static appendTracks(tracks) {
     this.log.info("Appending Tracks");
@@ -222,6 +228,17 @@ export default class PlaylistComponent {
         this.delete_button_callback(event.target);
       });
 
+      const wishlist_button = document.createElement("button");
+      wishlist_button.classList.add("bes_button");
+      wishlist_button.classList.add("collection-item-actions");
+      wishlist_button.classList.add("wishlist"); // wishlist || wishlisted || purchased
+      wishlist_button.style.visibility = "unset";
+      //wishlist_button.style.display = "none";
+      wishlist_button.innerHTML = wishlistHtml;
+      wishlist_button.addEventListener("click", event => {
+        this.wishlist_button_callback(event.target);
+      });
+
       const is_purchasable = track["is_purchasable"];
       const has_digital_download = true;
       const has_price = track["price"] > 0;
@@ -261,6 +278,7 @@ export default class PlaylistComponent {
 
       li.appendChild(play_button);
       li.appendChild(link);
+      li.appendChild(wishlist_button);
       li.appendChild(purchase_button);
       li.appendChild(delete_button);
 

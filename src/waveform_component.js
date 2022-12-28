@@ -99,6 +99,12 @@ export default class WaveformComponent {
     ctx.fillRect(0, 0, this.canvas.width * progress, this.canvas.height);
   }
 
+  clearWaveform() {
+    this.canvas
+      .getContext("2d")
+      .clearRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
   static monitorAudioTimeupdateCallback(e) {
     let audio = e.target;
     let progress = audio.currentTime / audio.duration;

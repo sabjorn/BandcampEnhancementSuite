@@ -19,7 +19,6 @@ export default class Playlist {
         (mp3_url => {
           // check if URL is still valid -- if not, send to get updated
           this.log.info("pre play callback");
-          this.log.info(`mp3_url: ${mp3_url}`);
 
           // mark played in DB
         }).bind(this)

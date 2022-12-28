@@ -191,6 +191,7 @@ export default class PlaylistComponent {
 
         this.audio.src = mp3_url;
         this.audio.play();
+        this.waveform.clearWaveform();
 
         if (event.target.hasAttribute("waveform-data")) {
           const waveform_data = event.target

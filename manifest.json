@@ -29,8 +29,7 @@
     {
       "matches": [
         "http://*.bandcamp.com/*",
-        "https://*.bandcamp.com/*",
-        "file://*"
+        "https://*.bandcamp.com/*"
       ],
       "js": [
         "dist/main.js"

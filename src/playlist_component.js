@@ -16,8 +16,9 @@ let track = {
   stream_url: "",
   album_art_url: "",
   timestamp: 123, // currently unused
-  is_purchasable: true, // currently unused
-  has_digital_download: true // currently unused
+  is_purchasable: true,
+  has_digital_download: true, // currently unused
+  duration: 123.4
 };
 
 export default class PlaylistComponent {
@@ -27,7 +28,7 @@ export default class PlaylistComponent {
 
     this.enable_purchase_button = enable_purchase_button;
     this.pre_play_callback = () => {};
-    this.post_play_callback = () => {};
+    this.post_play_callback = src => {};
     this.delete_button_callback = () => {};
     this.purchase_button_callback = () => {};
     this.scroll_callback = () => {};
@@ -158,6 +159,7 @@ export default class PlaylistComponent {
       const play_button = document.createElement("div");
       play_button.setAttribute("album_art_url", track["album_art_url"]);
       play_button.setAttribute("stream_url", track["stream_url"]);
+      play_button.setAttribute("duration", track["duration"]);
 
       play_button.classList.add("play_status");
       play_button.addEventListener("click", event => {
@@ -191,19 +193,17 @@ export default class PlaylistComponent {
         this.audio.src = mp3_url;
         this.audio.play();
 
-        this.audio.addEventListener("loadeddata", () => {
-          if (event.target.hasAttribute("waveform-data")) {
-            const waveform_data = event.target
-              .getAttribute("waveform-data")
-              .split(",");
-            this.waveform.fillBar(waveform_data, "black");
-            return;
-          }
+        if (event.target.hasAttribute("waveform-data")) {
+          const waveform_data = event.target
+            .getAttribute("waveform-data")
+            .split(",");
+          this.waveform.fillBar(waveform_data, "black");
+          return;
+        }
 
-          // loading animation?
-          this.post_play_callback(this.audio.src).then(audioData => {
-            this.waveform.fillWaveform(event.target, audioData);
-          });
+        const duration = event.target.getAttribute("duration");
+        this.post_play_callback(this.audio.src).then(audioData => {
+          this.waveform.fillWaveform(event.target, audioData, duration);
         });
       });
 
@@ -240,16 +240,10 @@ export default class PlaylistComponent {
       });
 
       const is_purchasable = track["is_purchasable"];
-      const has_digital_download = true;
       const has_price = track["price"] > 0;
       const purchase_button = document.createElement("button");
       purchase_button.style.display = "none";
-      if (
-        this.enable_purchase_button &
-        is_purchasable &
-        has_digital_download &
-        has_price
-      ) {
+      if (this.enable_purchase_button & is_purchasable & has_price) {
         purchase_button.style.display = "";
         purchase_button.innerHTML = "$";
         purchase_button.classList.add("bes_button");

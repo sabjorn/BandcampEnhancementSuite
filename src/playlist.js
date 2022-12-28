@@ -121,6 +121,8 @@ export default class Playlist {
         stream_url: selected_track["streaming_url"]["mp3-128"],
         album_art_url: item["item_art_url"],
         is_purchasable: item["is_purchasable"],
+        has_digital_download: item["has_digital_download"],
+        duration: selected_track["duration"],
         timestamp: Date.parse(item["story_date"]) / 1000
       };
       tracks.push(track);

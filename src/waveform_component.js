@@ -23,10 +23,10 @@ export default class WaveformComponent {
     );
   }
 
-  fillWaveform(element, audioData) {
+  fillWaveform(element, audioData, duration) {
     const audioContext = new AudioContext();
     const fs = audioContext.sampleRate;
-    const length = this.audio.duration;
+    const length = duration;
 
     const audioBuffer = new Uint8Array(audioData.data).buffer;
     const offlineAudioContext = new OfflineAudioContext(2, fs * length, fs);

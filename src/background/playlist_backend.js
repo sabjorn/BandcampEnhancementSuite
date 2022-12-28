@@ -66,6 +66,7 @@ export default class PlaylistBackend {
               album_art_url: `https://f4.bcbits.com/img/${data["type"]}${data["art_id"]}_8.jpg`,
               is_purchasable: item["is_purchasable"],
               has_digital_download: item["has_digital_download"],
+              duration: item["duration"],
               timestamp: Date.parse(data["release_date"]) / 1000
             };
             tracks.push(track);
@@ -205,7 +206,9 @@ function recursiveFanFeedUpdates(port, fan_id, count, timestamp) {
                 link_url: item["item_url"],
                 stream_url: selected_track["streaming_url"]["mp3-128"],
                 album_art_url: item["item_art_url"],
-                is_purchasable: item["is_purchasable"],
+                is_purchasable: selected_track["is_purchasable"],
+                has_digital_download: selected_track["has_digital_download"],
+                duration: selected_track["duration"],
                 timestamp: Date.parse(item["story_date"]) / 1000
               };
               tracks.push(track);

@@ -95,12 +95,11 @@ export default class PlaylistBackend {
   }
 
   fetchWishlist(request) {
-    const now = request.oldest_story_date;
-    const count = 1000;
+    const older_than_token = `${request.oldest_story_date}::a::`;
     const body = {
-      fan_id: 896389,
-      older_than_token: `${now}::a::`,
-      count: count
+      fan_id: request.fan_id,
+      older_than_token: older_than_token,
+      count: request.count
     };
     fetch("https://bandcamp.com/api/fancollection/1/wishlist_items", {
       body: JSON.stringify(body),
@@ -112,20 +111,40 @@ export default class PlaylistBackend {
       .then(text => {
         const data = JSON.parse(text);
         const items = data["items"];
+        const tracklists = data["tracklists"];
 
+        let tracks = [];
         items.forEach(item => {
-          const item_type = item["item_type"].charAt(0);
-          const item_index = `${item_type}${item["item_id"]}`;
-          const tracklist = data["tracklists"];
-          const trackinfo = tracklist[item_index];
-          const response = {
-            album_artist: item["band_name"],
-            album_url: item["item_url"],
-            album_art: item["item_art_id"],
-            track_data: trackinfo
+          if (item["tralbum_type"] === "a") {
+            const album_request = {
+                tralbum_type: "a",
+                band_id: item["band_id"],
+                tralbum_id: item["album_id"]
+            };
+            this.fetchTralbumDetails(album_request);
+            return;
+          }
+
+          const track_list = tracklists[`t${item["featured_track"]}`][0];
+          const track = {
+            track_id: item["featured_track"],
+            artist: item["band_name"],
+            title: item["featured_track_title"],
+            album_title: item["album_title"],
+            label: item["label"],
+            price: item["price"],
+            currency: item["currency"],
+            link_url: item["item_url"],
+            stream_url: track_list["file"]["mp3-128"],
+            album_art_url: item["item_art_url"],
+            is_purchasable: item["is_purchasable"],
+            has_digital_download: item["download_available"],
+            duration: item["featured_track_duration"],
+            timestamp: data["last_token"].split(":")[0]
           };
-          this.port.postMessage(response);
+          tracks.push(track);
         });
+        this.port.postMessage(tracks);
       })
       .catch(error => {
         this.log.error("Error:", error);

@@ -5,6 +5,7 @@ import Player from "./player.js";
 import Waveform from "./waveform.js";
 import Checkout from "./checkout.js";
 import FeedPlaylist from "./feed_playlist.js";
+import WishlistPlaylist from "./wishlist_playlist.js";
 
 window.onload = () => {
   const log = new Logger();
@@ -50,5 +51,9 @@ window.onload = () => {
   if (window.location.href.includes("feed")) {
     const feed_playlist = new FeedPlaylist();
     feed_playlist.init("#stories-vm");
+  }
+  if (window.location.href.includes("wishlist")) {
+    const wishlist_playlist = new WishlistPlaylist();
+    wishlist_playlist.init("#wishlist-grid");
   }
 };

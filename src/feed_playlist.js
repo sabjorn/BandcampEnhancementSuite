@@ -3,7 +3,7 @@ import Logger from "./logger";
 import PlaylistComponent from "./playlist_component";
 import { getUrl, getClientId } from "./utilities";
 
-export default class Playlist {
+export default class FeedPlaylist {
   constructor() {
     this.log = new Logger();
     this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });

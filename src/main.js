@@ -4,7 +4,7 @@ import DownloadHelper from "./download_helper.js";
 import Player from "./player.js";
 import Waveform from "./waveform.js";
 import Checkout from "./checkout.js";
-import Playlist from "./playlist.js";
+import FeedPlaylist from "./feed_playlist.js";
 
 window.onload = () => {
   const log = new Logger();
@@ -48,7 +48,7 @@ window.onload = () => {
   //}
 
   if (window.location.href.includes("feed")) {
-    const playlist = new Playlist();
-    playlist.init("#stories-vm");
+    const feed_playlist = new FeedPlaylist();
+    feed_playlist.init("#stories-vm");
   }
 };

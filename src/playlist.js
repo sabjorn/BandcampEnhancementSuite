@@ -122,20 +122,20 @@ export default class Playlist {
         is_purchasable: item["is_purchasable"],
         has_digital_download: item["has_digital_download"],
         duration: selected_track["duration"],
-        timestamp: Date.parse(item["story_date"]) / 1000
+        timestamp: Date.parse(preload["feed_timestamp"]) / 1000
       };
       tracks.push(track);
     });
     this.playlist_component.appendTracks(tracks);
 
     // set oldest_date with current pre-loaded page data -- or attach to scroll_callback...
-    const oldest_date = preload["oldest_story_date"];
-    this.port.postMessage({
-      route: "fan_activity",
-      fan_id: this.fan_id,
-      oldest_story_date: oldest_date,
-      tracks: 40
-    });
+    //const oldest_date = preload["oldest_story_date"];
+    //this.port.postMessage({
+    //  route: "fan_activity",
+    //  fan_id: this.fan_id,
+    //  oldest_story_date: oldest_date,
+    //  tracks: 40
+    //});
   }
 
   getAudioBuffer(src) {

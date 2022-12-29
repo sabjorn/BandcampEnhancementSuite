@@ -67,7 +67,7 @@ export default class PlaylistBackend {
               is_purchasable: item["is_purchasable"],
               has_digital_download: item["has_digital_download"],
               duration: item["duration"],
-              timestamp: Date.parse(data["release_date"]) / 1000
+              timestamp: Math.floor(Date.now() / 1000)
             };
             tracks.push(track);
           });

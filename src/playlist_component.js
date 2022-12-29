@@ -278,10 +278,9 @@ export default class PlaylistComponent {
       album_art_thumb.classList.add("bes_thumbnail");
       album_art_thumb.src = track["album_art_url"];
 
-      const text = `${track["artist"]} - ${track["title"]} - ${track["label"]} - ${track["price"]}${track["currency"]}`.replace(
-        "- null",
-        ""
-      ).replace(`- null${track["currency"]}`, "");
+      const text = `${track["artist"]} - ${track["title"]} - ${track["label"]} - ${track["price"]}${track["currency"]}`
+        .replace("- null", "")
+        .replace(`- null${track["currency"]}`, "");
 
       const textNode = document.createTextNode(text);
       const link = document.createElement("a");

@@ -22,11 +22,12 @@ let track = {
 };
 
 export default class PlaylistComponent {
-  constructor(enable_purchase_button = false) {
+  constructor(enable_purchase_button = false, enable_delete_button = true) {
     this.log = new Logger();
     this.appendTracks = PlaylistComponent.appendTracks.bind(this);
 
     this.enable_purchase_button = enable_purchase_button;
+    this.enable_delete_button = enable_delete_button;
     this.pre_play_callback = () => {};
     this.post_play_callback = src => {};
     this.delete_button_callback = () => {};
@@ -207,26 +208,30 @@ export default class PlaylistComponent {
         });
       });
 
-      const delete_button = document.createElement("button");
-      delete_button.innerHTML = "x";
-      delete_button.classList.add("bes_button");
-      delete_button.classList.add("bes_delete");
-      delete_button.addEventListener("click", event => {
-        this.log.debug(`delete button clicked: ${event.target}`);
+          const delete_button = document.createElement("button");
+      delete_button.style.display = "none";
+      if(this.enable_delete_button) {
+            delete_button.style.display = "";
+          delete_button.innerHTML = "x";
+          delete_button.classList.add("bes_button");
+          delete_button.classList.add("bes_delete");
+          delete_button.addEventListener("click", event => {
+            this.log.debug(`delete button clicked: ${event.target}`);
 
-        this.audio.pause();
-        try {
-          // gross hack to get next play on clicking x!!!
-          if (event.target.closest("li").id == "bes_currently_playing")
-            event.target
-              .closest("li")
-              .nextElementSibling.querySelector(".play_status")
-              .click();
-        } catch (e) {}
-        event.target.closest("li").remove();
+            this.audio.pause();
+            try {
+              // gross hack to get next play on clicking x!!!
+              if (event.target.closest("li").id == "bes_currently_playing")
+                event.target
+                  .closest("li")
+                  .nextElementSibling.querySelector(".play_status")
+                  .click();
+            } catch (e) {}
+            event.target.closest("li").remove();
 
-        this.delete_button_callback(event.target);
-      });
+            this.delete_button_callback(event.target);
+          });
+      }
 
       const wishlist_button = document.createElement("button");
       wishlist_button.classList.add("bes_button");

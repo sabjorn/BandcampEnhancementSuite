@@ -5,7 +5,6 @@ import Player from "./player.js";
 import Waveform from "./waveform.js";
 import Checkout from "./checkout.js";
 import FeedPlaylist from "./feed_playlist.js";
-import WishlistPlaylist from "./wishlist_playlist.js";
 import CollectionPlaylist from "./collection_playlist.js";
 
 window.onload = () => {

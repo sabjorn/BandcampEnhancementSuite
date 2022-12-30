@@ -6,6 +6,7 @@ import Waveform from "./waveform.js";
 import Checkout from "./checkout.js";
 import FeedPlaylist from "./feed_playlist.js";
 import WishlistPlaylist from "./wishlist_playlist.js";
+import CollectionPlaylist from "./collection_playlist.js";
 
 window.onload = () => {
   const log = new Logger();
@@ -52,8 +53,12 @@ window.onload = () => {
     const feed_playlist = new FeedPlaylist();
     feed_playlist.init("#stories-vm");
   }
-  if (window.location.href.includes("wishlist")) {
-    const wishlist_playlist = new WishlistPlaylist();
-    wishlist_playlist.init("#wishlist-grid");
+  if (document.querySelector("title").innerHTML.includes("collection")) {
+    // make wishlist and collection data one thing BUT make <li> have wishlist/collection visible tag?
+    //const wishlist_playlist = new CollectionPlaylist("wishlist");
+    //wishlist_playlist.init("#wishlist-grid");
+
+    const collection_playlist = new CollectionPlaylist("collection");
+    collection_playlist.init("#collection-grid");
   }
 };

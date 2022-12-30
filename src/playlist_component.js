@@ -50,7 +50,7 @@ export default class PlaylistComponent {
     this.playlist = element.querySelector(".playlist").querySelector("ul");
     Sortable.create(this.playlist);
 
-    document.querySelector(".playlist").addEventListener("scroll", event => {
+    element.querySelector(".playlist").addEventListener("scroll", event => {
       // need to find out if we can capture only when scrolling has stopped
       const a = event.target.scrollTop;
       const b = event.target.scrollHeight - event.target.clientHeight;

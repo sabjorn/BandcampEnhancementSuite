@@ -27,9 +27,19 @@ export default class PlaylistBackend {
     }
 
     if (request.route === "wishlist") {
-      this.fetchWishlist(request);
+      this.fetchFanCollection(
+        request,
+        "https://bandcamp.com/api/fancollection/1/wishlist_items"
+      );
       return true;
     }
+
+    if (request.route === "collection")
+      this.fetchFanCollection(
+        request,
+        "https://bandcamp.com/api/fancollection/1/collection_items"
+      );
+
     return true;
   }
 
@@ -94,14 +104,15 @@ export default class PlaylistBackend {
       });
   }
 
-  fetchWishlist(request) {
+  fetchFanCollection(request, url) {
     const older_than_token = `${request.oldest_story_date}::a::`;
     const body = {
       fan_id: request.fan_id,
       older_than_token: older_than_token,
       count: request.count
     };
-    fetch("https://bandcamp.com/api/fancollection/1/wishlist_items", {
+
+    fetch(url, {
       body: JSON.stringify(body),
       method: "POST",
       mode: "cors",
@@ -117,9 +128,9 @@ export default class PlaylistBackend {
         items.forEach(item => {
           if (item["tralbum_type"] === "a") {
             const album_request = {
-                tralbum_type: "a",
-                band_id: item["band_id"],
-                tralbum_id: item["album_id"]
+              tralbum_type: "a",
+              band_id: item["band_id"],
+              tralbum_id: item["album_id"]
             };
             this.fetchTralbumDetails(album_request);
             return;

@@ -54,11 +54,7 @@ window.onload = () => {
     feed_playlist.init("#stories-vm");
   }
   if (document.querySelector("title").innerHTML.includes("collection")) {
-    // make wishlist and collection data one thing BUT make <li> have wishlist/collection visible tag?
-    //const wishlist_playlist = new CollectionPlaylist("wishlist");
-    //wishlist_playlist.init("#wishlist-grid");
-
-    const collection_playlist = new CollectionPlaylist("collection");
-    collection_playlist.init("#collection-grid");
+    const collection_playlist = new CollectionPlaylist();
+    collection_playlist.init();
   }
 };

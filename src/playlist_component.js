@@ -62,54 +62,52 @@ export default class PlaylistComponent {
       this.scroll_callback(event, li_index_current, li_total);
     });
 
-    document.addEventListener("keydown", e => {
+    element.querySelector(".bes_player").addEventListener("keydown", e => {
       this.log.info("Keydown: " + e.key);
-      if (e.target == document.body) {
-        const playing = document.querySelector(".playing");
-        if (playing == null) return;
-        if (e.key == "x") {
-          try {
-            playing
-              .closest("li")
-              .querySelector(".bes_delete")
-              .click();
-          } catch (e) {}
-        }
-        if (e.key == " " || e.key == "p") {
-          // play/pause
-          e.preventDefault();
-          this.audio.paused ? this.audio.play() : this.audio.pause();
-        }
+      const playing = document.querySelector(".playing");
+      if (playing == null) return;
+      if (e.key == "x") {
+        try {
+          playing
+            .closest("li")
+            .querySelector(".bes_delete")
+            .click();
+        } catch (e) {}
+      }
+      if (e.key == " " || e.key == "p") {
+        // play/pause
+        e.preventDefault();
+        this.audio.paused ? this.audio.play() : this.audio.pause();
+      }
 
-        if (e.key == "ArrowUp") {
-          e.preventDefault();
-          try {
-            playing
-              .closest("li")
-              .previousElementSibling.querySelector(".play_status")
-              .click();
-          } catch (e) {}
-        }
+      if (e.key == "ArrowUp") {
+        e.preventDefault();
+        try {
+          playing
+            .closest("li")
+            .previousElementSibling.querySelector(".play_status")
+            .click();
+        } catch (e) {}
+      }
 
-        if (e.key == "ArrowDown") {
-          e.preventDefault();
-          try {
-            playing
-              .closest("li")
-              .nextElementSibling.querySelector(".play_status")
-              .click();
-          } catch (e) {}
-        }
+      if (e.key == "ArrowDown") {
+        e.preventDefault();
+        try {
+          playing
+            .closest("li")
+            .nextElementSibling.querySelector(".play_status")
+            .click();
+        } catch (e) {}
+      }
 
-        if (e.key == "ArrowLeft") {
-          e.preventDefault();
-          this.audio.currentTime -= 10;
-        }
+      if (e.key == "ArrowLeft") {
+        e.preventDefault();
+        this.audio.currentTime -= 10;
+      }
 
-        if (e.key == "ArrowRight") {
-          e.preventDefault();
-          this.audio.currentTime += 10;
-        }
+      if (e.key == "ArrowRight") {
+        e.preventDefault();
+        this.audio.currentTime += 10;
       }
     });
 

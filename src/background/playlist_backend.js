@@ -17,22 +17,15 @@ export default class PlaylistBackend {
 
   static fetchPlaylistData(request, sender, sendResponse) {
     if (request.contentScriptQuery == "renderBuffer") return;
-    if (request.route === "fan_activity") {
-      this.fetchFanActivity(request);
-      return true;
-    }
-    if (request.route === "tralbum_details") {
-      this.fetchTralbumDetails(request);
-      return true;
-    }
+    if (request.route === "fan_activity") this.fetchFanActivity(request);
 
-    if (request.route === "wishlist") {
+    if (request.route === "tralbum_details") this.fetchTralbumDetails(request);
+
+    if (request.route === "wishlist")
       this.fetchFanCollection(
         request,
         "https://bandcamp.com/api/fancollection/1/wishlist_items"
       );
-      return true;
-    }
 
     if (request.route === "collection")
       this.fetchFanCollection(
@@ -58,7 +51,7 @@ export default class PlaylistBackend {
     });
   }
 
-  fetchTralbumDetails(request) {
+  fetchTralbumDetails(request, timestamp = Math.floor(Date.now() / 1000)) {
     this.log.info("tralbum_details");
     const body = {
       tralbum_type: request.tralbum_type,
@@ -93,7 +86,7 @@ export default class PlaylistBackend {
             is_purchasable: item["is_purchasable"],
             has_digital_download: item["has_digital_download"],
             duration: item["duration"],
-            timestamp: Math.floor(Date.now() / 1000)
+            timestamp: timestamp
           };
           tracks.push(track);
         });
@@ -126,13 +119,15 @@ export default class PlaylistBackend {
 
         let tracks = [];
         items.forEach(item => {
+          const timestamp = data["last_token"].split(":")[0];
+
           if (item["tralbum_type"] === "a") {
             const album_request = {
               tralbum_type: "a",
               band_id: item["band_id"],
               tralbum_id: item["album_id"]
             };
-            this.fetchTralbumDetails(album_request);
+            this.fetchTralbumDetails(album_request, timestamp);
             return;
           }
 
@@ -151,7 +146,7 @@ export default class PlaylistBackend {
             is_purchasable: item["is_purchasable"],
             has_digital_download: item["download_available"],
             duration: item["featured_track_duration"],
-            timestamp: data["last_token"].split(":")[0]
+            timestamp: timestamp
           };
           tracks.push(track);
         });

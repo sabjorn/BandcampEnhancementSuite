@@ -88,7 +88,9 @@ export default class CollectionPlaylist {
           const last_track = tracks[tracks.length - 1];
           const timestamp = last_track.getAttribute("timestamp");
 
-          this.log.debug(`loading tracks with route: ${route}`);
+          this.log.debug(
+            `loading tracks with route: ${route}, timestamp: ${timestamp}`
+          );
           this.port.postMessage({
             route: route,
             fan_id: this.fan_id,

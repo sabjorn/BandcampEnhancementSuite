@@ -107,5 +107,4 @@ export default class CollectionPlaylist {
     playlist_component.init(element);
     return playlist_component;
   }
-
 }

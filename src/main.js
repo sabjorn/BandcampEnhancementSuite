@@ -48,13 +48,16 @@ window.onload = () => {
   //  let checkout = new Checkout(config_port);
   //  checkout.init();
   //}
-  if (document.querySelector("title").innerHTML.includes("Music")) {
+  const pagetype = document
+    .querySelector("[property='og:type']")
+    .getAttribute("content");
+  if (pagetype === "band") {
     const discography_playlist = new DiscographyPlaylist();
     discography_playlist.init();
   }
   if (window.location.href.includes("feed")) {
     const feed_playlist = new FeedPlaylist();
-    feed_playlist.init("#stories-vm");
+    feed_playlist.init();
   }
   if (document.querySelector("title").innerHTML.includes("collection")) {
     const collection_playlist = new CollectionPlaylist();

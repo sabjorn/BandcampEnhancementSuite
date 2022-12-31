@@ -78,10 +78,10 @@ export default class FeedPlaylist {
       );
   }
 
-  init(item_to_replace) {
-    this.log.info("Loaded Playlist");
+  init() {
+    this.log.info("Loaded FeedPlaylist");
 
-    const element = document.querySelector(item_to_replace);
+    const element = document.querySelector("#stories-vm");
     this.playlist_component.init(element);
 
     this.port.onMessage.addListener(

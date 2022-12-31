@@ -6,6 +6,7 @@ import Waveform from "./waveform.js";
 import Checkout from "./checkout.js";
 import FeedPlaylist from "./feed_playlist.js";
 import CollectionPlaylist from "./collection_playlist.js";
+import DiscographyPlaylist from "./discography_playlist.js";
 
 window.onload = () => {
   const log = new Logger();
@@ -47,7 +48,10 @@ window.onload = () => {
   //  let checkout = new Checkout(config_port);
   //  checkout.init();
   //}
-
+  if (document.querySelector("title").innerHTML.includes("Music")) {
+    const discography_playlist = new DiscographyPlaylist();
+    discography_playlist.init();
+  }
   if (window.location.href.includes("feed")) {
     const feed_playlist = new FeedPlaylist();
     feed_playlist.init("#stories-vm");

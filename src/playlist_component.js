@@ -22,12 +22,13 @@ let track = {
 };
 
 export default class PlaylistComponent {
-  constructor(enable_purchase_button = false, enable_delete_button = true) {
+  constructor(enable_purchase_button = false, enable_delete_button = true, enable_load_button = true) {
     this.log = new Logger();
     this.appendTracks = PlaylistComponent.appendTracks.bind(this);
 
     this.enable_purchase_button = enable_purchase_button;
     this.enable_delete_button = enable_delete_button;
+    this.enable_load_button = enable_load_button;
     this.pre_play_callback = () => {};
     this.post_play_callback = src => {};
     this.delete_button_callback = () => {};
@@ -114,6 +115,8 @@ export default class PlaylistComponent {
 
     const load_button = document.querySelector("#load");
     load_button.onclick = this.load_button_callback;
+    if (!this.enable_load_button)
+      load_button.style.display = "none";
   }
 
   set_pre_play_callback(callback) {

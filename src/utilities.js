@@ -90,6 +90,17 @@ export function addToWishlist() {
   const uncollect_crumb = meta.uncollect_item_cb;
 }
 
+// todo: use this to slow down fetch to prevent rate limiting --> https://stackoverflow.com/questions/70595420/how-to-throttle-my-js-api-fetch-requests-using-the-rate-limit-supplied-by-the-h
+//function debounce(func, waitFor) {
+//    let timeout;
+//    return (...args) => new Promise(resolve => {
+//        if (timeout) {
+//            clearTimeout(timeout);
+//        }
+//        timeout = setTimeout(() => resolve(func(...args)), waitFor);
+//    });
+//}
+
 export function getAudioBuffer(src) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(

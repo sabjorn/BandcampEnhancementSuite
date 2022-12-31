@@ -81,6 +81,15 @@ export function addAlbumToCart(
   });
 }
 
+export function addToWishlist() {
+  // need crumbs
+  const meta = JSON.parse(
+    document.querySelector("#js-crumbs-data").getAttribute("data-crumbs")
+  );
+  const collect_crumb = meta.collect_item_cb;
+  const uncollect_crumb = meta.uncollect_item_cb;
+}
+
 export function getAudioBuffer(src) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(

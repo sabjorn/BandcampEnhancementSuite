@@ -1,7 +1,6 @@
-import { add } from "winston";
 import Logger from "./logger";
 import PlaylistComponent from "./playlist_component";
-import { addAlbumToCart } from "./utilities";
+import { addAlbumToCart, getAudioBuffer } from "./utilities";
 
 export default class CollectionPlaylist {
   constructor() {
@@ -72,7 +71,7 @@ export default class CollectionPlaylist {
   initPlaylist(element, route) {
     const playlist_component = new PlaylistComponent(true, false);
     playlist_component
-      .set_post_play_callback(this.getAudioBuffer)
+      .set_post_play_callback(getAudioBuffer)
       .set_purchase_button_callback(
         ((track_id, price) => {
           this.log.info("puchase button callback");
@@ -109,17 +108,4 @@ export default class CollectionPlaylist {
     return playlist_component;
   }
 
-  getAudioBuffer(src) {
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(
-        {
-          contentScriptQuery: "renderBuffer",
-          url: src
-        },
-        response => {
-          return resolve(response);
-        }
-      );
-    });
-  }
 }

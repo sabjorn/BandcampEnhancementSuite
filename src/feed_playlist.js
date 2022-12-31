@@ -1,7 +1,6 @@
-import { add } from "winston";
 import Logger from "./logger";
 import PlaylistComponent from "./playlist_component";
-import addAlbumToCart from "./utilities";
+import { addAlbumToCart, getAudioBuffer } from "./utilities";
 
 export default class FeedPlaylist {
   constructor() {
@@ -23,7 +22,7 @@ export default class FeedPlaylist {
           // mark played in DB
         }).bind(this)
       )
-      .set_post_play_callback(this.getAudioBuffer)
+      .set_post_play_callback(getAudioBuffer)
       .set_delete_button_callback(
         (target => {
           this.log.info("delete button callback");
@@ -136,19 +135,5 @@ export default class FeedPlaylist {
     //  oldest_story_date: oldest_date,
     //  tracks: 40
     //});
-  }
-
-  getAudioBuffer(src) {
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(
-        {
-          contentScriptQuery: "renderBuffer",
-          url: src
-        },
-        response => {
-          return resolve(response);
-        }
-      );
-    });
   }
 }

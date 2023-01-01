@@ -81,13 +81,41 @@ export function addAlbumToCart(
   });
 }
 
-export function addToWishlist() {
-  // need crumbs
+export function addTrackWishlist(item_id, band_id, fan_id) {
+  const url = getUrl();
   const meta = JSON.parse(
     document.querySelector("#js-crumbs-data").getAttribute("data-crumbs")
   );
-  const collect_crumb = meta.collect_item_cb;
-  const uncollect_crumb = meta.uncollect_item_cb;
+  const crumb = meta.collect_item_cb;
+  return new Promise((resolve, reject) => {
+    fetch(`https://${url}/collect_item_cb`, {
+      headers: {
+        accept: "application/json, text/javascript, */*; q=0.01",
+        "accept-language": "en-US,en;q=0.9,ar;q=0.8",
+        "content-type": "application/x-www-form-urlencoded",
+        "sec-ch-ua":
+          '"Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"macOS"',
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "x-requested-with": "XMLHttpRequest"
+      },
+      referrer: "https://bandcamp.com",
+      body: `fan_id=${fan_id}&item_id=${item_id}&item_type=track&band_id=${band_id}&crumb=${crumb}`,
+      method: "POST",
+      mode: "cors",
+      credentials: "include"
+    })
+      .then(response => {
+        if (response.status !== 200) {
+          throw `${response.status}: ${response.statusText}`;
+        }
+        resolve();
+      })
+      .catch(reject);
+  });
 }
 
 // todo: use this to slow down fetch to prevent rate limiting --> https://stackoverflow.com/questions/70595420/how-to-throttle-my-js-api-fetch-requests-using-the-rate-limit-supplied-by-the-h

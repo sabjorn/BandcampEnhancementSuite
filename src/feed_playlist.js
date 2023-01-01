@@ -1,6 +1,6 @@
 import Logger from "./logger";
 import PlaylistComponent from "./playlist_component";
-import { addAlbumToCart, getAudioBuffer } from "./utilities";
+import { addAlbumToCart, getAudioBuffer, addTrackWishlist } from "./utilities";
 
 export default class FeedPlaylist {
   constructor() {
@@ -73,7 +73,18 @@ export default class FeedPlaylist {
       )
       .set_wishlist_button_callback(
         (target => {
-          this.log.debug(`wishlist callback on: ${target}`);
+          const element = target.parentElement;
+          const track_id = element.getAttribute("track_id");
+          const band_id = element.getAttribute("band_id");
+
+          const data_blob = JSON.parse(
+            document.querySelector("#pagedata").getAttribute("data-blob")
+          );
+          const fan_id = data_blob["fan_info"]["fan_id"];
+
+          addTrackWishlist(track_id, band_id, fan_id).then(() => {
+            this.log.info("added track to wishlist");
+          });
         }).bind(this)
       );
   }
@@ -105,10 +116,10 @@ export default class FeedPlaylist {
         });
         return;
       }
-
       const selected_track = track_list[index];
       const track = {
         track_id: selected_track["track_id"],
+        track_id: item["band_id"],
         artist: selected_track["band_name"],
         title: selected_track["title"],
         album_title: item["album_title"],

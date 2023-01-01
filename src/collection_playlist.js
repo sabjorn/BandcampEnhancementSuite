@@ -1,6 +1,6 @@
 import Logger from "./logger";
 import PlaylistComponent from "./playlist_component";
-import { addAlbumToCart, getAudioBuffer } from "./utilities";
+import { addAlbumToCart, getAudioBuffer, addTrackWishlist } from "./utilities";
 
 export default class CollectionPlaylist {
   constructor() {
@@ -100,7 +100,13 @@ export default class CollectionPlaylist {
       )
       .set_wishlist_button_callback(
         (target => {
-          this.log.debug(`wishlist callback on: ${target}`);
+          const element = target.parentElement;
+          const track_id = element.getAttribute("track_id");
+          const band_id = element.getAttribute("band_id");
+
+          addTrackWishlist(track_id, band_id, this.your_fan_id).then(() => {
+            this.log.info("added track to wishlist");
+          });
         }).bind(this)
       );
 

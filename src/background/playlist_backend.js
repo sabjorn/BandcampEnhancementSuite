@@ -68,12 +68,12 @@ export default class PlaylistBackend {
       .then(text => {
         const data = JSON.parse(text);
         const items = data["tracks"];
-
         let tracks = [];
         items.forEach(item => {
           const track_url = data["bandcamp_url"];
           const track = {
             track_id: item["track_id"],
+            band_id: request.band_id,
             artist: item["band_name"],
             title: item["title"],
             album_title: item["album_title"],
@@ -134,6 +134,7 @@ export default class PlaylistBackend {
           const track_list = tracklists[`t${item["featured_track"]}`][0];
           const track = {
             track_id: item["featured_track"],
+            band_id: item["band_id"],
             artist: item["band_name"],
             title: item["featured_track_title"],
             album_title: item["album_title"],
@@ -204,6 +205,7 @@ function recursiveFanFeedUpdates(port, fan_id, count, timestamp) {
               const selected_track = track_list[index];
               const track = {
                 track_id: selected_track["track_id"],
+                band_id: selected_track["band_id"],
                 artist: selected_track["band_name"],
                 title: selected_track["title"],
                 album_title: item["album_title"],

@@ -18,7 +18,8 @@ let track = {
   timestamp: 123, // currently unused
   is_purchasable: true,
   has_digital_download: true, // currently unused
-  duration: 123.4
+  duration: 123.4,
+  band_id: 1234
 };
 
 export default class PlaylistComponent {
@@ -162,6 +163,7 @@ export default class PlaylistComponent {
 
       const li = document.createElement("li");
       li.setAttribute("track_id", track["track_id"]);
+      li.setAttribute("band_id", track["band_id"]);
       li.setAttribute("timestamp", track["timestamp"]);
 
       const play_button = document.createElement("div");

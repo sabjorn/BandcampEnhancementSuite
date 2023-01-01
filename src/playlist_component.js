@@ -22,13 +22,20 @@ let track = {
 };
 
 export default class PlaylistComponent {
-  constructor(enable_purchase_button = false, enable_delete_button = true, enable_load_button = true) {
+  constructor(
+    enable_purchase_button = false,
+    enable_delete_button = true,
+    enable_load_button = true,
+    enable_wishlist_button = true
+  ) {
     this.log = new Logger();
     this.appendTracks = PlaylistComponent.appendTracks.bind(this);
 
     this.enable_purchase_button = enable_purchase_button;
     this.enable_delete_button = enable_delete_button;
     this.enable_load_button = enable_load_button;
+    this.enable_wishlist_button = enable_wishlist_button;
+
     this.pre_play_callback = () => {};
     this.post_play_callback = src => {};
     this.delete_button_callback = () => {};
@@ -115,8 +122,7 @@ export default class PlaylistComponent {
 
     const load_button = document.querySelector("#load");
     load_button.onclick = this.load_button_callback;
-    if (!this.enable_load_button)
-      load_button.style.display = "none";
+    if (!this.enable_load_button) load_button.style.display = "none";
   }
 
   set_pre_play_callback(callback) {
@@ -237,15 +243,18 @@ export default class PlaylistComponent {
       }
 
       const wishlist_button = document.createElement("button");
-      wishlist_button.classList.add("bes_button");
-      wishlist_button.classList.add("collection-item-actions");
-      wishlist_button.classList.add("wishlist"); // wishlist || wishlisted || purchased
-      wishlist_button.style.visibility = "unset";
       wishlist_button.style.display = "none";
-      wishlist_button.innerHTML = wishlistHtml;
-      wishlist_button.addEventListener("click", event => {
-        this.wishlist_button_callback(event.target);
-      });
+      if (self.enable_wishlist_button) {
+        wishlist_button.classList.add("bes_button");
+        wishlist_button.classList.add("collection-item-actions");
+        wishlist_button.classList.add("wishlist"); // wishlist || wishlisted || purchased
+        wishlist_button.style.visibility = "unset";
+        wishlist_button.innerHTML = wishlistHtml;
+
+        wishlist_button.addEventListener("click", event => {
+          this.wishlist_button_callback(event.target);
+        });
+      }
 
       const is_purchasable = track["is_purchasable"];
       const has_price = track["price"] > 0;
@@ -262,17 +271,12 @@ export default class PlaylistComponent {
           const track_id = event.target.getAttribute("track_id");
           const price = event.target.getAttribute("price");
 
+          // TODO: too specific, should be more general
           this.purchase_button_callback(track_id, price)
             .then(() => {
               this.log.debug("track successfully added to cart");
             })
             .then(() => {
-              const wishlist_button = event.target.parentElement.querySelector(
-                ".collection-item-actions"
-              );
-              wishlist_button.classList.replace("wishlist", "purchased");
-              wishlist_button.style.display = "";
-
               event.target.remove();
             })
             .catch(error => {

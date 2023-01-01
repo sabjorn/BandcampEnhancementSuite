@@ -69,7 +69,7 @@ export default class CollectionPlaylist {
   }
 
   initPlaylist(element, route) {
-    const playlist_component = new PlaylistComponent(true, false);
+    const playlist_component = new PlaylistComponent(true, false, false, true);
     playlist_component
       .set_post_play_callback(getAudioBuffer)
       .set_purchase_button_callback(

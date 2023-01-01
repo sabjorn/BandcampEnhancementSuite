@@ -7,7 +7,7 @@ export default class DiscographyPlaylist {
     this.log = new Logger();
     this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
 
-    this.playlist_component = new PlaylistComponent(true, false, false);
+    this.playlist_component = new PlaylistComponent(true, false, false, true);
     this.playlist_component
       .set_post_play_callback(getAudioBuffer)
       .set_purchase_button_callback(

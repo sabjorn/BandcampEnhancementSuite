@@ -244,11 +244,12 @@ export default class PlaylistComponent {
 
       const wishlist_button = document.createElement("button");
       wishlist_button.style.display = "none";
-      if (self.enable_wishlist_button) {
+      if (this.enable_wishlist_button) {
+        wishlist_button.style.display = "";
+        wishlist_button.style.visibility = "unset";
         wishlist_button.classList.add("bes_button");
         wishlist_button.classList.add("collection-item-actions");
         wishlist_button.classList.add("wishlist"); // wishlist || wishlisted || purchased
-        wishlist_button.style.visibility = "unset";
         wishlist_button.innerHTML = wishlistHtml;
 
         wishlist_button.addEventListener("click", event => {

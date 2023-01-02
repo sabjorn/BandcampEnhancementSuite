@@ -103,26 +103,25 @@ export default class Waveform {
                   rms += audioSample ** 2;
                 }
                 rmsBuffer.push(Math.sqrt(rms / rmsSize));
+              }
 
-                this.log.info("visualizing");
-                let max = rmsBuffer.reduce(function(a, b) {
-                  return Math.max(a, b);
-                });
-                for (let i = 0; i < rmsBuffer.length; i++) {
-                  let amplitude = rmsBuffer[i] / max;
-                  Waveform.fillBar(
-                    this.canvas,
-                    amplitude,
-                    i,
-                    datapoints,
-                    this.waveformColour
-                  );
-                }
+              this.log.info("visualizing");
+              let max = rmsBuffer.reduce(function(a, b) {
+                return Math.max(a, b);
+              });
+              for (let i = 0; i < rmsBuffer.length; i++) {
+                let amplitude = rmsBuffer[i] / max;
+                Waveform.fillBar(
+                  this.canvas,
+                  amplitude,
+                  i,
+                  datapoints,
+                  this.waveformColour
+                );
               }
             });
           });
-        }
-      );
+        } );
     }
   }
 

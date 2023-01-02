@@ -40,7 +40,7 @@ export default class CollectionPlaylist {
         });
     };
     const wishlist_button = document.querySelector("[data-tab=wishlist]");
-    wishlist_button.onclick = this.wishlist_callback;
+    if(wishlist_button) wishlist_button.onclick = this.wishlist_callback ;
 
     ["followers", "following"].forEach(element => {
       document.querySelector(`[data-tab=${element}]`).onclick = () => {

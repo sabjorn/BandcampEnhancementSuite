@@ -32,6 +32,12 @@ export default class CollectionPlaylist {
         bes_player.remove();
       });
       this.subInit("wishlist");
+
+      if (this.fan_id === this.your_fan_id)
+        document.querySelectorAll(".wishlist").forEach(element => {
+          element.classList.remove("wishlist");
+          element.classList.add("wishlisted");
+        });
     };
     const wishlist_button = document.querySelector("[data-tab=wishlist]");
     wishlist_button.onclick = this.wishlist_callback;
@@ -101,6 +107,13 @@ export default class CollectionPlaylist {
       )
       .set_wishlist_button_callback(target => {
         wishlistCallback(target, this.your_fan_id, this.log);
+      })
+      .set_post_add_track_callback(target => {
+        if (!window.location.href.includes("wishlist")) return;
+        if (this.fan_id !== this.your_fan_id) return;
+        const wishlist_button = target.querySelector(".wishlist");
+        wishlist_button.classList.remove("wishlist");
+        wishlist_button.classList.add("wishlisted");
       });
 
     playlist_component.init(element);

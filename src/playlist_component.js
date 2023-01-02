@@ -44,6 +44,7 @@ export default class PlaylistComponent {
     this.scroll_callback = () => {};
     this.load_button_callback = () => {};
     this.wishlist_button_callback = () => {};
+    this.post_add_track_callback = () => {};
 
     this.waveform = new WaveformComponent();
   }
@@ -152,6 +153,10 @@ export default class PlaylistComponent {
   }
   set_wishlist_button_callback(callback) {
     this.wishlist_button_callback = callback;
+    return this;
+  }
+  set_post_add_track_callback(callback) {
+    this.post_add_track_callback = callback;
     return this;
   }
 
@@ -309,6 +314,8 @@ export default class PlaylistComponent {
       li.appendChild(delete_button);
 
       this.playlist.appendChild(li);
+
+      this.post_add_track_callback(li);
     });
   }
 }

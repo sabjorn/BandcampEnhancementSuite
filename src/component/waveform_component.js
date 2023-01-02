@@ -1,4 +1,4 @@
-import Logger from "./logger";
+import Logger from "../logger";
 
 export default class WaveformComponent {
   constructor(overlayColor = "red", backColor = "black", num_datapoints = 100) {

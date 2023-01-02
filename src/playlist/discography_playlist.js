@@ -1,7 +1,7 @@
-import Logger from "./logger";
-import PlaylistComponent from "./playlist_component";
-import { addAlbumToCart, getAudioBuffer } from "./utilities";
-import { wishlistCallback } from "./playlist/utilities";
+import Logger from "../logger";
+import PlaylistComponent from "../component/playlist_component";
+import { addAlbumToCart, getAudioBuffer } from "../utilities";
+import { wishlistCallback } from "./utilities";
 
 export default class DiscographyPlaylist {
   constructor() {

@@ -4,9 +4,9 @@ import DownloadHelper from "./download_helper.js";
 import Player from "./player.js";
 import Waveform from "./waveform.js";
 import Checkout from "./checkout.js";
-import FeedPlaylist from "./feed_playlist.js";
-import CollectionPlaylist from "./collection_playlist.js";
-import DiscographyPlaylist from "./discography_playlist.js";
+import FeedPlaylist from "./playlist/feed_playlist.js";
+import CollectionPlaylist from "./playlist/collection_playlist.js";
+import DiscographyPlaylist from "./playlist/discography_playlist.js";
 
 window.onload = () => {
   const log = new Logger();

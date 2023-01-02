@@ -1,6 +1,6 @@
-import wishlistHtml from "../html/wishlist_component.html";
-import html from "../html/playlist_component.html";
-import Logger from "./logger";
+import wishlistHtml from "../../html/wishlist_component.html";
+import html from "../../html/playlist_component.html";
+import Logger from "../logger";
 import Sortable from "sortablejs";
 import WaveformComponent from "./waveform_component";
 

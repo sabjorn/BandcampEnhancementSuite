@@ -1,6 +1,11 @@
 import Logger from "./logger";
 import PlaylistComponent from "./playlist_component";
-import { addAlbumToCart, getAudioBuffer, addTrackWishlist } from "./utilities";
+import {
+  addAlbumToCart,
+  getAudioBuffer,
+  addTrackWishlist,
+  removeTrackWishlist
+} from "./utilities";
 
 export default class FeedPlaylist {
   constructor() {
@@ -82,8 +87,19 @@ export default class FeedPlaylist {
           );
           const fan_id = data_blob["fan_info"]["fan_id"];
 
-          addTrackWishlist(track_id, band_id, fan_id).then(() => {
-            this.log.info("added track to wishlist");
+          if (target.classList.contains("wishlist")) {
+            addTrackWishlist(track_id, band_id, fan_id).then(() => {
+              this.log.info("added track to wishlist");
+              target.classList.remove("wishlist");
+              target.classList.add("wishlisted");
+            });
+            return;
+          }
+
+          removeTrackWishlist(track_id, band_id, fan_id).then(() => {
+            this.log.info("added removed from wishlist");
+            target.classList.remove("wishlisted");
+            target.classList.add("wishlist");
           });
         }).bind(this)
       );

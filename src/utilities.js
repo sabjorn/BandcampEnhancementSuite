@@ -81,14 +81,9 @@ export function addAlbumToCart(
   });
 }
 
-export function addTrackWishlist(item_id, band_id, fan_id) {
-  const url = getUrl();
-  const meta = JSON.parse(
-    document.querySelector("#js-crumbs-data").getAttribute("data-crumbs")
-  );
-  const crumb = meta.collect_item_cb;
+export function bandcampRequest(url, body, method = "POST") {
   return new Promise((resolve, reject) => {
-    fetch(`https://${url}/collect_item_cb`, {
+    fetch(url, {
       headers: {
         accept: "application/json, text/javascript, */*; q=0.01",
         "accept-language": "en-US,en;q=0.9,ar;q=0.8",
@@ -102,9 +97,9 @@ export function addTrackWishlist(item_id, band_id, fan_id) {
         "sec-fetch-site": "same-origin",
         "x-requested-with": "XMLHttpRequest"
       },
-      referrer: "https://bandcamp.com",
-      body: `fan_id=${fan_id}&item_id=${item_id}&item_type=track&band_id=${band_id}&crumb=${crumb}`,
-      method: "POST",
+      referrer: url,
+      body: body,
+      method: method,
       mode: "cors",
       credentials: "include"
     })
@@ -118,6 +113,31 @@ export function addTrackWishlist(item_id, band_id, fan_id) {
   });
 }
 
+export function addTrackWishlist(item_id, band_id, fan_id) {
+  const url_base = getUrl();
+  const url = `https://${url_base}/collect_item_cb`;
+
+  const meta = JSON.parse(
+    document.querySelector("#js-crumbs-data").getAttribute("data-crumbs")
+  );
+  const crumb = meta.collect_item_cb;
+
+  const body = `fan_id=${fan_id}&item_id=${item_id}&item_type=track&band_id=${band_id}&crumb=${crumb}`;
+  return bandcampRequest(url, body);
+}
+
+export function removeTrackWishlist(item_id, band_id, fan_id) {
+  const url_base = getUrl();
+  const url = `https://${url_base}/uncollect_item_cb`;
+
+  const meta = JSON.parse(
+    document.querySelector("#js-crumbs-data").getAttribute("data-crumbs")
+  );
+  const crumb = meta.uncollect_item_cb;
+
+  const body = `fan_id=${fan_id}&item_id=${item_id}&item_type=track&band_id=${band_id}&crumb=${crumb}`;
+  return bandcampRequest(url, body);
+}
 // todo: use this to slow down fetch to prevent rate limiting --> https://stackoverflow.com/questions/70595420/how-to-throttle-my-js-api-fetch-requests-using-the-rate-limit-supplied-by-the-h
 //function debounce(func, waitFor) {
 //    let timeout;

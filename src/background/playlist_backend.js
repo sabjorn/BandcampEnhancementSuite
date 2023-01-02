@@ -86,7 +86,7 @@ export default class PlaylistBackend {
             is_purchasable: item["is_purchasable"],
             has_digital_download: item["has_digital_download"],
             duration: item["duration"],
-            timestamp: timestamp
+            timestamp: data["release_date"]
           };
           tracks.push(track);
         });

@@ -24,6 +24,15 @@ export default class DiscographyPlaylist {
         );
         const fan_id = data_blob.identities.fan.id;
         wishlistCallback(target, fan_id, this.log);
+      })
+      .set_post_add_track_callback(target => {
+        Array.from(document.querySelectorAll("ul > li[timestamp]"))
+          .sort((a, b) => {
+            a = a.getAttribute("timestamp");
+            b = b.getAttribute("timestamp");
+            return b.localeCompare(a);
+          })
+          .forEach(item => item.parentNode.appendChild(item));
       });
   }
 

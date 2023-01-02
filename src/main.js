@@ -18,10 +18,7 @@ window.onload = () => {
   }
 
   let is_page_with_player = document.querySelector("div.inline_player");
-  if (
-    is_page_with_player &&
-    window.location.href != "https://bandcamp.com/"
-  ) {
+  if (is_page_with_player && window.location.href != "https://bandcamp.com/") {
     const player = new Player();
     player.init();
 

@@ -209,7 +209,7 @@ describe("Waveform", () => {
     });
 
     it("sends a message with chrome.runtime.sendMessage", () => {
-      audioSpy.src = "stream/src";
+      audioSpy.src = "src";
       wf.currentTarget = "";
 
       wf.generateWaveform();

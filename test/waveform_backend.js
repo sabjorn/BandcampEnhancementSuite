@@ -80,9 +80,7 @@ describe("WaveformBackend", () => {
       request.contentScriptQuery = "renderBuffer";
       let returnValue = wb.processRequest(request, null, sendResponseSpy);
 
-      expect(stubedFetch).to.be.calledWith(
-        "https://t4.bcbits.com/stream/" + request.url
-      );
+      expect(stubedFetch).to.be.calledWith(request.url);
       expect(returnValue).to.be.true;
       //expect(sendResponseSpy).to.be.called;
     });

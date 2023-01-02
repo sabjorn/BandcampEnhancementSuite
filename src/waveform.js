@@ -68,7 +68,7 @@ export default class Waveform {
       const audioContext = new AudioContext();
       const fs = audioContext.sampleRate;
       const length = audio.duration;
-      const src = audio.src.split("stream/")[1];
+      const src = audio.src;
 
       const offlineAudioContext = new OfflineAudioContext(2, fs * length, fs);
       chrome.runtime.sendMessage(

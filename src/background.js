@@ -8,9 +8,9 @@ import PlaylistBackend from "./background/playlist_backend.js";
 //
 const wb = new WaveformBackend();
 wb.init();
-//
-//const cb = new ConfigBackend();
-//cb.init();
+
+const cb = new ConfigBackend();
+cb.init();
 
 const pb = new PlaylistBackend();
 pb.init();

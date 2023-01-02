@@ -11,43 +11,40 @@ import DiscographyPlaylist from "./playlist/discography_playlist.js";
 window.onload = () => {
   const log = new Logger();
 
-  //const lv = new LabelView();
-  //lv.init();
+  let is_download_page = document.querySelector(".download-item-container");
+  if (is_download_page) {
+    const dh = new DownloadHelper();
+    dh.init();
+  }
 
-  //let checkIsDownloadPage = document.querySelector(".download-item-container");
-  //if (checkIsDownloadPage) {
-  //  const dh = new DownloadHelper();
-  //  dh.init();
-  //}
+  let is_page_with_player = document.querySelector("div.inline_player");
+  if (
+    is_page_with_player &&
+    window.location.href != "https://bandcamp.com/"
+  ) {
+    const player = new Player();
+    player.init();
 
-  //let checkIsPageWithPlayer = document.querySelector("div.inline_player");
-  //if (
-  //  checkIsPageWithPlayer &&
-  //  window.location.href != "https://bandcamp.com/"
-  //) {
-  //  const player = new Player();
-  //  player.init();
+    let config_port;
+    try {
+      config_port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
+    } catch (e) {
+      if (
+        e.message.includes("Error in invocation of runtime.connect in main.js")
+      ) {
+        log.error(e);
+        return;
+      } else {
+        throw e;
+      }
+    }
 
-  //  let config_port;
-  //  try {
-  //    config_port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
-  //  } catch (e) {
-  //    if (
-  //      e.message.includes("Error in invocation of runtime.connect in main.js")
-  //    ) {
-  //      log.error(e);
-  //      return;
-  //    } else {
-  //      throw e;
-  //    }
-  //  }
+    let waveform = new Waveform(config_port);
+    waveform.init();
 
-  //  let waveform = new Waveform(config_port);
-  //  waveform.init();
-
-  //  let checkout = new Checkout(config_port);
-  //  checkout.init();
-  //}
+    let checkout = new Checkout(config_port);
+    checkout.init();
+  }
   const pagetype = document
     .querySelector("[property='og:type']")
     .getAttribute("content");

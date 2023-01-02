@@ -121,7 +121,8 @@ export default class Waveform {
               }
             });
           });
-        } );
+        }
+      );
     }
   }
 

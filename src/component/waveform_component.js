@@ -54,7 +54,7 @@ export default class WaveformComponent {
               let audioSample = leftChannel[sampleIndex];
               rms += audioSample ** 2;
             }
-            rmsBuffer.push(Math.sqrt(rms / rmsSize));
+            rmsBuffer.push(Math.sqrt(rms));
           }
           let max = rmsBuffer.reduce(function(a, b) {
             return Math.max(a, b);

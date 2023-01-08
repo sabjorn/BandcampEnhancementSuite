@@ -42,7 +42,7 @@
     "build:watch": "npm run build:dev -- --watch --progress",
     "snapshots": "percy exec -- node snapshots.js",
     "clean": "rm -fr ./node_modules ./dist",
-    "package": "npm run build && zip BandcampEnhancementSuite.zip LICENSE _locales/**/* icons/* css/* dist/* manifest.json html/browser_action.html"
+    "package": "npm run build && zip BandcampEnhancementSuite_chrome.zip LICENSE _locales/**/* icons/* css/* dist/* manifest.json html/browser_action.html && cp manifest.json manifest.json.backup &&  sed -i '' -e 's,\"service_worker\": \"dist/background.js\",\"scripts\": [\"dist/background.js\"],g' ./manifest.json && zip BandcampEnhancementSuite_firefox.zip LICENSE _locales/**/* icons/* css/* dist/* manifest.json html/browser_action.html &&  mv manifest.json.backup manifest.json"
   },
   "repository": {
     "type": "git",

@@ -4,6 +4,7 @@ import DownloadHelper from "./download_helper.js";
 import Player from "./player.js";
 import Waveform from "./waveform.js";
 import Checkout from "./checkout.js";
+import Cart from "./cart.js";
 
 window.onload = () => {
   const log = new Logger();
@@ -44,5 +45,10 @@ window.onload = () => {
 
     let checkout = new Checkout(config_port);
     checkout.init();
+  }
+
+  if (document.querySelector("#sidecart")) {
+    const cart = new Cart();
+    cart.init();
   }
 };

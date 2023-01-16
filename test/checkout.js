@@ -108,15 +108,23 @@ describe("Checkout", () => {
   });
 
   describe("checkoutButtonClicked()", () => {
+    let clock;
     beforeEach(() => {
       c.closeDialogAndGoToCart = sinon.spy();
       c.dialog = { style: { display: "none" } };
+
+      clock = sinon.useFakeTimers(10);
+    });
+    afterEach(() => {
+      clock.restore();
     });
 
     it("makes dialog appear when checkout button pressed from default configuration", () => {
       c.config = {
+        albumPurchasedDuringCheckout: false,
         albumOnCheckoutDisabled: false,
-        albumPurchasedDuringCheckout: false
+        albumPurchaseTimeDelaySeconds: 0,
+        installDateUnixSeconds: 0
       };
 
       c.checkoutButtonClicked();
@@ -125,25 +133,45 @@ describe("Checkout", () => {
       expect(c.closeDialogAndGoToCart).to.have.not.been.called;
     });
 
-    it("calls checkoutButtonClicked if 'albumOnCheckoutDisabled' in config is true", () => {
+    it("does not display dialog and calls closeDialogAndGoToCart() if 'albumPurchaseTimeDelaySeconds' not greater than current time minus 'installDateUnixSeconds'", () => {
       c.config = {
-        albumOnCheckoutDisabled: true,
-        albumPurchasedDuringCheckout: false
+        albumPurchasedDuringCheckout: false,
+        albumOnCheckoutDisabled: false,
+        albumPurchaseTimeDelaySeconds: 11,
+        installDateUnixSeconds: 0
       };
 
       c.checkoutButtonClicked();
-
+    
+      expect(c.dialog.style.display).to.equal("none");
       expect(c.closeDialogAndGoToCart).to.have.been.called;
     });
 
-    it("calls checkoutButtonClicked if 'albumPurchasedDuringCheckout[status]' in config is true", () => {
+    it("does not display dialog and calls closeDialogAndGoToCart() if 'albumOnCheckoutDisabled' in config is true", () => {
       c.config = {
-        albumOnCheckoutDisabled: false,
-        albumPurchasedDuringCheckout: true
+        albumPurchasedDuringCheckout: false,
+        albumOnCheckoutDisabled: true,
+        albumPurchaseTimeDelaySeconds: 0,
+        installDateUnixSeconds: 0
       };
 
       c.checkoutButtonClicked();
 
+      expect(c.dialog.style.display).to.equal("none");
+      expect(c.closeDialogAndGoToCart).to.have.been.called;
+    });
+
+    it("does not display dialog and calls closeDialogAndGoToCart() if 'albumPurchasedDuringCheckout[status]' in config is true", () => {
+      c.config = {
+        albumPurchasedDuringCheckout: true,
+        albumOnCheckoutDisabled: false,
+        albumPurchaseTimeDelaySeconds: 0,
+        installDateUnixSeconds: 0
+      };
+
+      c.checkoutButtonClicked();
+
+      expect(c.dialog.style.display).to.equal("none");
       expect(c.closeDialogAndGoToCart).to.have.been.called;
     });
   });

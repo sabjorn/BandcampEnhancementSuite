@@ -61,9 +61,13 @@ export default class Checkout {
   }
 
   static checkoutButtonClicked() {
+    const enough_time_passed =
+      Date.now() / 1000 - this.config.installDateUnixSeconds >
+      this.config.albumPurchaseTimeDelaySeconds;
     if (
       !this.config.albumOnCheckoutDisabled &&
-      !this.config.albumPurchasedDuringCheckout
+      !this.config.albumPurchasedDuringCheckout &&
+      enough_time_passed
     ) {
       this.dialog.style.display = "block";
       return;

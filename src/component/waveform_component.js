@@ -17,10 +17,10 @@ export default class WaveformComponent {
       "timeupdate",
       WaveformComponent.monitorAudioTimeupdateCallback.bind(this)
     );
-    this.canvas.addEventListener(
-      "click",
-      WaveformComponent.mousedownCallback.bind(this)
-    );
+    this.canvas.addEventListener("click", e => {
+      e.preventDefault();
+      this.mousedownCallback(e);
+    });
   }
 
   fillWaveform(element, audioData, duration) {
@@ -113,7 +113,7 @@ export default class WaveformComponent {
     this.drawOverlay(progress);
   }
 
-  static mousedownCallback(e) {
+  mousedownCallback(e) {
     const elementOffset = e.offsetX;
     const elementWidth = e.path[1].offsetWidth;
     const scaleDuration = elementOffset / elementWidth;

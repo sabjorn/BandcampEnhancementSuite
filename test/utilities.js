@@ -24,7 +24,7 @@ describe("mousedownCallback", () => {
 
     let event = {
       offsetX: 1,
-      path: [{ offsetWidth: 0 }, { offsetWidth: 2 }]
+      target: { offsetWidth: 2 }
     };
 
     mousedownCallback(event);

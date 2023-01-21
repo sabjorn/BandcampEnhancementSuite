@@ -73,7 +73,7 @@ export default class FeedPlaylist {
         }).bind(this)
       )
       .set_wishlist_button_callback(target => {
-        wishlistCallback(target, this.log);
+        wishlistCallback(target, this.fan_id, this.log);
       });
   }
 

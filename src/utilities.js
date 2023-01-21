@@ -97,7 +97,7 @@ export function bandcampRequest(url, body, method = "POST") {
         "sec-fetch-site": "same-origin",
         "x-requested-with": "XMLHttpRequest"
       },
-      referrer: url,
+      referrer: "https://halfpastvibe.bandcamp.com/",
       body: body,
       method: method,
       mode: "cors",

@@ -7,7 +7,7 @@ export default class FeedPlaylist {
   constructor() {
     this.log = new Logger();
     this.port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
-    this.playlist_component = new PlaylistComponent(true, false, false, true);
+    this.playlist_component = new PlaylistComponent(true, false, true, true);
 
     const data_blob = JSON.parse(
       document.querySelector("#pagedata").getAttribute("data-blob")

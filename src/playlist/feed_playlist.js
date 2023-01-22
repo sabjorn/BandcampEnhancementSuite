@@ -107,7 +107,7 @@ export default class FeedPlaylist {
       const selected_track = track_list[index];
       const track = {
         track_id: selected_track["track_id"],
-        track_id: item["band_id"],
+        band_id: item["band_id"],
         artist: selected_track["band_name"],
         title: selected_track["title"],
         album_title: item["album_title"],

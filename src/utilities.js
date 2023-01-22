@@ -104,36 +104,23 @@ export function bandcampRequest(url, body, method = "POST") {
       credentials: "include"
     })
       .then(response => {
-        if (response.status !== 200) {
-          throw `${response.status}: ${response.statusText}`;
-        }
-        resolve();
+        resolve(response);
       })
       .catch(reject);
   });
 }
 
-export function addTrackWishlist(item_id, band_id, fan_id) {
+export function addTrackWishlist(item_id, band_id, fan_id, crumb) {
   const url_base = getUrl();
   const url = `https://${url_base}/collect_item_cb`;
-
-  const meta = JSON.parse(
-    document.querySelector("#js-crumbs-data").getAttribute("data-crumbs")
-  );
-  const crumb = meta.collect_item_cb;
 
   const body = `fan_id=${fan_id}&item_id=${item_id}&item_type=track&band_id=${band_id}&crumb=${crumb}`;
   return bandcampRequest(url, body);
 }
 
-export function removeTrackWishlist(item_id, band_id, fan_id) {
+export function removeTrackWishlist(item_id, band_id, fan_id, crumb) {
   const url_base = getUrl();
   const url = `https://${url_base}/uncollect_item_cb`;
-
-  const meta = JSON.parse(
-    document.querySelector("#js-crumbs-data").getAttribute("data-crumbs")
-  );
-  const crumb = meta.uncollect_item_cb;
 
   const body = `fan_id=${fan_id}&item_id=${item_id}&item_type=track&band_id=${band_id}&crumb=${crumb}`;
   return bandcampRequest(url, body);

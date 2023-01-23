@@ -162,9 +162,7 @@ describe("Waveform", () => {
       global.chrome = chrome;
     });
 
-    let audioContext = {
-      sampleRate: 44100
-    };
+    let ctx;
 
     let audioSpy = {
       src: "stream/nothing",
@@ -177,11 +175,7 @@ describe("Waveform", () => {
       sandbox.stub(document, "querySelector");
       document.querySelector.withArgs("audio").returns(audioSpy);
 
-      sandbox.stub(window, "AudioContext");
-      window.AudioContext.returns(audioContext);
-
-      sandbox.stub(window, "OfflineAudioContext");
-      window.OfflineAudioContext.callThroughWithNew().returns(sinon.spy());
+      ctx = sinon.mock(new AudioContext());
 
       wf.canvas = canvas;
     });
@@ -221,7 +215,7 @@ describe("Waveform", () => {
       expect(chrome.runtime.sendMessage).to.be.calledWith(expectedMessage);
     });
 
-    it("calls 'offlineAudioContext.startRendering'", () => {
+    it("calls 'decodAudioData'", () => {
       audioSpy.src = "stream/src";
       wf.currentTarget = "";
 
@@ -231,7 +225,7 @@ describe("Waveform", () => {
         contentScriptQuery: "renderBuffer",
         url: "src"
       };
-      expect(window.OfflineAudioContext).to.be.called;
+      ctx.expects("decodeAudioData").once();
     });
   });
 

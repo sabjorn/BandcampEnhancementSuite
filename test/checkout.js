@@ -142,7 +142,7 @@ describe("Checkout", () => {
       };
 
       c.checkoutButtonClicked();
-    
+
       expect(c.dialog.style.display).to.equal("none");
       expect(c.closeDialogAndGoToCart).to.have.been.called;
     });

@@ -65,61 +65,49 @@ export default class Waveform {
         .getContext("2d")
         .clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-      const audioContext = new AudioContext();
-      const fs = audioContext.sampleRate;
-      const length = audio.duration;
+      const ctx = new AudioContext();
       const src = audio.src.split("stream/")[1];
 
-      const offlineAudioContext = new OfflineAudioContext(2, fs * length, fs);
       chrome.runtime.sendMessage(
         {
           contentScriptQuery: "renderBuffer",
           url: src
         },
         audioData => {
-          const audioBuffer = new Uint8Array(audioData.data).buffer;
-          offlineAudioContext.decodeAudioData(audioBuffer, buffer => {
-            this.log.info("processing with audio node");
-            let source = offlineAudioContext.createBufferSource();
-            source.buffer = buffer;
-            source.connect(offlineAudioContext.destination);
-            source.start();
+          const audioBuffer_ = new Uint8Array(audioData.data).buffer;
+          ctx.decodeAudioData(audioBuffer_).then(decodedAudio => {
+            this.log.info("calculating rms");
+            let leftChannel = decodedAudio.getChannelData(0);
 
-            offlineAudioContext.startRendering().then(audioBuffer => {
-              this.log.info("calculating rms");
+            const stepSize = Math.round(decodedAudio.length / datapoints);
 
-              let leftChannel = audioBuffer.getChannelData(0);
-              const stepSize = Math.round(audioBuffer.length / datapoints);
-
-              const rmsSize = Math.min(stepSize, 128);
-              const subStepSize = Math.round(stepSize / rmsSize); // used to do RMS over subset of each buffer step
-
-              let rmsBuffer = [];
-              for (let i = 0; i < datapoints; i++) {
-                let rms = 0.0;
-                for (let sample = 0; sample < rmsSize; sample++) {
-                  const sampleIndex = i * stepSize + sample * subStepSize;
-                  let audioSample = leftChannel[sampleIndex];
-                  rms += audioSample ** 2;
-                }
-                rmsBuffer.push(Math.sqrt(rms / rmsSize));
-
-                this.log.info("visualizing");
-                let max = rmsBuffer.reduce(function(a, b) {
-                  return Math.max(a, b);
-                });
-                for (let i = 0; i < rmsBuffer.length; i++) {
-                  let amplitude = rmsBuffer[i] / max;
-                  Waveform.fillBar(
-                    this.canvas,
-                    amplitude,
-                    i,
-                    datapoints,
-                    this.waveformColour
-                  );
-                }
+            const rmsSize = Math.min(stepSize, 128);
+            const subStepSize = Math.round(stepSize / rmsSize); // used to do RMS over subset of each buffer step
+            let rmsBuffer = [];
+            for (let i = 0; i < datapoints; i++) {
+              let rms = 0.0;
+              for (let sample = 0; sample < rmsSize; sample++) {
+                const sampleIndex = i * stepSize + sample * subStepSize;
+                let audioSample = leftChannel[sampleIndex];
+                rms += audioSample ** 2;
               }
+              rmsBuffer.push(Math.sqrt(rms / rmsSize));
+            }
+
+            this.log.info("visualizing");
+            let max = rmsBuffer.reduce(function(a, b) {
+              return Math.max(a, b);
             });
+            for (let i = 0; i < rmsBuffer.length; i++) {
+              let amplitude = rmsBuffer[i] / max;
+              Waveform.fillBar(
+                this.canvas,
+                amplitude,
+                i,
+                datapoints,
+                this.waveformColour
+              );
+            }
           });
         }
       );

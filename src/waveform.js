@@ -1,10 +1,20 @@
 import Logger from "./logger";
 import { mousedownCallback } from "./utilities.js";
 
+// This is our recommended way of loading WebAssembly.
+
+(async () => {
+  const wasmurl = chrome.runtime.getURL("wasm/wasmbyexample_audio_bg.wasm");
+  const wasmFetch = await fetch(wasmurl)
+  WebAssembly.instantiateStreaming(wasmFetch).then(instance => {
+    const result = instance.exports.process_audio([1,2,3], 1);
+    console.log(result);
+  }).catch(e => console.log("wasm error:", e));
+})();
+
 export default class Waveform {
   constructor(port) {
     this.log = new Logger();
-
     this.currentTarget;
     this.canvas;
     this.canvasDisplayToggle;

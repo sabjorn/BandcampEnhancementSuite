@@ -42,4 +42,17 @@
       "id": "{3ca9d5aa-ad9f-4f7f-861b-999fe5c87273}",
       "strict_min_version": "109.0"
     }
-  }}
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [ "wasm/*" ],
+      "matches": [
+        "http://*.bandcamp.com/*",
+        "https://*.bandcamp.com/*"
+      ]
+    }
+  ]
+}

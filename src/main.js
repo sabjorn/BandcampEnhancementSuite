@@ -5,7 +5,7 @@ import Player from "./player.js";
 import Waveform from "./waveform.js";
 import Checkout from "./checkout.js";
 
-window.onload = () => {
+const main = () => {
   const log = new Logger();
 
   const lv = new LabelView();
@@ -46,3 +46,5 @@ window.onload = () => {
     checkout.init();
   }
 };
+
+main();

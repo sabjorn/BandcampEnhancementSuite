@@ -97,6 +97,10 @@ div .prev, .next {
      padding-top: 5px;
 }
 
+div .bpm {
+    padding-top: .3em;
+}
+
 #bes_wrapper {
     position: fixed;
     top: 0;

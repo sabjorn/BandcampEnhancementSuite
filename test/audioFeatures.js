@@ -10,9 +10,9 @@ import chrome from "sinon-chrome";
 chai.use(sinonChai);
 
 import { mousedownCallback } from "../src/utilities.js";
-import Waveform from "../src/waveform.js";
+import AudioFeatures from "../src/audioFeatures.js";
 
-describe("Waveform", () => {
+describe("AudioFeatures", () => {
   let wf;
   let sandbox;
 
@@ -37,7 +37,7 @@ describe("Waveform", () => {
   beforeEach(() => {
     sandbox = sinon.createSandbox();
 
-    wf = new Waveform(mockPort);
+    wf = new AudioFeatures(mockPort);
 
     sandbox.stub(wf, "log");
 
@@ -75,9 +75,11 @@ describe("Waveform", () => {
     let getPropertyValueStub = sinon.stub().returns("rgb(255, 0, 0)");
 
     beforeEach(() => {
-      sandbox.stub(Waveform, "createCanvas").returns(canvasSpy);
-      sandbox.stub(Waveform, "createCanvasDisplayToggle").returns(toggleSpy);
-      sandbox.stub(Waveform, "invertColour");
+      sandbox.stub(AudioFeatures, "createCanvas").returns(canvasSpy);
+      sandbox
+        .stub(AudioFeatures, "createCanvasDisplayToggle")
+        .returns(toggleSpy);
+      sandbox.stub(AudioFeatures, "invertColour");
       sandbox.stub(document, "querySelector");
 
       sandbox.stub(window, "getComputedStyle").callsFake(() => {
@@ -94,7 +96,7 @@ describe("Waveform", () => {
 
     it("creates canvas with clickable interface", () => {
       wf.init();
-      expect(Waveform.createCanvas).to.be.called;
+      expect(AudioFeatures.createCanvas).to.be.called;
       expect(canvasSpy.addEventListener).to.have.been.calledWith(
         "click",
         mousedownCallback
@@ -103,14 +105,14 @@ describe("Waveform", () => {
 
     it("creates toggle which acts as a display for toggle state", () => {
       wf.init();
-      expect(Waveform.createCanvasDisplayToggle).to.be.called;
+      expect(AudioFeatures.createCanvasDisplayToggle).to.be.called;
     });
 
     it("creates div which can beclicked on to trigger state changes", () => {
       wf.init();
       expect(toggleDivSpy.addEventListener).to.have.been.calledWith(
         "click",
-        wf.toggleWaveformCanvasCallback
+        wf.toggleAudioFeaturesCanvasCallback
       );
     });
 
@@ -118,8 +120,8 @@ describe("Waveform", () => {
       wf.init();
 
       const rgbResult = "rgb(255, 0, 0)";
-      expect(wf.waveformColour).to.be.equal(rgbResult);
-      expect(Waveform.invertColour).to.be.calledWith(rgbResult);
+      expect(wf.audioFeaturesColour).to.be.equal(rgbResult);
+      expect(AudioFeatures.invertColour).to.be.calledWith(rgbResult);
     });
 
     it("adds eventListener for audio element 'canplay'", () => {
@@ -157,7 +159,7 @@ describe("Waveform", () => {
     });
   });
 
-  describe("generateWaveform()", () => {
+  describe("generateAudioFeatures()", () => {
     before(() => {
       global.chrome = chrome;
     });
@@ -190,7 +192,7 @@ describe("Waveform", () => {
     it("does nothing if target matches audio.source", () => {
       wf.currentTarget = "stream/nothing";
 
-      wf.generateWaveform();
+      wf.generateAudioFeatures();
       expect(chrome.runtime.sendMessage).to.not.be.called;
     });
 
@@ -198,7 +200,7 @@ describe("Waveform", () => {
       audioSpy.src = "a/specific/src";
       wf.currentTarget = "";
 
-      wf.generateWaveform();
+      wf.generateAudioFeatures();
       expect(wf.currentTarget).to.be.equal("a/specific/src");
     });
 
@@ -206,7 +208,7 @@ describe("Waveform", () => {
       audioSpy.src = "stream/src";
       wf.currentTarget = "";
 
-      wf.generateWaveform();
+      wf.generateAudioFeatures();
 
       let expectedMessage = {
         contentScriptQuery: "renderBuffer",
@@ -219,7 +221,7 @@ describe("Waveform", () => {
       audioSpy.src = "stream/src";
       wf.currentTarget = "";
 
-      wf.generateWaveform();
+      wf.generateAudioFeatures();
 
       let expectedMessage = {
         contentScriptQuery: "renderBuffer",
@@ -240,29 +242,29 @@ describe("Waveform", () => {
       wf.canvasDisplayToggle = displayToggle;
     });
 
-    it("sets the display value of the waveform from config object", () => {
-      wf.applyConfig({ config: { displayWaveform: false } });
+    it("sets the display value of the audioFeatures from config object", () => {
+      wf.applyConfig({ config: { displayAudioFeatures: false } });
       expect(canvasFake.style.display).to.be.equal("none");
 
-      wf.applyConfig({ config: { displayWaveform: true } });
+      wf.applyConfig({ config: { displayAudioFeatures: true } });
       expect(canvasFake.style.display).to.be.equal("inherit");
     });
 
     it("sets the display of the onscreen toggle", () => {
-      wf.applyConfig({ config: { displayWaveform: false } });
+      wf.applyConfig({ config: { displayAudioFeatures: false } });
       expect(canvasFake.style.display).to.be.equal("none");
 
-      wf.applyConfig({ config: { displayWaveform: true } });
+      wf.applyConfig({ config: { displayAudioFeatures: true } });
       expect(canvasFake.style.display).to.be.equal("inherit");
     });
   });
 
-  describe("wf.toggleWaveformCanvasCallback()", () => {
-    it("should send command to backend to invert waveformDisplay", () => {
-      const expectedMessage = { toggleWaveformDisplay: {} };
+  describe("wf.toggleAudioFeaturesCanvasCallback()", () => {
+    it("should send command to backend to invert audioFeaturesDisplay", () => {
+      const expectedMessage = { toggleAudioFeaturesDisplay: {} };
       wf.port = mockPort;
 
-      wf.toggleWaveformCanvasCallback();
+      wf.toggleAudioFeaturesCanvasCallback();
 
       expect(mockPort.postMessage).to.be.calledWith(
         sinon.match(expectedMessage)
@@ -273,43 +275,43 @@ describe("Waveform", () => {
   describe("monitorAudioCanPlayCallback()", () => {
     let audioSpy = { paused: true };
     let displayToggle = { checked: false };
-    let generateWaveformSpy;
+    let generateAudioFeaturesSpy;
 
     beforeEach(() => {
       sandbox.stub(document, "querySelector").returns(audioSpy);
-      wf.generateWaveform = sinon.spy();
+      wf.generateAudioFeatures = sinon.spy();
       wf.canvasDisplayToggle = displayToggle;
     });
     afterEach(() => {
       sandbox.restore();
     });
 
-    it("should call generateWaveform() ", () => {
+    it("should call generateAudioFeatures() ", () => {
       audioSpy.paused = false;
       displayToggle.checked = true;
       wf.monitorAudioCanPlayCallback();
 
-      expect(wf.generateWaveform).to.be.called;
+      expect(wf.generateAudioFeatures).to.be.called;
     });
 
-    it("should not call generateWaveform() ", () => {
+    it("should not call generateAudioFeatures() ", () => {
       audioSpy.paused = true;
       displayToggle.checked = true;
       wf.monitorAudioCanPlayCallback();
 
-      expect(wf.generateWaveform).to.not.be.called;
+      expect(wf.generateAudioFeatures).to.not.be.called;
 
       audioSpy.paused = true;
       displayToggle.checked = false;
       wf.monitorAudioCanPlayCallback();
 
-      expect(wf.generateWaveform).to.not.be.called;
+      expect(wf.generateAudioFeatures).to.not.be.called;
     });
   });
 
   describe("monitorAudioTimeupdateCallback()", () => {
-    it("should update waveform overlay by calling Waveform.drawOverlay", () => {
-      sandbox.stub(Waveform, "drawOverlay");
+    it("should update audioFeatures overlay by calling AudioFeatures.drawOverlay", () => {
+      sandbox.stub(AudioFeatures, "drawOverlay");
 
       const event = {
         target: {
@@ -320,11 +322,11 @@ describe("Waveform", () => {
 
       wf.monitorAudioTimeupdateCallback(event);
       const expectedProgress = 0.1;
-      expect(Waveform.drawOverlay).to.be.calledWith(
+      expect(AudioFeatures.drawOverlay).to.be.calledWith(
         wf.canvas,
         expectedProgress,
-        wf.waveformOverlayColour,
-        wf.waveformColour
+        wf.audioFeaturesOverlayColour,
+        wf.audioFeaturesColour
       );
     });
   });
@@ -340,9 +342,9 @@ describe("Waveform", () => {
     });
 
     it("should call create a canvas in the DOM", () => {
-      let canvas = Waveform.createCanvas();
+      let canvas = AudioFeatures.createCanvas();
 
-      let progbarNodes = document.querySelector("div.waveform");
+      let progbarNodes = document.querySelector("div.audioFeatures");
       let domDiv = progbarNodes.getElementsByTagName("div")[0];
       let domCanvas = domDiv.getElementsByTagName("canvas")[0];
 
@@ -361,20 +363,20 @@ describe("Waveform", () => {
     });
 
     it("should call create a toggle in the DOM", () => {
-      let toggle = Waveform.createCanvasDisplayToggle();
+      let toggle = AudioFeatures.createCanvasDisplayToggle();
 
       let inlineplayerNodes = document.querySelector("div.controls");
 
       let domToggle = inlineplayerNodes.getElementsByTagName("input")[0];
       expect(domToggle.getAttribute("title")).to.be.equal(
-        "toggle waveform display"
+        "toggle audioFeatures display"
       );
       expect(domToggle.getAttribute("type")).to.be.equal("checkbox");
-      expect(domToggle.getAttribute("class")).to.be.equal("waveform");
+      expect(domToggle.getAttribute("class")).to.be.equal("audioFeatures");
       expect(domToggle.getAttribute("id")).to.be.equal("switch");
 
       let domLabel = inlineplayerNodes.getElementsByTagName("label")[0];
-      expect(domLabel.getAttribute("class")).to.be.equal("waveform");
+      expect(domLabel.getAttribute("class")).to.be.equal("audioFeatures");
       expect(domLabel.htmlFor).to.be.equal("switch");
       expect(domLabel.innerHTML).to.be.equal("Toggle");
 
@@ -384,7 +386,7 @@ describe("Waveform", () => {
 
   describe("fillBar()", () => {
     it("should draw narrow rectangular bar on canvas", () => {
-      Waveform.fillBar(canvas, 0.5, 10, 100);
+      AudioFeatures.fillBar(canvas, 0.5, 10, 100);
 
       expect(ctx.globalCompositeOperation).to.equal("source-over");
       expect(ctx.fillStyle).to.be.equal("white");
@@ -394,7 +396,7 @@ describe("Waveform", () => {
 
   describe("drawOverlay()", () => {
     it("should draw progress bar on canvas", () => {
-      Waveform.drawOverlay(canvas, 0.5);
+      AudioFeatures.drawOverlay(canvas, 0.5);
 
       expect(ctx.globalCompositeOperation).to.equal("source-atop");
       expect(ctx.fillRect).to.be.calledWith(0, 0, 100, 100);
@@ -404,13 +406,13 @@ describe("Waveform", () => {
   });
 
   describe("invertColour()", () => {
-    let inverted = Waveform.invertColour("rgb(255,255,255");
+    let inverted = AudioFeatures.invertColour("rgb(255,255,255");
     expect(inverted).to.be.equal("rgb(0,0,0)");
 
-    inverted = Waveform.invertColour("rgb(0,0,0");
+    inverted = AudioFeatures.invertColour("rgb(0,0,0");
     expect(inverted).to.be.equal("rgb(255,255,255)");
 
-    inverted = Waveform.invertColour("rgb(55,155,200");
+    inverted = AudioFeatures.invertColour("rgb(55,155,200");
     expect(inverted).to.be.equal("rgb(200,100,55)");
   });
 });

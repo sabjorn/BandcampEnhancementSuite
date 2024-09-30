@@ -1,3 +1,5 @@
+import { analyze } from "web-audio-beat-detector";
+
 import Logger from "./logger";
 import { mousedownCallback } from "./utilities.js";
 
@@ -10,6 +12,7 @@ export default class Waveform {
     this.canvasDisplayToggle;
     this.waveformColour;
     this.waveformOverlayColour;
+    this.bpmDisplay;
 
     this.toggleWaveformCanvasCallback = Waveform.toggleWaveformCanvasCallback.bind(
       this
@@ -35,6 +38,10 @@ export default class Waveform {
       "click",
       this.toggleWaveformCanvasCallback
     );
+
+    this.bpmDisplay = document.createElement("div");
+    const inlineplayer = document.querySelector("div.progbar");
+    inlineplayer.append(this.bpmDisplay);
 
     let bg = document.querySelector("h2.trackTitle");
     this.waveformColour = window
@@ -75,7 +82,20 @@ export default class Waveform {
         },
         audioData => {
           const audioBuffer_ = new Uint8Array(audioData.data).buffer;
-          ctx.decodeAudioData(audioBuffer_).then(decodedAudio => {
+          const decodePromise = ctx.decodeAudioData(audioBuffer_);
+
+          decodePromise.then(decodedAudio => {
+            analyze(decodedAudio)
+              .then(
+                tempo =>
+                  (this.bpmDisplay.innerText = `tempo: ${tempo.toFixed(2)}`)
+              )
+              .catch(err =>
+                this.log.error(`error finding tempo for track: ${err}`)
+              );
+          });
+
+          decodePromise.then(decodedAudio => {
             this.log.info("calculating rms");
             let leftChannel = decodedAudio.getChannelData(0);
 

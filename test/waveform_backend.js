@@ -33,7 +33,6 @@ describe("WaveformBackend", () => {
     });
     afterEach(() => {
       chrome.flush();
-      delete global.chrome;
     });
 
     it("should call chrome.runtime.onConnect", () => {

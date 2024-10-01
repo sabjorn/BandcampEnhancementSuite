@@ -66,6 +66,8 @@ describe("AudioFeatures", () => {
       parentNode: toggleDivSpy
     };
 
+    let bpmDivSpy = sinon.spy();
+
     let trackTitleElement;
 
     let audioSpy = {
@@ -79,6 +81,7 @@ describe("AudioFeatures", () => {
       sandbox
         .stub(AudioFeatures, "createCanvasDisplayToggle")
         .returns(toggleSpy);
+      sandbox.stub(AudioFeatures, "createBpmDisplay").returns(bpmDivSpy);
       sandbox.stub(AudioFeatures, "invertColour");
       sandbox.stub(document, "querySelector");
 
@@ -108,19 +111,24 @@ describe("AudioFeatures", () => {
       expect(AudioFeatures.createCanvasDisplayToggle).to.be.called;
     });
 
-    it("creates div which can beclicked on to trigger state changes", () => {
+    it("creates div which can be clicked on to trigger state changes", () => {
       wf.init();
       expect(toggleDivSpy.addEventListener).to.have.been.calledWith(
         "click",
-        wf.toggleAudioFeaturesCanvasCallback
+        wf.toggleWaveformCanvasCallback
       );
+    });
+
+    it("creates div to display audio bpm", () => {
+      wf.init();
+      expect(AudioFeatures.createBpmDisplay).to.be.called;
     });
 
     it("gets the background colour for specific element", () => {
       wf.init();
 
       const rgbResult = "rgb(255, 0, 0)";
-      expect(wf.audioFeaturesColour).to.be.equal(rgbResult);
+      expect(wf.waveformColour).to.be.equal(rgbResult);
       expect(AudioFeatures.invertColour).to.be.calledWith(rgbResult);
     });
 
@@ -181,12 +189,13 @@ describe("AudioFeatures", () => {
 
       wf.canvas = canvas;
     });
+
     afterEach(() => {
       sandbox.restore();
     });
+
     after(() => {
       chrome.flush();
-      delete global.chrome;
     });
 
     it("does nothing if target matches audio.source", () => {
@@ -243,28 +252,28 @@ describe("AudioFeatures", () => {
     });
 
     it("sets the display value of the audioFeatures from config object", () => {
-      wf.applyConfig({ config: { displayAudioFeatures: false } });
+      wf.applyConfig({ config: { displayWaveform: false } });
       expect(canvasFake.style.display).to.be.equal("none");
 
-      wf.applyConfig({ config: { displayAudioFeatures: true } });
+      wf.applyConfig({ config: { displayWaveform: true } });
       expect(canvasFake.style.display).to.be.equal("inherit");
     });
 
     it("sets the display of the onscreen toggle", () => {
-      wf.applyConfig({ config: { displayAudioFeatures: false } });
+      wf.applyConfig({ config: { displayWaveform: false } });
       expect(canvasFake.style.display).to.be.equal("none");
 
-      wf.applyConfig({ config: { displayAudioFeatures: true } });
+      wf.applyConfig({ config: { displayWaveform: true } });
       expect(canvasFake.style.display).to.be.equal("inherit");
     });
   });
 
-  describe("wf.toggleAudioFeaturesCanvasCallback()", () => {
+  describe("wf.toggleWaveformCanvasCallback()", () => {
     it("should send command to backend to invert audioFeaturesDisplay", () => {
-      const expectedMessage = { toggleAudioFeaturesDisplay: {} };
+      const expectedMessage = { toggleWaveformDisplay: {} };
       wf.port = mockPort;
 
-      wf.toggleAudioFeaturesCanvasCallback();
+      wf.toggleWaveformCanvasCallback();
 
       expect(mockPort.postMessage).to.be.calledWith(
         sinon.match(expectedMessage)
@@ -325,8 +334,8 @@ describe("AudioFeatures", () => {
       expect(AudioFeatures.drawOverlay).to.be.calledWith(
         wf.canvas,
         expectedProgress,
-        wf.audioFeaturesOverlayColour,
-        wf.audioFeaturesColour
+        wf.waveformOverlayColour,
+        wf.waveformColour
       );
     });
   });
@@ -344,7 +353,7 @@ describe("AudioFeatures", () => {
     it("should call create a canvas in the DOM", () => {
       let canvas = AudioFeatures.createCanvas();
 
-      let progbarNodes = document.querySelector("div.audioFeatures");
+      let progbarNodes = document.querySelector("div.waveform");
       let domDiv = progbarNodes.getElementsByTagName("div")[0];
       let domCanvas = domDiv.getElementsByTagName("canvas")[0];
 
@@ -369,18 +378,40 @@ describe("AudioFeatures", () => {
 
       let domToggle = inlineplayerNodes.getElementsByTagName("input")[0];
       expect(domToggle.getAttribute("title")).to.be.equal(
-        "toggle audioFeatures display"
+        "toggle waveform display"
       );
       expect(domToggle.getAttribute("type")).to.be.equal("checkbox");
-      expect(domToggle.getAttribute("class")).to.be.equal("audioFeatures");
+      expect(domToggle.getAttribute("class")).to.be.equal("waveform");
       expect(domToggle.getAttribute("id")).to.be.equal("switch");
 
       let domLabel = inlineplayerNodes.getElementsByTagName("label")[0];
-      expect(domLabel.getAttribute("class")).to.be.equal("audioFeatures");
+      expect(domLabel.getAttribute("class")).to.be.equal("waveform");
       expect(domLabel.htmlFor).to.be.equal("switch");
       expect(domLabel.innerHTML).to.be.equal("Toggle");
 
       expect(toggle).to.be.equal(domToggle);
+    });
+  });
+
+  describe("createBpmDisplay()", () => {
+    beforeEach(() => {
+      createDomNodes(`
+        <div class="progbar"></div>
+      `);
+    });
+    afterEach(() => {
+      cleanupTestNodes();
+    });
+
+    it("should call create a div in the DOM", () => {
+      let bpmDiv = AudioFeatures.createBpmDisplay();
+
+      let inlineplayerNodes = document.querySelector("div.progbar");
+
+      let domBpmDiv = inlineplayerNodes.getElementsByTagName("div")[0];
+      expect(domBpmDiv.getAttribute("class")).to.be.equal("bpm");
+
+      expect(bpmDiv).to.be.equal(domBpmDiv);
     });
   });
 

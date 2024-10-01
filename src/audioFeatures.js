@@ -39,10 +39,7 @@ export default class AudioFeatures {
       this.toggleWaveformCanvasCallback
     );
 
-    this.bpmDisplay = document.createElement("div");
-    this.bpmDisplay.setAttribute("class", "bpm");
-    const inlineplayer = document.querySelector("div.progbar");
-    inlineplayer.append(this.bpmDisplay);
+    this.bpmDisplay = AudioFeatures.createBpmDisplay();
 
     let bg = document.querySelector("h2.trackTitle");
     this.waveformColour = window
@@ -199,6 +196,16 @@ export default class AudioFeatures {
     inlineplayer.append(toggle_div);
 
     return toggle;
+  }
+
+  static createBpmDisplay() {
+    const bpmDisplay = document.createElement("div");
+    bpmDisplay.setAttribute("class", "bpm");
+
+    const inlineplayer = document.querySelector("div.progbar");
+    inlineplayer.append(bpmDisplay);
+
+    return bpmDisplay;
   }
 
   static fillBar(canvas, amplitude, index, numElements, colour = "white") {

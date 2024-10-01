@@ -37,6 +37,24 @@ export default class DBUtils {
   }
 }
 
+export function extractBandFollowInfo() {
+  const data = document
+    .querySelector("[data-band-follow-info]")
+    .getAttribute("data-band-follow-info");
+
+  if (!data) {
+    console.log("help");
+    return null;
+  }
+
+  try {
+    const bandFollowInfo = JSON.parse(data);
+    return bandFollowInfo;
+  } catch (error) {
+    return null;
+  }
+}
+
 export function getUrl() {
   return window.location.href.split("/")[2];
 }

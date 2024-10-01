@@ -2,10 +2,12 @@ import chai from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
 import { assert, expect } from "chai";
+import { createDomNodes, cleanupTestNodes } from "./utils.js";
 chai.use(sinonChai);
 
 import { mousedownCallback } from "../src/utilities.js";
 import DBUtils from "../src/utilities.js";
+import { extractBandFollowInfo } from "../src/utilities.js";
 
 describe("mousedownCallback", () => {
   const spyElement = { click: sinon.spy() };
@@ -54,6 +56,26 @@ describe("DBUtils", () => {
         2,
         sinon.match.any
       );
+    });
+  });
+});
+
+describe("extractBandFollowInfo", () => {
+  beforeEach(() => {
+    createDomNodes(`
+            <script type="text/javascript" data-band-follow-info="{&quot;tralbum_id&quot;:2105824806,&quot;tralbum_type&quot;:&quot;a&quot;}"></script>
+          `);
+  });
+
+  afterEach(() => {
+    cleanupTestNodes();
+  });
+
+  it("should return a specific set of data", () => {
+    const bandInfo = extractBandFollowInfo();
+    expect(bandInfo).to.deep.equal({
+      tralbum_id: 2105824806,
+      tralbum_type: "a"
     });
   });
 });

@@ -2,7 +2,7 @@ import Logger from "./logger";
 import LabelView from "./label_view.js";
 import DownloadHelper from "./download_helper.js";
 import Player from "./player.js";
-import Waveform from "./waveform.js";
+import AudioFeatures from "./audioFeatures.js";
 import Checkout from "./checkout.js";
 
 const main = () => {
@@ -39,8 +39,8 @@ const main = () => {
       }
     }
 
-    let waveform = new Waveform(config_port);
-    waveform.init();
+    let audioFeatures = new AudioFeatures(config_port);
+    audioFeatures.init();
 
     let checkout = new Checkout(config_port);
     checkout.init();

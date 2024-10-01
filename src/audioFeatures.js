@@ -1,7 +1,9 @@
+import { analyze } from "web-audio-beat-detector";
+
 import Logger from "./logger";
 import { mousedownCallback } from "./utilities.js";
 
-export default class Waveform {
+export default class AudioFeatures {
   constructor(port) {
     this.log = new Logger();
 
@@ -10,37 +12,42 @@ export default class Waveform {
     this.canvasDisplayToggle;
     this.waveformColour;
     this.waveformOverlayColour;
+    this.bpmDisplay;
 
-    this.toggleWaveformCanvasCallback = Waveform.toggleWaveformCanvasCallback.bind(
+    this.toggleWaveformCanvasCallback = AudioFeatures.toggleWaveformCanvasCallback.bind(
       this
     );
-    this.monitorAudioCanPlayCallback = Waveform.monitorAudioCanPlayCallback.bind(
+    this.monitorAudioCanPlayCallback = AudioFeatures.monitorAudioCanPlayCallback.bind(
       this
     );
-    this.monitorAudioTimeupdateCallback = Waveform.monitorAudioTimeupdateCallback.bind(
+    this.monitorAudioTimeupdateCallback = AudioFeatures.monitorAudioTimeupdateCallback.bind(
       this
     );
 
-    this.applyConfig = Waveform.applyConfig.bind(this);
+    this.applyConfig = AudioFeatures.applyConfig.bind(this);
     this.port = port;
   }
 
   init() {
-    this.canvas = Waveform.createCanvas();
+    this.canvas = AudioFeatures.createCanvas();
     this.canvas.addEventListener("click", mousedownCallback);
 
-    this.canvasDisplayToggle = Waveform.createCanvasDisplayToggle();
+    this.canvasDisplayToggle = AudioFeatures.createCanvasDisplayToggle();
     this.canvasDisplayDiv = this.canvasDisplayToggle.parentNode;
     this.canvasDisplayDiv.addEventListener(
       "click",
       this.toggleWaveformCanvasCallback
     );
 
+    this.bpmDisplay = AudioFeatures.createBpmDisplay();
+
     let bg = document.querySelector("h2.trackTitle");
     this.waveformColour = window
       .getComputedStyle(bg, null)
       .getPropertyValue("color");
-    this.waveformOverlayColour = Waveform.invertColour(this.waveformColour);
+    this.waveformOverlayColour = AudioFeatures.invertColour(
+      this.waveformColour
+    );
 
     document
       .querySelector("audio")
@@ -54,7 +61,7 @@ export default class Waveform {
     this.port.postMessage({ requestConfig: {} }); // TO DO: this must be at end of init, write test
   }
 
-  async generateWaveform() {
+  async generateAudioFeatures() {
     const datapoints = 100;
     const audio = document.querySelector("audio");
 
@@ -75,7 +82,19 @@ export default class Waveform {
         },
         audioData => {
           const audioBuffer_ = new Uint8Array(audioData.data).buffer;
-          ctx.decodeAudioData(audioBuffer_).then(decodedAudio => {
+          const decodePromise = ctx.decodeAudioData(audioBuffer_);
+
+          decodePromise.then(decodedAudio => {
+            analyze(decodedAudio)
+              .then(
+                bpm => (this.bpmDisplay.innerText = `bpm: ${bpm.toFixed(2)}`)
+              )
+              .catch(err =>
+                this.log.error(`error finding bpm for track: ${err}`)
+              );
+          });
+
+          decodePromise.then(decodedAudio => {
             this.log.info("calculating rms");
             let leftChannel = decodedAudio.getChannelData(0);
 
@@ -100,7 +119,7 @@ export default class Waveform {
             });
             for (let i = 0; i < rmsBuffer.length; i++) {
               let amplitude = rmsBuffer[i] / max;
-              Waveform.fillBar(
+              AudioFeatures.fillBar(
                 this.canvas,
                 amplitude,
                 i,
@@ -127,13 +146,13 @@ export default class Waveform {
   static monitorAudioCanPlayCallback() {
     let audio = document.querySelector("audio");
     if (!audio.paused && this.canvasDisplayToggle.checked)
-      this.generateWaveform();
+      this.generateAudioFeatures();
   }
 
   static monitorAudioTimeupdateCallback(e) {
     let audio = e.target;
     let progress = audio.currentTime / audio.duration;
-    Waveform.drawOverlay(
+    AudioFeatures.drawOverlay(
       this.canvas,
       progress,
       this.waveformOverlayColour,
@@ -177,6 +196,16 @@ export default class Waveform {
     inlineplayer.append(toggle_div);
 
     return toggle;
+  }
+
+  static createBpmDisplay() {
+    const bpmDisplay = document.createElement("div");
+    bpmDisplay.setAttribute("class", "bpm");
+
+    const inlineplayer = document.querySelector("div.progbar");
+    inlineplayer.append(bpmDisplay);
+
+    return bpmDisplay;
   }
 
   static fillBar(canvas, amplitude, index, numElements, colour = "white") {

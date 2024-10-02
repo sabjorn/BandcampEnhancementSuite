@@ -29,6 +29,10 @@ Click anywhere on the playbar to set the "playhead" of the player.
 Adds a wavform display similar to visualization of Soundcloud. A toggle below the "play button" on album pages will enable/disable the display.
 **Note**: The waveform is processed browserside.
 
+### BPM Estimate
+Adds a BPM estimate for tracks played on Album or Track page.
+**Note**: The bpm estimation is processed browserside.
+
 ### Volume Control
 Adds a slider on the right side of the player controls volume.
 

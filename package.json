@@ -30,6 +30,7 @@
     "sinon-chai": "^3.5.0",
     "sinon-chrome": "^3.0.1",
     "sinon-stub-promise": "^4.0.0",
+    "terser-webpack-plugin": "^4.2.3",
     "webpack": "^4.44.2",
     "webpack-cli": "^3.3.11"
   },

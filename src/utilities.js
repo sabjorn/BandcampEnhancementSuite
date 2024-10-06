@@ -43,7 +43,6 @@ export function extractBandFollowInfo() {
     .getAttribute("data-band-follow-info");
 
   if (!data) {
-    console.log("help");
     return null;
   }
 
@@ -80,4 +79,31 @@ export function addAlbumToCart(
     method: "POST",
     mode: "cors"
   });
+}
+
+export function getTralbumDetails(item_id, item_type = "a", url = getUrl()) {
+  const myHeaders = new Headers();
+
+  const raw = JSON.stringify({
+    tralbum_type: item_type,
+    band_id: 12345,
+    tralbum_id: item_id
+  });
+
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      host: "bandcamp.com",
+      connection: "keep-alive",
+      "content-type": "application/json",
+      "user-agent": "Bandcamp/218977 CFNetwork/1399 Darwin/22.1.0",
+      "accept-language": "en-CA:en-US;q=0.9:en;q=0.8",
+      "accept-encoding": "gzip: deflate: br",
+      "sec-fetch-mode": "cors"
+    },
+    body: raw
+  };
+
+  return fetch(`/api/mobile/25/tralbum_details`, requestOptions);
 }

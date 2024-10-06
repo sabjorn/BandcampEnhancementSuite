@@ -1,5 +1,9 @@
 import Logger from "./logger";
-import { mousedownCallback } from "./utilities.js";
+import {
+  mousedownCallback,
+  extractBandFollowInfo,
+  getTralbumDetails
+} from "./utilities.js";
 
 const stepSize = 10;
 
@@ -9,6 +13,7 @@ export default class Player {
 
     this.keydownCallback = Player.keydownCallback.bind(this);
     this.volumeSliderCallback = Player.volumeSliderCallback.bind(this);
+    this.getTralbumDetails = getTralbumDetails.bind(this);
   }
 
   init() {
@@ -21,6 +26,53 @@ export default class Player {
     progressBar.addEventListener("click", mousedownCallback);
 
     Player.movePlaylist();
+
+    const bandFollowInfo = extractBandFollowInfo();
+    const tralbumId = bandFollowInfo.tralbum_id;
+    const tralbumType = bandFollowInfo.tralbum_type;
+    const tralbumDetails = this.getTralbumDetails(tralbumId, tralbumType)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(tralbumDetails => {
+        document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
+          const price = tralbumDetails.tracks[i].price;
+          const currency = tralbumDetails.tracks[i].currency;
+          const tralbumId = tralbumDetails.tracks[i].track_id;
+          const pair = Player.createInputButtonPair(
+            {
+              prefix: "$",
+              suffix: currency,
+              placeholder: price
+            },
+            {
+              onButtonClick: (value, tralbumDetails) => {
+                this.log.info(`Button ${i + 1} clicked!
+                    Input value: ${value}
+                    tralbumId: ${tralbumDetails.tralbumId}
+                    tralbumType: ${tralbumDetails.tralbumType}
+                    minPrice: ${tralbumDetails.minPrice}`);
+              }
+            },
+            {
+              tralbumId: tralbumId,
+              minPrice: price,
+              tralbumType: "t"
+            }
+          );
+
+          row.removeChild(row.querySelector(".download-col"));
+          const td = document.createElement("td");
+          td.classList.add("download-col");
+          td.append(pair);
+
+          row.append(td);
+        });
+      })
+      .catch(error => this.log.error(error));
 
     this.updatePlayerControlInterface();
   }
@@ -151,5 +203,72 @@ export default class Player {
     audio.volume = volume;
 
     this.log.info("volume:", volume);
+  }
+
+  static createCurrencyInput(options = {}) {
+    const {
+      prefix = "$",
+      suffix = "",
+      placeholder = 0.0,
+      inputClass = "currency-input",
+      wrapperClass = "currency-input-wrapper"
+    } = options;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = wrapperClass;
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = placeholder;
+    input.value = placeholder;
+    input.className = inputClass;
+    input.placeholder = placeholder;
+
+    wrapper.appendChild(input);
+
+    if (prefix) {
+      wrapper.dataset.prefix = prefix;
+    }
+
+    if (suffix) {
+      wrapper.dataset.suffix = suffix;
+    }
+
+    return { wrapper, input };
+  }
+
+  static createButton(options = {}) {
+    const { buttonText = "+", onButtonClick = () => {} } = options;
+
+    const button = document.createElement("button");
+    button.className = "one-click-button";
+    button.textContent = buttonText;
+    button.onclick = onButtonClick;
+
+    return button;
+  }
+
+  static createInputButtonPair(
+    inputOptions,
+    buttonOptions,
+    tralbumDetails = { tralbumType: "t" }
+  ) {
+    const { wrapper, input } = Player.createCurrencyInput(inputOptions);
+    const button = Player.createButton({
+      ...buttonOptions,
+      onButtonClick: () => {
+        if (typeof buttonOptions.onButtonClick === "function") {
+          buttonOptions.onButtonClick(input.value, tralbumDetails);
+        }
+      }
+    });
+
+    const container = document.createElement("div");
+    container.className = "one-click-button-container";
+
+    container.appendChild(wrapper);
+    container.appendChild(button);
+
+    return container;
   }
 }

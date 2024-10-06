@@ -142,3 +142,62 @@ div .bpm {
 .ieLte7 .buy-dlg #bes_download_buttons .ft > * {
     display: inline;
 }
+
+/*one clickc buy*/
+.currency-input-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.currency-input-wrapper::before {
+    content: attr(data-prefix);
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
+
+.currency-input-wrapper::after {
+    content: attr(data-suffix);
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
+
+.currency-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-left: 25px;
+    padding-right: 45px;
+}
+
+.one-click-button {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    vertical-align: middle;
+}
+
+.one-click-button:hover {
+    background-color: #0056b3;
+}
+
+.one-click-button:active {
+    background-color: #004085;
+}
+
+.one-click-button-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}

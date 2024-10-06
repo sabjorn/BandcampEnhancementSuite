@@ -27,6 +27,8 @@ export default class Player {
 
     Player.movePlaylist();
 
+    // remove info column
+
     const bandFollowInfo = extractBandFollowInfo();
     const tralbumId = bandFollowInfo.tralbum_id;
     const tralbumType = bandFollowInfo.tralbum_type;
@@ -64,7 +66,9 @@ export default class Player {
             }
           );
 
+          row.removeChild(row.querySelector(".info-col"));
           row.removeChild(row.querySelector(".download-col"));
+
           const td = document.createElement("td");
           td.classList.add("download-col");
           td.append(pair);

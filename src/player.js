@@ -2,7 +2,8 @@ import Logger from "./logger";
 import {
   mousedownCallback,
   extractBandFollowInfo,
-  getTralbumDetails
+  getTralbumDetails,
+  addAlbumToCart
 } from "./utilities.js";
 
 const stepSize = 10;
@@ -52,11 +53,20 @@ export default class Player {
             },
             {
               onButtonClick: (value, tralbumDetails) => {
-                this.log.info(`Button ${i + 1} clicked!
-                    Input value: ${value}
-                    tralbumId: ${tralbumDetails.tralbumId}
-                    tralbumType: ${tralbumDetails.tralbumType}
-                    minPrice: ${tralbumDetails.minPrice}`);
+                if (value < tralbumDetails.minPrice) {
+                  this.info.error("track price too low");
+                  return;
+                }
+                addAlbumToCart(
+                  tralbumDetails.tralbumId,
+                  value,
+                  tralbumDetails.tralbumType
+                ).then(response => {
+                  if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                  }
+                  window.location.reload();
+                });
               }
             },
             {

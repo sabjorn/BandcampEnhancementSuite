@@ -32,8 +32,7 @@ export function createInputButtonPair(options = {}) {
     buttonText = "+",
     buttonClass = "one-click-button",
     onButtonClick = () => {},
-    tralbumId,
-    tralbumType = "t"
+    tralbumDetails = {}
   } = options;
 
   const { wrapper, input } = creatInput(
@@ -47,7 +46,6 @@ export function createInputButtonPair(options = {}) {
   const button = document.createElement("button");
   button.className = buttonClass;
   button.textContent = buttonText;
-  const tralbumDetails = { tralbumId: tralbumId, tralbumType: tralbumType };
   button.onclick = () => {
     if (typeof onButtonClick === "function") {
       onButtonClick(input.value, inputPlaceholder, tralbumDetails);

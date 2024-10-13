@@ -6,6 +6,7 @@ import {
   addAlbumToCart
 } from "./utilities.js";
 import { createInputButtonPair } from "./components/inputButtonPair.js";
+import { createShoppingCartItem } from "./components/shoppingCartItem.js";
 
 const stepSize = 10;
 
@@ -46,10 +47,12 @@ export default class Player {
           const price = tralbumDetails.tracks[i].price;
           const currency = tralbumDetails.tracks[i].currency;
           const tralbumId = tralbumDetails.tracks[i].track_id;
+          const trackTitle = tralbumDetails.tracks[i].title;
           const pair = createInputButtonPair({
             inputPrefix: "$",
             inputSuffix: currency,
             inputPlaceholder: price,
+            tralbumDetails: { tralbumId: tralbumId, tralbumType: "t" },
             onButtonClick: (value, defaultPrice, tralbumDetails) => {
               if (value < defaultPrice) {
                 this.info.error("track price too low");
@@ -63,11 +66,15 @@ export default class Player {
                 if (!response.ok) {
                   throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                window.location.reload();
+                const cartItem = createShoppingCartItem({
+                  itemId: tralbumDetails.tralbumId,
+                  itemName: trackTitle,
+                  itemPrice: price,
+                  itemCurrency: currency
+                });
+                document.querySelector("#item_list").append(cartItem);
               });
-            },
-            tralbumId: tralbumId,
-            tralbumType: "t"
+            }
           });
           pair.classList.add("one-click-button-container");
 

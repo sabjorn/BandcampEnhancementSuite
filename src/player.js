@@ -5,6 +5,7 @@ import {
   getTralbumDetails,
   addAlbumToCart
 } from "./utilities.js";
+import { createInputButtonPair } from "./components/inputButtonPair.js";
 
 const stepSize = 10;
 
@@ -45,36 +46,30 @@ export default class Player {
           const price = tralbumDetails.tracks[i].price;
           const currency = tralbumDetails.tracks[i].currency;
           const tralbumId = tralbumDetails.tracks[i].track_id;
-          const pair = Player.createInputButtonPair(
-            {
-              prefix: "$",
-              suffix: currency,
-              placeholder: price
-            },
-            {
-              onButtonClick: (value, tralbumDetails) => {
-                if (value < tralbumDetails.minPrice) {
-                  this.info.error("track price too low");
-                  return;
-                }
-                addAlbumToCart(
-                  tralbumDetails.tralbumId,
-                  value,
-                  tralbumDetails.tralbumType
-                ).then(response => {
-                  if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                  }
-                  window.location.reload();
-                });
+          const pair = createInputButtonPair({
+            inputPrefix: "$",
+            inputSuffix: currency,
+            inputPlaceholder: price,
+            onButtonClick: (value, defaultPrice, tralbumDetails) => {
+              if (value < defaultPrice) {
+                this.info.error("track price too low");
+                return;
               }
+              addAlbumToCart(
+                tralbumDetails.tralbumId,
+                value,
+                tralbumDetails.tralbumType
+              ).then(response => {
+                if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                window.location.reload();
+              });
             },
-            {
-              tralbumId: tralbumId,
-              minPrice: price,
-              tralbumType: "t"
-            }
-          );
+            tralbumId: tralbumId,
+            tralbumType: "t"
+          });
+          pair.classList.add("one-click-button-container");
 
           row.removeChild(row.querySelector(".info-col"));
           row.removeChild(row.querySelector(".download-col"));
@@ -217,72 +212,5 @@ export default class Player {
     audio.volume = volume;
 
     this.log.info("volume:", volume);
-  }
-
-  static createCurrencyInput(options = {}) {
-    const {
-      prefix = "$",
-      suffix = "",
-      placeholder = 0.0,
-      inputClass = "currency-input",
-      wrapperClass = "currency-input-wrapper"
-    } = options;
-
-    const wrapper = document.createElement("div");
-    wrapper.className = wrapperClass;
-
-    const input = document.createElement("input");
-    input.type = "number";
-    input.min = placeholder;
-    input.value = placeholder;
-    input.className = inputClass;
-    input.placeholder = placeholder;
-
-    wrapper.appendChild(input);
-
-    if (prefix) {
-      wrapper.dataset.prefix = prefix;
-    }
-
-    if (suffix) {
-      wrapper.dataset.suffix = suffix;
-    }
-
-    return { wrapper, input };
-  }
-
-  static createButton(options = {}) {
-    const { buttonText = "+", onButtonClick = () => {} } = options;
-
-    const button = document.createElement("button");
-    button.className = "one-click-button";
-    button.textContent = buttonText;
-    button.onclick = onButtonClick;
-
-    return button;
-  }
-
-  static createInputButtonPair(
-    inputOptions,
-    buttonOptions,
-    tralbumDetails = { tralbumType: "t" }
-  ) {
-    const { wrapper, input } = Player.createCurrencyInput(inputOptions);
-    const button = Player.createButton({
-      ...buttonOptions,
-      onButtonClick: () => {
-        if (typeof buttonOptions.onButtonClick === "function") {
-          buttonOptions.onButtonClick(input.value, tralbumDetails);
-        }
-      }
-    });
-
-    const container = document.createElement("div");
-    container.className = "one-click-button-container";
-
-    container.appendChild(wrapper);
-    container.appendChild(button);
-
-    return container;
   }
 }

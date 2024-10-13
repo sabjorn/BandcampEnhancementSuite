@@ -68,6 +68,7 @@ export default class AudioFeatures {
     if (this.currentTarget != audio.src) {
       this.currentTarget = audio.src;
 
+      this.bpmDisplay.innerText = "";
       this.canvas
         .getContext("2d")
         .clearRect(0, 0, this.canvas.width, this.canvas.height);

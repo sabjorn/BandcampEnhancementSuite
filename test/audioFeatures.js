@@ -185,6 +185,8 @@ describe("AudioFeatures", () => {
       sandbox.stub(document, "querySelector");
       document.querySelector.withArgs("audio").returns(audioSpy);
 
+      wf.bpmDisplay = { innerText: "" };
+
       ctx = sinon.mock(new AudioContext());
 
       wf.canvas = canvas;
@@ -211,6 +213,14 @@ describe("AudioFeatures", () => {
 
       wf.generateAudioFeatures();
       expect(wf.currentTarget).to.be.equal("a/specific/src");
+    });
+
+    it("clears bpmDisplay if audio.source does not match previous", () => {
+      audioSpy.src = "a/specific/src";
+      wf.bpmDisplay.innerText = "innerText";
+
+      wf.generateAudioFeatures();
+      expect(wf.bpmDisplay.innerText).to.be.equal("");
     });
 
     it("sends a message with chrome.runtime.sendMessage", () => {

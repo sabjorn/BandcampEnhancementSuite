@@ -1,13 +1,15 @@
 /**
  * This file overrides some Webpack settings specifically for unit tests.
  */
-const path = require('path');
-const webpack = require('webpack');
+const path = require("path");
+const webpack = require("webpack");
 
-const defaults = require('./webpack.config')
+const baseConfig = require("./webpack.config");
+
+const config = baseConfig({}, { mode: "development" });
 
 module.exports = {
-  ...defaults,
-  mode: 'development',
+  ...config,
+  mode: "development",
   performance: { hints: false }
 };

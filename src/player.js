@@ -40,8 +40,6 @@ export default class Player {
     });
     document.querySelector("#sidecartReveal").append(cartRefreshButton);
 
-    // remove info column
-
     const bandFollowInfo = extractBandFollowInfo();
     const tralbumId = bandFollowInfo.tralbum_id;
     const tralbumType = bandFollowInfo.tralbum_type;

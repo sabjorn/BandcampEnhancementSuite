@@ -6,7 +6,10 @@ import {
   addAlbumToCart
 } from "./utilities.js";
 import { createInputButtonPair } from "./components/inputButtonPair.js";
-import { createShoppingCartItem } from "./components/shoppingCartItem.js";
+import {
+  createShoppingCartItem,
+  createShoppingCartResetButton
+} from "./components/shoppingCart.js";
 
 const stepSize = 10;
 
@@ -29,6 +32,13 @@ export default class Player {
     progressBar.addEventListener("click", mousedownCallback);
 
     Player.movePlaylist();
+
+    const cartRefreshButton = createShoppingCartResetButton({
+      className: "buttonLink",
+      innerText: "⟳",
+      buttonClicked: () => location.reload()
+    });
+    document.querySelector("#sidecartReveal").append(cartRefreshButton);
 
     // remove info column
 

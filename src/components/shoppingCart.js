@@ -39,3 +39,14 @@ export function createShoppingCartItem(options = {}) {
 
   return itemContainer;
 }
+
+export function createShoppingCartResetButton(options = {}) {
+  const { className, innerText, buttonClicked } = options;
+
+  const cartRefreshButton = document.createElement("a");
+  cartRefreshButton.className = className;
+  cartRefreshButton.innerText = innerText;
+  cartRefreshButton.addEventListener("click", buttonClicked);
+
+  return cartRefreshButton;
+}

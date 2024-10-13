@@ -75,7 +75,7 @@ export default class Player {
               price,
               currency
             ).catch(error =>
-              console.error("Error adding item to cart:", error)
+              this.log.error("Error adding item to cart:", error)
             );
           };
 

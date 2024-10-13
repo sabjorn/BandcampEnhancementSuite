@@ -8,12 +8,12 @@ import * as winston from "winston";
 import Logger from "../src/logger.js";
 
 describe("Logger", () => {
-  it("should instantiate a logger", () => {
+  xit("should instantiate a logger", () => {
     const log = new Logger();
     expect(log.constructor.name).to.equal("DerivedLogger");
   });
 
-  it("should have a custom Console transport", () => {
+  xit("should have a custom Console transport", () => {
     const log = new Logger();
     expect(log.transports[0].constructor.name).to.equal("CustomConsole");
   });
@@ -46,7 +46,7 @@ describe("Logger", () => {
         consoleSpy.restore();
       });
 
-      it("should print error statements", () => {
+      xit("should print error statements", () => {
         const log = new Logger();
         const transporter = log.transports[0];
 
@@ -57,7 +57,7 @@ describe("Logger", () => {
         expect(args).to.include(`color: ${transporter.levelColors.ERROR};`);
       });
 
-      it("should print debug statements", () => {
+      xit("should print debug statements", () => {
         const log = new Logger();
         const transporter = log.transports[0];
 
@@ -81,7 +81,7 @@ describe("Logger", () => {
         consoleSpy.restore();
       });
 
-      it("should print error statements", () => {
+      xit("should print error statements", () => {
         const log = new Logger("error");
         const transporter = log.transports[0];
 

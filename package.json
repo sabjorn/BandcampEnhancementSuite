@@ -1,6 +1,6 @@
 {
   "name": "bandcampenhancementsuite",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "Chrome extension adding extra features to the Bandcamp experience.",
   "dependencies": {
     "idb": "^5.0.3",

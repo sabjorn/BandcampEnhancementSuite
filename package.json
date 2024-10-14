@@ -24,7 +24,7 @@
     "karma-webpack": "^4.0.2",
     "mocha": "^10.2.0",
     "prettier": "^1.19.1",
-    "puppeteer": "^13.5.1",
+    "puppeteer": "^23.5.3",
     "raw-loader": "^4.0.2",
     "sinon": "^9.0.2",
     "sinon-chai": "^3.5.0",

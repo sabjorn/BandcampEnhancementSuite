@@ -147,7 +147,6 @@ div .bpm {
 .currency-input-wrapper {
     position: relative;
     display: inline;
-    width: 100%;
 }
 
 .currency-input-wrapper::before {
@@ -184,16 +183,15 @@ input.currency-input::-webkit-outer-spin-button {
 }
 
 .one-click-button {
-    width: 30px;
-    height: 100%;
+    width: 50px;
     padding: 0;
     border: none;
     font-size: 20px;
     cursor: pointer;
     display: inline-flex;
     justify-content: center;
-    align-items: center;
-    vertical-align: middle;
+    align-items: top;
+    vertical-align: top;
 }
 
 .one-click-button:hover {
@@ -207,6 +205,6 @@ input.currency-input::-webkit-outer-spin-button {
 
 .one-click-button-container {
     display: flex;
-    align-items: center;
+    align-items: top;
     gap: 5px;
 }

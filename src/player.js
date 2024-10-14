@@ -48,10 +48,12 @@ export default class Player {
     });
     document.querySelector("#sidecartReveal").append(cartRefreshButton);
 
+    this.updatePlayerControlInterface();
+
     const bandFollowInfo = this.extractBandFollowInfo();
     const tralbumId = bandFollowInfo.tralbum_id;
     const tralbumType = bandFollowInfo.tralbum_type;
-    this.getTralbumDetails(tralbumId, tralbumType)
+    return this.getTralbumDetails(tralbumId, tralbumType)
       .then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -64,8 +66,6 @@ export default class Player {
       .catch(error => {
         this.log.error(error);
       });
-
-    this.updatePlayerControlInterface();
   }
 
   updatePlayerControlInterface() {

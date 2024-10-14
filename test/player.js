@@ -112,9 +112,7 @@ describe("Player", () => {
     });
 
     it("should add one-click buy buttons when getTralbumDetails succeeds", async () => {
-      player.init();
-
-      await new Promise(resolve => setTimeout(resolve, 10)); // can't find any otther way to resolve getTralbumDetails
+      await player.init();
 
       expect(player.getTralbumDetails).to.have.been.calledWith(
         bandFollowInfoFake.tralbum_id,
@@ -131,9 +129,7 @@ describe("Player", () => {
       const errorMessage = "HTTP error! status: 404";
       player.getTralbumDetails.rejects(new Error(errorMessage));
 
-      player.init();
-
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await player.init();
 
       expect(player.log.error).to.be.calledWith(
         sinon.match

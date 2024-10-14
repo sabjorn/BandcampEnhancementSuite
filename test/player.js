@@ -443,8 +443,20 @@ describe("Player", () => {
     beforeEach(() => {
       mockTralbumDetails = {
         tracks: [
-          { price: "1.00", currency: "USD", track_id: "123", title: "Track 1" },
-          { price: "2.00", currency: "EUR", track_id: "456", title: "Track 2" }
+          {
+            price: "1.00",
+            currency: "USD",
+            track_id: "123",
+            title: "Track 1",
+            is_purchasable: true
+          },
+          {
+            price: "2.00",
+            currency: "EUR",
+            track_id: "456",
+            title: "Track 2",
+            is_purchasable: true
+          }
         ]
       };
 
@@ -478,7 +490,7 @@ describe("Player", () => {
       });
     });
 
-    it("should create input-button pair for each track", () => {
+    it("should create input-button pair for each purchasable track", () => {
       player.addOneClickBuyButtons(mockTralbumDetails);
 
       expect(player.createInputButtonPair.callCount).to.equal(
@@ -495,13 +507,36 @@ describe("Player", () => {
       });
     });
 
+    it("should not create input-button pair for not purchasable track", () => {
+      mockTralbumDetails = {
+        tracks: [
+          {
+            price: "1.00",
+            currency: "USD",
+            track_id: "123",
+            title: "Track 1",
+            is_purchasable: false
+          },
+          {
+            price: "2.00",
+            currency: "EUR",
+            track_id: "456",
+            title: "Track 2",
+            is_purchasable: false
+          }
+        ]
+      };
+
+      player.addOneClickBuyButtons(mockTralbumDetails);
+
+      expect(player.createInputButtonPair).to.not.be.called;
+    });
+
     it("should modify DOM correctly", () => {
       player.addOneClickBuyButtons(mockTralbumDetails);
 
       const rows = document.querySelectorAll("tr.track_row_view");
       expect(rows).to.have.length(2);
-
-      expect(player.createInputButtonPair).to.be.calledTwice;
 
       rows.forEach(row => {
         expect(row.querySelector(".info-col")).to.be.null;
@@ -510,6 +545,33 @@ describe("Player", () => {
           row.querySelectorAll(".one-click-button-container")
         ).to.have.length(1);
       });
+    });
+
+    it("should not modify DOM if track is not purchasable", () => {
+      mockTralbumDetails = {
+        tracks: [
+          {
+            price: "1.00",
+            currency: "USD",
+            track_id: "123",
+            title: "Track 1",
+            is_purchasable: false
+          },
+          {
+            price: "2.00",
+            currency: "EUR",
+            track_id: "456",
+            title: "Track 2",
+            is_purchasable: false
+          }
+        ]
+      };
+
+      player.addOneClickBuyButtons(mockTralbumDetails);
+
+      expect(
+        document.querySelectorAll(".one-click-button-container")
+      ).to.have.length(0);
     });
 
     describe("onButtonClick callback", () => {

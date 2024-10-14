@@ -204,8 +204,13 @@ export default class Player {
         price,
         currency,
         track_id: tralbumId,
-        title: trackTitle
+        title: trackTitle,
+        is_purchasable
       } = tralbumDetails.tracks[i];
+
+      if (!is_purchasable) {
+        return;
+      }
 
       const pair = this.createInputButtonPair({
         inputPrefix: "$",

@@ -25,31 +25,45 @@ describe("Player", () => {
   });
 
   describe("init()", () => {
-    let progressbar;
-    let sidecarReveal;
+    const progressbar = {
+      style: { cursor: "none" },
+      addEventListener: sinon.spy()
+    };
+    const sidecarReveal = {
+      append: sinon.spy()
+    };
+    const createShoppingCartResetButtonReturnValue = "test";
     const bandFollowInfoFake = {
       tralbum_id: 123,
       tralbumType: "p"
     };
-    const createShoppingCartResetButtonReturnValue = "test";
+    const mockTralbumDetails = {
+      tracks: [
+        {
+          price: "1.00",
+          currency: "USD",
+          track_id: "123",
+          title: "Test Track"
+        }
+      ]
+    };
+    const mockResponse = {
+      ok: true,
+      json: sinon.stub().resolves(mockTralbumDetails)
+    };
 
     beforeEach(() => {
       sandbox.spy(document, "addEventListener");
       sandbox.spy(Player, "movePlaylist");
+
       player.updatePlayerControlInterface = sinon.spy();
       player.extractBandFollowInfo = sinon.stub().returns(bandFollowInfoFake);
-      player.addOneClickBuyButtons = sinon.spy();
+      player.addOneClickBuyButtons = sinon.stub();
       player.createShoppingCartResetButton = sinon
         .stub()
         .returns(createShoppingCartResetButtonReturnValue);
+      player.getTralbumDetails = sinon.stub().resolves(mockResponse);
 
-      progressbar = {
-        style: { cursor: "none" },
-        addEventListener: sinon.spy()
-      };
-      sidecarReveal = {
-        append: sinon.spy()
-      };
       sandbox
         .stub(document, "querySelector")
         .withArgs(".progbar")
@@ -97,11 +111,34 @@ describe("Player", () => {
       );
     });
 
-    it.only("calls addOneClickBuyButtons", () => {
+    it("should add one-click buy buttons when getTralbumDetails succeeds", async () => {
       player.init();
-      expect(player.addOneClickBuyButtons).to.have.been.calledWith(
+
+      await new Promise(resolve => setTimeout(resolve, 10)); // can't find any otther way to resolve getTralbumDetails
+
+      expect(player.getTralbumDetails).to.have.been.calledWith(
         bandFollowInfoFake.tralbum_id,
         bandFollowInfoFake.tralbum_type
+      );
+      expect(player.addOneClickBuyButtons).to.have.been.calledWith(
+        mockTralbumDetails
+      );
+    });
+
+    it("should handle errors when getTralbumDetails fails", async () => {
+      player.log.error = sinon.spy();
+
+      const errorMessage = "HTTP error! status: 404";
+      player.getTralbumDetails.rejects(new Error(errorMessage));
+
+      player.init();
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(player.log.error).to.be.calledWith(
+        sinon.match
+          .instanceOf(Error)
+          .and(sinon.match.has("message", errorMessage))
       );
     });
 

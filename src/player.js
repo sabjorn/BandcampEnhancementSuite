@@ -19,9 +19,15 @@ export default class Player {
 
     this.keydownCallback = Player.keydownCallback.bind(this);
     this.volumeSliderCallback = Player.volumeSliderCallback.bind(this);
-    this.getTralbumDetails = getTralbumDetails.bind(this);
-    this.extractBandFollowInfo = extractBandFollowInfo;
+    this.addOneClickBuyButtons = Player.addOneClickBuyButtons.bind(this);
+
+    // re-import
+    this.addAlbumToCart = addAlbumToCart;
+    this.createInputButtonPair = createInputButtonPair;
+    this.createShoppingCartItem = createShoppingCartItem;
     this.createShoppingCartResetButton = createShoppingCartResetButton;
+    this.extractBandFollowInfo = extractBandFollowInfo;
+    this.getTralbumDetails = getTralbumDetails.bind(this);
   }
 
   init() {
@@ -45,7 +51,19 @@ export default class Player {
     const bandFollowInfo = this.extractBandFollowInfo();
     const tralbumId = bandFollowInfo.tralbum_id;
     const tralbumType = bandFollowInfo.tralbum_type;
-    this.addOneClickBuyButtons(tralbumId, tralbumType);
+    this.getTralbumDetails(tralbumId, tralbumType)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(tralbumDetails => {
+        this.addOneClickBuyButtons(tralbumDetails);
+      })
+      .catch(error => {
+        this.log.error(error);
+      });
 
     this.updatePlayerControlInterface();
   }
@@ -178,83 +196,59 @@ export default class Player {
     this.log.info("volume:", volume);
   }
 
-  addOneClickBuyButtons(tralbumId, tralbumType) {
-    this.getTralbumDetails(tralbumId, tralbumType)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(tralbumDetails => {
-        document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
-          const {
-            price,
-            currency,
-            track_id: tralbumId,
-            title: trackTitle
-          } = tralbumDetails.tracks[i];
-          const handleButtonClick = (value, defaultPrice, tralbumDetails) => {
-            if (value < defaultPrice) {
-              this.info.error("track price too low");
+  static addOneClickBuyButtons(tralbumDetails) {
+    document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
+      const {
+        price,
+        currency,
+        track_id: tralbumId,
+        title: trackTitle
+      } = tralbumDetails.tracks[i];
+
+      const pair = createInputButtonPair({
+        inputPrefix: "$",
+        inputSuffix: currency,
+        inputPlaceholder: price,
+        tralbumDetails: { tralbumId: tralbumId, tralbumType: "t" },
+        onButtonClick: (value, defaultPrice, tralbumDetails) => {
+          if (value < defaultPrice) {
+            this.info.error("track price too low");
+            return;
+          }
+          this.log.info(JSON.stringify(tralbumDetails));
+
+          this.addAlbumToCart(
+            tralbumDetails.tralbumId,
+            value,
+            tralbumDetails.tralbumType
+          ).then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const cartItem = createShoppingCartItem({
+              itemId: tralbumId,
+              itemName: trackTitle,
+              itemPrice: price,
+              itemCurrency: currency
+            });
+
+            if (document.querySelector("#sidecart").style.display === "none") {
+              window.location.reload();
               return;
             }
-            Player.createAndAddCartItem(
-              tralbumDetails.tralbumId,
-              value,
-              tralbumDetails.tralbumType,
-              trackTitle,
-              price,
-              currency
-            ).catch(error =>
-              this.log.error("Error adding item to cart:", error)
-            );
-          };
-          const pair = createInputButtonPair({
-            inputPrefix: "$",
-            inputSuffix: currency,
-            inputPlaceholder: price,
-            tralbumDetails: { tralbumId: tralbumId, tralbumType: "t" },
-            onButtonClick: handleButtonClick
+
+            document.querySelector("#item_list").append(cartItem);
           });
-          pair.classList.add("one-click-button-container");
-          row.removeChild(row.querySelector(".info-col"));
-          row.removeChild(row.querySelector(".download-col"));
-          const td = document.createElement("td");
-          td.classList.add("download-col");
-          td.append(pair);
-          row.append(td);
-        });
-      })
-      .catch(error => this.log.error(error));
-  }
-
-  static createAndAddCartItem(
-    tralbumId,
-    value,
-    tralbumType,
-    trackTitle,
-    price,
-    currency
-  ) {
-    return addAlbumToCart(tralbumId, value, tralbumType).then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const cartItem = createShoppingCartItem({
-        itemId: tralbumId,
-        itemName: trackTitle,
-        itemPrice: price,
-        itemCurrency: currency
+        }
       });
-
-      if (document.querySelector("#sidecart").style.display === "none") {
-        window.location.reload();
-        return;
-      }
-
-      document.querySelector("#item_list").append(cartItem);
+      pair.classList.add("one-click-button-container");
+      row.removeChild(row.querySelector(".info-col"));
+      row.removeChild(row.querySelector(".download-col"));
+      const td = document.createElement("td");
+      td.classList.add("download-col");
+      td.append(pair);
+      row.append(td);
     });
   }
 }

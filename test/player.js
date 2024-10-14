@@ -598,12 +598,15 @@ describe("Player", () => {
           document.querySelector("#item_list"),
           "append"
         );
-        await onButtonClick("1.50");
+
+        const inputPrice = 1.5;
+        await onButtonClick(inputPrice);
+
         expect(player.createShoppingCartItem).to.be.calledOnce;
         expect(player.createShoppingCartItem).to.be.calledWith({
           itemId: "123",
           itemName: "Track 1",
-          itemPrice: "1.00",
+          itemPrice: inputPrice,
           itemCurrency: "USD"
         });
 

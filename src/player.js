@@ -230,7 +230,7 @@ export default class Player {
             const cartItem = this.createShoppingCartItem({
               itemId: tralbumId,
               itemName: trackTitle,
-              itemPrice: price,
+              itemPrice: value,
               itemCurrency: currency
             });
 

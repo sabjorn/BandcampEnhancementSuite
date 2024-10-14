@@ -28,6 +28,8 @@ export default class Player {
     this.createShoppingCartResetButton = createShoppingCartResetButton;
     this.extractBandFollowInfo = extractBandFollowInfo;
     this.getTralbumDetails = getTralbumDetails.bind(this);
+    this.createInputButtonPair = createInputButtonPair;
+    this.createShoppingCartItem = createShoppingCartItem;
   }
 
   init() {
@@ -205,13 +207,13 @@ export default class Player {
         title: trackTitle
       } = tralbumDetails.tracks[i];
 
-      const pair = createInputButtonPair({
+      const pair = this.createInputButtonPair({
         inputPrefix: "$",
         inputSuffix: currency,
         inputPlaceholder: price,
         onButtonClick: value => {
           if (value < price) {
-            this.info.error("track price too low");
+            this.log.error("track price too low");
             return;
           }
 
@@ -220,7 +222,7 @@ export default class Player {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const cartItem = createShoppingCartItem({
+            const cartItem = this.createShoppingCartItem({
               itemId: tralbumId,
               itemName: trackTitle,
               itemPrice: price,
@@ -238,8 +240,10 @@ export default class Player {
       });
       pair.classList.add("one-click-button-container");
 
-      row.removeChild(row.querySelector(".info-col"));
-      row.removeChild(row.querySelector(".download-col"));
+      const downloadCol = row.querySelector(".download-col");
+      if (downloadCol) downloadCol.remove();
+      const infoCol = row.querySelector(".info-col");
+      if (infoCol) infoCol.remove();
 
       const td = document.createElement("td");
       td.classList.add("download-col");

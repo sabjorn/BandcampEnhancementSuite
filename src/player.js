@@ -20,6 +20,7 @@ export default class Player {
     this.keydownCallback = Player.keydownCallback.bind(this);
     this.volumeSliderCallback = Player.volumeSliderCallback.bind(this);
     this.getTralbumDetails = getTralbumDetails.bind(this);
+    this.extractBandFollowInfo = extractBandFollowInfo;
     this.createShoppingCartResetButton = createShoppingCartResetButton;
   }
 
@@ -41,63 +42,10 @@ export default class Player {
     });
     document.querySelector("#sidecartReveal").append(cartRefreshButton);
 
-    //const bandFollowInfo = extractBandFollowInfo();
-    //const tralbumId = bandFollowInfo.tralbum_id;
-    //const tralbumType = bandFollowInfo.tralbum_type;
-    //this.getTralbumDetails(tralbumId, tralbumType)
-    //  .then(response => {
-    //    if (!response.ok) {
-    //      throw new Error(`HTTP error! status: ${response.status}`);
-    //    }
-    //    return response.json();
-    //  })
-    //  .then(tralbumDetails => {
-    //    document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
-    //      const {
-    //        price,
-    //        currency,
-    //        track_id: tralbumId,
-    //        title: trackTitle
-    //      } = tralbumDetails.tracks[i];
-
-    //      const handleButtonClick = (value, defaultPrice, tralbumDetails) => {
-    //        if (value < defaultPrice) {
-    //          this.info.error("track price too low");
-    //          return;
-    //        }
-
-    //        Player.createAndAddCartItem(
-    //          tralbumDetails.tralbumId,
-    //          value,
-    //          tralbumDetails.tralbumType,
-    //          trackTitle,
-    //          price,
-    //          currency
-    //        ).catch(error =>
-    //          this.log.error("Error adding item to cart:", error)
-    //        );
-    //      };
-
-    //      const pair = createInputButtonPair({
-    //        inputPrefix: "$",
-    //        inputSuffix: currency,
-    //        inputPlaceholder: price,
-    //        tralbumDetails: { tralbumId: tralbumId, tralbumType: "t" },
-    //        onButtonClick: handleButtonClick
-    //      });
-    //      pair.classList.add("one-click-button-container");
-
-    //      row.removeChild(row.querySelector(".info-col"));
-    //      row.removeChild(row.querySelector(".download-col"));
-
-    //      const td = document.createElement("td");
-    //      td.classList.add("download-col");
-    //      td.append(pair);
-
-    //      row.append(td);
-    //    });
-    //  })
-    //  .catch(error => this.log.error(error));
+    const bandFollowInfo = this.extractBandFollowInfo();
+    const tralbumId = bandFollowInfo.tralbum_id;
+    const tralbumType = bandFollowInfo.tralbum_type;
+    Player.addOneClickBuyButtons(tralbumId, tralbumType);
 
     this.updatePlayerControlInterface();
   }
@@ -228,6 +176,57 @@ export default class Player {
     audio.volume = volume;
 
     this.log.info("volume:", volume);
+  }
+
+  static addOneClickBuyButtons(tralbumId, tralbumType) {
+    //this.getTralbumDetails(tralbumId, tralbumType)
+    //  .then(response => {
+    //    if (!response.ok) {
+    //      throw new Error(`HTTP error! status: ${response.status}`);
+    //    }
+    //    return response.json();
+    //  })
+    //  .then(tralbumDetails => {
+    //    document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
+    //      const {
+    //        price,
+    //        currency,
+    //        track_id: tralbumId,
+    //        title: trackTitle
+    //      } = tralbumDetails.tracks[i];
+    //      const handleButtonClick = (value, defaultPrice, tralbumDetails) => {
+    //        if (value < defaultPrice) {
+    //          this.info.error("track price too low");
+    //          return;
+    //        }
+    //        Player.createAndAddCartItem(
+    //          tralbumDetails.tralbumId,
+    //          value,
+    //          tralbumDetails.tralbumType,
+    //          trackTitle,
+    //          price,
+    //          currency
+    //        ).catch(error =>
+    //          this.log.error("Error adding item to cart:", error)
+    //        );
+    //      };
+    //      const pair = createInputButtonPair({
+    //        inputPrefix: "$",
+    //        inputSuffix: currency,
+    //        inputPlaceholder: price,
+    //        tralbumDetails: { tralbumId: tralbumId, tralbumType: "t" },
+    //        onButtonClick: handleButtonClick
+    //      });
+    //      pair.classList.add("one-click-button-container");
+    //      row.removeChild(row.querySelector(".info-col"));
+    //      row.removeChild(row.querySelector(".download-col"));
+    //      const td = document.createElement("td");
+    //      td.classList.add("download-col");
+    //      td.append(pair);
+    //      row.append(td);
+    //    });
+    //  })
+    //  .catch(error => this.log.error(error));
   }
 
   static createAndAddCartItem(

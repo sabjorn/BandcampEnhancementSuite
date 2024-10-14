@@ -27,12 +27,18 @@ describe("Player", () => {
   describe("init()", () => {
     let progressbar;
     let sidecarReveal;
+    const bandFollowInfoFake = {
+      tralbum_id: 123,
+      tralbumType: "p"
+    };
     const createShoppingCartResetButtonReturnValue = "test";
 
     beforeEach(() => {
       sandbox.spy(document, "addEventListener");
       sandbox.spy(Player, "movePlaylist");
+      sandbox.spy(Player, "addOneClickBuyButtons");
       player.updatePlayerControlInterface = sinon.spy();
+      player.extractBandFollowInfo = sinon.stub().returns(bandFollowInfoFake);
       player.createShoppingCartResetButton = sinon
         .stub()
         .returns(createShoppingCartResetButtonReturnValue);
@@ -88,6 +94,14 @@ describe("Player", () => {
       expect(player.createShoppingCartResetButton).to.have.been.called;
       expect(sidecarReveal.append).to.have.been.calledWith(
         createShoppingCartResetButtonReturnValue
+      );
+    });
+
+    it.only("calls addOneClickBuyButtons", () => {
+      player.init();
+      expect(Player.addOneClickBuyButtons).to.have.been.calledWith(
+        bandFollowInfoFake.tralbum_id,
+        bandFollowInfoFake.tralbum_type
       );
     });
 

@@ -26,20 +26,30 @@ describe("Player", () => {
 
   describe("init()", () => {
     let progressbar;
+    let sidecarReveal;
+    const createShoppingCartResetButtonReturnValue = "test";
 
     beforeEach(() => {
       sandbox.spy(document, "addEventListener");
       sandbox.spy(Player, "movePlaylist");
       player.updatePlayerControlInterface = sinon.spy();
+      player.createShoppingCartResetButton = sinon
+        .stub()
+        .returns(createShoppingCartResetButtonReturnValue);
 
       progressbar = {
         style: { cursor: "none" },
         addEventListener: sinon.spy()
       };
+      sidecarReveal = {
+        append: sinon.spy()
+      };
       sandbox
         .stub(document, "querySelector")
         .withArgs(".progbar")
-        .returns(progressbar);
+        .returns(progressbar)
+        .withArgs("#sidecartReveal")
+        .returns(sidecarReveal);
     });
 
     afterEach(() => {
@@ -70,6 +80,15 @@ describe("Player", () => {
       player.init();
 
       expect(Player.movePlaylist).to.have.been.called;
+    });
+
+    it("adds cartRefreshButton to sidecarReveal element", () => {
+      player.init();
+
+      expect(player.createShoppingCartResetButton).to.have.been.called;
+      expect(sidecarReveal.append).to.have.been.calledWith(
+        createShoppingCartResetButtonReturnValue
+      );
     });
 
     it("calls updatePlayerControlInterface()", () => {

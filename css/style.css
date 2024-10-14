@@ -146,7 +146,7 @@ div .bpm {
 /*one clickc buy*/
 .currency-input-wrapper {
     position: relative;
-    display: inline-block;
+    display: inline;
     width: 100%;
 }
 
@@ -168,16 +168,24 @@ div .bpm {
     color: #999;
 }
 
-.currency-input {
+input.currency-input {
     width: 100%;
     box-sizing: border-box;
     padding-left: 25px;
     padding-right: 45px;
+    -moz-appearance: textfield; /* Remove spinner for Firefox */
+}
+
+/* Remove spinner for webkit browsers */
+input.currency-input::-webkit-inner-spin-button, 
+input.currency-input::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
 }
 
 .one-click-button {
     width: 30px;
-    height: 30px;
+    height: 100%;
     padding: 0;
     border: none;
     font-size: 20px;
@@ -190,6 +198,7 @@ div .bpm {
 
 .one-click-button:hover {
     background-color: #0056b3;
+    text-decoration: none;
 }
 
 .one-click-button:active {

@@ -31,8 +31,7 @@ export function createInputButtonPair(options = {}) {
     inputWrapperClass = "currency-input-wrapper",
     buttonText = "+",
     buttonClass = "one-click-button",
-    onButtonClick = () => {},
-    tralbumDetails = {}
+    onButtonClick = () => {}
   } = options;
 
   const { wrapper, input } = creatInput(
@@ -48,7 +47,7 @@ export function createInputButtonPair(options = {}) {
   button.textContent = buttonText;
   button.onclick = () => {
     if (typeof onButtonClick === "function") {
-      onButtonClick(input.value, inputPlaceholder, tralbumDetails);
+      onButtonClick(input.value);
     }
   };
 

@@ -209,19 +209,13 @@ export default class Player {
         inputPrefix: "$",
         inputSuffix: currency,
         inputPlaceholder: price,
-        tralbumDetails: { tralbumId: tralbumId, tralbumType: "t" },
-        onButtonClick: (value, defaultPrice, tralbumDetails) => {
-          if (value < defaultPrice) {
+        onButtonClick: value => {
+          if (value < price) {
             this.info.error("track price too low");
             return;
           }
-          this.log.info(JSON.stringify(tralbumDetails));
 
-          this.addAlbumToCart(
-            tralbumDetails.tralbumId,
-            value,
-            tralbumDetails.tralbumType
-          ).then(response => {
+          this.addAlbumToCart(tralbumId, value, "t").then(response => {
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -243,8 +237,10 @@ export default class Player {
         }
       });
       pair.classList.add("one-click-button-container");
+
       row.removeChild(row.querySelector(".info-col"));
       row.removeChild(row.querySelector(".download-col"));
+
       const td = document.createElement("td");
       td.classList.add("download-col");
       td.append(pair);

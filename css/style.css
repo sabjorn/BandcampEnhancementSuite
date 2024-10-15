@@ -188,7 +188,7 @@ input.currency-input::-webkit-outer-spin-button {
 }
 
 .one-click-button {
-    width: 60px;
+    width: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -213,7 +213,6 @@ input.currency-input::-webkit-outer-spin-button {
 }
 
 .one-click-button-container {
-    opacity: 0;
     background-color: #fff;
     border: 1px solid #d9d9d9;
     margin: -2px 0;
@@ -221,7 +220,6 @@ input.currency-input::-webkit-outer-spin-button {
     display: flex;
     align-items: stretch;
     overflow: hidden;
-    transition: opacity 0.2s ease;
 }
 
 .track_row_view:hover .one-click-button-container {

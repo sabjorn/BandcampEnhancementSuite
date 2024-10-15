@@ -110,11 +110,11 @@ div .bpm {
 }
 
 #bes_dialog {
-     outline: 0px; 
-     z-index: 1002; 
-     position: absolute; 
-     height: auto; 
-     width: 500px; 
+     outline: 0px;
+     z-index: 1002;
+     position: absolute;
+     height: auto;
+     width: 500px;
      top: 50%;
      left: 50%;
      transform: translateX(-50%) translateY(-50%);
@@ -149,49 +149,53 @@ div .bpm {
     display: inline;
 }
 
-.currency-input-wrapper::before {
-    content: attr(data-prefix);
+.currency-input-wrapper::before, .currency-input-wrapper::after {
     position: absolute;
-    left: 10px;
     top: 50%;
     transform: translateY(-50%);
     color: #999;
+    pointer-events: none;
+}
+
+.currency-input-wrapper::before {
+    content: attr(data-prefix);
+    left: 5px;
 }
 
 .currency-input-wrapper::after {
     content: attr(data-suffix);
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #999;
+    right: 5px;
 }
 
 input.currency-input {
+    border: none;
+    height: 100%;
     width: 100%;
     box-sizing: border-box;
-    padding-left: 25px;
-    padding-right: 45px;
+    padding-left: 17px;
+    padding-right: 30px;
     -moz-appearance: textfield; /* Remove spinner for Firefox */
 }
 
 /* Remove spinner for webkit browsers */
-input.currency-input::-webkit-inner-spin-button, 
-input.currency-input::-webkit-outer-spin-button { 
-    -webkit-appearance: none; 
-    margin: 0; 
+input.currency-input::-webkit-inner-spin-button,
+input.currency-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .one-click-button {
-    width: 50px;
-    padding: 0;
+    width: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1px;
+    padding: 0 0 4px;
+    margin-right: 0;
     border: none;
     font-size: 20px;
     cursor: pointer;
-    display: inline-flex;
-    justify-content: center;
-    align-items: top;
-    vertical-align: top;
+    line-height: 50%;
 }
 
 .one-click-button:hover {
@@ -203,8 +207,27 @@ input.currency-input::-webkit-outer-spin-button {
     background-color: #004085;
 }
 
+.one-click-button svg {
+    height: 12px;
+    width: 12px;
+    fill: #0056b3;
+}
+
+.one-click-button:hover svg, .one-click-button:active svg {
+    fill: #fff;
+}
+
 .one-click-button-container {
+    opacity: 0;
+    background-color: #fff;
+    border: 1px solid #d9d9d9;
+    border-radius: 2px;
     display: flex;
-    align-items: top;
-    gap: 5px;
+    align-items: stretch;
+    overflow: hidden;
+    transition: opacity 0.2s ease;
+}
+
+.track_row_view:hover .one-click-button-container {
+    opacity: 1;
 }

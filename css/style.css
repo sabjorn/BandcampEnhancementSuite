@@ -172,9 +172,12 @@ input.currency-input {
     height: 100%;
     width: 100%;
     box-sizing: border-box;
-    padding-left: 17px;
-    padding-right: 30px;
+    padding: 1px 30px 0 17px;
     -moz-appearance: textfield; /* Remove spinner for Firefox */
+}
+
+input.currency-input:focus-visible {
+    outline: none;
 }
 
 /* Remove spinner for webkit browsers */
@@ -201,26 +204,19 @@ input.currency-input::-webkit-outer-spin-button {
 .one-click-button:hover {
     background-color: #0056b3;
     text-decoration: none;
+    color: #fff;
 }
 
 .one-click-button:active {
     background-color: #004085;
-}
-
-.one-click-button svg {
-    height: 12px;
-    width: 12px;
-    fill: #0056b3;
-}
-
-.one-click-button:hover svg, .one-click-button:active svg {
-    fill: #fff;
+    color: #fff;
 }
 
 .one-click-button-container {
     opacity: 0;
     background-color: #fff;
     border: 1px solid #d9d9d9;
+    margin: -2px 0;
     border-radius: 2px;
     display: flex;
     align-items: stretch;

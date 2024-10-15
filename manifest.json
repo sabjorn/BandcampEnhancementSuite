@@ -36,10 +36,5 @@
       ],
       "css": ["css/style.css"]
     }
-  ],
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "{3ca9d5aa-ad9f-4f7f-861b-999fe5c87273}",
-      "strict_min_version": "109.0"
-    }
-  }}
+  ]
+}

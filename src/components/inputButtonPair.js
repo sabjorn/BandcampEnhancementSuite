@@ -5,9 +5,20 @@ const creatInput = (prefix, suffix, placeholder, inputClass, wrapperClass) => {
   const input = document.createElement("input");
   input.type = "number";
   input.min = placeholder;
-  input.value = placeholder;
   input.className = inputClass;
   input.placeholder = placeholder;
+
+  input.addEventListener("focus", function() {
+    if (this.value === this.placeholder) {
+      this.value = "";
+    }
+  });
+
+  input.addEventListener("blur", function() {
+    if (this.value < this.min) {
+      this.value = "";
+    }
+  });
 
   wrapper.appendChild(input);
 
@@ -47,7 +58,8 @@ export function createInputButtonPair(options = {}) {
   button.textContent = buttonText;
   button.onclick = () => {
     if (typeof onButtonClick === "function") {
-      onButtonClick(input.value);
+      const value = input.value || input.placeholder;
+      onButtonClick(value);
     }
   };
 

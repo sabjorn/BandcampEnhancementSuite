@@ -142,3 +142,69 @@ div .bpm {
 .ieLte7 .buy-dlg #bes_download_buttons .ft > * {
     display: inline;
 }
+
+/*one clickc buy*/
+.currency-input-wrapper {
+    position: relative;
+    display: inline;
+}
+
+.currency-input-wrapper::before {
+    content: attr(data-prefix);
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
+
+.currency-input-wrapper::after {
+    content: attr(data-suffix);
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
+
+input.currency-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-left: 25px;
+    padding-right: 45px;
+    -moz-appearance: textfield; /* Remove spinner for Firefox */
+}
+
+/* Remove spinner for webkit browsers */
+input.currency-input::-webkit-inner-spin-button, 
+input.currency-input::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+
+.one-click-button {
+    width: 50px;
+    padding: 0;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: top;
+    vertical-align: top;
+}
+
+.one-click-button:hover {
+    background-color: #0056b3;
+    text-decoration: none;
+}
+
+.one-click-button:active {
+    background-color: #004085;
+}
+
+.one-click-button-container {
+    display: flex;
+    align-items: top;
+    gap: 5px;
+}

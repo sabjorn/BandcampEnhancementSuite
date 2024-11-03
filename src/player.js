@@ -63,7 +63,68 @@ export default class Player {
         return response.json();
       })
       .then(tralbumDetails => {
-        this.addOneClickBuyButtons(tralbumDetails);
+        const {
+          price,
+          currency,
+          album_id: tralbumId,
+          title: itemTitle,
+          is_purchasable,
+          type
+        } = tralbumDetails;
+        const tableHTML = `
+        <table class="track_list track_table" id="one-click">
+            <tbody>
+                <tr class="track_row_view linked">
+                    <td class="play-col"></td>
+                    <td class="track-number-col"></td>
+                    <td class="title-col">
+                        <div class="title"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        `;
+
+        // Convert string to DOM element
+        const table = document
+          .createRange()
+          .createContextualFragment(tableHTML)
+          .querySelector("table");
+
+        // Now you can work with the table element
+        // For example, to get the tr:
+        const tr = table.querySelector("tr");
+        document.querySelector("ul.tralbumCommands").prepend(table);
+
+        this.addOneClickBuyButtons(
+          tr,
+          price,
+          currency,
+          tralbumId,
+          itemTitle,
+          is_purchasable,
+          type
+        );
+        document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
+          const {
+            price,
+            currency,
+            track_id: tralbumId,
+            title: itemTitle,
+            is_purchasable
+          } = tralbumDetails.tracks[i];
+          const type = "t";
+
+          this.addOneClickBuyButtons(
+            row,
+            price,
+            currency,
+            tralbumId,
+            itemTitle,
+            is_purchasable,
+            type
+          );
+        });
       })
       .catch(error => {
         this.log.error(error);
@@ -198,62 +259,60 @@ export default class Player {
     this.log.info("volume:", volume);
   }
 
-  static addOneClickBuyButtons(tralbumDetails) {
-    document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
-      const {
-        price,
-        currency,
-        track_id: tralbumId,
-        title: trackTitle,
-        is_purchasable
-      } = tralbumDetails.tracks[i];
+  static addOneClickBuyButtons(
+    row,
+    price,
+    currency,
+    tralbumId,
+    itemTitle,
+    is_purchasable,
+    type
+  ) {
+    if (!is_purchasable) {
+      return;
+    }
 
-      if (!is_purchasable) {
-        return;
-      }
+    const pair = this.createInputButtonPair({
+      inputPrefix: "$",
+      inputSuffix: currency,
+      inputPlaceholder: price,
+      onButtonClick: value => {
+        if (value < price) {
+          this.log.error("track price too low");
+          return;
+        }
 
-      const pair = this.createInputButtonPair({
-        inputPrefix: "$",
-        inputSuffix: currency,
-        inputPlaceholder: price,
-        onButtonClick: value => {
-          if (value < price) {
-            this.log.error("track price too low");
+        this.addAlbumToCart(tralbumId, value, type).then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const cartItem = this.createShoppingCartItem({
+            itemId: tralbumId,
+            itemName: itemTitle,
+            itemPrice: value,
+            itemCurrency: currency
+          });
+
+          if (document.querySelector("#sidecart").style.display === "none") {
+            window.location.reload();
             return;
           }
 
-          this.addAlbumToCart(tralbumId, value, "t").then(response => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const cartItem = this.createShoppingCartItem({
-              itemId: tralbumId,
-              itemName: trackTitle,
-              itemPrice: value,
-              itemCurrency: currency
-            });
-
-            if (document.querySelector("#sidecart").style.display === "none") {
-              window.location.reload();
-              return;
-            }
-
-            document.querySelector("#item_list").append(cartItem);
-          });
-        }
-      });
-      pair.classList.add("one-click-button-container");
-
-      const downloadCol = row.querySelector(".download-col");
-      if (downloadCol) downloadCol.remove();
-      const infoCol = row.querySelector(".info-col");
-      if (infoCol) infoCol.remove();
-
-      const td = document.createElement("td");
-      td.classList.add("download-col");
-      td.append(pair);
-      row.append(td);
+          document.querySelector("#item_list").append(cartItem);
+        });
+      }
     });
+    pair.classList.add("one-click-button-container");
+
+    const downloadCol = row.querySelector(".download-col");
+    if (downloadCol) downloadCol.remove();
+    const infoCol = row.querySelector(".info-col");
+    if (infoCol) infoCol.remove();
+
+    const td = document.createElement("td");
+    td.classList.add("download-col");
+    td.append(pair);
+    row.append(td);
   }
 }

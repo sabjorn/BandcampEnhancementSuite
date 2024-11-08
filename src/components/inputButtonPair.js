@@ -6,7 +6,7 @@ const creatInput = (prefix, suffix, placeholder, inputClass, wrapperClass) => {
   input.type = "number";
   input.min = placeholder;
   input.className = inputClass;
-  input.placeholder = placeholder;
+  input.placeholder = Math.ceil(parseFloat(placeholder) * 100) / 100;
 
   input.addEventListener("focus", function() {
     if (this.value === this.placeholder) {

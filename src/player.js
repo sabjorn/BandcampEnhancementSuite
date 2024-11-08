@@ -10,6 +10,7 @@ import {
   createShoppingCartItem,
   createShoppingCartResetButton
 } from "./components/shoppingCart.js";
+import emptyPlaylistTable from "../html/empty_playlist_table.html";
 
 const stepSize = 10;
 
@@ -71,24 +72,9 @@ export default class Player {
           is_purchasable,
           type
         } = tralbumDetails;
-        const tableHTML = `
-        <table class="track_list track_table" id="one-click">
-            <tbody>
-                <tr class="track_row_view linked">
-                    <td class="play-col"></td>
-                    <td class="track-number-col"></td>
-                    <td class="title-col">
-                        <div class="title"></div>
-                    </td>
-                    <td class="download-col">
-                </tr>
-            </tbody>
-        </table>
-        `;
-
         const table = document
           .createRange()
-          .createContextualFragment(tableHTML)
+          .createContextualFragment(emptyPlaylistTable)
           .querySelector("table");
         document.querySelector("ul.tralbumCommands").prepend(table);
 

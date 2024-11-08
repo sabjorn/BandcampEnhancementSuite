@@ -80,24 +80,19 @@ export default class Player {
                     <td class="title-col">
                         <div class="title"></div>
                     </td>
+                    <td class="download-col">
                 </tr>
             </tbody>
         </table>
         `;
 
-        // Convert string to DOM element
         const table = document
           .createRange()
           .createContextualFragment(tableHTML)
           .querySelector("table");
-
-        // Now you can work with the table element
-        // For example, to get the tr:
-        const tr = table.querySelector("tr");
         document.querySelector("ul.tralbumCommands").prepend(table);
 
-        this.addOneClickBuyButtons(
-          tr,
+        const oneClick = this.addOneClickBuyButtons(
           price,
           currency,
           tralbumId,
@@ -105,6 +100,10 @@ export default class Player {
           is_purchasable,
           type
         );
+
+        const downloadCol = table.querySelector(".download-col");
+        downloadCol.append(oneClick);
+
         document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
           const {
             price,
@@ -115,8 +114,10 @@ export default class Player {
           } = tralbumDetails.tracks[i];
           const type = "t";
 
-          this.addOneClickBuyButtons(
-            row,
+          const infoCol = row.querySelector(".info-col");
+          if (infoCol) infoCol.remove();
+
+          const oneClick = this.addOneClickBuyButtons(
             price,
             currency,
             tralbumId,
@@ -124,6 +125,9 @@ export default class Player {
             is_purchasable,
             type
           );
+          const downloadCol = row.querySelector(".download-col");
+          downloadCol.innerHTML = "";
+          downloadCol.append(oneClick);
         });
       })
       .catch(error => {
@@ -260,7 +264,6 @@ export default class Player {
   }
 
   static addOneClickBuyButtons(
-    row,
     price,
     currency,
     tralbumId,
@@ -305,14 +308,6 @@ export default class Player {
     });
     pair.classList.add("one-click-button-container");
 
-    const downloadCol = row.querySelector(".download-col");
-    if (downloadCol) downloadCol.remove();
-    const infoCol = row.querySelector(".info-col");
-    if (infoCol) infoCol.remove();
-
-    const td = document.createElement("td");
-    td.classList.add("download-col");
-    td.append(pair);
-    row.append(td);
+    return pair;
   }
 }

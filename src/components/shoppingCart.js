@@ -26,7 +26,7 @@ export function createShoppingCartItem(options = {}) {
 
   const priceSpan = document.createElement("span");
   priceSpan.className = "price";
-  priceSpan.textContent = `\$${itemPrice} CAD`;
+  priceSpan.textContent = `\$${itemPrice} ${itemCurrency}`;
 
   paragraph.appendChild(nameSpan);
   paragraph.appendChild(document.createElement("br"));

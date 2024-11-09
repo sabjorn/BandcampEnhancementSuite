@@ -75,7 +75,7 @@ describe("Player", () => {
 
       player.updatePlayerControlInterface = sinon.spy();
       player.extractBandFollowInfo = sinon.stub().returns(bandFollowInfoFake);
-      player.addOneClickBuyButtons = sinon
+      player.createOneClickBuyButton = sinon
         .stub()
         .onCall(0)
         .returns(
@@ -126,7 +126,6 @@ describe("Player", () => {
 
     afterEach(() => {
       sandbox.restore();
-      // player.updatePlayerControlInterface.restore();
     });
 
     it("binds global keydown method", () => {
@@ -163,7 +162,7 @@ describe("Player", () => {
       );
     });
 
-    describe("addOneClickButton", () => {
+    describe("add one click add to cart buttons", () => {
       it("should be called for each track and album when getTralbumDetails succeeds", async () => {
         await player.init();
 
@@ -171,9 +170,9 @@ describe("Player", () => {
           bandFollowInfoFake.tralbum_id,
           bandFollowInfoFake.tralbum_type
         );
-        expect(player.addOneClickBuyButtons).to.have.been.calledThrice;
+        expect(player.createOneClickBuyButton).to.have.been.calledThrice;
         expect(
-          player.addOneClickBuyButtons.getCall(0)
+          player.createOneClickBuyButton.getCall(0)
         ).to.have.been.calledWithExactly(
           mockTralbumDetails.price,
           mockTralbumDetails.currency,
@@ -183,7 +182,7 @@ describe("Player", () => {
           mockTralbumDetails.type
         );
         expect(
-          player.addOneClickBuyButtons.getCall(1)
+          player.createOneClickBuyButton.getCall(1)
         ).to.have.been.calledWithExactly(
           mockTralbumDetails.tracks[0].price,
           mockTralbumDetails.tracks[0].currency,
@@ -193,7 +192,7 @@ describe("Player", () => {
           "t"
         );
         expect(
-          player.addOneClickBuyButtons.getCall(2)
+          player.createOneClickBuyButton.getCall(2)
         ).to.have.been.calledWithExactly(
           mockTralbumDetails.tracks[1].price,
           mockTralbumDetails.tracks[1].currency,
@@ -532,7 +531,7 @@ describe("Player", () => {
     });
   });
 
-  describe("addOneClickBuyButtons", () => {
+  describe("createOneClickBuyButton", () => {
     beforeEach(() => {
       createDomNodes(`
         <div id="sidecart" style="display: block;"></div>
@@ -549,7 +548,14 @@ describe("Player", () => {
     });
 
     it("should create input-button purchasable track", () => {
-      player.addOneClickBuyButtons("1.00", "USD", "123", "Track 1", true, "t");
+      player.createOneClickBuyButton(
+        "1.00",
+        "USD",
+        "123",
+        "Track 1",
+        true,
+        "t"
+      );
 
       expect(player.createInputButtonPair).to.be.calledOnce;
       expect(player.createInputButtonPair.getCall(0).args[0]).to.deep.include({
@@ -561,7 +567,7 @@ describe("Player", () => {
 
     it("should not create input-button pair for not purchasable track", () => {
       const is_purchasable = false;
-      player.addOneClickBuyButtons(
+      player.createOneClickBuyButton(
         "1.00",
         "USD",
         "123",
@@ -577,7 +583,7 @@ describe("Player", () => {
       let onButtonClick;
 
       beforeEach(() => {
-        player.addOneClickBuyButtons(
+        player.createOneClickBuyButton(
           "1.00",
           "USD",
           "123",

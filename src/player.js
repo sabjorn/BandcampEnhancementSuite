@@ -20,7 +20,7 @@ export default class Player {
 
     this.keydownCallback = Player.keydownCallback.bind(this);
     this.volumeSliderCallback = Player.volumeSliderCallback.bind(this);
-    this.addOneClickBuyButtons = Player.addOneClickBuyButtons.bind(this);
+    this.createOneClickBuyButton = Player.createOneClickBuyButton.bind(this);
 
     // re-import
     this.addAlbumToCart = addAlbumToCart;
@@ -72,7 +72,7 @@ export default class Player {
           is_purchasable,
           type
         } = tralbumDetails;
-        const oneClick = this.addOneClickBuyButtons(
+        const oneClick = this.createOneClickBuyButton(
           price,
           currency,
           tralbumId,
@@ -104,7 +104,7 @@ export default class Player {
           const infoCol = row.querySelector(".info-col");
           if (infoCol) infoCol.remove();
 
-          const oneClick = this.addOneClickBuyButtons(
+          const oneClick = this.createOneClickBuyButton(
             price,
             currency,
             tralbumId,
@@ -250,7 +250,7 @@ export default class Player {
     this.log.info("volume:", volume);
   }
 
-  static addOneClickBuyButtons(
+  static createOneClickBuyButton(
     price,
     currency,
     tralbumId,

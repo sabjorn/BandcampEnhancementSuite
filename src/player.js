@@ -72,12 +72,6 @@ export default class Player {
           is_purchasable,
           type
         } = tralbumDetails;
-        const table = document
-          .createRange()
-          .createContextualFragment(emptyPlaylistTable)
-          .querySelector("table");
-        document.querySelector("ul.tralbumCommands").prepend(table);
-
         const oneClick = this.addOneClickBuyButtons(
           price,
           currency,
@@ -86,6 +80,13 @@ export default class Player {
           is_purchasable,
           type
         );
+
+        const table = document
+          .createRange()
+          .createContextualFragment(emptyPlaylistTable)
+          .querySelector("table");
+
+        document.querySelector("ul.tralbumCommands").prepend(table);
 
         const downloadCol = table.querySelector(".download-col");
         downloadCol.append(oneClick);

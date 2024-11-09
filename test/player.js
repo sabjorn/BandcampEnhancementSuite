@@ -16,7 +16,10 @@ describe("Player", () => {
     sandbox = sinon.createSandbox();
     player = new Player();
 
-    sandbox.stub(player, "log");
+    sandbox.stub(player, "log").value({
+      error: sandbox.stub(),
+      info: sandbox.stub()
+    });
   });
 
   afterEach(() => {
@@ -25,26 +28,104 @@ describe("Player", () => {
   });
 
   describe("init()", () => {
-    let progressbar;
+    const progressbar = {
+      style: { cursor: "none" },
+      addEventListener: sinon.spy()
+    };
+    const sidecarReveal = {
+      append: sinon.spy()
+    };
+    const createShoppingCartResetButtonReturnValue = "test";
+    const bandFollowInfoFake = {
+      tralbum_id: 123,
+      tralbum_type: "p"
+    };
+    const mockTralbumDetails = {
+      price: "5.00",
+      currency: "USD",
+      album_id: "987",
+      title: "Test Album",
+      is_purchasable: true,
+      type: "a",
+      tracks: [
+        {
+          price: "1.00",
+          currency: "USD",
+          track_id: "123",
+          title: "Test Track",
+          is_purchasable: false
+        },
+        {
+          price: "2.00",
+          currency: "EUR",
+          track_id: "456",
+          title: "Track 2",
+          is_purchasable: true
+        }
+      ]
+    };
+    const mockResponse = {
+      ok: true,
+      json: sinon.stub().resolves(mockTralbumDetails)
+    };
 
     beforeEach(() => {
       sandbox.spy(document, "addEventListener");
       sandbox.spy(Player, "movePlaylist");
-      player.updatePlayerControlInterface = sinon.spy();
 
-      progressbar = {
-        style: { cursor: "none" },
-        addEventListener: sinon.spy()
-      };
+      player.updatePlayerControlInterface = sinon.spy();
+      player.extractBandFollowInfo = sinon.stub().returns(bandFollowInfoFake);
+      player.createOneClickBuyButton = sinon
+        .stub()
+        .onCall(0)
+        .returns(
+          Object.assign(document.createElement("div"), { id: "unique-id-0" })
+        )
+        .onCall(1)
+        .returns(
+          Object.assign(document.createElement("div"), { id: "unique-id-1" })
+        )
+        .onCall(2)
+        .returns(
+          Object.assign(document.createElement("div"), { id: "unique-id-2" })
+        );
+      player.createShoppingCartResetButton = sinon
+        .stub()
+        .returns(createShoppingCartResetButtonReturnValue);
+      player.getTralbumDetails = sinon.stub().resolves(mockResponse);
+
+      createDomNodes(`
+        <table class="track_list track_table" id="track_table">
+            <tbody>
+                <tr class="track_row_view">
+                    <td class="play-col"></td>
+                    <td class="track-number-col"></td>
+                    <td class="title-col"> </td>
+                    <td class="download-col"> </td>
+                </tr>
+                <tr class="track_row_view">
+                    <td class="play-col"></td>
+                    <td class="track-number-col"></td>
+                    <td class="title-col"></td>
+                    <td class="download-col"> </td>
+                </tr>
+            </tbody>
+        </table>
+        <ul class="tralbumCommands"></ul>
+      `);
+
       sandbox
         .stub(document, "querySelector")
         .withArgs(".progbar")
-        .returns(progressbar);
+        .returns(progressbar)
+        .withArgs("#sidecartReveal")
+        .returns(sidecarReveal)
+        .withArgs("ul.tralbumCommands")
+        .returns(document.createElement("ul.tralbumCommands"));
     });
 
     afterEach(() => {
       sandbox.restore();
-      // player.updatePlayerControlInterface.restore();
     });
 
     it("binds global keydown method", () => {
@@ -70,6 +151,86 @@ describe("Player", () => {
       player.init();
 
       expect(Player.movePlaylist).to.have.been.called;
+    });
+
+    it("adds cartRefreshButton to sidecarReveal element", () => {
+      player.init();
+
+      expect(player.createShoppingCartResetButton).to.have.been.called;
+      expect(sidecarReveal.append).to.have.been.calledWith(
+        createShoppingCartResetButtonReturnValue
+      );
+    });
+
+    describe("add one click add to cart buttons", () => {
+      it("should be called for each track and album when getTralbumDetails succeeds", async () => {
+        await player.init();
+
+        expect(player.getTralbumDetails).to.have.been.calledWith(
+          bandFollowInfoFake.tralbum_id,
+          bandFollowInfoFake.tralbum_type
+        );
+        expect(player.createOneClickBuyButton).to.have.been.calledThrice;
+        expect(
+          player.createOneClickBuyButton.getCall(0)
+        ).to.have.been.calledWithExactly(
+          mockTralbumDetails.price,
+          mockTralbumDetails.currency,
+          mockTralbumDetails.album_id,
+          mockTralbumDetails.title,
+          mockTralbumDetails.is_purchasable,
+          mockTralbumDetails.type
+        );
+        expect(
+          player.createOneClickBuyButton.getCall(1)
+        ).to.have.been.calledWithExactly(
+          mockTralbumDetails.tracks[0].price,
+          mockTralbumDetails.tracks[0].currency,
+          mockTralbumDetails.tracks[0].track_id,
+          mockTralbumDetails.tracks[0].title,
+          mockTralbumDetails.tracks[0].is_purchasable,
+          "t"
+        );
+        expect(
+          player.createOneClickBuyButton.getCall(2)
+        ).to.have.been.calledWithExactly(
+          mockTralbumDetails.tracks[1].price,
+          mockTralbumDetails.tracks[1].currency,
+          mockTralbumDetails.tracks[1].track_id,
+          mockTralbumDetails.tracks[1].title,
+          mockTralbumDetails.tracks[1].is_purchasable,
+          "t"
+        );
+      });
+
+      it("should modify DOM correctly", async () => {
+        await player.init();
+
+        const album = document.querySelector("ul.tralbumCommands");
+        expect(album.querySelectorAll("#unique-id-0")).to.have.length(1);
+
+        const rows = document.querySelectorAll("tr.track_row_view");
+        expect(rows).to.have.length(2);
+
+        rows.forEach((row, i) => {
+          expect(row.querySelector(".info-col")).to.be.null;
+          expect(row.querySelectorAll(".download-col")).to.have.length(1);
+          expect(row.querySelectorAll(`#unique-id-${i + 1}`)).to.have.length(1);
+        });
+      });
+    });
+
+    it("should handle errors when getTralbumDetails fails", async () => {
+      const errorMessage = "HTTP error! status: 404";
+      player.getTralbumDetails.rejects(new Error(errorMessage));
+
+      await player.init();
+
+      expect(player.log.error).to.be.calledWith(
+        sinon.match
+          .instanceOf(Error)
+          .and(sinon.match.has("message", errorMessage))
+      );
     });
 
     it("calls updatePlayerControlInterface()", () => {
@@ -367,6 +528,114 @@ describe("Player", () => {
       player.keydownCallback(event);
 
       expect(event.preventDefault).to.have.not.been.called;
+    });
+  });
+
+  describe("createOneClickBuyButton", () => {
+    beforeEach(() => {
+      createDomNodes(`
+        <div id="sidecart" style="display: block;"></div>
+        <div id="item_list"></div>
+      `);
+
+      sandbox.stub(player, "createInputButtonPair").callsFake(() => {
+        return document.createElement("div");
+      });
+      sandbox.stub(player, "addAlbumToCart").resolves({ ok: true });
+      sandbox.stub(player, "createShoppingCartItem").callsFake(() => {
+        return document.createElement("div");
+      });
+    });
+
+    it("should create input-button purchasable track", () => {
+      player.createOneClickBuyButton(
+        "1.00",
+        "USD",
+        "123",
+        "Track 1",
+        true,
+        "t"
+      );
+
+      expect(player.createInputButtonPair).to.be.calledOnce;
+      expect(player.createInputButtonPair.getCall(0).args[0]).to.deep.include({
+        inputPrefix: "$",
+        inputSuffix: "USD",
+        inputPlaceholder: "1.00"
+      });
+    });
+
+    it("should not create input-button pair for not purchasable track", () => {
+      const is_purchasable = false;
+      player.createOneClickBuyButton(
+        "1.00",
+        "USD",
+        "123",
+        "Track 1",
+        is_purchasable,
+        "t"
+      );
+
+      expect(player.createInputButtonPair).to.not.be.called;
+    });
+
+    describe("onButtonClick callback", () => {
+      let onButtonClick;
+
+      beforeEach(() => {
+        player.createOneClickBuyButton(
+          "1.00",
+          "USD",
+          "123",
+          "Track 1",
+          true,
+          "t"
+        );
+
+        onButtonClick =
+          player.createInputButtonPair.firstCall.args[0].onButtonClick;
+      });
+
+      it("should show error if value is less than price", async () => {
+        await onButtonClick("0.50");
+        expect(player.log.error).to.be.calledWith("track price too low");
+      });
+
+      it("should call addAlbumToCart with correct parameters", async () => {
+        await onButtonClick("1.50");
+        expect(player.addAlbumToCart).to.be.calledWith("123", "1.50", "t");
+      });
+
+      it("should create and append shopping cart item on successful response", async () => {
+        const appendSpy = sinon.spy(
+          document.querySelector("#item_list"),
+          "append"
+        );
+
+        const inputPrice = 1.5;
+        await onButtonClick(inputPrice);
+
+        expect(player.createShoppingCartItem).to.be.calledOnce;
+        expect(player.createShoppingCartItem).to.be.calledWith({
+          itemId: "123",
+          itemName: "Track 1",
+          itemPrice: inputPrice,
+          itemCurrency: "USD"
+        });
+
+        expect(appendSpy).to.be.calledOnce;
+      });
+
+      it("should throw error on unsuccessful response", async () => {
+        player.addAlbumToCart.resolves({ ok: false, status: 400 });
+
+        try {
+          await onButtonClick("1.50");
+        } catch (error) {
+          expect(error).to.be.an("error");
+          expect(error.message).to.equal("HTTP error! status: 400");
+        }
+      });
     });
   });
 });

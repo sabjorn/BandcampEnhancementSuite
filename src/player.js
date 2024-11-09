@@ -1,5 +1,16 @@
 import Logger from "./logger";
-import { mousedownCallback } from "./utilities.js";
+import {
+  mousedownCallback,
+  extractBandFollowInfo,
+  getTralbumDetails,
+  addAlbumToCart
+} from "./utilities.js";
+import { createInputButtonPair } from "./components/inputButtonPair.js";
+import {
+  createShoppingCartItem,
+  createShoppingCartResetButton
+} from "./components/shoppingCart.js";
+import emptyPlaylistTable from "../html/empty_playlist_table.html";
 
 const stepSize = 10;
 
@@ -9,6 +20,17 @@ export default class Player {
 
     this.keydownCallback = Player.keydownCallback.bind(this);
     this.volumeSliderCallback = Player.volumeSliderCallback.bind(this);
+    this.createOneClickBuyButton = Player.createOneClickBuyButton.bind(this);
+
+    // re-import
+    this.addAlbumToCart = addAlbumToCart;
+    this.createInputButtonPair = createInputButtonPair;
+    this.createShoppingCartItem = createShoppingCartItem;
+    this.createShoppingCartResetButton = createShoppingCartResetButton;
+    this.extractBandFollowInfo = extractBandFollowInfo;
+    this.getTralbumDetails = getTralbumDetails.bind(this);
+    this.createInputButtonPair = createInputButtonPair;
+    this.createShoppingCartItem = createShoppingCartItem;
   }
 
   init() {
@@ -22,7 +44,82 @@ export default class Player {
 
     Player.movePlaylist();
 
+    const cartRefreshButton = this.createShoppingCartResetButton({
+      className: "buttonLink",
+      innerText: "⟳",
+      buttonClicked: () => location.reload()
+    });
+    document.querySelector("#sidecartReveal").append(cartRefreshButton);
+
     this.updatePlayerControlInterface();
+
+    const bandFollowInfo = this.extractBandFollowInfo();
+    const tralbumId = bandFollowInfo.tralbum_id;
+    const tralbumType = bandFollowInfo.tralbum_type;
+    return this.getTralbumDetails(tralbumId, tralbumType)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(tralbumDetails => {
+        const {
+          price,
+          currency,
+          album_id: tralbumId,
+          title: itemTitle,
+          is_purchasable,
+          type
+        } = tralbumDetails;
+        const oneClick = this.createOneClickBuyButton(
+          price,
+          currency,
+          tralbumId,
+          itemTitle,
+          is_purchasable,
+          type
+        );
+
+        const table = document
+          .createRange()
+          .createContextualFragment(emptyPlaylistTable)
+          .querySelector("table");
+
+        document.querySelector("ul.tralbumCommands").prepend(table);
+
+        const downloadCol = table.querySelector(".download-col");
+        downloadCol.append(oneClick);
+
+        document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
+          const {
+            price,
+            currency,
+            track_id: tralbumId,
+            title: itemTitle,
+            is_purchasable
+          } = tralbumDetails.tracks[i];
+          const type = "t";
+
+          const infoCol = row.querySelector(".info-col");
+          if (infoCol) infoCol.remove();
+
+          const oneClick = this.createOneClickBuyButton(
+            price,
+            currency,
+            tralbumId,
+            itemTitle,
+            is_purchasable,
+            type
+          );
+          const downloadCol = row.querySelector(".download-col");
+          downloadCol.innerHTML = "";
+          downloadCol.append(oneClick);
+        });
+      })
+      .catch(error => {
+        this.log.error(error);
+      });
   }
 
   updatePlayerControlInterface() {
@@ -151,5 +248,53 @@ export default class Player {
     audio.volume = volume;
 
     this.log.info("volume:", volume);
+  }
+
+  static createOneClickBuyButton(
+    price,
+    currency,
+    tralbumId,
+    itemTitle,
+    is_purchasable,
+    type
+  ) {
+    if (!is_purchasable) {
+      return;
+    }
+
+    const pair = this.createInputButtonPair({
+      inputPrefix: "$",
+      inputSuffix: currency,
+      inputPlaceholder: price,
+      onButtonClick: value => {
+        if (value < price) {
+          this.log.error("track price too low");
+          return;
+        }
+
+        this.addAlbumToCart(tralbumId, value, type).then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const cartItem = this.createShoppingCartItem({
+            itemId: tralbumId,
+            itemName: itemTitle,
+            itemPrice: value,
+            itemCurrency: currency
+          });
+
+          if (document.querySelector("#sidecart").style.display === "none") {
+            window.location.reload();
+            return;
+          }
+
+          document.querySelector("#item_list").append(cartItem);
+        });
+      }
+    });
+    pair.classList.add("one-click-button-container");
+
+    return pair;
   }
 }

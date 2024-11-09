@@ -110,11 +110,11 @@ div .bpm {
 }
 
 #bes_dialog {
-     outline: 0px; 
-     z-index: 1002; 
-     position: absolute; 
-     height: auto; 
-     width: 500px; 
+     outline: 0px;
+     z-index: 1002;
+     position: absolute;
+     height: auto;
+     width: 500px;
      top: 50%;
      left: 50%;
      transform: translateX(-50%) translateY(-50%);
@@ -141,4 +141,87 @@ div .bpm {
 
 .ieLte7 .buy-dlg #bes_download_buttons .ft > * {
     display: inline;
+}
+
+/*one clickc buy*/
+.currency-input-wrapper {
+    position: relative;
+    display: inline;
+}
+
+.currency-input-wrapper::before, .currency-input-wrapper::after {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+    pointer-events: none;
+}
+
+.currency-input-wrapper::before {
+    content: attr(data-prefix);
+    left: 5px;
+}
+
+.currency-input-wrapper::after {
+    content: attr(data-suffix);
+    right: 5px;
+}
+
+input.currency-input {
+    border: none;
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 1px 30px 0 17px;
+    -moz-appearance: textfield; /* Remove spinner for Firefox */
+}
+
+input.currency-input:focus-visible {
+    outline: none;
+}
+
+/* Remove spinner for webkit browsers */
+input.currency-input::-webkit-inner-spin-button,
+input.currency-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.one-click-button {
+    width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1px;
+    padding: 0 0 4px;
+    margin-right: 0;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 50%;
+}
+
+.one-click-button:hover {
+    background-color: #0056b3;
+    text-decoration: none;
+    color: #fff;
+}
+
+.one-click-button:active {
+    background-color: #004085;
+    color: #fff;
+}
+
+.one-click-button-container {
+    background-color: #fff;
+    border: 1px solid #d9d9d9;
+    margin: -2px 0;
+    border-radius: 2px;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.track_row_view:hover .one-click-button-container {
+    opacity: 1;
 }

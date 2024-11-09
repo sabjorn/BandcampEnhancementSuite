@@ -51,6 +51,9 @@ Additionally, while the generated file is a `.txt`, it can be run directly in te
 ```
 This will download the files into the same directory the terminal session is in.
 
+### 1-Click Purchase
+Adds buttons on track and album pages to easily add an item to your cart with a single click.
+
 ## Installation
 Available from the [Chrome webstore](https://chrome.google.com/webstore/detail/bandcamp-label-view/padcfdpdlnpdojcihidkgjnmleeingep) and [Firefox Addons](https://addons.mozilla.org/en-US/firefox/addon/bandcamp-enhancement-suite)
 

@@ -81,9 +81,7 @@ export function addAlbumToCart(
   });
 }
 
-export function getTralbumDetails(item_id, item_type = "a", url = getUrl()) {
-  const myHeaders = new Headers();
-
+export function getTralbumDetails(item_id, item_type = "a") {
   const raw = JSON.stringify({
     tralbum_type: item_type,
     band_id: 12345,

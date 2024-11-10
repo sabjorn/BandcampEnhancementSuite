@@ -19,6 +19,10 @@ export default class DownloadHelper {
     this.mutationCallback = DownloadHelper.callback.bind(this); // necessary for class callback
     this.observer = new MutationObserver(this.mutationCallback);
 
+    // re-import
+    DownloadHelper.dateString = dateString;
+    DownloadHelper.downloadFile = downloadFile;
+
     this.linksReady;
     this.button;
   }
@@ -62,12 +66,12 @@ export default class DownloadHelper {
     this.button.textContent = "Download cURL File";
 
     this.button.addEventListener("click", function() {
-      const date = dateString();
+      const date = DownloadHelper.dateString();
       const downloadList = DownloadHelper.generateDownloadList();
       const preamble = DownloadHelper.getDownloadPreamble();
       const downloadDocument = preamble + downloadList;
 
-      downloadFile(`bandcamp_${date}.txt`, downloadDocument);
+      DownloadHelper.downloadFile(`bandcamp_${date}.txt`, downloadDocument);
     });
   }
 

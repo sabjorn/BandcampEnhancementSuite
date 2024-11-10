@@ -106,7 +106,7 @@ describe("Download Helper", () => {
       DownloadHelper.dateString = sinon.fake.returns("dateString");
       DownloadHelper.generateDownloadList = sinon.fake.returns("downloadList");
       DownloadHelper.getDownloadPreamble = sinon.fake.returns("preamble");
-      DownloadHelper.download = sinon.spy();
+      DownloadHelper.downloadFile = sinon.spy();
 
       dh.button = document.createElement("button");
 
@@ -118,11 +118,11 @@ describe("Download Helper", () => {
       expect(DownloadHelper.generateDownloadList).to.have.been.called;
       expect(DownloadHelper.getDownloadPreamble).to.have.been.called;
 
-      expect(DownloadHelper.download).to.have.been.called;
-      expect(DownloadHelper.download.getCall(0).args[0]).to.equal(
+      expect(DownloadHelper.downloadFile).to.have.been.called;
+      expect(DownloadHelper.downloadFile.getCall(0).args[0]).to.equal(
         "bandcamp_dateString.txt"
       );
-      expect(DownloadHelper.download.getCall(0).args[1]).to.equal(
+      expect(DownloadHelper.downloadFile.getCall(0).args[1]).to.equal(
         "preamble" + "downloadList"
       );
     });

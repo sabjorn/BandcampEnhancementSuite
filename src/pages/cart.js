@@ -7,14 +7,17 @@ import {
   loadJsonFile,
   addAlbumToCart
 } from "../utilities";
+import { createShoppingCartItem } from "../components/shoppingCart.js";
 
 export default class Cart {
   constructor() {
     this.log = new Logger();
 
+    // re-import
     this.createButton = createButton;
     this.loadJsonFile = loadJsonFile;
     this.addAlbumToCart = addAlbumToCart;
+    this.createShoppingCartItem = createShoppingCartItem;
   }
 
   init() {
@@ -35,6 +38,15 @@ export default class Cart {
               if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
               }
+
+              const cartItem = this.createShoppingCartItem({
+                itemId: track.item_id,
+                itemName: track.item_title,
+                itemPrice: track.unit_price,
+                itemCurrency: track.currency
+              });
+
+              document.querySelector("#item_list").append(cartItem);
             })
           );
 
@@ -60,25 +72,27 @@ export default class Cart {
 
         const cart_id = items[0].cart_id;
         const date = dateString();
-        const tracks_export = items.map(
-          ({
-            band_name,
-            item_id,
-            item_title,
-            unit_price,
-            url,
-            currency,
-            item_type
-          }) => ({
-            band_name,
-            item_id,
-            item_title,
-            unit_price,
-            url,
-            currency,
-            item_type
-          })
-        );
+        const tracks_export = items
+          .filter(item => item.item_type === "a" || item.item_type === "t")
+          .map(
+            ({
+              band_name,
+              item_id,
+              item_title,
+              unit_price,
+              url,
+              currency,
+              item_type
+            }) => ({
+              band_name,
+              item_id,
+              item_title,
+              unit_price,
+              url,
+              currency,
+              item_type
+            })
+          );
 
         const filename = `${date}_${cart_id}_bes_cart_export.json`;
         const data = JSON.stringify({ date, cart_id, tracks_export }, null, 2);

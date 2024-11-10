@@ -218,6 +218,36 @@ describe("Player", () => {
           expect(row.querySelectorAll(`#unique-id-${i + 1}`)).to.have.length(1);
         });
       });
+
+      it("should not fail if more DOM elements than tralbumDetail tracks", async () => {
+        const mockTralbumDetails = {
+          price: "5.00",
+          currency: "USD",
+          album_id: "987",
+          title: "Test Album",
+          is_purchasable: true,
+          type: "a",
+          tracks: [
+            // only one track but 2 DOM elements
+            {
+              price: "1.00",
+              currency: "USD",
+              track_id: "123",
+              title: "Test Track",
+              is_purchasable: true
+            }
+          ]
+        };
+        const mockResponse = {
+          ok: true,
+          json: sinon.stub().resolves(mockTralbumDetails)
+        };
+        player.getTralbumDetails = sinon.stub().resolves(mockResponse);
+
+        await player.init();
+
+        expect(player.createOneClickBuyButton).to.be.calledTwice;
+      });
     });
 
     it("should handle errors when getTralbumDetails fails", async () => {

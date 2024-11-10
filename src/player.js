@@ -5,13 +5,9 @@ import {
   getTralbumDetails,
   addAlbumToCart
 } from "./utilities.js";
-import { createInputButtonPair, createButton } from "./components/buttons.js";
-import {
-  createShoppingCartItem,
-  createShoppingCartResetButton
-} from "./components/shoppingCart.js";
+import { createInputButtonPair } from "./components/buttons.js";
+import { createShoppingCartItem } from "./components/shoppingCart.js";
 import emptyPlaylistTable from "../html/empty_playlist_table.html";
-import { downloadFile, dateString } from "./utilities";
 
 const stepSize = 10;
 
@@ -27,7 +23,6 @@ export default class Player {
     this.addAlbumToCart = addAlbumToCart;
     this.createInputButtonPair = createInputButtonPair;
     this.createShoppingCartItem = createShoppingCartItem;
-    this.createButton = createButton;
     this.extractBandFollowInfo = extractBandFollowInfo;
     this.getTralbumDetails = getTralbumDetails.bind(this);
     this.createInputButtonPair = createInputButtonPair;
@@ -45,51 +40,7 @@ export default class Player {
 
     Player.movePlaylist();
 
-    const cartRefreshButton = this.createButton({
-      className: "buttonLink",
-      innerText: "⟳",
-      buttonClicked: () => location.reload()
-    });
-    document.querySelector("#sidecartReveal").append(cartRefreshButton);
-
     this.updatePlayerControlInterface();
-
-    // call cart mods might need to go somewhere else because cart is on multuple pages...
-    const downloadCartButton = this.createButton({
-      className: "buttonLink",
-      innerText: "export",
-      buttonClicked: () => {
-        const { items } = JSON.parse(
-          document.querySelector("[data-cart]").getAttribute("data-cart")
-        );
-        if (items.length < 1) return;
-
-        const cart_id = items[0].cart_id;
-        const date = dateString();
-        const tracks_export = items.map(
-          ({ band_name, item_id, item_title, unit_price, url, currency }) => ({
-            band_name,
-            item_id,
-            item_title,
-            unit_price,
-            url,
-            currency
-          })
-        );
-
-        const filename = `${date}_${cart_id}_bes_cart_export.json`;
-        const data = JSON.stringify({ date, cart_id, tracks_export }, null, 2);
-        downloadFile(filename, data);
-      }
-    });
-    // how do we check that cart is ready for export? might need to disable
-    // if added from 1-click buy
-    // we actually have to worry about when the cart has been modified by us
-    // OR when users add with the regular method (becasue the data in the script wont be correct anymore)
-    // (unless it is, you need ot check)
-    // othweise -- need an observer to modify this any time the cart object changes
-    // and then it will just check for if the # of items is different?
-    document.querySelector("#sidecartReveal").append(downloadCartButton);
 
     const bandFollowInfo = this.extractBandFollowInfo();
     const tralbumId = bandFollowInfo.tralbum_id;
@@ -130,6 +81,8 @@ export default class Player {
         downloadCol.append(oneClick);
 
         document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
+          if (tralbumDetails.tracks[i] === undefined) return;
+
           const {
             price,
             currency,

@@ -105,6 +105,7 @@ export default class Cart {
       innerText: "⟳",
       buttonClicked: () => location.reload()
     });
+    cartRefreshButton.style.display = "none";
     document.querySelector("#sidecartReveal").append(cartRefreshButton);
 
     const observer = new MutationObserver(() => {
@@ -118,6 +119,9 @@ export default class Cart {
       const actual_cart_length = JSON.parse(
         cartDataElement.getAttribute("data-cart")
       ).items.length;
+
+      cartRefreshButton.style.display =
+        itemListCount === actual_cart_length.length ? "none" : "block";
 
       exportCartButton.style.display =
         itemListCount === actual_cart_length.length ? "block" : "none";

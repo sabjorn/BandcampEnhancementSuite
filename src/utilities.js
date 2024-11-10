@@ -122,3 +122,18 @@ export function downloadFile(filename, text) {
 
   document.body.removeChild(element);
 }
+
+export function dateString() {
+  const currentdate = new Date();
+  const ye = new Intl.DateTimeFormat("en", { year: "2-digit" }).format(
+    currentdate
+  );
+  const mo = new Intl.DateTimeFormat("en", { month: "2-digit" }).format(
+    currentdate
+  );
+  const da = new Intl.DateTimeFormat("en", { day: "2-digit" }).format(
+    currentdate
+  );
+
+  return `${da}-${mo}-${ye}`;
+}

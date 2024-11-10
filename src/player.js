@@ -11,6 +11,7 @@ import {
   createShoppingCartResetButton
 } from "./components/shoppingCart.js";
 import emptyPlaylistTable from "../html/empty_playlist_table.html";
+import { downloadFile, dateString } from "./utilities";
 
 const stepSize = 10;
 
@@ -52,6 +53,38 @@ export default class Player {
     document.querySelector("#sidecartReveal").append(cartRefreshButton);
 
     this.updatePlayerControlInterface();
+
+    // call cart mods might need to go somewhere else because cart is on multuple pages...
+    const downloadCartButton = this.createShoppingCartResetButton({
+      className: "buttonLink",
+      innerText: "export",
+      buttonClicked: () => {
+        const { items } = JSON.parse(
+          document.querySelector("[data-cart]").getAttribute("data-cart")
+        );
+        if (items.length < 1) return;
+
+        const cart_id = items[0].cart_id;
+        const date = dateString();
+        const tracks_export = items.map(
+          ({ band_name, item_id, item_title, unit_price, url, currency }) => ({
+            band_name,
+            item_id,
+            item_title,
+            unit_price,
+            url,
+            currency
+          })
+        );
+
+        const filename = `${date}_${cart_id}_bes_cart_export.json`;
+        const data = JSON.stringify({ date, cart_id, tracks_export }, null, 2);
+        downloadFile(filename, data);
+      }
+    });
+    // how do we check that cart is ready for export? might need to disable
+    // if added from 1-click buy
+    document.querySelector("#sidecartReveal").append(downloadCartButton);
 
     const bandFollowInfo = this.extractBandFollowInfo();
     const tralbumId = bandFollowInfo.tralbum_id;

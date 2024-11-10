@@ -4,6 +4,7 @@ import DownloadHelper from "./download_helper.js";
 import Player from "./player.js";
 import AudioFeatures from "./audioFeatures.js";
 import Checkout from "./checkout.js";
+import Cart from "./pages/cart";
 
 const main = () => {
   const log = new Logger();
@@ -44,6 +45,14 @@ const main = () => {
 
     let checkout = new Checkout(config_port);
     checkout.init();
+  }
+
+  const { has_cart } = JSON.parse(
+    document.querySelector("[data-blob]").getAttribute("data-blob")
+  );
+  if (has_cart) {
+    const cart = new Cart();
+    cart.init();
   }
 };
 

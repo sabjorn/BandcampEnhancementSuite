@@ -59,8 +59,7 @@ export default class Cart {
       }
     });
     document.querySelector("#sidecartReveal").append(importCartButton);
-    //
-    // call cart mods might need to go somewhere else because cart is on multuple pages...
+
     const exportCartButton = this.createButton({
       className: "buttonLink",
       innerText: "export",
@@ -99,13 +98,6 @@ export default class Cart {
         downloadFile(filename, data);
       }
     });
-    // how do we check that cart is ready for export? might need to disable
-    // if added from 1-click buy
-    // we actually have to worry about when the cart has been modified by us
-    // OR when users add with the regular method (becasue the data in the script wont be correct anymore)
-    // (unless it is, you need ot check)
-    // othweise -- need an observer to modify this any time the cart object changes
-    // and then it will just check for if the # of items is different?
     document.querySelector("#sidecartReveal").append(exportCartButton);
 
     const cartRefreshButton = this.createButton({
@@ -114,5 +106,28 @@ export default class Cart {
       buttonClicked: () => location.reload()
     });
     document.querySelector("#sidecartReveal").append(cartRefreshButton);
+
+    const observer = new MutationObserver(() => {
+      const itemListCount = document.querySelectorAll("#item_list .item")
+        .length;
+      const cartDataElement = document.querySelector("[data-cart]");
+
+      if (!cartDataElement) {
+        return;
+      }
+      const actual_cart_length = JSON.parse(
+        cartDataElement.getAttribute("data-cart")
+      ).items.length;
+
+      exportCartButton.style.display =
+        itemListCount === actual_cart_length.length ? "block" : "none";
+    });
+
+    const itemList = document.getElementById("item_list");
+    if (itemList) {
+      observer.observe(itemList, {
+        childList: true
+      });
+    }
   }
 }

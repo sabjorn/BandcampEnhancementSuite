@@ -67,7 +67,10 @@ export default class Cart {
         const { items } = JSON.parse(
           document.querySelector("[data-cart]").getAttribute("data-cart")
         );
-        if (items.length < 1) return;
+        if (items.length < 1) {
+          this.log.error("error trying to export cart with length of 0");
+          return;
+        }
 
         const cart_id = items[0].cart_id;
         const date = dateString();

@@ -137,3 +137,32 @@ export function dateString() {
 
   return `${ye}-${mo}-${da}`;
 }
+
+export function loadJsonFile() {
+  return new Promise((resolve, reject) => {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".json";
+
+    fileInput.onchange = event => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+
+        reader.onload = e => {
+          try {
+            const jsonObject = JSON.parse(e.target.result);
+            resolve(jsonObject);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        reader.onerror = error => reject(error);
+        reader.readAsText(file);
+      }
+    };
+
+    fileInput.click();
+  });
+}

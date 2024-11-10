@@ -70,3 +70,14 @@ export function createInputButtonPair(options = {}) {
 
   return container;
 }
+
+export function createButton(options = {}) {
+  const { className, innerText, buttonClicked } = options;
+
+  const button = document.createElement("a");
+  button.className = className;
+  button.innerText = innerText;
+  button.addEventListener("click", buttonClicked);
+
+  return button;
+}

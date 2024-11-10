@@ -37,7 +37,7 @@ describe("Player", () => {
     const sidecarReveal = {
       append: sinon.spy()
     };
-    const createShoppingCartResetButtonReturnValue = "test";
+    const createButtonReturnValue = "test";
     const bandFollowInfoFake = {
       tralbum_id: 123,
       tralbum_type: "p"
@@ -91,9 +91,7 @@ describe("Player", () => {
         .returns(
           Object.assign(document.createElement("div"), { id: "unique-id-2" })
         );
-      player.createShoppingCartResetButton = sinon
-        .stub()
-        .returns(createShoppingCartResetButtonReturnValue);
+      player.createButton = sinon.stub().returns(createButtonReturnValue);
       player.getTralbumDetails = sinon.stub().resolves(mockResponse);
 
       createDomNodes(`
@@ -158,9 +156,9 @@ describe("Player", () => {
     it("adds cartRefreshButton to sidecarReveal element", () => {
       player.init();
 
-      expect(player.createShoppingCartResetButton).to.have.been.called;
+      expect(player.createButton).to.have.been.called;
       expect(sidecarReveal.append).to.have.been.calledWith(
-        createShoppingCartResetButtonReturnValue
+        createButtonReturnValue
       );
     });
 

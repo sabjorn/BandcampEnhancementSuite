@@ -5,7 +5,7 @@ import {
   getTralbumDetails,
   addAlbumToCart
 } from "./utilities.js";
-import { createInputButtonPair } from "./components/inputButtonPair.js";
+import { createInputButtonPair, createButton } from "./components/buttons.js";
 import {
   createShoppingCartItem,
   createShoppingCartResetButton
@@ -27,7 +27,7 @@ export default class Player {
     this.addAlbumToCart = addAlbumToCart;
     this.createInputButtonPair = createInputButtonPair;
     this.createShoppingCartItem = createShoppingCartItem;
-    this.createShoppingCartResetButton = createShoppingCartResetButton;
+    this.createButton = createButton;
     this.extractBandFollowInfo = extractBandFollowInfo;
     this.getTralbumDetails = getTralbumDetails.bind(this);
     this.createInputButtonPair = createInputButtonPair;
@@ -45,7 +45,7 @@ export default class Player {
 
     Player.movePlaylist();
 
-    const cartRefreshButton = this.createShoppingCartResetButton({
+    const cartRefreshButton = this.createButton({
       className: "buttonLink",
       innerText: "⟳",
       buttonClicked: () => location.reload()
@@ -55,7 +55,7 @@ export default class Player {
     this.updatePlayerControlInterface();
 
     // call cart mods might need to go somewhere else because cart is on multuple pages...
-    const downloadCartButton = this.createShoppingCartResetButton({
+    const downloadCartButton = this.createButton({
       className: "buttonLink",
       innerText: "export",
       buttonClicked: () => {
@@ -84,6 +84,11 @@ export default class Player {
     });
     // how do we check that cart is ready for export? might need to disable
     // if added from 1-click buy
+    // we actually have to worry about when the cart has been modified by us
+    // OR when users add with the regular method (becasue the data in the script wont be correct anymore)
+    // (unless it is, you need ot check)
+    // othweise -- need an observer to modify this any time the cart object changes
+    // and then it will just check for if the # of items is different?
     document.querySelector("#sidecartReveal").append(downloadCartButton);
 
     const bandFollowInfo = this.extractBandFollowInfo();

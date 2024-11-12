@@ -53,33 +53,6 @@ export default class Player {
         return response.json();
       })
       .then(tralbumDetails => {
-        const {
-          price,
-          currency,
-          album_id: tralbumId,
-          title: itemTitle,
-          is_purchasable,
-          type
-        } = tralbumDetails;
-        const oneClick = this.createOneClickBuyButton(
-          price,
-          currency,
-          tralbumId,
-          itemTitle,
-          is_purchasable,
-          type
-        );
-
-        const table = document
-          .createRange()
-          .createContextualFragment(emptyPlaylistTable)
-          .querySelector("table");
-
-        document.querySelector("ul.tralbumCommands").prepend(table);
-
-        const downloadCol = table.querySelector(".download-col");
-        downloadCol.append(oneClick);
-
         document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
           if (tralbumDetails.tracks[i] === undefined) return;
 
@@ -103,10 +76,41 @@ export default class Player {
             is_purchasable,
             type
           );
+
+          if (!is_purchasable) return;
+
           const downloadCol = row.querySelector(".download-col");
           downloadCol.innerHTML = "";
           downloadCol.append(oneClick);
         });
+
+        const {
+          price,
+          currency,
+          album_id: tralbumId,
+          title: itemTitle,
+          is_purchasable,
+          type
+        } = tralbumDetails;
+        const oneClick = this.createOneClickBuyButton(
+          price,
+          currency,
+          tralbumId,
+          itemTitle,
+          is_purchasable,
+          type
+        );
+        if (!is_purchasable) return;
+
+        const table = document
+          .createRange()
+          .createContextualFragment(emptyPlaylistTable)
+          .querySelector("table");
+
+        document.querySelector("ul.tralbumCommands").prepend(table);
+
+        const downloadCol = table.querySelector(".download-col");
+        downloadCol.append(oneClick);
       })
       .catch(error => {
         this.log.error(error);

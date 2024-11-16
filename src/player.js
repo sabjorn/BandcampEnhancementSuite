@@ -2,6 +2,7 @@ import Logger from "./logger";
 import {
   mousedownCallback,
   extractBandFollowInfo,
+  extractFanTralbumData,
   getTralbumDetails,
   addAlbumToCart
 } from "./utilities.js";
@@ -24,6 +25,7 @@ export default class Player {
     this.createInputButtonPair = createInputButtonPair;
     this.createShoppingCartItem = createShoppingCartItem;
     this.extractBandFollowInfo = extractBandFollowInfo;
+    this.extractFanTralbumData = extractFanTralbumData;
     this.getTralbumDetails = getTralbumDetails.bind(this);
     this.createInputButtonPair = createInputButtonPair;
     this.createShoppingCartItem = createShoppingCartItem;
@@ -41,6 +43,12 @@ export default class Player {
     Player.movePlaylist();
 
     this.updatePlayerControlInterface();
+
+    const {
+      is_purchased,
+      part_of_purchased_album
+    } = this.extractFanTralbumData();
+    if (is_purchased | part_of_purchased_album) return;
 
     const bandFollowInfo = this.extractBandFollowInfo();
     const tralbumId = bandFollowInfo.tralbum_id;

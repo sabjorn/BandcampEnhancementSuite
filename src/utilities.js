@@ -54,6 +54,21 @@ export function extractBandFollowInfo() {
   }
 }
 
+export function extractFanTralbumData() {
+  const data = document.querySelector("[data-blob]").getAttribute("data-blob");
+
+  if (!data) {
+    return null;
+  }
+
+  try {
+    const { fan_tralbum_data } = JSON.parse(data);
+    return fan_tralbum_data;
+  } catch (error) {
+    return null;
+  }
+}
+
 export function getUrl() {
   return window.location.href.split("/")[2];
 }

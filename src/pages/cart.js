@@ -58,7 +58,7 @@ export default class Cart {
         }
       }
     });
-    document.querySelector("#sidecartReveal").append(importCartButton);
+    document.querySelector("#sidecartReveal").prepend(importCartButton);
 
     const exportCartButton = this.createButton({
       className: "buttonLink",

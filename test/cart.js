@@ -53,7 +53,7 @@ describe("Cart", () => {
     sandbox.restore();
   });
 
-  describe.only("init()", () => {
+  describe("init()", () => {
     it("adds all buttons in correct order and with correct properties", () => {
       cart.init();
 
@@ -149,6 +149,29 @@ describe("Cart", () => {
         expect(downloadFileCallArgs.cart_id).to.be.eq(cart_id);
         expect(downloadFileCallArgs.tracks_export[0]).to.be.deep.eq(item1);
         expect(downloadFileCallArgs.tracks_export[1]).to.be.deep.eq(item2);
+      });
+
+      it("does not call downloadFile when item_type not 't' or 'a'", () => {
+        const incorrect_item_type = "p";
+        createDomNodes(
+          `<script type="text/javascript" data-cart="
+            {
+                &quot;items&quot;:[{
+                    &quot;item_type&quot;:&quot;${incorrect_item_type}&quot;,
+                    &quot;item_id&quot;:123,
+                    &quot;unit_price&quot;:1.3,
+					&quot;currency&quot;:&quot;CAD&quot;,
+					&quot;cart_id&quot;:999,
+					&quot;item_title&quot;:&quot;item_title&quot;,
+					&quot;band_name&quot;:&quot;band_name&quot;,
+					&quot;url&quot;:&quot;url&quot;
+                }]}
+            "></script>`
+        );
+
+        cartButtonCallback();
+
+        expect(cart.downloadFile).to.be.not.called;
       });
     });
   });

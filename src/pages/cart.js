@@ -96,6 +96,7 @@ export default class Cart {
               item_type
             })
           );
+        if (tracks_export.length < 1) return;
 
         const filename = `${date}_${cart_id}_bes_cart_export.json`;
         const data = JSON.stringify({ date, cart_id, tracks_export }, null, 2);

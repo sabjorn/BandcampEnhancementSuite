@@ -86,7 +86,9 @@ describe("Cart", () => {
       });
 
       it("does not call downloadFile if no items in data-cart", () => {
-        createDomNodes(`<script type="text/javascript" data-cart=""></script>`);
+        createDomNodes(
+          `<script type="text/javascript" data-cart="{&quot;items&quot;:[]}"></script>`
+        );
 
         cartButtonCallback();
 

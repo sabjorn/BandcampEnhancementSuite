@@ -18,6 +18,7 @@ export default class Cart {
     this.loadJsonFile = loadJsonFile;
     this.addAlbumToCart = addAlbumToCart;
     this.createShoppingCartItem = createShoppingCartItem;
+    this.downloadFile = downloadFile;
   }
 
   init() {
@@ -98,7 +99,7 @@ export default class Cart {
 
         const filename = `${date}_${cart_id}_bes_cart_export.json`;
         const data = JSON.stringify({ date, cart_id, tracks_export }, null, 2);
-        downloadFile(filename, data);
+        this.downloadFile(filename, data);
       }
     });
     document.querySelector("#sidecartReveal").append(exportCartButton);

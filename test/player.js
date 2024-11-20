@@ -237,6 +237,16 @@ describe("Player", () => {
 
         expect(player.createOneClickBuyButton).to.be.calledTwice;
       });
+
+      it("should only add album if no track_row_view in DOM", async () => {
+        document
+          .querySelectorAll("tr.track_row_view")
+          .forEach(item => item.remove());
+
+        await player.init();
+
+        expect(player.createOneClickBuyButton).to.be.calledOnce;
+      });
     });
 
     it("should handle errors when getTralbumDetails fails", async () => {

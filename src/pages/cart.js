@@ -112,7 +112,7 @@ export default class Cart {
     const cartRefreshButton = this.createButton({
       className: "buttonLink",
       innerText: "⟳",
-      buttonClicked: () => location.reload()
+      buttonClicked: () => this.reloadWindow()
     });
     cartRefreshButton.style.display = "none";
     document.querySelector("#sidecartReveal").append(cartRefreshButton);

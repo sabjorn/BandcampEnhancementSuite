@@ -302,5 +302,28 @@ describe("Cart", () => {
         expect(cart.downloadFile).to.be.not.called;
       });
     });
+
+    describe("refresh button callback", () => {
+      let cartButtonCallback;
+
+      beforeEach(() => {
+        cart.init();
+
+        cart.reloadWindow = sinon.stub();
+
+        const exportButtonCallArgs = cart.createButton.getCall(2).args[0];
+
+        expect(exportButtonCallArgs.className).to.be.eq("buttonLink");
+        expect(exportButtonCallArgs.innerText).to.be.eq("⟳");
+
+        cartButtonCallback = exportButtonCallArgs.buttonClicked;
+      });
+
+      it("reloads window", () => {
+        cartButtonCallback();
+
+        expect(cart.reloadWindow).to.be.calledOnce;
+      });
+    });
   });
 });

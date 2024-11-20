@@ -6,8 +6,42 @@ import AudioFeatures from "./audioFeatures.js";
 import Checkout from "./checkout.js";
 import Cart from "./pages/cart";
 
+import { getTralbumDetails } from "./utilities";
+
 const main = () => {
   const log = new Logger();
+
+  const buyMusicClubListPage = document.querySelector("#__NEXT_DATA__");
+  if (buyMusicClubListPage) {
+    log.info("Starting BuyMusic.club BES integration");
+    const { props } = JSON.parse(buyMusicClubListPage.innerHTML);
+    log.debug(JSON.stringify(props.pageProps.list.ListItems[0], null, 2));
+    props.pageProps.list.ListItems.forEach(
+      ({ externalId: tralbum_id, type }) => {
+        const tralbum_type = type === "song" ? "t" : "a";
+        // this has to be moved to worker because of CORS
+        //  getTralbumDetails(tralbum_id, tralbum_type)
+        //    .then(response => {
+        //      if (!response.ok) {
+        //        throw new Error(`HTTP error! status: ${response.status}`);
+        //      }
+        //      return response.json();
+        //    })
+        //    .then(tralbumDetails => {
+        //      const {
+        //        price,
+        //        currency,
+        //        album_id: tralbumId,
+        //        title: itemTitle,
+        //        is_purchasable,
+        //        type
+        //      } = tralbumDetails;
+        //    });
+      }
+    );
+
+    return;
+  }
 
   const lv = new LabelView();
   lv.init();

@@ -124,7 +124,10 @@ export function getTralbumDetails(item_id, item_type = "a") {
     body: raw
   };
 
-  return fetch(`/api/mobile/25/tralbum_details`, requestOptions);
+  return fetch(
+    `https://bandcamp.com/api/mobile/25/tralbum_details`,
+    requestOptions
+  );
 }
 
 export function downloadFile(filename, text) {

@@ -91,11 +91,9 @@ describe("Player", () => {
           Object.assign(document.createElement("div"), { id: "unique-id-2" })
         );
       player.getTralbumDetails = sinon.stub().resolves(mockResponse);
-      player.extractFanTralbumData = sinon.stub().resolves({
-        fan_tralbum_data: {
-          is_purchased: true,
-          part_of_purchased_album: false
-        }
+      player.extractFanTralbumData = sinon.stub().returns({
+        is_purchased: false,
+        part_of_purchased_album: false
       });
 
       createDomNodes(`
@@ -169,16 +167,6 @@ describe("Player", () => {
         expect(
           player.createOneClickBuyButton.getCall(0)
         ).to.have.been.calledWithExactly(
-          mockTralbumDetails.price,
-          mockTralbumDetails.currency,
-          mockTralbumDetails.album_id,
-          mockTralbumDetails.title,
-          mockTralbumDetails.is_purchasable,
-          mockTralbumDetails.type
-        );
-        expect(
-          player.createOneClickBuyButton.getCall(1)
-        ).to.have.been.calledWithExactly(
           mockTralbumDetails.tracks[0].price,
           mockTralbumDetails.tracks[0].currency,
           mockTralbumDetails.tracks[0].track_id,
@@ -187,7 +175,7 @@ describe("Player", () => {
           "t"
         );
         expect(
-          player.createOneClickBuyButton.getCall(2)
+          player.createOneClickBuyButton.getCall(1)
         ).to.have.been.calledWithExactly(
           mockTralbumDetails.tracks[1].price,
           mockTralbumDetails.tracks[1].currency,
@@ -195,6 +183,16 @@ describe("Player", () => {
           mockTralbumDetails.tracks[1].title,
           mockTralbumDetails.tracks[1].is_purchasable,
           "t"
+        );
+        expect(
+          player.createOneClickBuyButton.getCall(2)
+        ).to.have.been.calledWithExactly(
+          mockTralbumDetails.price,
+          mockTralbumDetails.currency,
+          mockTralbumDetails.album_id,
+          mockTralbumDetails.title,
+          mockTralbumDetails.is_purchasable,
+          mockTralbumDetails.type
         );
       });
 
@@ -252,6 +250,39 @@ describe("Player", () => {
         await player.init();
 
         expect(player.createOneClickBuyButton).to.be.calledOnce;
+      });
+
+      it("should not setup 1-click if 'is_purchased' or 'part_of_purchased_album'", async () => {
+        {
+          player.extractFanTralbumData = sinon.stub().returns({
+            is_purchased: true,
+            part_of_purchased_album: false
+          });
+
+          await player.init();
+
+          expect(player.getTralbumDetails).to.be.not.called;
+        }
+        {
+          player.extractFanTralbumData = sinon.stub().returns({
+            is_purchased: false,
+            part_of_purchased_album: true
+          });
+
+          await player.init();
+
+          expect(player.getTralbumDetails).to.be.not.called;
+        }
+        {
+          player.extractFanTralbumData = sinon.stub().returns({
+            is_purchased: true,
+            part_of_purchased_album: true
+          });
+
+          await player.init();
+
+          expect(player.getTralbumDetails).to.be.not.called;
+        }
       });
     });
 

@@ -157,18 +157,25 @@ describe("Cart", () => {
 
       it("when no json items avaialable -- it does not call addAlbumToCart and does not add to the #item_list", async () => {
         cart.addAlbumToCart.resolves({ ok: true });
+        cart.loadJsonFile.resolves({ tracks_export: [] });
+
+        await cartButtonCallback();
+
+        expect(cart.loadJsonFile).to.be.calledOnce;
+        expect(cart.addAlbumToCart).to.be.not.called;
+        expect(cart.createShoppingCartItem).to.be.not.called;
+        expect(cart.reloadWindow).to.not.be.called;
+        expect(document.querySelector("#item_list").children).to.have.length(0);
       });
 
       it("should throw error if unsuccful json load", async () => {
-        cart.loadJsonFile.rejects(new Error("Something went wrong"));
+        cart.loadJsonFile.rejects(new Error("some_error"));
 
         try {
           await cartButtonCallback();
         } catch (error) {
           expect(error).to.be.an("error");
-          expect(error.message).to.equal(
-            "Error loading JSON: Something went wrong"
-          );
+          expect(error.message).to.equal("Error loading JSON: some_error");
         }
       });
 

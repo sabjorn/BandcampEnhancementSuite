@@ -52,9 +52,12 @@ export default class Cart {
             })
           );
 
-          await Promise.all(promises);
-
-          this.reloadWindow();
+          await Promise.all(promises).then(results => {
+            if (!results || results.length < 1) {
+              return;
+            }
+            this.reloadWindow();
+          });
         } catch (error) {
           this.log.error("Error loading JSON:", error);
         }

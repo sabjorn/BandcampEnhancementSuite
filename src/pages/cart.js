@@ -19,6 +19,7 @@ export default class Cart {
     this.addAlbumToCart = addAlbumToCart;
     this.createShoppingCartItem = createShoppingCartItem;
     this.downloadFile = downloadFile;
+    this.reloadWindow = () => location.reload();
   }
 
   init() {
@@ -53,7 +54,7 @@ export default class Cart {
 
           await Promise.all(promises);
 
-          location.reload();
+          this.reloadWindow();
         } catch (error) {
           this.log.error("Error loading JSON:", error);
         }

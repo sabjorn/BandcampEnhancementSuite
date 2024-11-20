@@ -325,5 +325,44 @@ describe("Cart", () => {
         expect(cart.reloadWindow).to.be.calledOnce;
       });
     });
+
+    describe("item list mutation", () => {
+      beforeEach(() => {
+        createDomNodes(
+          `<script type="text/javascript" data-cart="
+            {
+                &quot;items&quot;:[{
+				    &quot;item_title&quot;:&quot;single item&quot;
+                }]
+            }"></script>
+            <div id="item_list">
+                <li class="item">item1</li>
+            </div> `
+        );
+      });
+
+      it("sets display of refresh and export buttons when number of items mateches", async () => {
+        await cart.init();
+        const refreshButton = document.querySelector("#cart-refresh-button");
+        const exportButton = document.querySelector("#export-cart-button");
+
+        const item = document.createElement("li");
+        item.className = "item"; // Add the 'item' class
+        document.querySelector("#item_list").append(item);
+
+        // wait for Mutation observer to resolve
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(refreshButton.style.display).to.be.eq("block");
+        expect(exportButton.style.display).to.be.eq("none");
+
+        item.remove();
+
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(refreshButton.style.display).to.be.eq("none");
+        expect(exportButton.style.display).to.be.eq("block");
+      });
+    });
   });
 });

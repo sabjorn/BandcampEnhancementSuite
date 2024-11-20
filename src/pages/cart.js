@@ -118,22 +118,20 @@ export default class Cart {
     document.querySelector("#sidecartReveal").append(cartRefreshButton);
 
     const observer = new MutationObserver(() => {
-      const itemListCount = document.querySelectorAll("#item_list .item")
-        .length;
+      const item_list = document.querySelectorAll("#item_list .item");
       const cartDataElement = document.querySelector("[data-cart]");
 
       if (!cartDataElement) {
         return;
       }
-      const actual_cart_length = JSON.parse(
-        cartDataElement.getAttribute("data-cart")
-      ).items.length;
+      const actual_cart = JSON.parse(cartDataElement.getAttribute("data-cart"))
+        .items;
 
       cartRefreshButton.style.display =
-        itemListCount === actual_cart_length.length ? "none" : "block";
+        item_list.length === actual_cart.length ? "none" : "block";
 
       exportCartButton.style.display =
-        itemListCount === actual_cart_length.length ? "block" : "none";
+        item_list.length === actual_cart.length ? "block" : "none";
     });
 
     const itemList = document.getElementById("item_list");

@@ -143,7 +143,8 @@ div .bpm {
     display: inline;
 }
 
-/*one clickc buy*/
+
+/*one click buy*/
 .currency-input-wrapper {
     position: relative;
     display: inline;
@@ -188,15 +189,13 @@ input.currency-input::-webkit-outer-spin-button {
 }
 
 .one-click-button {
-    width: 50px;
     display: flex;
+    padding: 3px;
     align-items: center;
     justify-content: center;
     border-radius: 1px;
-    padding: 0 0 4px;
     margin-right: 0;
     border: none;
-    font-size: 20px;
     cursor: pointer;
     line-height: 50%;
 }
@@ -210,6 +209,16 @@ input.currency-input::-webkit-outer-spin-button {
 .one-click-button:active {
     background-color: #004085;
     color: #fff;
+}
+
+.one-click-button .icon-plus {
+    height: 10px;
+    width: 10px;
+    fill: #0687f5;
+}
+
+.one-click-button:is(:active,:hover) .icon-plus {
+    fill: #fff;
 }
 
 .one-click-button-container {
@@ -245,7 +254,7 @@ input.currency-input::-webkit-outer-spin-button {
 }
 
 .tralbumCommands .buyItem.digital .one-click-button-container {
-    width: 102px; /* a bit cheeky but hardcoded to match buttons in table above */
+    width: 100px;
     grid-column: 1;
     grid-row-start: 1;
     grid-row-end: span 2;

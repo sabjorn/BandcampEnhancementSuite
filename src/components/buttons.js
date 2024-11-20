@@ -40,7 +40,8 @@ export function createInputButtonPair(options = {}) {
     inputPlaceholder = 0.0,
     inputClass = "currency-input",
     inputWrapperClass = "currency-input-wrapper",
-    buttonText = "+",
+    buttonText = "",
+    buttonChildElement,
     buttonClass = "one-click-button",
     onButtonClick = () => {}
   } = options;
@@ -55,7 +56,11 @@ export function createInputButtonPair(options = {}) {
 
   const button = document.createElement("button");
   button.className = buttonClass;
-  button.textContent = buttonText;
+  if (buttonChildElement) {
+    button.append(buttonChildElement);
+  } else {
+    button.textContent = buttonText;
+  }
   button.onclick = () => {
     if (typeof onButtonClick === "function") {
       const value = input.value || input.placeholder;

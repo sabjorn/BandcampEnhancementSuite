@@ -35,7 +35,7 @@ class CustomConsole extends Transport {
     // styles a console log statement accordingly to the log level
     // log level colors are taken from levelcolors enum
     // eslint-disable-next-line no-console
-    console.log(
+    console[info.level === "error" ? "error" : "log"](
       `%c[%cBES ${info.level.toUpperCase()}%c]:`,
       this.defaultColor,
       `color: ${this.levelColors[info.level.toUpperCase()]};`,

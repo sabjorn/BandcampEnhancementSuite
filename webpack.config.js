@@ -9,7 +9,7 @@ module.exports = (env, argv) => {
     module: {
       rules: [
         {
-          test: /\.html$/i,
+          test: /\.(html|svg)$/i,
           use: "raw-loader"
         }
       ]

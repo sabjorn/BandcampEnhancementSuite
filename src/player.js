@@ -8,6 +8,7 @@ import {
 } from "./utilities.js";
 import { createInputButtonPair } from "./components/buttons.js";
 import { createShoppingCartItem } from "./components/shoppingCart.js";
+import {createPlusSvgIcon} from "./components/svgIcons";
 
 const stepSize = 10;
 
@@ -262,6 +263,7 @@ export default class Player {
       inputPrefix: "$",
       inputSuffix: currency,
       inputPlaceholder: price,
+      buttonChildElement: createPlusSvgIcon(),
       onButtonClick: value => {
         if (value < price) {
           this.log.error("track price too low");

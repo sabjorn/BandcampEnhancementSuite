@@ -16,7 +16,12 @@ describe("Cart", () => {
     sandbox = sinon.createSandbox();
     cart = new Cart();
 
-    sandbox.stub(cart, "log");
+    cart.log = {
+      info: sinon.stub(),
+      error: sinon.stub(),
+      warn: sinon.stub(),
+      debug: sinon.stub()
+    };
 
     cart.createButton = sinon
       .stub()
@@ -49,7 +54,7 @@ describe("Cart", () => {
     sandbox.restore();
   });
 
-  describe.only("init()", () => {
+  describe("init()", () => {
     it("adds all buttons in correct order and with correct properties", () => {
       cart.init();
 

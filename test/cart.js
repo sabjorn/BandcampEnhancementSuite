@@ -329,11 +329,8 @@ describe("Cart", () => {
     describe("item list mutation", () => {
       beforeEach(() => {
         createDomNodes(
-          `<script type="text/javascript" data-cart="
-            {
-                &quot;items&quot;:[{
-				    &quot;item_title&quot;:&quot;single item&quot;
-                }]
+          `<script type="text/javascript" data-cart="{
+                &quot;items&quot;:[{&quot;item_title&quot;:&quot;single item&quot;}]
             }"></script>
             <div id="item_list">
                 <li class="item">item1</li>

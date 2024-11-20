@@ -250,20 +250,20 @@ describe("Cart", () => {
                     &quot;item_type&quot;:&quot;${item1.item_type}&quot;,
                     &quot;item_id&quot;:${item1.item_id},
                     &quot;unit_price&quot;:${item1.unit_price},
-					&quot;currency&quot;:&quot;${item1.currency}&quot;,
-					&quot;cart_id&quot;:${cart_id},
-					&quot;item_title&quot;:&quot;${item1.item_title}&quot;,
-					&quot;band_name&quot;:&quot;${item1.band_name}&quot;,
-					&quot;url&quot;:&quot;${item1.url}&quot;
+                    &quot;currency&quot;:&quot;${item1.currency}&quot;,
+                    &quot;cart_id&quot;:${cart_id},
+                    &quot;item_title&quot;:&quot;${item1.item_title}&quot;,
+                    &quot;band_name&quot;:&quot;${item1.band_name}&quot;,
+                    &quot;url&quot;:&quot;${item1.url}&quot;
                 },{
                     &quot;item_type&quot;:&quot;${item2.item_type}&quot;,
                     &quot;item_id&quot;:${item2.item_id},
                     &quot;unit_price&quot;:${item2.unit_price},
-					&quot;currency&quot;:&quot;${item2.currency}&quot;,
-					&quot;cart_id&quot;:${cart_id},
-					&quot;item_title&quot;:&quot;${item2.item_title}&quot;,
-					&quot;band_name&quot;:&quot;${item2.band_name}&quot;,
-					&quot;url&quot;:&quot;${item2.url}&quot;
+                    &quot;currency&quot;:&quot;${item2.currency}&quot;,
+                    &quot;cart_id&quot;:${cart_id},
+                    &quot;item_title&quot;:&quot;${item2.item_title}&quot;,
+                    &quot;band_name&quot;:&quot;${item2.band_name}&quot;,
+                    &quot;url&quot;:&quot;${item2.url}&quot;
                 }]}
             "></script>`
         );

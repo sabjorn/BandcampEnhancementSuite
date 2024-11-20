@@ -37,7 +37,6 @@ describe("Player", () => {
     const sidecarReveal = {
       append: sinon.spy()
     };
-    const createShoppingCartResetButtonReturnValue = "test";
     const bandFollowInfoFake = {
       tralbum_id: 123,
       tralbum_type: "p"
@@ -91,9 +90,6 @@ describe("Player", () => {
         .returns(
           Object.assign(document.createElement("div"), { id: "unique-id-2" })
         );
-      player.createShoppingCartResetButton = sinon
-        .stub()
-        .returns(createShoppingCartResetButtonReturnValue);
       player.getTralbumDetails = sinon.stub().resolves(mockResponse);
 
       createDomNodes(`
@@ -155,15 +151,6 @@ describe("Player", () => {
       expect(Player.movePlaylist).to.have.been.called;
     });
 
-    it("adds cartRefreshButton to sidecarReveal element", () => {
-      player.init();
-
-      expect(player.createShoppingCartResetButton).to.have.been.called;
-      expect(sidecarReveal.append).to.have.been.calledWith(
-        createShoppingCartResetButtonReturnValue
-      );
-    });
-
     describe("add one click add to cart buttons", () => {
       it("should be called for each track and album when getTralbumDetails succeeds", async () => {
         await player.init();
@@ -219,6 +206,46 @@ describe("Player", () => {
           expect(row.querySelectorAll(".download-col")).to.have.length(1);
           expect(row.querySelectorAll(`#unique-id-${i + 1}`)).to.have.length(1);
         });
+      });
+
+      it("should not fail if more DOM elements than tralbumDetail tracks", async () => {
+        const mockTralbumDetails = {
+          price: "5.00",
+          currency: "USD",
+          album_id: "987",
+          title: "Test Album",
+          is_purchasable: true,
+          type: "a",
+          tracks: [
+            // only one track but 2 DOM elements
+            {
+              price: "1.00",
+              currency: "USD",
+              track_id: "123",
+              title: "Test Track",
+              is_purchasable: true
+            }
+          ]
+        };
+        const mockResponse = {
+          ok: true,
+          json: sinon.stub().resolves(mockTralbumDetails)
+        };
+        player.getTralbumDetails = sinon.stub().resolves(mockResponse);
+
+        await player.init();
+
+        expect(player.createOneClickBuyButton).to.be.calledTwice;
+      });
+
+      it("should only add album if no track_row_view in DOM", async () => {
+        document
+          .querySelectorAll("tr.track_row_view")
+          .forEach(item => item.remove());
+
+        await player.init();
+
+        expect(player.createOneClickBuyButton).to.be.calledOnce;
       });
     });
 

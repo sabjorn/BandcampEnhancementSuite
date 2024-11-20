@@ -105,3 +105,64 @@ export function getTralbumDetails(item_id, item_type = "a") {
 
   return fetch(`/api/mobile/25/tralbum_details`, requestOptions);
 }
+
+export function downloadFile(filename, text) {
+  var element = document.createElement("a");
+
+  element.setAttribute(
+    "href",
+    "data:text/plain;charset=utf-8," + encodeURIComponent(text)
+  );
+  element.setAttribute("download", filename);
+
+  element.style.display = "none";
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
+
+export function dateString() {
+  const currentdate = new Date();
+  const ye = new Intl.DateTimeFormat("en", { year: "2-digit" }).format(
+    currentdate
+  );
+  const mo = new Intl.DateTimeFormat("en", { month: "2-digit" }).format(
+    currentdate
+  );
+  const da = new Intl.DateTimeFormat("en", { day: "2-digit" }).format(
+    currentdate
+  );
+
+  return `${ye}-${mo}-${da}`;
+}
+
+export function loadJsonFile() {
+  return new Promise((resolve, reject) => {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".json";
+
+    fileInput.onchange = event => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+
+        reader.onload = e => {
+          try {
+            const jsonObject = JSON.parse(e.target.result);
+            resolve(jsonObject);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        reader.onerror = error => reject(error);
+        reader.readAsText(file);
+      }
+    };
+
+    fileInput.click();
+  });
+}

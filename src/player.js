@@ -5,11 +5,8 @@ import {
   getTralbumDetails,
   addAlbumToCart
 } from "./utilities.js";
-import { createInputButtonPair } from "./components/inputButtonPair.js";
-import {
-  createShoppingCartItem,
-  createShoppingCartResetButton
-} from "./components/shoppingCart.js";
+import { createInputButtonPair } from "./components/buttons.js";
+import { createShoppingCartItem } from "./components/shoppingCart.js";
 import emptyPlaylistTable from "../html/empty_playlist_table.html";
 
 const stepSize = 10;
@@ -26,7 +23,6 @@ export default class Player {
     this.addAlbumToCart = addAlbumToCart;
     this.createInputButtonPair = createInputButtonPair;
     this.createShoppingCartItem = createShoppingCartItem;
-    this.createShoppingCartResetButton = createShoppingCartResetButton;
     this.extractBandFollowInfo = extractBandFollowInfo;
     this.getTralbumDetails = getTralbumDetails.bind(this);
     this.createInputButtonPair = createInputButtonPair;
@@ -43,13 +39,6 @@ export default class Player {
     progressBar.addEventListener("click", mousedownCallback);
 
     Player.movePlaylist();
-
-    const cartRefreshButton = this.createShoppingCartResetButton({
-      className: "buttonLink",
-      innerText: "⟳",
-      buttonClicked: () => location.reload()
-    });
-    document.querySelector("#sidecartReveal").append(cartRefreshButton);
 
     this.updatePlayerControlInterface();
 
@@ -92,6 +81,8 @@ export default class Player {
         downloadCol.append(oneClick);
 
         document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
+          if (tralbumDetails.tracks[i] === undefined) return;
+
           const {
             price,
             currency,

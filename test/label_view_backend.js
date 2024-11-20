@@ -19,7 +19,12 @@ describe("LabelViewBackend", () => {
     sandbox = sinon.createSandbox();
     lvb = new LabelViewBackend();
 
-    sandbox.stub(lvb, "log");
+    lvb.log = {
+      info: sinon.stub(),
+      error: sinon.stub(),
+      warn: sinon.stub(),
+      debug: sinon.stub()
+    };
   });
 
   afterEach(() => {

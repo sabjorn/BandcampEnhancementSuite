@@ -16,10 +16,12 @@ describe("Player", () => {
     sandbox = sinon.createSandbox();
     player = new Player();
 
-    sandbox.stub(player, "log").value({
-      error: sandbox.stub(),
-      info: sandbox.stub()
-    });
+    player.log = {
+      info: sinon.stub(),
+      error: sinon.stub(),
+      warn: sinon.stub(),
+      debug: sinon.stub()
+    };
   });
 
   afterEach(() => {

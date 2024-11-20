@@ -20,7 +20,12 @@ describe("ConfigBackend", () => {
 
     sinon.stub(cb.dbUtils, "getDB").resolves(dbStub);
     cb.defaultConfig = fakeDefaultConfig;
-    sandbox.stub(cb, "log");
+    cb.log = {
+      info: sinon.stub(),
+      error: sinon.stub(),
+      warn: sinon.stub(),
+      debug: sinon.stub()
+    };
   });
 
   afterEach(() => {

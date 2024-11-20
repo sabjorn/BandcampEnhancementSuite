@@ -25,7 +25,12 @@ describe("Checkout", () => {
 
     c = new Checkout(mockPort);
 
-    sandbox.stub(c, "log");
+    c.log = {
+      info: sinon.stub(),
+      error: sinon.stub(),
+      warn: sinon.stub(),
+      debug: sinon.stub()
+    };
   });
 
   afterEach(() => {

@@ -20,7 +20,12 @@ describe("Class", () => {
     c = new Class();
 
     // Prevent Logger output during tests
-    sandbox.stub(c, "log");
+    c.log = {
+      info: sinon.stub(),
+      error: sinon.stub(),
+      warn: sinon.stub(),
+      debug: sinon.stub()
+    };
   });
 
   afterEach(() => {
@@ -49,7 +54,7 @@ describe("Class", () => {
             <button class="historybox"></button>
           </div>
         `);
-        
+
         c.init();
         expect(false).to.be.true;
       });

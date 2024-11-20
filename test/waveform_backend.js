@@ -20,7 +20,12 @@ describe("WaveformBackend", () => {
     sandbox = sinon.createSandbox();
     wb = new WaveformBackend();
 
-    sandbox.stub(wb, "log");
+    wb.log = {
+      info: sinon.stub(),
+      error: sinon.stub(),
+      warn: sinon.stub(),
+      debug: sinon.stub()
+    };
   });
 
   afterEach(() => {

@@ -31,8 +31,12 @@ describe("Label View", () => {
     global.chrome = mockChrome;
     lv = new LabelView();
 
-    // Prevent Logger output during tests
-    sandbox.stub(lv, "log");
+    lv.log = {
+      info: sinon.stub(),
+      error: sinon.stub(),
+      warn: sinon.stub(),
+      debug: sinon.stub()
+    };
   });
 
   afterEach(() => {

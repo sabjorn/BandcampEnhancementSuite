@@ -16,8 +16,12 @@ describe("Download Helper", () => {
 
     dh = new DownloadHelper();
 
-    // Prevent Logger output during tests
-    sandbox.stub(dh, "log");
+    dh.log = {
+      info: sinon.stub(),
+      error: sinon.stub(),
+      warn: sinon.stub(),
+      debug: sinon.stub()
+    };
   });
 
   afterEach(() => {

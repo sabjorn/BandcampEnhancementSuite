@@ -39,7 +39,12 @@ describe("AudioFeatures", () => {
 
     wf = new AudioFeatures(mockPort);
 
-    sandbox.stub(wf, "log");
+    wf.log = {
+      info: sinon.stub(),
+      error: sinon.stub(),
+      warn: sinon.stub(),
+      debug: sinon.stub()
+    };
 
     createDomNodes(`
       <audio></audio>

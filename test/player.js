@@ -91,6 +91,10 @@ describe("Player", () => {
           Object.assign(document.createElement("div"), { id: "unique-id-2" })
         );
       player.getTralbumDetails = sinon.stub().resolves(mockResponse);
+      player.extractFanTralbumData = sinon.stub().returns({
+        is_purchased: false,
+        part_of_purchased_album: false
+      });
 
       createDomNodes(`
         <table class="track_list track_table" id="track_table">
@@ -163,16 +167,6 @@ describe("Player", () => {
         expect(
           player.createOneClickBuyButton.getCall(0)
         ).to.have.been.calledWithExactly(
-          mockTralbumDetails.price,
-          mockTralbumDetails.currency,
-          mockTralbumDetails.album_id,
-          mockTralbumDetails.title,
-          mockTralbumDetails.is_purchasable,
-          mockTralbumDetails.type
-        );
-        expect(
-          player.createOneClickBuyButton.getCall(1)
-        ).to.have.been.calledWithExactly(
           mockTralbumDetails.tracks[0].price,
           mockTralbumDetails.tracks[0].currency,
           mockTralbumDetails.tracks[0].track_id,
@@ -181,7 +175,7 @@ describe("Player", () => {
           "t"
         );
         expect(
-          player.createOneClickBuyButton.getCall(2)
+          player.createOneClickBuyButton.getCall(1)
         ).to.have.been.calledWithExactly(
           mockTralbumDetails.tracks[1].price,
           mockTralbumDetails.tracks[1].currency,
@@ -190,22 +184,33 @@ describe("Player", () => {
           mockTralbumDetails.tracks[1].is_purchasable,
           "t"
         );
+        expect(
+          player.createOneClickBuyButton.getCall(2)
+        ).to.have.been.calledWithExactly(
+          mockTralbumDetails.price,
+          mockTralbumDetails.currency,
+          mockTralbumDetails.album_id,
+          mockTralbumDetails.title,
+          mockTralbumDetails.is_purchasable,
+          mockTralbumDetails.type
+        );
       });
 
       it("should modify DOM correctly", async () => {
         await player.init();
 
-        const album = document.querySelector("ul.tralbumCommands");
-        expect(album.querySelectorAll("#unique-id-0")).to.have.length(1);
-
         const rows = document.querySelectorAll("tr.track_row_view");
         expect(rows).to.have.length(2);
+        expect(rows[0].querySelector(".info-col")).to.be.null;
+        expect(rows[0].querySelectorAll(".download-col")).to.have.length(1);
+        expect(rows[0].querySelectorAll(`#unique-id-0`)).to.have.length(0); // is purchasable == false
 
-        rows.forEach((row, i) => {
-          expect(row.querySelector(".info-col")).to.be.null;
-          expect(row.querySelectorAll(".download-col")).to.have.length(1);
-          expect(row.querySelectorAll(`#unique-id-${i + 1}`)).to.have.length(1);
-        });
+        expect(rows[1].querySelector(".info-col")).to.be.null;
+        expect(rows[1].querySelectorAll(".download-col")).to.have.length(1);
+        expect(rows[1].querySelectorAll(`#unique-id-1`)).to.have.length(1);
+
+        const album = document.querySelector("ul.tralbumCommands");
+        expect(album.querySelectorAll("#unique-id-2")).to.have.length(1);
       });
 
       it("should not fail if more DOM elements than tralbumDetail tracks", async () => {
@@ -246,6 +251,39 @@ describe("Player", () => {
         await player.init();
 
         expect(player.createOneClickBuyButton).to.be.calledOnce;
+      });
+
+      it("should not setup 1-click if 'is_purchased' or 'part_of_purchased_album'", async () => {
+        {
+          player.extractFanTralbumData = sinon.stub().returns({
+            is_purchased: true,
+            part_of_purchased_album: false
+          });
+
+          await player.init();
+
+          expect(player.getTralbumDetails).to.be.not.called;
+        }
+        {
+          player.extractFanTralbumData = sinon.stub().returns({
+            is_purchased: false,
+            part_of_purchased_album: true
+          });
+
+          await player.init();
+
+          expect(player.getTralbumDetails).to.be.not.called;
+        }
+        {
+          player.extractFanTralbumData = sinon.stub().returns({
+            is_purchased: true,
+            part_of_purchased_album: true
+          });
+
+          await player.init();
+
+          expect(player.getTralbumDetails).to.be.not.called;
+        }
       });
     });
 

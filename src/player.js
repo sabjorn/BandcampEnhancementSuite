@@ -2,6 +2,7 @@ import Logger from "./logger";
 import {
   mousedownCallback,
   extractBandFollowInfo,
+  extractFanTralbumData,
   getTralbumDetails,
   addAlbumToCart
 } from "./utilities.js";
@@ -24,6 +25,7 @@ export default class Player {
     this.createInputButtonPair = createInputButtonPair;
     this.createShoppingCartItem = createShoppingCartItem;
     this.extractBandFollowInfo = extractBandFollowInfo;
+    this.extractFanTralbumData = extractFanTralbumData;
     this.getTralbumDetails = getTralbumDetails.bind(this);
     this.createInputButtonPair = createInputButtonPair;
     this.createShoppingCartItem = createShoppingCartItem;
@@ -42,6 +44,12 @@ export default class Player {
 
     this.updatePlayerControlInterface();
 
+    const {
+      is_purchased,
+      part_of_purchased_album
+    } = this.extractFanTralbumData();
+    if (is_purchased | part_of_purchased_album) return;
+
     const bandFollowInfo = this.extractBandFollowInfo();
     const tralbumId = bandFollowInfo.tralbum_id;
     const tralbumType = bandFollowInfo.tralbum_type;
@@ -53,33 +61,6 @@ export default class Player {
         return response.json();
       })
       .then(tralbumDetails => {
-        const {
-          price,
-          currency,
-          album_id: tralbumId,
-          title: itemTitle,
-          is_purchasable,
-          type
-        } = tralbumDetails;
-        const oneClick = this.createOneClickBuyButton(
-          price,
-          currency,
-          tralbumId,
-          itemTitle,
-          is_purchasable,
-          type
-        );
-
-        const table = document
-          .createRange()
-          .createContextualFragment(emptyPlaylistTable)
-          .querySelector("table");
-
-        document.querySelector("ul.tralbumCommands").prepend(table);
-
-        const downloadCol = table.querySelector(".download-col");
-        downloadCol.append(oneClick);
-
         document.querySelectorAll("tr.track_row_view").forEach((row, i) => {
           if (tralbumDetails.tracks[i] === undefined) return;
 
@@ -103,10 +84,41 @@ export default class Player {
             is_purchasable,
             type
           );
+
+          if (!is_purchasable) return;
+
           const downloadCol = row.querySelector(".download-col");
           downloadCol.innerHTML = "";
           downloadCol.append(oneClick);
         });
+
+        const {
+          price,
+          currency,
+          album_id: tralbumId,
+          title: itemTitle,
+          is_purchasable,
+          type
+        } = tralbumDetails;
+        const oneClick = this.createOneClickBuyButton(
+          price,
+          currency,
+          tralbumId,
+          itemTitle,
+          is_purchasable,
+          type
+        );
+        if (!is_purchasable) return;
+
+        const table = document
+          .createRange()
+          .createContextualFragment(emptyPlaylistTable)
+          .querySelector("table");
+
+        document.querySelector("ul.tralbumCommands").prepend(table);
+
+        const downloadCol = table.querySelector(".download-col");
+        downloadCol.append(oneClick);
       })
       .catch(error => {
         this.log.error(error);

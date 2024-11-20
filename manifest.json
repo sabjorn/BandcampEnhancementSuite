@@ -19,7 +19,8 @@
   "host_permissions": [
     "http://*.bandcamp.com/*",
     "https://*.bandcamp.com/*",
-    "https://t4.bcbits.com/stream/*"
+    "https://t4.bcbits.com/stream/*",
+    "https://*.buymusic.club/*"
   ],
   "minimum_chrome_version": "93",
   "background": {
@@ -29,7 +30,8 @@
     {
       "matches": [
         "http://*.bandcamp.com/*",
-        "https://*.bandcamp.com/*"
+        "https://*.bandcamp.com/*",
+        "https://*.buymusic.club/*"
       ],
       "js": [
         "dist/main.js"

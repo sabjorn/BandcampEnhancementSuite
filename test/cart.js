@@ -288,11 +288,11 @@ describe("Cart", () => {
                     &quot;item_type&quot;:&quot;${incorrect_item_type}&quot;,
                     &quot;item_id&quot;:123,
                     &quot;unit_price&quot;:1.3,
-					&quot;currency&quot;:&quot;CAD&quot;,
-					&quot;cart_id&quot;:999,
-					&quot;item_title&quot;:&quot;item_title&quot;,
-					&quot;band_name&quot;:&quot;band_name&quot;,
-					&quot;url&quot;:&quot;url&quot;
+                    &quot;currency&quot;:&quot;CAD&quot;,
+                    &quot;cart_id&quot;:999,
+                    &quot;item_title&quot;:&quot;item_title&quot;,
+                    &quot;band_name&quot;:&quot;band_name&quot;,
+                    &quot;url&quot;:&quot;url&quot;
                 }]}
             "></script>`
         );

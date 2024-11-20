@@ -91,6 +91,12 @@ describe("Player", () => {
           Object.assign(document.createElement("div"), { id: "unique-id-2" })
         );
       player.getTralbumDetails = sinon.stub().resolves(mockResponse);
+      player.extractFanTralbumData = sinon.stub().resolves({
+        fan_tralbum_data: {
+          is_purchased: true,
+          part_of_purchased_album: false
+        }
+      });
 
       createDomNodes(`
         <table class="track_list track_table" id="track_table">

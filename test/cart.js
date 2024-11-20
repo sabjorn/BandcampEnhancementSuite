@@ -12,10 +12,6 @@ describe("Cart", () => {
   let cart;
   let sandbox;
 
-  const createButtonReturnValue = Object.assign(document.createElement("div"), {
-    id: "button"
-  });
-
   beforeEach(() => {
     sandbox = sinon.createSandbox();
     cart = new Cart();
@@ -53,7 +49,7 @@ describe("Cart", () => {
     sandbox.restore();
   });
 
-  describe("init()", () => {
+  describe.only("init()", () => {
     it("adds all buttons in correct order and with correct properties", () => {
       cart.init();
 
@@ -70,6 +66,126 @@ describe("Cart", () => {
       expect(divs[3].style.display).to.be.eq("none");
     });
 
+    describe("import cart button callback", () => {
+      let cartButtonCallback;
+      const sampleData = {
+        tracks_export: [
+          {
+            item_id: 123,
+            unit_price: 1.23,
+            item_type: "a",
+            item_title: "Test Album",
+            currency: "USD"
+          },
+          {
+            item_id: 321,
+            unit_price: 3.21,
+            item_type: "t",
+            item_title: "Test Track",
+            currency: "CAD"
+          }
+        ]
+      };
+      beforeEach(() => {
+        cart.init();
+
+        cart.loadJsonFile = sinon.stub();
+        cart.createShoppingCartItem = sinon.stub();
+        cart.addAlbumToCart = sinon.stub();
+        cart.reloadWindow = sinon.stub();
+
+        createDomNodes(`<div id=item_list></div>`);
+
+        const importButtonCallArgs = cart.createButton.getCall(0).args[0];
+        expect(importButtonCallArgs.className).to.be.eq("buttonLink");
+        expect(importButtonCallArgs.innerText).to.be.eq("import");
+
+        cartButtonCallback = importButtonCallArgs.buttonClicked;
+      });
+
+      it("when json items avaialable -- it calls addAlbumToCart and adds to the #item_list", async () => {
+        cart.loadJsonFile.resolves(sampleData);
+        cart.addAlbumToCart.resolves({ ok: true });
+        cart.createShoppingCartItem
+          .onCall(0)
+          .returns(
+            Object.assign(document.createElement("div"), {
+              id: "album"
+            })
+          )
+          .onCall(1)
+          .returns(
+            Object.assign(document.createElement("div"), {
+              id: "track"
+            })
+          );
+
+        await cartButtonCallback();
+
+        expect(cart.loadJsonFile).to.be.calledOnce;
+        expect(cart.addAlbumToCart).to.be.calledTwice;
+        expect(cart.addAlbumToCart.getCall(0)).to.have.been.calledWith(
+          123,
+          1.23,
+          "a"
+        );
+        expect(cart.addAlbumToCart.getCall(1)).to.have.been.calledWith(
+          321,
+          3.21,
+          "t"
+        );
+
+        expect(cart.createShoppingCartItem).to.be.calledTwice;
+        expect(cart.createShoppingCartItem.getCall(0)).to.have.been.calledWith({
+          itemId: 123,
+          itemName: "Test Album",
+          itemPrice: 1.23,
+          itemCurrency: "USD"
+        });
+        expect(cart.createShoppingCartItem.getCall(1)).to.have.been.calledWith({
+          itemId: 321,
+          itemName: "Test Track",
+          itemPrice: 3.21,
+          itemCurrency: "CAD"
+        });
+        expect(cart.reloadWindow).to.be.calledOnce;
+        const item_list_children = document.querySelector("#item_list")
+          .children;
+        expect(item_list_children[0].id).to.be.equal("album");
+        expect(item_list_children[1].id).to.be.equal("track");
+      });
+
+      it("when no json items avaialable -- it does not call addAlbumToCart and does not add to the #item_list", async () => {
+        cart.addAlbumToCart.resolves({ ok: true });
+      });
+
+      it("should throw error if unsuccful json load", async () => {
+        cart.loadJsonFile.rejects(new Error("Something went wrong"));
+
+        try {
+          await cartButtonCallback();
+        } catch (error) {
+          expect(error).to.be.an("error");
+          expect(error.message).to.equal(
+            "Error loading JSON: Something went wrong"
+          );
+        }
+      });
+
+      it("should throw error on unsuccessful response", async () => {
+        cart.addAlbumToCart.resolves({ ok: false, status: 400 });
+
+        try {
+          await cartButtonCallback();
+        } catch (error) {
+          expect(error).to.be.an("error");
+          expect(error.message).to.equal(
+            "Error loading JSON: HTTP error! status: 400"
+          );
+        }
+      });
+    });
+
     describe("export cart button callback", () => {
       let cartButtonCallback;
 
@@ -78,11 +194,11 @@ describe("Cart", () => {
 
         cart.init();
 
-        const importButtonCallArgs = cart.createButton.getCall(1).args[0];
-        expect(importButtonCallArgs.className).to.be.eq("buttonLink");
-        expect(importButtonCallArgs.innerText).to.be.eq("export");
+        const exportButtonCallArgs = cart.createButton.getCall(1).args[0];
+        expect(exportButtonCallArgs.className).to.be.eq("buttonLink");
+        expect(exportButtonCallArgs.innerText).to.be.eq("export");
 
-        cartButtonCallback = importButtonCallArgs.buttonClicked;
+        cartButtonCallback = exportButtonCallArgs.buttonClicked;
       });
 
       it("does not call downloadFile if no items in data-cart", () => {

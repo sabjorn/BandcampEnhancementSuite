@@ -199,17 +199,18 @@ describe("Player", () => {
       it("should modify DOM correctly", async () => {
         await player.init();
 
-        const album = document.querySelector("ul.tralbumCommands");
-        expect(album.querySelectorAll("#unique-id-0")).to.have.length(1);
-
         const rows = document.querySelectorAll("tr.track_row_view");
         expect(rows).to.have.length(2);
+        expect(rows[0].querySelector(".info-col")).to.be.null;
+        expect(rows[0].querySelectorAll(".download-col")).to.have.length(1);
+        expect(rows[0].querySelectorAll(`#unique-id-0`)).to.have.length(0); // is purchasable == false
 
-        rows.forEach((row, i) => {
-          expect(row.querySelector(".info-col")).to.be.null;
-          expect(row.querySelectorAll(".download-col")).to.have.length(1);
-          expect(row.querySelectorAll(`#unique-id-${i + 1}`)).to.have.length(1);
-        });
+        expect(rows[1].querySelector(".info-col")).to.be.null;
+        expect(rows[1].querySelectorAll(".download-col")).to.have.length(1);
+        expect(rows[1].querySelectorAll(`#unique-id-1`)).to.have.length(1);
+
+        const album = document.querySelector("ul.tralbumCommands");
+        expect(album.querySelectorAll("#unique-id-2")).to.have.length(1);
       });
 
       it("should not fail if more DOM elements than tralbumDetail tracks", async () => {

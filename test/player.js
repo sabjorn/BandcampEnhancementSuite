@@ -126,16 +126,13 @@ describe("Player", () => {
         .withArgs("ul.tralbumCommands .buyItem.digital h3.hd")
         .returns(
           (() => {
-            // Create the <h3> element
             const h3 = document.createElement("h3");
             h3.classList.add("hd");
 
-            // Create the parent <div> element with the "buyItem" class
             const buyItem = document.createElement("div");
             buyItem.classList.add("buyItem", "digital");
             buyItem.appendChild(h3);
 
-            // Create the grandparent <ul> element with the "tralbumCommands" class
             const ul = document.createElement("ul");
             ul.classList.add("tralbumCommands");
             ul.appendChild(buyItem);

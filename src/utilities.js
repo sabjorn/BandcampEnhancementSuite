@@ -43,29 +43,35 @@ export function extractBandFollowInfo() {
     .getAttribute("data-band-follow-info");
 
   if (!data) {
-    return null;
+    return {};
   }
 
   try {
     const bandFollowInfo = JSON.parse(data);
     return bandFollowInfo;
   } catch (error) {
-    return null;
+    return {};
   }
 }
 
 export function extractFanTralbumData() {
+  const defaultData = { is_purchased: false, part_of_purchased_album: false };
   const data = document.querySelector("[data-blob]").getAttribute("data-blob");
 
   if (!data) {
-    return null;
+    return defaultData;
   }
 
   try {
     const { fan_tralbum_data } = JSON.parse(data);
+
+    if (!fan_tralbum_data) {
+      return defaultData;
+    }
+
     return fan_tralbum_data;
   } catch (error) {
-    return null;
+    return defaultData;
   }
 }
 

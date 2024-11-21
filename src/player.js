@@ -8,7 +8,7 @@ import {
 } from "./utilities.js";
 import { createInputButtonPair } from "./components/buttons.js";
 import { createShoppingCartItem } from "./components/shoppingCart.js";
-import {createPlusSvgIcon} from "./components/svgIcons";
+import { createPlusSvgIcon } from "./components/svgIcons";
 
 const stepSize = 10;
 

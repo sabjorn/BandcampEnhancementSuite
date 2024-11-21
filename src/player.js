@@ -8,7 +8,6 @@ import {
 } from "./utilities.js";
 import { createInputButtonPair } from "./components/buttons.js";
 import { createShoppingCartItem } from "./components/shoppingCart.js";
-import emptyPlaylistTable from "../html/empty_playlist_table.html";
 
 const stepSize = 10;
 
@@ -110,15 +109,9 @@ export default class Player {
         );
         if (!is_purchasable) return;
 
-        const table = document
-          .createRange()
-          .createContextualFragment(emptyPlaylistTable)
-          .querySelector("table");
-
-        document.querySelector("ul.tralbumCommands").prepend(table);
-
-        const downloadCol = table.querySelector(".download-col");
-        downloadCol.append(oneClick);
+        document
+          .querySelector("ul.tralbumCommands .buyItem.digital h3.hd")
+          .append(oneClick);
       })
       .catch(error => {
         this.log.error(error);

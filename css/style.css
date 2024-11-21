@@ -225,3 +225,31 @@ input.currency-input::-webkit-outer-spin-button {
 .track_row_view:hover .one-click-button-container {
     opacity: 1;
 }
+
+.tralbumCommands {
+    margin-top: 1.5em !important;
+}
+
+.tralbumCommands .buyItem.digital h3.hd {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+}
+
+.tralbumCommands .buyItem.digital .download-link.buy-link {
+    grid-area: 1 / 1 / 1 / 1;
+}
+
+.tralbumCommands .buyItem.digital .digitaldescription.secondaryText {
+    grid-area: 2 / 1 / 2 / 1;
+}
+
+.tralbumCommands .buyItem.digital .one-click-button-container {
+    width: 102px; /* a bit cheeky but hardcoded to match buttons in table above */
+    grid-column: 1;
+    grid-row-start: 1;
+    grid-row-end: span 2;
+    place-self: center end;
+    font-weight: normal;
+    font-size: 13px;
+}

@@ -35,7 +35,7 @@ jobs:
     - name: package
       run: |
         PACKAGE_NAME="BandcampEnhancementSuite_${BROWSER}-$VERSION.zip"
-        zip $PACKAGE_NAME LICENSE _locales/**/* icons/* css/* dist/* manifest.json html/browser_action.html
+        zip $PACKAGE_NAME LICENSE _locales/**/* icons/* css/* dist/* svg/* manifest.json html/browser_action.html
     - name: attach packages to GitHub Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -143,7 +143,8 @@ div .bpm {
     display: inline;
 }
 
-/*one clickc buy*/
+
+/*one click buy*/
 .currency-input-wrapper {
     position: relative;
     display: inline;
@@ -188,15 +189,13 @@ input.currency-input::-webkit-outer-spin-button {
 }
 
 .one-click-button {
-    width: 50px;
     display: flex;
+    padding: 3px;
     align-items: center;
     justify-content: center;
     border-radius: 1px;
-    padding: 0 0 4px;
     margin-right: 0;
     border: none;
-    font-size: 20px;
     cursor: pointer;
     line-height: 50%;
 }
@@ -212,6 +211,16 @@ input.currency-input::-webkit-outer-spin-button {
     color: #fff;
 }
 
+.one-click-button .icon-plus {
+    height: 10px;
+    width: 10px;
+    fill: #0687f5;
+}
+
+.one-click-button:is(:active,:hover) .icon-plus {
+    fill: #fff;
+}
+
 .one-click-button-container {
     background-color: #fff;
     border: 1px solid #d9d9d9;
@@ -224,4 +233,32 @@ input.currency-input::-webkit-outer-spin-button {
 
 .track_row_view:hover .one-click-button-container {
     opacity: 1;
+}
+
+.tralbumCommands {
+    margin-top: 1.5em !important;
+}
+
+.tralbumCommands .buyItem.digital h3.hd {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+}
+
+.tralbumCommands .buyItem.digital .download-link.buy-link {
+    grid-area: 1 / 1 / 1 / 1;
+}
+
+.tralbumCommands .buyItem.digital .digitaldescription.secondaryText {
+    grid-area: 2 / 1 / 2 / 1;
+}
+
+.tralbumCommands .buyItem.digital .one-click-button-container {
+    width: 100px;
+    grid-column: 1;
+    grid-row-start: 1;
+    grid-row-end: span 2;
+    place-self: center end;
+    font-weight: normal;
+    font-size: 13px;
 }

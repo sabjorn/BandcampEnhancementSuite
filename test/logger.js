@@ -1,10 +1,9 @@
 import chai from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
-import { assert, expect } from "chai";
+import { expect } from "chai";
 chai.use(sinonChai);
 
-import * as winston from "winston";
 import Logger from "../src/logger.js";
 
 describe("Logger", () => {
@@ -39,11 +38,15 @@ describe("Logger", () => {
       beforeEach(() => {
         // This overrides console.log locally too. If you need to
         // debug statements here, switch to console.warn.
-        consoleSpy = sinon.stub(console, "log");
+        consoleSpy = {
+          log: sinon.stub(console, "log"),
+          error: sinon.stub(console, "error")
+        };
       });
 
       afterEach(() => {
-        consoleSpy.restore();
+        consoleSpy.log.restore();
+        consoleSpy.error.restore();
       });
 
       it("should print error statements", () => {
@@ -52,7 +55,7 @@ describe("Logger", () => {
 
         log.error("test error");
 
-        const args = consoleSpy.getCall(-1).args;
+        const args = consoleSpy.error.getCall(-1).args;
         expect(args).to.include("test error");
         expect(args).to.include(`color: ${transporter.levelColors.ERROR};`);
       });
@@ -63,7 +66,7 @@ describe("Logger", () => {
 
         log.debug("test debug");
 
-        const args = consoleSpy.getCall(-1).args;
+        const args = consoleSpy.log.getCall(-1).args;
         expect(args).to.include("test debug");
         expect(args).to.include(`color: ${transporter.levelColors.DEBUG};`);
       });
@@ -74,7 +77,7 @@ describe("Logger", () => {
       beforeEach(() => {
         // This overrides console.log locally too. If you need to
         // debug statements here, switch to console.warn.
-        consoleSpy = sinon.stub(console, "log");
+        consoleSpy = sinon.stub(console, "error");
       });
 
       afterEach(() => {
@@ -94,7 +97,6 @@ describe("Logger", () => {
 
       it("should NOT print debug statements", () => {
         const log = new Logger("error");
-        const transporter = log.transports[0];
 
         log.debug("test debug");
 

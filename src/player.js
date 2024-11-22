@@ -8,7 +8,7 @@ import {
 } from "./utilities.js";
 import { createInputButtonPair } from "./components/buttons.js";
 import { createShoppingCartItem } from "./components/shoppingCart.js";
-import emptyPlaylistTable from "../html/empty_playlist_table.html";
+import { createPlusSvgIcon } from "./components/svgIcons";
 
 const stepSize = 10;
 
@@ -48,7 +48,7 @@ export default class Player {
       is_purchased,
       part_of_purchased_album
     } = this.extractFanTralbumData();
-    if (is_purchased | part_of_purchased_album) return;
+    if (is_purchased || part_of_purchased_album) return;
 
     const bandFollowInfo = this.extractBandFollowInfo();
     const tralbumId = bandFollowInfo.tralbum_id;
@@ -110,15 +110,9 @@ export default class Player {
         );
         if (!is_purchasable) return;
 
-        const table = document
-          .createRange()
-          .createContextualFragment(emptyPlaylistTable)
-          .querySelector("table");
-
-        document.querySelector("ul.tralbumCommands").prepend(table);
-
-        const downloadCol = table.querySelector(".download-col");
-        downloadCol.append(oneClick);
+        document
+          .querySelector("ul.tralbumCommands .buyItem.digital h3.hd")
+          .append(oneClick);
       })
       .catch(error => {
         this.log.error(error);
@@ -269,6 +263,7 @@ export default class Player {
       inputPrefix: "$",
       inputSuffix: currency,
       inputPlaceholder: price,
+      buttonChildElement: createPlusSvgIcon(),
       onButtonClick: value => {
         if (value < price) {
           this.log.error("track price too low");

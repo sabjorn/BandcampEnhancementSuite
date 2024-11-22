@@ -116,14 +116,30 @@ describe("Player", () => {
         <ul class="tralbumCommands"></ul>
       `);
 
+      // TODO: Steeve -- just populate the DOM with this stuff instead
       sandbox
         .stub(document, "querySelector")
         .withArgs(".progbar")
         .returns(progressbar)
         .withArgs("#sidecartReveal")
         .returns(sidecarReveal)
-        .withArgs("ul.tralbumCommands")
-        .returns(document.createElement("ul.tralbumCommands"));
+        .withArgs("ul.tralbumCommands .buyItem.digital h3.hd")
+        .returns(
+          (() => {
+            const h3 = document.createElement("h3");
+            h3.classList.add("hd");
+
+            const buyItem = document.createElement("div");
+            buyItem.classList.add("buyItem", "digital");
+            buyItem.appendChild(h3);
+
+            const ul = document.createElement("ul");
+            ul.classList.add("tralbumCommands");
+            ul.appendChild(buyItem);
+
+            return ul;
+          })()
+        );
     });
 
     afterEach(() => {
@@ -209,7 +225,9 @@ describe("Player", () => {
         expect(rows[1].querySelectorAll(".download-col")).to.have.length(1);
         expect(rows[1].querySelectorAll(`#unique-id-1`)).to.have.length(1);
 
-        const album = document.querySelector("ul.tralbumCommands");
+        const album = document.querySelector(
+          "ul.tralbumCommands .buyItem.digital h3.hd"
+        );
         expect(album.querySelectorAll("#unique-id-2")).to.have.length(1);
       });
 

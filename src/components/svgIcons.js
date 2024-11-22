@@ -1,4 +1,4 @@
-import plusSvg from "../svg/plus.svg";
+import plusSvg from "../../svg/plus.svg";
 
 export const createSvgIcon = (svgString, classes = "") => {
   const svg = new DOMParser().parseFromString(svgString, "application/xml")

@@ -48,7 +48,7 @@ export default class Player {
       is_purchased,
       part_of_purchased_album
     } = this.extractFanTralbumData();
-    if (is_purchased | part_of_purchased_album) return;
+    if (is_purchased || part_of_purchased_album) return;
 
     const bandFollowInfo = this.extractBandFollowInfo();
     const tralbumId = bandFollowInfo.tralbum_id;

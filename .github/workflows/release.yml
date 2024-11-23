@@ -24,6 +24,10 @@ jobs:
       with:
         node-version: '14.x'
     - run: npm install
+    - name: set version number in manifest
+      run: | 
+        VERSION_NUMBER=$(echo ${VERSION} | sed 's/^v//')
+        sed -i 's/"version": *"[0-9.]*"/"version": "'$VERSION_NUMBER'"/' manifest.json
     - name: build Chrome
       if: ${{ matrix.container == 'chrome' }}
       run: npm run build

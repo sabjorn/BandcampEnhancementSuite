@@ -6,7 +6,7 @@ import AudioFeatures from "./audioFeatures.js";
 import Checkout from "./checkout.js";
 import Cart from "./pages/cart";
 
-import { getTralbumDetails } from "./utilities";
+import { dateString, downloadFile } from "./utilities";
 
 const main = () => {
   const log = new Logger();
@@ -15,31 +15,57 @@ const main = () => {
   if (buyMusicClubListPage) {
     log.info("Starting BuyMusic.club BES integration");
     const { props } = JSON.parse(buyMusicClubListPage.innerHTML);
-    log.debug(JSON.stringify(props.pageProps.list.ListItems[0], null, 2));
-    props.pageProps.list.ListItems.forEach(
-      ({ externalId: tralbum_id, type }) => {
-        const tralbum_type = type === "song" ? "t" : "a";
-        // this has to be moved to worker because of CORS
-        //  getTralbumDetails(tralbum_id, tralbum_type)
-        //    .then(response => {
-        //      if (!response.ok) {
-        //        throw new Error(`HTTP error! status: ${response.status}`);
-        //      }
-        //      return response.json();
-        //    })
-        //    .then(tralbumDetails => {
-        //      const {
-        //        price,
-        //        currency,
-        //        album_id: tralbumId,
-        //        title: itemTitle,
-        //        is_purchasable,
-        //        type
-        //      } = tralbumDetails;
-        //    });
-      }
+    const promises = props.pageProps.list.ListItems.map(
+      item =>
+        new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage(
+            {
+              contentScriptQuery: "getTralbumDetails",
+              item_id: item.externalId,
+              item_type: item.type === "song" ? "t" : "a"
+            },
+            response => {
+              if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+              } else {
+                resolve(response);
+              }
+            }
+          );
+        })
     );
 
+    // Wait for all promises to resolve
+    Promise.all(promises)
+      .then(results => {
+        const date = dateString();
+        const tracks_export = results
+          .filter(item => item.type === "a" || item.item_type === "t")
+          .filter(item => item.track.is_purchasable)
+          .flatMap(item =>
+            item.tracks.map(track => ({
+              band_name: track.band_name,
+              item_id: track.track_id,
+              item_title: track.title,
+              unit_price: track.price,
+              url: item.bandcamp_url,
+              currency: track.currency,
+              item_type: item.type
+            }))
+          );
+        if (tracks_export.length < 1) return;
+
+        log.debug(JSON.stringify(tracks_export, null, 2));
+        const filename = `${date}_${cart_id}_bes_cart_export.json`;
+        const data = JSON.stringify({ date, cart_id, tracks_export }, null, 2);
+        this.downloadFile(filename, data);
+        // All results are now available in the results array
+        log.info(`All track data:, ${JSON.stringify(results, null, 2)}`);
+        // Do whatever you need with results here
+      })
+      .catch(error => {
+        log.error(`Error processing items: ${JSON.stringify(error, null, 2)}`);
+      });
     return;
   }
 

@@ -22,6 +22,9 @@
     "https://t4.bcbits.com/stream/*",
     "https://*.buymusic.club/*"
   ],
+  "permissions": [
+    "cookies"
+  ],
   "minimum_chrome_version": "93",
   "background": {
     "service_worker": "dist/background.js"

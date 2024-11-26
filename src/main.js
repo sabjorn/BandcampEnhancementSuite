@@ -9,10 +9,37 @@ import Cart from "./pages/cart";
 import { dateString, downloadFile } from "./utilities";
 import { createButton } from "./components/buttons";
 
-const main = () => {
+const main = async () => {
   const log = new Logger();
 
   const buyMusicClubListPage = document.querySelector("#__NEXT_DATA__");
+  if (buyMusicClubListPage) {
+    const { props } = JSON.parse(buyMusicClubListPage.innerHTML);
+    const item = props.pageProps.list.ListItems[0];
+    try {
+      const { cart_client_id } = await chrome.runtime.sendMessage({
+        contentScriptQuery: "getCartID"
+      });
+      log.debug(`cart_id: ${cart_client_id}`);
+
+      const { tracks } = await chrome.runtime.sendMessage({
+        contentScriptQuery: "getTralbumDetails",
+        item_id: item.externalId,
+        item_type: item.type === "song" ? "t" : "a"
+      });
+
+      const _ = await chrome.runtime.sendMessage({
+        contentScriptQuery: "addToCart",
+        item_id: tracks[0].track_id,
+        item_type: "t",
+        unit_price: tracks[0].price,
+        cart_client_id: cart_client_id
+      });
+    } catch (error) {
+      log.error("Error getting cart ID:", error);
+    }
+  }
+
   if (buyMusicClubListPage) {
     log.info("Starting BuyMusic.club BES integration");
 

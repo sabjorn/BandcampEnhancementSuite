@@ -5,9 +5,43 @@ import Player from "./player.js";
 import AudioFeatures from "./audioFeatures.js";
 import Checkout from "./checkout.js";
 import Cart from "./pages/cart";
+import { createPlusSvgIcon } from "./components/svgIcons";
 
 import { dateString, downloadFile } from "./utilities";
-import { createButton } from "./components/buttons";
+import { createButton, createInputButtonPair } from "./components/buttons";
+
+const createOneClickBuyButton = (
+  price,
+  currency,
+  tralbumId,
+  type,
+  cart_client_id
+) => {
+  const pair = createInputButtonPair({
+    inputPrefix: "$",
+    inputSuffix: currency,
+    inputPlaceholder: price,
+    buttonChildElement: createPlusSvgIcon(),
+    onButtonClick: async value => {
+      if (value < price) {
+        this.log.error("track price too low");
+        return;
+      }
+
+      await chrome.runtime.sendMessage({
+        contentScriptQuery: "addToCart",
+        item_id: tralbumId,
+        item_type: type,
+        unit_price: value,
+        cart_client_id: cart_client_id
+      });
+      // load bandcamp in other tab?
+    }
+  });
+  pair.classList.add("one-click-button-container");
+
+  return pair;
+};
 
 const main = async () => {
   const log = new Logger();
@@ -15,28 +49,36 @@ const main = async () => {
   const buyMusicClubListPage = document.querySelector("#__NEXT_DATA__");
   if (buyMusicClubListPage) {
     const { props } = JSON.parse(buyMusicClubListPage.innerHTML);
-    const item = props.pageProps.list.ListItems[0];
+    const list_items = props.pageProps.list.ListItems;
+    const playlist_items = document.querySelectorAll("li.css-lyf5hv.e1hf1hv40");
     try {
       const { cart_client_id } = await chrome.runtime.sendMessage({
         contentScriptQuery: "getCartID"
       });
       log.debug(`cart_id: ${cart_client_id}`);
 
-      const { tracks } = await chrome.runtime.sendMessage({
-        contentScriptQuery: "getTralbumDetails",
-        item_id: item.externalId,
-        item_type: item.type === "song" ? "t" : "a"
-      });
+      playlist_items.forEach(async (item, index) => {
+        const { tracks } = await chrome.runtime.sendMessage({
+          contentScriptQuery: "getTralbumDetails",
+          item_id: list_items[index].externalId,
+          item_type: list_items[index].type === "song" ? "t" : "a"
+        });
+        const { track_id, price, currency, is_purchasable } = tracks[0];
 
-      const _ = await chrome.runtime.sendMessage({
-        contentScriptQuery: "addToCart",
-        item_id: tracks[0].track_id,
-        item_type: "t",
-        unit_price: tracks[0].price,
-        cart_client_id: cart_client_id
+        if (!is_purchasable) return;
+
+        const button = createOneClickBuyButton(
+          price,
+          currency,
+          track_id,
+          "t",
+          cart_client_id
+        );
+        item.append(button);
       });
     } catch (error) {
       log.error("Error getting cart ID:", error);
+      return;
     }
   }
 

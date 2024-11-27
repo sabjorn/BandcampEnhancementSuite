@@ -27,8 +27,6 @@ export default class Player {
     this.extractBandFollowInfo = extractBandFollowInfo;
     this.extractFanTralbumData = extractFanTralbumData;
     this.getTralbumDetails = getTralbumDetails.bind(this);
-    this.createInputButtonPair = createInputButtonPair;
-    this.createShoppingCartItem = createShoppingCartItem;
   }
 
   init() {

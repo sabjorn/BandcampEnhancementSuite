@@ -41,6 +41,7 @@ export default class Player {
     Player.movePlaylist();
 
     this.updatePlayerControlInterface();
+    return;
 
     const {
       is_purchased,

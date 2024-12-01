@@ -2,7 +2,7 @@ import { createDomNodes, cleanupTestNodes } from "./utils.js";
 import chai from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
-import { assert, expect } from "chai";
+import { expect } from "chai";
 chai.use(sinonChai);
 
 import { mousedownCallback } from "../src/utilities.js";
@@ -172,42 +172,30 @@ describe("Player", () => {
     });
 
     describe("add one click add to cart buttons", () => {
-      it("should be called for each track and album when getTralbumDetails succeeds", async () => {
+      it("should be called for each track and album when getTralbumDetails succeeds and when is_purchasable is true", async () => {
         await player.init();
 
         expect(player.getTralbumDetails).to.have.been.calledWith(
           bandFollowInfoFake.tralbum_id,
           bandFollowInfoFake.tralbum_type
         );
-        expect(player.createOneClickBuyButton).to.have.been.calledThrice;
+        expect(player.createOneClickBuyButton).to.have.been.calledTwice;
         expect(
           player.createOneClickBuyButton.getCall(0)
-        ).to.have.been.calledWithExactly(
-          mockTralbumDetails.tracks[0].price,
-          mockTralbumDetails.tracks[0].currency,
-          mockTralbumDetails.tracks[0].track_id,
-          mockTralbumDetails.tracks[0].title,
-          mockTralbumDetails.tracks[0].is_purchasable,
-          "t"
-        );
-        expect(
-          player.createOneClickBuyButton.getCall(1)
         ).to.have.been.calledWithExactly(
           mockTralbumDetails.tracks[1].price,
           mockTralbumDetails.tracks[1].currency,
           mockTralbumDetails.tracks[1].track_id,
           mockTralbumDetails.tracks[1].title,
-          mockTralbumDetails.tracks[1].is_purchasable,
           "t"
         );
         expect(
-          player.createOneClickBuyButton.getCall(2)
+          player.createOneClickBuyButton.getCall(1)
         ).to.have.been.calledWithExactly(
           mockTralbumDetails.price,
           mockTralbumDetails.currency,
           mockTralbumDetails.album_id,
           mockTralbumDetails.title,
-          mockTralbumDetails.is_purchasable,
           mockTralbumDetails.type
         );
       });
@@ -223,12 +211,13 @@ describe("Player", () => {
 
         expect(rows[1].querySelector(".info-col")).to.be.null;
         expect(rows[1].querySelectorAll(".download-col")).to.have.length(1);
-        expect(rows[1].querySelectorAll(`#unique-id-1`)).to.have.length(1);
+        expect(rows[1].querySelectorAll(`#unique-id-0`)).to.have.length(1);
 
         const album = document.querySelector(
           "ul.tralbumCommands .buyItem.digital h3.hd"
         );
-        expect(album.querySelectorAll("#unique-id-2")).to.have.length(1);
+
+        expect(album.querySelectorAll("#unique-id-1")).to.have.length(1);
       });
 
       it("should not fail if more DOM elements than tralbumDetail tracks", async () => {
@@ -302,6 +291,84 @@ describe("Player", () => {
 
           expect(player.getTralbumDetails).to.be.not.called;
         }
+      });
+
+      it("should replace $0 item -- of known currency -- with correct value", async () => {
+        const expected_price = 1.0;
+
+        const mockTralbumDetails = {
+          price: 0.0,
+          currency: "CAD",
+          tralbumId: "987",
+          title: "Test Album",
+          is_purchasable: true,
+          type: "a",
+          tracks: [
+            {
+              price: 0.0,
+              currency: "CAD",
+              track_id: "123",
+              title: "Test Track",
+              is_purchasable: true
+            }
+          ]
+        };
+        const mockResponse = {
+          ok: true,
+          json: sinon.stub().resolves(mockTralbumDetails)
+        };
+        player.getTralbumDetails = sinon.stub().resolves(mockResponse);
+
+        await player.init();
+
+        expect(player.createOneClickBuyButton).to.be.calledTwice;
+        expect(
+          player.createOneClickBuyButton.getCall(0)
+        ).to.have.been.calledWithExactly(
+          expected_price,
+          mockTralbumDetails.tracks[0].currency,
+          mockTralbumDetails.tracks[0].track_id,
+          mockTralbumDetails.tracks[0].title,
+          "t"
+        );
+        expect(
+          player.createOneClickBuyButton.getCall(1)
+        ).to.have.been.calledWithExactly(
+          expected_price,
+          mockTralbumDetails.currency,
+          mockTralbumDetails.track_id,
+          mockTralbumDetails.title,
+          mockTralbumDetails.type
+        );
+      });
+
+      it("should not call if $0 item and unknown currency", async () => {
+        const mockTralbumDetails = {
+          price: "0.0",
+          currency: "GEK",
+          album_id: "987",
+          title: "Test Album",
+          is_purchasable: true,
+          type: "a",
+          tracks: [
+            {
+              price: 0.0,
+              currency: "GEK",
+              track_id: "123",
+              title: "Test Track",
+              is_purchasable: true
+            }
+          ]
+        };
+        const mockResponse = {
+          ok: true,
+          json: sinon.stub().resolves(mockTralbumDetails)
+        };
+        player.getTralbumDetails = sinon.stub().resolves(mockResponse);
+
+        await player.init();
+
+        expect(player.createOneClickBuyButton).to.be.not.called;
       });
     });
 
@@ -474,7 +541,7 @@ describe("Player", () => {
     });
 
     it("removes the td.play_cell element from DOM", () => {
-      let playdiv = Player.transferPlayButton();
+      Player.transferPlayButton();
 
       expect(play_cell.parentNode.removeChild).to.be.calledWith(play_cell);
     });
@@ -633,14 +700,7 @@ describe("Player", () => {
     });
 
     it("should create input-button purchasable track", () => {
-      player.createOneClickBuyButton(
-        "1.00",
-        "USD",
-        "123",
-        "Track 1",
-        true,
-        "t"
-      );
+      player.createOneClickBuyButton("1.00", "USD", "123", "Track 1", "t");
 
       expect(player.createInputButtonPair).to.be.calledOnce;
       expect(player.createInputButtonPair.getCall(0).args[0]).to.deep.include({
@@ -650,32 +710,11 @@ describe("Player", () => {
       });
     });
 
-    it("should not create input-button pair for not purchasable track", () => {
-      const is_purchasable = false;
-      player.createOneClickBuyButton(
-        "1.00",
-        "USD",
-        "123",
-        "Track 1",
-        is_purchasable,
-        "t"
-      );
-
-      expect(player.createInputButtonPair).to.not.be.called;
-    });
-
     describe("onButtonClick callback", () => {
       let onButtonClick;
 
       beforeEach(() => {
-        player.createOneClickBuyButton(
-          "1.00",
-          "USD",
-          "123",
-          "Track 1",
-          true,
-          "t"
-        );
+        player.createOneClickBuyButton("1.00", "USD", "123", "Track 1", "t");
 
         onButtonClick =
           player.createInputButtonPair.firstCall.args[0].onButtonClick;

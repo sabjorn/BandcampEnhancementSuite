@@ -12,6 +12,7 @@ import { createPlusSvgIcon } from "./components/svgIcons";
 
 const stepSize = 10;
 const CURRENCY_MINIMUMS = {
+  USD: 0.5,
   AUD: 0.5,
   GBP: 0.25,
   CAD: 1.0,
@@ -90,14 +91,17 @@ export default class Player {
           } = tralbumDetails.tracks[i];
           const type = "t";
 
-          if (price === 0.0) return;
           if (!is_purchasable) return;
 
           const infoCol = row.querySelector(".info-col");
           if (infoCol) infoCol.remove();
 
+          const minimumPrice =
+            price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
+          if (!minimumPrice) return;
+
           const oneClick = this.createOneClickBuyButton(
-            price,
+            minimumPrice,
             currency,
             tralbumId,
             itemTitle,
@@ -118,10 +122,12 @@ export default class Player {
           is_purchasable,
           type
         } = tralbumDetails;
-        if (price === 0.0) return;
         if (!is_purchasable) return;
+
+        const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
+        if (!minimumPrice) return;
         const oneClick = this.createOneClickBuyButton(
-          price,
+          minimumPrice,
           currency,
           tralbumId,
           itemTitle,

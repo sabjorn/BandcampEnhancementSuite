@@ -105,7 +105,6 @@ export default class Player {
             currency,
             tralbumId,
             itemTitle,
-            is_purchasable,
             type
           );
 
@@ -131,7 +130,6 @@ export default class Player {
           currency,
           tralbumId,
           itemTitle,
-          is_purchasable,
           type
         );
 
@@ -272,18 +270,7 @@ export default class Player {
     this.log.info("volume:", volume);
   }
 
-  static createOneClickBuyButton(
-    price,
-    currency,
-    tralbumId,
-    itemTitle,
-    is_purchasable,
-    type
-  ) {
-    if (!is_purchasable) {
-      return;
-    }
-
+  static createOneClickBuyButton(price, currency, tralbumId, itemTitle, type) {
     const pair = this.createInputButtonPair({
       inputPrefix: "$",
       inputSuffix: currency,

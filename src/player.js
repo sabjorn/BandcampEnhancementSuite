@@ -71,6 +71,9 @@ export default class Player {
           } = tralbumDetails.tracks[i];
           const type = "t";
 
+          if (price === 0.0) return;
+          if (!is_purchasable) return;
+
           const infoCol = row.querySelector(".info-col");
           if (infoCol) infoCol.remove();
 
@@ -82,8 +85,6 @@ export default class Player {
             is_purchasable,
             type
           );
-
-          if (!is_purchasable) return;
 
           const downloadCol = row.querySelector(".download-col");
           downloadCol.innerHTML = "";
@@ -98,6 +99,8 @@ export default class Player {
           is_purchasable,
           type
         } = tralbumDetails;
+        if (price === 0.0) return;
+        if (!is_purchasable) return;
         const oneClick = this.createOneClickBuyButton(
           price,
           currency,
@@ -106,7 +109,6 @@ export default class Player {
           is_purchasable,
           type
         );
-        if (!is_purchasable) return;
 
         document
           .querySelector("ul.tralbumCommands .buyItem.digital h3.hd")

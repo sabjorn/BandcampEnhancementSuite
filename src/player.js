@@ -11,6 +11,26 @@ import { createShoppingCartItem } from "./components/shoppingCart.js";
 import { createPlusSvgIcon } from "./components/svgIcons";
 
 const stepSize = 10;
+const CURRENCY_MINIMUMS = {
+  USD: 0.5,
+  AUD: 0.5,
+  GBP: 0.25,
+  CAD: 1.0,
+  EUR: 0.25,
+  JPY: 70,
+  CZK: 10,
+  DKK: 2.5,
+  HKD: 2.5,
+  HUF: 100,
+  ILS: 1.5,
+  MXN: 5,
+  NZD: 0.5,
+  NOK: 3,
+  PLN: 3,
+  SGD: 1,
+  SEK: 3,
+  CHF: 0.5
+};
 
 export default class Player {
   constructor() {
@@ -41,7 +61,6 @@ export default class Player {
     Player.movePlaylist();
 
     this.updatePlayerControlInterface();
-    return;
 
     const {
       is_purchased,
@@ -72,19 +91,22 @@ export default class Player {
           } = tralbumDetails.tracks[i];
           const type = "t";
 
+          if (!is_purchasable) return;
+
           const infoCol = row.querySelector(".info-col");
           if (infoCol) infoCol.remove();
 
+          const minimumPrice =
+            price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
+          if (!minimumPrice) return;
+
           const oneClick = this.createOneClickBuyButton(
-            price,
+            minimumPrice,
             currency,
             tralbumId,
             itemTitle,
-            is_purchasable,
             type
           );
-
-          if (!is_purchasable) return;
 
           const downloadCol = row.querySelector(".download-col");
           downloadCol.innerHTML = "";
@@ -99,15 +121,17 @@ export default class Player {
           is_purchasable,
           type
         } = tralbumDetails;
+        if (!is_purchasable) return;
+
+        const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
+        if (!minimumPrice) return;
         const oneClick = this.createOneClickBuyButton(
-          price,
+          minimumPrice,
           currency,
           tralbumId,
           itemTitle,
-          is_purchasable,
           type
         );
-        if (!is_purchasable) return;
 
         document
           .querySelector("ul.tralbumCommands .buyItem.digital h3.hd")
@@ -246,18 +270,7 @@ export default class Player {
     this.log.info("volume:", volume);
   }
 
-  static createOneClickBuyButton(
-    price,
-    currency,
-    tralbumId,
-    itemTitle,
-    is_purchasable,
-    type
-  ) {
-    if (!is_purchasable) {
-      return;
-    }
-
+  static createOneClickBuyButton(price, currency, tralbumId, itemTitle, type) {
     const pair = this.createInputButtonPair({
       inputPrefix: "$",
       inputSuffix: currency,

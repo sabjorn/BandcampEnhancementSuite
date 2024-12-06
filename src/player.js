@@ -116,7 +116,7 @@ export default class Player {
         const {
           price,
           currency,
-          album_id: tralbumId,
+          id: tralbumId,
           title: itemTitle,
           is_purchasable,
           type

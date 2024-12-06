@@ -44,7 +44,7 @@ describe("Player", () => {
     const mockTralbumDetails = {
       price: "5.00",
       currency: "USD",
-      album_id: "987",
+      id: "987",
       title: "Test Album",
       is_purchasable: true,
       type: "a",
@@ -194,7 +194,7 @@ describe("Player", () => {
         ).to.have.been.calledWithExactly(
           mockTralbumDetails.price,
           mockTralbumDetails.currency,
-          mockTralbumDetails.album_id,
+          mockTralbumDetails.id,
           mockTralbumDetails.title,
           mockTralbumDetails.type
         );
@@ -224,7 +224,7 @@ describe("Player", () => {
         const mockTralbumDetails = {
           price: "5.00",
           currency: "USD",
-          album_id: "987",
+          id: "987",
           title: "Test Album",
           is_purchasable: true,
           type: "a",
@@ -346,7 +346,7 @@ describe("Player", () => {
         const mockTralbumDetails = {
           price: "0.0",
           currency: "GEK",
-          album_id: "987",
+          id: "987",
           title: "Test Album",
           is_purchasable: true,
           type: "a",

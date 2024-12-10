@@ -1,13 +1,16 @@
 import Logger from "../logger";
 
-import { createButton } from "../components/buttons.js";
+import { createButton, createInputButtonPair } from "../components/buttons.js";
 import {
   downloadFile,
   dateString,
   loadJsonFile,
-  addAlbumToCart
+  addAlbumToCart,
+  CURRENCY_MINIMUMS,
+  getTralbumDetails
 } from "../utilities";
 import { createShoppingCartItem } from "../components/shoppingCart.js";
+import { createPlusSvgIcon } from "../components/svgIcons";
 
 export default class Cart {
   constructor() {
@@ -20,6 +23,9 @@ export default class Cart {
     this.createShoppingCartItem = createShoppingCartItem;
     this.downloadFile = downloadFile;
     this.reloadWindow = () => location.reload();
+    this.getTralbumDetails = getTralbumDetails.bind(this);
+    this.createOneClickBuyButton = Cart.createOneClickBuyButton.bind(this);
+    this.createInputButtonPair = createInputButtonPair;
   }
 
   init() {
@@ -140,5 +146,82 @@ export default class Cart {
         childList: true
       });
     }
+
+    const tralbumId = 310533014;
+    const tralbumType = "t";
+    return this.getTralbumDetails(tralbumId, tralbumType)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(tralbumDetails => {
+        const {
+          price,
+          currency,
+          id: tralbumId,
+          title: itemTitle,
+          is_purchasable,
+          type
+        } = tralbumDetails;
+        if (!is_purchasable) return;
+
+        const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
+        if (!minimumPrice) return;
+        const oneClick = this.createOneClickBuyButton(
+          minimumPrice,
+          currency,
+          tralbumId,
+          itemTitle,
+          type
+        );
+        const besSupport = document.createElement("div");
+        besSupport.innerText = "Support BES";
+        besSupport.className = "cartItemContents";
+        besSupport.append(oneClick);
+        document.querySelector("#sidecartFooter").prepend(besSupport);
+      })
+      .catch(error => {
+        this.log.error(error);
+      });
+  }
+
+  static createOneClickBuyButton(price, currency, tralbumId, itemTitle, type) {
+    const pair = this.createInputButtonPair({
+      inputPrefix: "$",
+      inputSuffix: currency,
+      inputPlaceholder: price,
+      buttonChildElement: createPlusSvgIcon(),
+      onButtonClick: value => {
+        if (value < price) {
+          this.log.error("track price too low");
+          return;
+        }
+
+        this.addAlbumToCart(tralbumId, value, type).then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const cartItem = this.createShoppingCartItem({
+            itemId: tralbumId,
+            itemName: itemTitle,
+            itemPrice: value,
+            itemCurrency: currency
+          });
+
+          if (document.querySelector("#sidecart").style.display === "none") {
+            window.location.reload();
+            return;
+          }
+
+          document.querySelector("#item_list").append(cartItem);
+        });
+      }
+    });
+    pair.classList.add("one-click-button-container");
+
+    return pair;
   }
 }

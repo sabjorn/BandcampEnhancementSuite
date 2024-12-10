@@ -1,13 +1,19 @@
 import Logger from "../logger";
 
-import { createButton } from "../components/buttons.js";
+import { createButton, createInputButtonPair } from "../components/buttons.js";
 import {
   downloadFile,
   dateString,
   loadJsonFile,
-  addAlbumToCart
+  addAlbumToCart,
+  CURRENCY_MINIMUMS,
+  getTralbumDetails
 } from "../utilities";
 import { createShoppingCartItem } from "../components/shoppingCart.js";
+import { createPlusSvgIcon } from "../components/svgIcons";
+
+const BES_SUPPORT_TRALBUM_ID = 310533014;
+const BES_SUPPORT_TRALBUM_TYPE = "t";
 
 export default class Cart {
   constructor() {
@@ -20,6 +26,9 @@ export default class Cart {
     this.createShoppingCartItem = createShoppingCartItem;
     this.downloadFile = downloadFile;
     this.reloadWindow = () => location.reload();
+    this.getTralbumDetails = getTralbumDetails.bind(this);
+    this.createBesSupportButton = Cart.createBesSupportButton.bind(this);
+    this.createInputButtonPair = createInputButtonPair;
   }
 
   init() {
@@ -140,5 +149,88 @@ export default class Cart {
         childList: true
       });
     }
+
+    return this.getTralbumDetails(
+      BES_SUPPORT_TRALBUM_ID,
+      BES_SUPPORT_TRALBUM_TYPE
+    )
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(tralbumDetails => {
+        const {
+          price,
+          currency,
+          id: tralbumId,
+          title: itemTitle,
+          is_purchasable,
+          type
+        } = tralbumDetails;
+        if (!is_purchasable) return;
+
+        const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
+        if (!minimumPrice) {
+          this.log.error(
+            `could not get minimum price for ${tralbumId}. Skipping adding to cart`
+          );
+          return;
+        }
+        const oneClick = this.createBesSupportButton(
+          minimumPrice,
+          currency,
+          tralbumId,
+          itemTitle,
+          type
+        );
+
+        const besSupportText = document.createElement("div");
+        besSupportText.innerText = "Support BES";
+        besSupportText.className = "bes-support-text";
+
+        const besSupport = document.createElement("div");
+        besSupport.className = "bes-support";
+        besSupport.append(besSupportText);
+        besSupport.append(oneClick);
+        document.querySelector("#sidecartSummary").after(besSupport);
+      })
+      .catch(error => {
+        this.log.error(error);
+      });
+  }
+
+  static createBesSupportButton(price, currency, tralbumId, itemTitle, type) {
+    const pair = this.createInputButtonPair({
+      inputPrefix: "$",
+      inputSuffix: currency,
+      inputPlaceholder: price,
+      buttonChildElement: createPlusSvgIcon(),
+      onButtonClick: value => {
+        if (value < price) {
+          this.log.error("track price too low");
+          return;
+        }
+
+        this.addAlbumToCart(tralbumId, value, type).then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const cartItem = this.createShoppingCartItem({
+            itemId: tralbumId,
+            itemName: itemTitle,
+            itemPrice: value,
+            itemCurrency: currency
+          });
+
+          document.querySelector("#item_list").append(cartItem);
+        });
+      }
+    });
+    pair.classList.add("one-click-button-container");
+
+    return pair;
   }
 }

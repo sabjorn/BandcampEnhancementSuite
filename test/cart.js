@@ -12,7 +12,30 @@ describe("Cart", () => {
   let cart;
   let sandbox;
 
-  beforeEach(() => {
+  const mockTralbumDetails = {
+    price: "5.00",
+    currency: "USD",
+    id: "987",
+    title: "Test Track",
+    is_purchasable: true,
+    type: "t",
+    tracks: [
+      {
+        price: "5.00",
+        currency: "USD",
+        track_id: "123",
+        title: "Test Track",
+        is_purchasable: true
+      }
+    ]
+  };
+
+  const mockResponse = {
+    ok: true,
+    json: sinon.stub().resolves(mockTralbumDetails)
+  };
+
+  beforeEach(async () => {
     sandbox = sinon.createSandbox();
     cart = new Cart();
 
@@ -22,31 +45,6 @@ describe("Cart", () => {
       warn: sinon.stub(),
       debug: sinon.stub()
     };
-
-    cart.createButton = sinon
-      .stub()
-      .onCall(0)
-      .returns(
-        Object.assign(document.createElement("div"), {
-          id: "import-cart-button"
-        })
-      )
-      .onCall(1)
-      .returns(
-        Object.assign(document.createElement("div"), {
-          id: "export-cart-button"
-        })
-      )
-      .onCall(2)
-      .returns(
-        Object.assign(document.createElement("div"), {
-          id: "cart-refresh-button"
-        })
-      );
-
-    createDomNodes(`<div id="sidecartReveal">
-                    <div id='sidecartBody'</div>
-                    </div>`);
   });
 
   afterEach(() => {
@@ -55,20 +53,55 @@ describe("Cart", () => {
   });
 
   describe("init()", () => {
-    it("adds all buttons in correct order and with correct properties", () => {
-      cart.init();
+    beforeEach(async () => {
+      cart.createButton = sinon
+        .stub()
+        .onCall(0)
+        .returns(
+          Object.assign(document.createElement("div"), {
+            id: "import-cart-button"
+          })
+        )
+        .onCall(1)
+        .returns(
+          Object.assign(document.createElement("div"), {
+            id: "export-cart-button"
+          })
+        )
+        .onCall(2)
+        .returns(
+          Object.assign(document.createElement("div"), {
+            id: "cart-refresh-button"
+          })
+        );
 
-      const divs = document
-        .querySelector("#sidecartReveal")
-        .querySelectorAll("div");
+      cart.getTralbumDetails = sinon.stub().resolves(mockResponse);
 
+      cart.createBesSupportButton = sinon
+        .stub()
+        .returns(document.createElement("div"));
+
+      createDomNodes(`<div id="sidecartReveal">
+                      <div id='sidecartBody'>
+                        <div id='sidecartSummary'></div>
+                      </div>
+                    </div>`);
+    });
+
+    it("adds all buttons in correct order and with correct properties", async () => {
+      await cart.init();
+
+      const sidecartDivs = document.querySelector("#sidecartReveal").children;
+      expect(sidecartDivs[0].id).to.be.eq("import-cart-button");
+      expect(sidecartDivs[1].id).to.be.eq("sidecartBody");
+      expect(sidecartDivs[2].id).to.be.eq("export-cart-button");
+      expect(sidecartDivs[3].id).to.be.eq("cart-refresh-button");
+      expect(sidecartDivs[3].style.display).to.be.eq("none");
       expect(cart.createButton).to.have.been.calledThrice;
-      expect(divs[0].id).to.be.eq("import-cart-button");
-      expect(divs[1].id).to.be.eq("sidecartBody");
-      expect(divs[2].id).to.be.eq("export-cart-button");
-      expect(divs[3].id).to.be.eq("cart-refresh-button");
 
-      expect(divs[3].style.display).to.be.eq("none");
+      const sidecartBodyDivs = document.querySelector("#sidecartBody").children;
+      expect(sidecartBodyDivs[1].className).to.be.eq("bes-support");
+      expect(cart.getTralbumDetails).to.have.been.calledOnce;
     });
 
     describe("import cart button callback", () => {
@@ -91,8 +124,8 @@ describe("Cart", () => {
           }
         ]
       };
-      beforeEach(() => {
-        cart.init();
+      beforeEach(async () => {
+        await cart.init();
 
         cart.loadJsonFile = sinon.stub();
         cart.createShoppingCartItem = sinon.stub();
@@ -198,13 +231,26 @@ describe("Cart", () => {
       });
     });
 
+    it("should handle errors when getTralbumDetails fails", async () => {
+      const errorMessage = "HTTP error! status: 404";
+      cart.getTralbumDetails.rejects(new Error(errorMessage));
+
+      await cart.init();
+
+      expect(cart.log.error).to.be.calledWith(
+        sinon.match
+          .instanceOf(Error)
+          .and(sinon.match.has("message", errorMessage))
+      );
+    });
+
     describe("export cart button callback", () => {
       let cartButtonCallback;
 
-      beforeEach(() => {
+      beforeEach(async () => {
         cart.downloadFile = sinon.stub();
 
-        cart.init();
+        await cart.init();
 
         const exportButtonCallArgs = cart.createButton.getCall(1).args[0];
         expect(exportButtonCallArgs.className).to.be.eq("buttonLink");
@@ -306,8 +352,8 @@ describe("Cart", () => {
     describe("refresh button callback", () => {
       let cartButtonCallback;
 
-      beforeEach(() => {
-        cart.init();
+      beforeEach(async () => {
+        await cart.init();
 
         cart.reloadWindow = sinon.stub();
 
@@ -327,7 +373,7 @@ describe("Cart", () => {
     });
 
     describe("item list mutation", () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         createDomNodes(
           `<script type="text/javascript" data-cart="{
                 &quot;items&quot;:[{&quot;item_title&quot;:&quot;single item&quot;}]
@@ -359,6 +405,87 @@ describe("Cart", () => {
 
         expect(refreshButton.style.display).to.be.eq("none");
         expect(exportButton.style.display).to.be.eq("block");
+      });
+    });
+  });
+
+  describe("createBesSupportButton", () => {
+    beforeEach(() => {
+      createDomNodes(`
+        <div id="sidecart" style="display: block;"></div>
+        <div id="item_list"></div>
+      `);
+
+      sandbox.stub(cart, "createInputButtonPair").callsFake(() => {
+        return document.createElement("div");
+      });
+      sandbox.stub(cart, "addAlbumToCart").resolves({ ok: true });
+      sandbox.stub(cart, "createShoppingCartItem").callsFake(() => {
+        return document.createElement("div");
+      });
+    });
+
+    it("should create input-button purchasable track", () => {
+      cart.createBesSupportButton("1.00", "USD", "123", "Track 1", "t");
+
+      expect(cart.createInputButtonPair).to.be.calledOnce;
+      expect(cart.createInputButtonPair.getCall(0).args[0]).to.deep.include({
+        inputPrefix: "$",
+        inputSuffix: "USD",
+        inputPlaceholder: "1.00"
+      });
+    });
+
+    describe("onButtonClick callback", () => {
+      let onButtonClick;
+
+      beforeEach(() => {
+        cart.createBesSupportButton("1.00", "USD", "123", "Track 1", "t");
+        cart.createShoppingCartItem.returns(
+          Object.assign(document.createElement("div"), {
+            id: "test-1"
+          })
+        );
+
+        onButtonClick =
+          cart.createInputButtonPair.firstCall.args[0].onButtonClick;
+      });
+
+      it("should show error if value is less than price", async () => {
+        await onButtonClick("0.50");
+        expect(cart.log.error).to.be.calledWith("track price too low");
+      });
+
+      it("should call addAlbumToCart with correct parameters", async () => {
+        await onButtonClick("1.50");
+        expect(cart.addAlbumToCart).to.be.calledWith("123", "1.50", "t");
+      });
+
+      it("should create and append shopping cart item on successful response", async () => {
+        const inputPrice = 1.5;
+        await onButtonClick(inputPrice);
+
+        expect(cart.createShoppingCartItem).to.be.calledOnce;
+        expect(cart.createShoppingCartItem).to.be.calledWith({
+          itemId: "123",
+          itemName: "Track 1",
+          itemPrice: inputPrice,
+          itemCurrency: "USD"
+        });
+
+        const itemListChildren = document.querySelector("#item_list").children;
+        expect(itemListChildren[0].id).to.be.eq("test-1");
+      });
+
+      it("should throw error on unsuccessful response", async () => {
+        cart.addAlbumToCart.resolves({ ok: false, status: 400 });
+
+        try {
+          await onButtonClick("1.50");
+        } catch (error) {
+          expect(error).to.be.an("error");
+          expect(error.message).to.equal("HTTP error! status: 400");
+        }
       });
     });
   });

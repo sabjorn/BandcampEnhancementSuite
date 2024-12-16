@@ -216,11 +216,6 @@ export default class Cart {
             itemCurrency: currency
           });
 
-          if (document.querySelector("#sidecart").style.display === "none") {
-            window.location.reload();
-            return;
-          }
-
           document.querySelector("#item_list").append(cartItem);
         });
       }

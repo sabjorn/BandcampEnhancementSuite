@@ -270,4 +270,5 @@ input.currency-input::-webkit-outer-spin-button {
 .bes-support-text {
     text-align: center;
     padding-bottom: .5em;
+    font-weight: bold;
 }

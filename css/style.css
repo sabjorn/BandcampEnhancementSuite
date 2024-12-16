@@ -262,3 +262,13 @@ input.currency-input::-webkit-outer-spin-button {
     font-weight: normal;
     font-size: 13px;
 }
+
+.bes-support {
+    border: black;
+    border-width: 1px;
+}
+
+.bes-support-text {
+    text-align: center;
+    padding-bottom: .5em;
+}

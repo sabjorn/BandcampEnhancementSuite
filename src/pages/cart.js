@@ -176,11 +176,16 @@ export default class Cart {
           itemTitle,
           type
         );
+
+        const besSupportText = document.createElement("div");
+        besSupportText.innerText = "Support BES";
+        besSupportText.className = "bes-support-text";
+
         const besSupport = document.createElement("div");
-        besSupport.innerText = "Support BES";
-        besSupport.className = "cartItemContents";
+        besSupport.className = "bes-support";
+        besSupport.append(besSupportText);
         besSupport.append(oneClick);
-        document.querySelector("#sidecartFooter").prepend(besSupport);
+        document.querySelector("#sidecartSummary").after(besSupport);
       })
       .catch(error => {
         this.log.error(error);

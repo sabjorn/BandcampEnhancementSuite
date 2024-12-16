@@ -264,8 +264,7 @@ input.currency-input::-webkit-outer-spin-button {
 }
 
 .bes-support {
-    border: black;
-    border-width: 1px;
+    border-top: 1px solid lightgray;
 }
 
 .bes-support-text {

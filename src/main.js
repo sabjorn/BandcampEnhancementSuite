@@ -6,7 +6,7 @@ import AudioFeatures from "./audioFeatures.js";
 import Checkout from "./checkout.js";
 import Cart from "./pages/cart";
 
-const main = () => {
+const main = async () => {
   const log = new Logger();
 
   const lv = new LabelView();
@@ -52,7 +52,7 @@ const main = () => {
   );
   if (has_cart) {
     const cart = new Cart();
-    cart.init();
+    await cart.init();
   }
 };
 

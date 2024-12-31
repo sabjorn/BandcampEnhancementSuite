@@ -19,6 +19,8 @@ export default class Cart {
   constructor() {
     this.log = new Logger();
 
+    this.createBesSupportButton = Cart.createBesSupportButton.bind(this);
+
     // re-import
     this.createButton = createButton;
     this.loadJsonFile = loadJsonFile;
@@ -27,11 +29,10 @@ export default class Cart {
     this.downloadFile = downloadFile;
     this.reloadWindow = () => location.reload();
     this.getTralbumDetails = getTralbumDetails.bind(this);
-    this.createBesSupportButton = Cart.createBesSupportButton.bind(this);
     this.createInputButtonPair = createInputButtonPair;
   }
 
-  init() {
+  async init() {
     this.log.info("cart init");
 
     const importCartButton = this.createButton({
@@ -150,55 +151,57 @@ export default class Cart {
       });
     }
 
-    return this.getTralbumDetails(
-      BES_SUPPORT_TRALBUM_ID,
-      BES_SUPPORT_TRALBUM_TYPE
-    )
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(tralbumDetails => {
-        const {
-          price,
-          currency,
-          id: tralbumId,
-          title: itemTitle,
-          is_purchasable,
-          type
-        } = tralbumDetails;
-        if (!is_purchasable) return;
+    try {
+      const response = await this.getTralbumDetails(
+        BES_SUPPORT_TRALBUM_ID,
+        BES_SUPPORT_TRALBUM_TYPE
+      );
 
-        const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
-        if (!minimumPrice) {
-          this.log.error(
-            `could not get minimum price for ${tralbumId}. Skipping adding to cart`
-          );
-          return;
-        }
-        const oneClick = this.createBesSupportButton(
-          minimumPrice,
-          currency,
-          tralbumId,
-          itemTitle,
-          type
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const tralbumDetails = await response.json();
+
+      const {
+        price,
+        currency,
+        id: tralbumId,
+        title: itemTitle,
+        is_purchasable,
+        type
+      } = tralbumDetails;
+
+      if (!is_purchasable) return;
+
+      const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
+      if (!minimumPrice) {
+        this.log.error(
+          `could not get minimum price for ${tralbumId}. Skipping adding to cart`
         );
+        return;
+      }
 
-        const besSupportText = document.createElement("div");
-        besSupportText.innerText = "Support BES";
-        besSupportText.className = "bes-support-text";
+      const oneClick = this.createBesSupportButton(
+        minimumPrice,
+        currency,
+        tralbumId,
+        itemTitle,
+        type
+      );
 
-        const besSupport = document.createElement("div");
-        besSupport.className = "bes-support";
-        besSupport.append(besSupportText);
-        besSupport.append(oneClick);
-        document.querySelector("#sidecartSummary").after(besSupport);
-      })
-      .catch(error => {
-        this.log.error(error);
-      });
+      const besSupportText = document.createElement("div");
+      besSupportText.innerText = "Support BES";
+      besSupportText.className = "bes-support-text";
+
+      const besSupport = document.createElement("div");
+      besSupport.className = "bes-support";
+      besSupport.append(besSupportText);
+      besSupport.append(oneClick);
+      document.querySelector("#sidecartSummary").after(besSupport);
+    } catch (error) {
+      this.log.error(error);
+    }
   }
 
   static createBesSupportButton(price, currency, tralbumId, itemTitle, type) {

@@ -12,8 +12,8 @@ import {
 import { createShoppingCartItem } from "../components/shoppingCart.js";
 import { createPlusSvgIcon } from "../components/svgIcons";
 
-const BES_SUPPORT_TRALBUM_ID = 310533014;
-const BES_SUPPORT_TRALBUM_TYPE = "t";
+const BES_SUPPORT_TRALBUM_ID = 1609998585;
+const BES_SUPPORT_TRALBUM_TYPE = "a";
 
 export default class Cart {
   constructor() {

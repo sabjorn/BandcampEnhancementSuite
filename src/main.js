@@ -3,10 +3,9 @@ import LabelView from "./label_view.js";
 import DownloadHelper from "./download_helper.js";
 import Player from "./player.js";
 import AudioFeatures from "./audioFeatures.js";
-import Checkout from "./checkout.js";
 import Cart from "./pages/cart";
 
-const main = () => {
+const main = async () => {
   const log = new Logger();
 
   const lv = new LabelView();
@@ -42,9 +41,6 @@ const main = () => {
 
     let audioFeatures = new AudioFeatures(config_port);
     audioFeatures.init();
-
-    let checkout = new Checkout(config_port);
-    checkout.init();
   }
 
   const { has_cart } = JSON.parse(
@@ -52,7 +48,7 @@ const main = () => {
   );
   if (has_cart) {
     const cart = new Cart();
-    cart.init();
+    await cart.init();
   }
 };
 

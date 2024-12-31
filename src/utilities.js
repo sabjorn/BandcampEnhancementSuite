@@ -187,3 +187,24 @@ export function loadJsonFile() {
     fileInput.click();
   });
 }
+
+export const CURRENCY_MINIMUMS = {
+  USD: 0.5,
+  AUD: 0.5,
+  GBP: 0.25,
+  CAD: 1.0,
+  EUR: 0.25,
+  JPY: 70,
+  CZK: 10,
+  DKK: 2.5,
+  HKD: 2.5,
+  HUF: 100,
+  ILS: 1.5,
+  MXN: 5,
+  NZD: 0.5,
+  NOK: 3,
+  PLN: 3,
+  SGD: 1,
+  SEK: 3,
+  CHF: 0.5
+};

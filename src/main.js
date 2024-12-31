@@ -3,7 +3,6 @@ import LabelView from "./label_view.js";
 import DownloadHelper from "./download_helper.js";
 import Player from "./player.js";
 import AudioFeatures from "./audioFeatures.js";
-import Checkout from "./checkout.js";
 import Cart from "./pages/cart";
 
 const main = async () => {
@@ -42,9 +41,6 @@ const main = async () => {
 
     let audioFeatures = new AudioFeatures(config_port);
     audioFeatures.init();
-
-    let checkout = new Checkout(config_port);
-    checkout.init();
   }
 
   const { has_cart } = JSON.parse(

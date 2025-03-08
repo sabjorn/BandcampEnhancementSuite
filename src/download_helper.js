@@ -84,31 +84,35 @@ export default class DownloadHelper {
   }
 
   static generateDownloadList() {
-    let filelist = "";
-    document.querySelectorAll("a.item-button").forEach((item, index, list) => {
-      const url = item.getAttribute("href");
-      // Prevent duplicate URLs
-      if (filelist.indexOf(url) === -1) {
-        filelist += 'curl -OJ "' + url + '" && \\\n';
-      }
-    });
-    filelist = filelist.substring(0, filelist.length - 6);
-    filelist += "\n";
-    return filelist;
+    const urlSet = new Set(
+      [...document.querySelectorAll("a.item-button")]
+        .map(item => item.getAttribute("href"))
+        .filter(url => url)
+    );
+
+    if (urlSet.size === 0) return "";
+
+    const urls = [...urlSet];
+    const lastUrl = urls.pop();
+
+    const fileList =
+      urls.length > 0
+        ? urls.map(url => `curl -OJ "${url}" &&`).join(" \\\n") +
+          " \\\n" +
+          `curl -OJ "${lastUrl}"`
+        : `curl -OJ "${lastUrl}"`;
+
+    return fileList + "\n";
   }
 
   static callback() {
-    let allDownloadLinks = document.querySelectorAll(
+    const allDownloadLinks = document.querySelectorAll(
       ".download-title .item-button"
     );
 
-    let linksReady = true;
-    allDownloadLinks.forEach(function(element, index) {
-      if (element.style.display === "none") {
-        linksReady = false;
-        return;
-      }
-    });
+    const linksReady = [...allDownloadLinks].every(
+      element => element.style.display !== "none"
+    );
 
     this.log.info("linksReady", linksReady);
     if (linksReady) {

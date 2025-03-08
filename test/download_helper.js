@@ -53,7 +53,7 @@ describe("Download Helper", () => {
       `);
 
       dh.createButton();
-      const button = document.querySelector(".downloadall");
+      const button = document.querySelector(".bes-downloadall");
 
       expect(button != null).to.be.true;
     });
@@ -61,12 +61,12 @@ describe("Download Helper", () => {
     it("should not replace existing button at the end of div.download-titles", async () => {
       createDomNodes(`
         <div id="testId" class="download-titles">
-          <button class="downloadall fake" id="someId"></button>
+          <button class="bes-downloadall fake" id="someId"></button>
         </div>
       `);
 
       {
-        const button = document.querySelector(".downloadall");
+        const button = document.querySelector(".bes-downloadall");
         const idAttribute = button.getAttribute("id");
         expect(idAttribute).to.be.equal("someId");
       }
@@ -74,7 +74,7 @@ describe("Download Helper", () => {
       dh.createButton();
 
       {
-        const button = document.querySelectorAll(".downloadall");
+        const button = document.querySelectorAll(".bes-downloadall");
         assert(button.length == 1);
         const idAttribute = button[0].getAttribute("id");
         expect(idAttribute).to.be.equal("someId");
@@ -88,7 +88,7 @@ describe("Download Helper", () => {
 
       dh.createButton();
 
-      const buttonClassName = "downloadall";
+      const buttonClassName = "bes-downloadall";
       expect(dh.button.className).to.equal(buttonClassName);
 
       const buttonTitleExpected =

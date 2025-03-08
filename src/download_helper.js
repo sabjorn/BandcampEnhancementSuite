@@ -52,7 +52,7 @@ export default class DownloadHelper {
     this.button = document.createElement("button");
     this.button.title =
       "Generates a file for automating downloads using 'cURL'";
-    this.button.className = "downloadall";
+    this.button.className = "bes-downloadall";
     this.button.disabled = true;
     this.button.textContent = "preparing download";
 

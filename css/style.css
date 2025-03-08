@@ -274,3 +274,29 @@ input.currency-input::-webkit-outer-spin-button {
     padding-bottom: .5em;
     text-align: center;
 }
+
+button.bes-downloadall:hover {
+  text-decoration: none;
+}
+
+button.bes-downloadall[disabled] {
+  cursor: default;
+  opacity: 0.30;
+  color: #000000;
+}
+
+@keyframes loadingDots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+  100% { content: ""; }
+}
+
+button.bes-downloadall[disabled]::after {
+  content: "";
+  display: inline-block;
+  animation: loadingDots 1.5s infinite;
+  width: 1.1em;
+  text-align: left;
+}

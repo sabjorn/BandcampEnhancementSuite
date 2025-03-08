@@ -31,7 +31,7 @@ describe("Download Helper", () => {
   });
 
   describe("generateDownloadList()", () => {
-    it("should create a string of curl calls with urls from a.item-button", async () => {
+    it("should create a URL array with urls from a.item-button", async () => {
       createDomNodes(`
         <span id="testId" class="download-title">
           <a class="item-button" href="url1"></button>
@@ -39,8 +39,19 @@ describe("Download Helper", () => {
           <a class="item-button" href="url3"></button>
         </span>
       `);
-      const curlCommand =
-        'curl -OJ "url1" && \\\ncurl -OJ "url2" && \\\ncurl -OJ "url3"\n';
+      const curlCommand = `URLS=(\n\t"url1"\n\t"url2"\n\t"url3"\n)\n`;
+
+      const downloadList = DownloadHelper.generateDownloadList();
+      expect(downloadList).to.equal(curlCommand);
+    });
+
+    it("should create an empty URL array when no urls from a.item-button", async () => {
+      createDomNodes(`
+        <span id="testId" class="download-title">
+        </span>
+      `);
+      const curlCommand = `URLS=()\n`;
+
       const downloadList = DownloadHelper.generateDownloadList();
       expect(downloadList).to.equal(curlCommand);
     });
@@ -106,6 +117,7 @@ describe("Download Helper", () => {
       DownloadHelper.dateString = sinon.fake.returns("dateString");
       DownloadHelper.generateDownloadList = sinon.fake.returns("downloadList");
       DownloadHelper.getDownloadPreamble = sinon.fake.returns("preamble");
+      DownloadHelper.getDownloadPostamble = sinon.fake.returns("postamble");
       DownloadHelper.downloadFile = sinon.spy();
 
       dh.button = document.createElement("button");
@@ -123,7 +135,7 @@ describe("Download Helper", () => {
         "bandcamp_dateString.txt"
       );
       expect(DownloadHelper.downloadFile.getCall(0).args[1]).to.equal(
-        "preamble" + "downloadList"
+        "preamble" + "downloadList" + "postamble"
       );
     });
 

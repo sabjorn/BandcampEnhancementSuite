@@ -11,11 +11,94 @@ import { createInputButtonPair } from "./components/buttons.js";
 import { createShoppingCartItem } from "./components/shoppingCart.js";
 import { createPlusSvgIcon } from "./components/svgIcons";
 
-const stepSize = 10;
+const SEEK_STEP_SIZE = 10;
+const LARGE_SEEK_STEP_SIZE = 30;
+const VOLUME_STEP = 0.05;
+const DEFAULT_KEY_HANDLERS = {
+  " ": () => {
+    const playButton = document.querySelector("div.playbutton");
+    if (!playButton) return;
+
+    playButton.click();
+  },
+  p: () => {
+    const playButton = document.querySelector("div.playbutton");
+    if (!playButton) return;
+
+    playButton.click();
+  },
+  ArrowUp: () => {
+    const prevButton = document.querySelector("div.prevbutton");
+    if (!prevButton) return;
+
+    prevButton.click();
+  },
+  ArrowDown: () => {
+    const nextButton = document.querySelector("div.nextbutton");
+    if (!nextButton) return;
+
+    nextButton.click();
+  },
+  ArrowRight: () => {
+    let audio = document.querySelector("audio");
+    if (!audio) return;
+
+    audio.currentTime = audio.currentTime + SEEK_STEP_SIZE;
+  },
+  ArrowLeft: () => {
+    let audio = document.querySelector("audio");
+    if (!audio) return;
+
+    audio.currentTime = audio.currentTime - SEEK_STEP_SIZE;
+  },
+  "Shift+ArrowLeft": () => {
+    let audio = document.querySelector("audio");
+    if (!audio) return;
+
+    audio.currentTime = audio.currentTime - LARGE_SEEK_STEP_SIZE;
+  },
+  "Shift+ArrowRight": () => {
+    let audio = document.querySelector("audio");
+    if (!audio) return;
+
+    audio.currentTime = audio.currentTime + LARGE_SEEK_STEP_SIZE;
+  },
+  "Shift+ArrowUp": () => {
+    let input = document.querySelector("input.volume");
+    if (!input) return;
+
+    const currentVolume = parseFloat(input.value);
+    const newVolume = currentVolume + VOLUME_STEP;
+    input.value = newVolume > 1.0 ? 1.0 : newVolume;
+
+    const event = new Event("input");
+    input.dispatchEvent(event);
+  },
+  "Shift+ArrowDown": () => {
+    let input = document.querySelector("input.volume");
+    if (!input) return;
+
+    const currentVolume = parseFloat(input.value);
+    const newVolume = currentVolume - VOLUME_STEP;
+    input.value = newVolume < 0.0 ? 0.0 : newVolume;
+
+    const event = new Event("input");
+    input.dispatchEvent(event);
+  }
+};
+
+function keyComboToString(combo) {
+  const { key, alt = false, ctrl = false, shift = false, meta = false } = combo;
+  return `${alt ? "Alt+" : ""}${ctrl ? "Ctrl+" : ""}${shift ? "Shift+" : ""}${
+    meta ? "Meta+" : ""
+  }${key}`;
+}
 
 export default class Player {
   constructor() {
     this.log = new Logger();
+    this.keyHandlers = DEFAULT_KEY_HANDLERS;
+    this.preventDefault = true;
 
     this.keydownCallback = Player.keydownCallback.bind(this);
     this.volumeSliderCallback = Player.volumeSliderCallback.bind(this);
@@ -198,37 +281,33 @@ export default class Player {
   }
 
   static keydownCallback(e) {
-    this.log.info("Keydown: " + e.key);
-    if (e.target == document.body) {
-      if (e.key == "Meta") {
-        return;
-      }
-      if (e.key == " " || e.key == "p") {
-        e.preventDefault();
-        document.querySelector("div.playbutton").click();
-      }
+    if (e.target !== document.body) {
+      return;
+    }
 
-      if (e.key == "ArrowUp") {
-        e.preventDefault();
-        document.querySelector("div.prevbutton").click();
-      }
+    if (e.key === "Meta" && !e.altKey && !e.ctrlKey && !e.shiftKey) {
+      return;
+    }
 
-      if (e.key == "ArrowDown") {
-        e.preventDefault();
-        document.querySelector("div.nextbutton").click();
-      }
+    const currentCombo = keyComboToString({
+      key: e.key,
+      alt: e.altKey,
+      ctrl: e.ctrlKey,
+      shift: e.shiftKey,
+      meta: e.metaKey
+    });
 
-      if (e.key == "ArrowRight") {
-        e.preventDefault();
-        let audio = document.querySelector("audio");
-        audio.currentTime = audio.currentTime + stepSize;
-      }
+    this.log.info(`Keydown: ${currentCombo}`);
 
-      if (e.key == "ArrowLeft") {
-        e.preventDefault();
-        let audio = document.querySelector("audio");
-        audio.currentTime = audio.currentTime - stepSize;
-      }
+    const handler = this.keyHandlers[currentCombo] || this.keyHandlers[e.key];
+
+    if (!handler) {
+      return;
+    }
+    handler();
+
+    if (this.preventDefault) {
+      e.preventDefault();
     }
   }
 
@@ -244,11 +323,11 @@ export default class Player {
   }
 
   static volumeSliderCallback(e) {
-    let volume = e.target.value;
-    let audio = document.querySelector("audio");
+    const volume = e.target.value;
+    const audio = document.querySelector("audio");
     audio.volume = volume;
 
-    this.log.info("volume:", volume);
+    this.log.info(`volume: ${volume}`);
   }
 
   static createOneClickBuyButton(price, currency, tralbumId, itemTitle, type) {

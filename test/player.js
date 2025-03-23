@@ -602,7 +602,7 @@ describe("Player", () => {
 
     beforeEach(() => {
       event = { key: "", preventDefault: sinon.spy(), target: document.body };
-      spyElement = { click: sinon.spy() };
+      spyElement = { click: sinon.spy(), dispatchEvent: sinon.spy() };
 
       sandbox.stub(document, "querySelector").returns(spyElement);
     });
@@ -673,6 +673,50 @@ describe("Player", () => {
       expect(document.querySelector).to.be.calledWith("audio");
       expect(spyElement.currentTime).to.be.equal(90);
       expect(event.preventDefault).to.have.been.called;
+    });
+
+    it("jump audio ahead 30s if 'Shift+ArrowRight'", () => {
+      spyElement.currentTime = 100;
+
+      event.key = "Shift+ArrowRight";
+      player.keydownCallback(event);
+
+      expect(document.querySelector).to.be.calledWith("audio");
+      expect(spyElement.currentTime).to.be.equal(130);
+      expect(event.preventDefault).to.have.been.called;
+    });
+
+    it("jump audio back 30s if 'Shift+ArrowLeft'", () => {
+      spyElement.currentTime = 100;
+
+      event.key = "Shift+ArrowLeft";
+      player.keydownCallback(event);
+
+      expect(document.querySelector).to.be.calledWith("audio");
+      expect(spyElement.currentTime).to.be.equal(70);
+      expect(event.preventDefault).to.have.been.called;
+    });
+
+    it("increase input volume by .05 if 'Shift+ArrowUp'", () => {
+      spyElement.value = 0.0;
+
+      event.key = "Shift+ArrowUp";
+      player.keydownCallback(event);
+
+      expect(document.querySelector).to.be.calledWith("input.volume");
+      expect(spyElement.value).to.be.equal(0.05);
+      expect(spyElement.dispatchEvent).to.have.been.called;
+    });
+
+    it("reduce input volume by .05 if 'Shift+ArrowDown'", () => {
+      spyElement.value = 1.0;
+
+      event.key = "Shift+ArrowDown";
+      player.keydownCallback(event);
+
+      expect(document.querySelector).to.be.calledWith("input.volume");
+      expect(spyElement.value).to.be.equal(0.95);
+      expect(spyElement.dispatchEvent).to.have.been.called;
     });
 
     it("does not prevent other keys from being called", () => {

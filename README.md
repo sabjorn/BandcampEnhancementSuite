@@ -14,13 +14,17 @@ Adds a history display element next to album. This element is a clickable toggle
 ### Keyboard Bindings
 On album and track pages the following keyboard controls are supported:
 
-| Key Binding       | Action                    |
-|-------------------|---------------------------|
-| Space Bar and "p" | Play/Pause                |
-| Right Arrow       | Move Playhead Forward 10s |
-| Left Arrow        | Move Playhead Back 10s    |
-| Down Arrow        | Play Next Track           |
-| Up Arrow          | Play Previous Track       |
+| Key Binding       | Action                          |
+|-------------------|---------------------------------|
+| Space Bar and "p"   | Play/Pause                    |
+| Right Arrow         | Move Playhead Forward 10s     |
+| Left Arrow          | Move Playhead Back 10s        |
+| Shift + Right Arrow | Move Playhead Forward 30s     |
+| Shift + Left Arrow  | Move Playhead Back 30s        |
+| Down Arrow          | Play Next Track               |
+| Up Arrow            | Play Previous Track           |
+| Shift + Up Arrow    | Increase Audio Volume by 0.05 |
+| Shift + Down Arrow  | Decrease Audio Volume by 0.05 |
 
 ### Advanced Mouse Playbar
 Click anywhere on the playbar to set the "playhead" of the player.

@@ -10,49 +10,24 @@ function setupBridgeConnection() {
     '[data-extension-target="true"]'
   );
 
-  if (!bridgeElement) {
-    // Try again later if the element doesn't exist yet
-    setTimeout(setupBridgeConnection, 500);
-    return;
-  }
-
-  // Listen for requests from the React app
-  bridgeElement.addEventListener("bes-request", () => {
+  bridgeElement.addEventListener("bes-request", ({ detail }) => {
+    const { data } = detail;
     try {
-      const requestData = JSON.parse(
-        bridgeElement.getAttribute("data-request")
-      );
-
-      console.log("Calling");
-      // Send the request to your extension's service worker
       chrome.runtime.sendMessage(
         {
           contentScriptQuery: "renderBuffer",
-          url: requestData.url,
-          requestId: requestData.id
+          url: data.url
         },
         response => {
-          // Send response back to the React app
-          bridgeElement.setAttribute(
-            "data-response",
-            JSON.stringify({
-              id: requestData.id,
-              data: response
-            })
+          bridgeElement.dispatchEvent(
+            new CustomEvent("bes-response", { detail: { data: response } })
           );
-
-          // Dispatch event to notify React app
-          bridgeElement.dispatchEvent(new CustomEvent("bes-data-ready"));
         }
       );
     } catch (err) {
       console.error("Error processing request in extension:", err);
     }
   });
-
-  // Let the page know the extension is ready
-  bridgeElement.setAttribute("data-extension-status", "ready");
-  bridgeElement.dispatchEvent(new CustomEvent("bes-extension-ready"));
 }
 
 // Start looking for the bridge element when the content script loads

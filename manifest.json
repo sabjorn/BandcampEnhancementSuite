@@ -19,7 +19,8 @@
   "host_permissions": [
     "http://*.bandcamp.com/*",
     "https://*.bandcamp.com/*",
-    "https://t4.bcbits.com/stream/*"
+    "https://t4.bcbits.com/stream/*",
+    "http://localhost:3001/*"
   ],
   "minimum_chrome_version": "93",
   "background": {
@@ -29,7 +30,8 @@
     {
       "matches": [
         "http://*.bandcamp.com/*",
-        "https://*.bandcamp.com/*"
+        "https://*.bandcamp.com/*",
+        "http://localhost:3001/*"
       ],
       "js": [
         "dist/main.js"
@@ -42,4 +44,11 @@
       "id": "{3ca9d5aa-ad9f-4f7f-861b-999fe5c87273}",
       "strict_min_version": "109.0"
     }
-  }}
+  },
+  "web_accessible_resources" : [
+    {
+      "resources": [ "src/my_file.js"],
+      "matches": [         "http://localhost:3001/*"]
+    }
+  ]
+}

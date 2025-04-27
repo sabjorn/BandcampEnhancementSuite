@@ -16,7 +16,10 @@ export default class WaveformBackend {
 
     this.log.info("url recieved, beginning processing audio.");
 
-    const url = "https://t4.bcbits.com/stream/" + request.url;
+    const url = (() => {
+      if (request.url.includes("https")) return request.url;
+      return "https://t4.bcbits.com/stream/" + request.url;
+    })();
 
     fetch(url)
       .then(response => response.arrayBuffer())

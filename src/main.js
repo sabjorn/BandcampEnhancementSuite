@@ -28,6 +28,8 @@ function setupBridgeConnection() {
       console.error("Error processing request in extension:", err);
     }
   });
+
+  bridgeElement.setAttribute("data-bes-connected", true);
 }
 
 // Start looking for the bridge element when the content script loads

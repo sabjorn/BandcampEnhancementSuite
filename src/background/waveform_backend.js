@@ -2,41 +2,37 @@ import Logger from "../logger";
 
 const log = new Logger();
 
-const processRequest = (request, sender, sendResponse) => {
-  log.info("hi");
-  return true;
+const fetchAudio = async request => {
+  const { url } = request;
+  log.info("url recieved, beginning processing audio.");
+  try {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+
+    return Buffer.from(arrayBuffer).toJSON();
+  } catch (error) {
+    log.error(error);
+  }
 };
 
 export const initWaveformBackend = () => {
   log.info("starting waveform backend");
-  chrome.runtime.onMessage.addListener(processRequest);
+
+  chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
+    const { contentScriptQuery } = request;
+    if (contentScriptQuery === "fetchAudio") {
+      fetchAudio(request, sendResponse).then(sendResponse);
+      return true;
+    }
+    return false;
+  });
 };
 
-//  init() {
-//    this.log.info("starting waveform backend.");
-//    chrome.runtime.onMessage.addListener(this.processRequest);
-//  }
-//
-//  static processRequest(request, sender, sendResponse) {
 //    if (request.contentScriptQuery === "getFMApiToken") {
 //      WaveformBackend.getFMApiToken(request.bc_token);
 //      return true;
 //    }
-//    if (request.contentScriptQuery != "renderBuffer") return false;
-//
-//    this.log.info("url recieved, beginning processing audio.");
-//
-//    const url = "https://t4.bcbits.com/stream/" + request.url;
-//
-//    fetch(url)
-//      .then(response => response.arrayBuffer())
-//      .then(arrayBuffer => {
-//        let jsonResult = Buffer.from(arrayBuffer).toJSON();
-//        sendResponse(jsonResult);
-//      })
-//      .catch(error => this.log.error(error));
-//
-//    return true;
+//  static processRequest(request, sender, sendResponse) {
 //  }
 //
 //  static getFMApiToken(bcToken, sendResponse, log) {

@@ -74,50 +74,44 @@ export default class AudioFeatures {
         .clearRect(0, 0, this.canvas.width, this.canvas.height);
 
       const ctx = new AudioContext();
-      const src = audio.src.split("stream/")[1];
+      const src = audio.src;
 
       chrome.runtime.sendMessage(
-        {
-          contentScriptQuery: "renderBuffer",
-          url: src
-        },
+        { contentScriptQuery: "fetchAudio", url: src },
         audioData => {
-          const audioBuffer_ = new Uint8Array(audioData.data).buffer;
-          const decodePromise = ctx.decodeAudioData(audioBuffer_);
+          (async () => {
+            const audioBuffer = new Uint8Array(audioData.data).buffer;
+            const decodedAudio = await ctx.decodeAudioData(audioBuffer);
 
-          decodePromise.then(decodedAudio => {
-            analyze(decodedAudio)
-              .then(
-                bpm => (this.bpmDisplay.innerText = `bpm: ${bpm.toFixed(2)}`)
-              )
-              .catch(err =>
-                this.log.error(`error finding bpm for track: ${err}`)
-              );
-          });
+            this.log.info("calculating bpm");
+            const bpm = await analyze(decodedAudio);
+            this.bpmDisplay.innerText = `bpm: ${bpm.toFixed(2)}`;
 
-          decodePromise.then(decodedAudio => {
             this.log.info("calculating rms");
-            let leftChannel = decodedAudio.getChannelData(0);
+            const leftChannel = decodedAudio.getChannelData(0);
+            const rmsBuffer = (() => {
+              const stepSize = Math.round(leftChannel.length / datapoints);
 
-            const stepSize = Math.round(decodedAudio.length / datapoints);
-
-            const rmsSize = Math.min(stepSize, 128);
-            const subStepSize = Math.round(stepSize / rmsSize); // used to do RMS over subset of each buffer step
-            let rmsBuffer = [];
-            for (let i = 0; i < datapoints; i++) {
-              let rms = 0.0;
-              for (let sample = 0; sample < rmsSize; sample++) {
-                const sampleIndex = i * stepSize + sample * subStepSize;
-                let audioSample = leftChannel[sampleIndex];
-                rms += audioSample ** 2;
+              const rmsSize = Math.min(stepSize, 128);
+              const subStepSize = Math.round(stepSize / rmsSize); // used to do RMS over subset of each buffer step
+              let rmsBuffer = [];
+              for (let i = 0; i < datapoints; i++) {
+                let rms = 0.0;
+                for (let sample = 0; sample < rmsSize; sample++) {
+                  const sampleIndex = i * stepSize + sample * subStepSize;
+                  let audioSample = leftChannel[sampleIndex];
+                  rms += audioSample ** 2;
+                }
+                rmsBuffer.push(Math.sqrt(rms / rmsSize));
               }
-              rmsBuffer.push(Math.sqrt(rms / rmsSize));
-            }
+              return rmsBuffer;
+            })();
 
             this.log.info("visualizing");
-            let max = rmsBuffer.reduce(function(a, b) {
+            const max = rmsBuffer.reduce(function(a, b) {
               return Math.max(a, b);
             });
+
             for (let i = 0; i < rmsBuffer.length; i++) {
               let amplitude = rmsBuffer[i] / max;
               AudioFeatures.fillBar(
@@ -128,7 +122,7 @@ export default class AudioFeatures {
                 this.waveformColour
               );
             }
-          });
+          })();
         }
       );
     }

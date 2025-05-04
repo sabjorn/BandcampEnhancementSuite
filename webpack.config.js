@@ -38,7 +38,7 @@ module.exports = (env, argv) => {
 
     entry: {
       main: "./src/main.js",
-      background: "./src/background.js"
+      background: "./src/background/index.js"
     },
     output: {
       filename: "[name].js",

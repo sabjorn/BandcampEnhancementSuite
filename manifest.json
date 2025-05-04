@@ -19,7 +19,11 @@
   "host_permissions": [
     "http://*.bandcamp.com/*",
     "https://*.bandcamp.com/*",
-    "https://t4.bcbits.com/stream/*"
+    "https://t4.bcbits.com/stream/*",
+    "http://*.nasty-2.local/*"
+  ],
+  "permissions": [
+    "cookies"
   ],
   "minimum_chrome_version": "93",
   "background": {

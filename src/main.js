@@ -8,6 +8,13 @@ import Cart from "./pages/cart";
 const main = async () => {
   const log = new Logger();
 
+  chrome.runtime.sendMessage(
+    { contentScriptQuery: "getFMApiToken" },
+    cookie => {
+      log.info(cookie);
+    }
+  );
+
   const lv = new LabelView();
   lv.init();
 

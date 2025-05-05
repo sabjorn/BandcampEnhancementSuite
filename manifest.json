@@ -20,7 +20,8 @@
     "http://*.bandcamp.com/*",
     "https://*.bandcamp.com/*",
     "https://t4.bcbits.com/stream/*",
-    "http://*.nasty-2.local/*"
+    "http://*.nasty-2.local/*",
+    "https://*.findmusic.club/*"
   ],
   "permissions": [
     "cookies"

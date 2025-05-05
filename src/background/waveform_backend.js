@@ -1,4 +1,5 @@
 import Logger from "../logger";
+import DBUtils from "../utilities.js";
 
 const log = new Logger();
 
@@ -34,12 +35,11 @@ const fetchAudio = async request => {
 };
 
 const getFMApiToken = async () => {
-  const findmusic_cookie = await chrome.cookies.get({
-    url: "https://bandcamp.com/",
-    name: "findmusic"
-  });
-  if (findmusic_cookie.value) {
-    return findmusic_cookie.value;
+  const dbutils = new DBUtils();
+  const db = await dbutils.getDB(); // TODO: remove class and make factory
+  const fmtoken = await db.get("config", "fmtoken");
+  if (fmtoken) {
+    return fmtoken;
   }
 
   const bc_cookie = await chrome.cookies.get({
@@ -61,22 +61,31 @@ const getFMApiToken = async () => {
   }
 
   const data = await response.json();
-  chrome.cookies.set(
-    {
-      url: "https://bandcamp.com/",
-      name: "findmusic",
-      value: data.token,
-      expirationDate: new Date().getTime() / 1000 + 3600 * 24 * 14, // 14 days
-      path: "/",
-      secure: true,
-      httpOnly: false
-    },
-    () => {
-      if (chrome.runtime.lastError) {
-        log.error(chrome.runtime.lastError);
+
+  await db.put("config", data.token, "fmtoken");
+
+  [
+    "https://bandcamp.com/",
+    "https://findmusic.club/",
+    "http://nasty-2.local/"
+  ].forEach(url => {
+    chrome.cookies.set(
+      {
+        url,
+        name: "findmusic",
+        value: data.token,
+        expirationDate: new Date().getTime() / 1000 + 3600 * 24 * 14, // 14 days
+        path: "/",
+        secure: true,
+        httpOnly: false
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          log.error(chrome.runtime.lastError);
+        }
       }
-    }
-  );
+    );
+  });
 
   return data.token;
 };

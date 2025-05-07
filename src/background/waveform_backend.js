@@ -67,6 +67,7 @@ const getFMApiToken = async () => {
   [
     "https://bandcamp.com/",
     "https://findmusic.club/",
+    "http://localhost:3001/",
     "http://nasty-2.local/"
   ].forEach(url => {
     chrome.cookies.set(

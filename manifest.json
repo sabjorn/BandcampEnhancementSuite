@@ -21,6 +21,7 @@
     "https://*.bandcamp.com/*",
     "https://t4.bcbits.com/stream/*",
     "http://*.nasty-2.local/*",
+    "http://localhost:3001/*",
     "https://*.findmusic.club/*"
   ],
   "permissions": [
@@ -34,7 +35,10 @@
     {
       "matches": [
         "http://*.bandcamp.com/*",
-        "https://*.bandcamp.com/*"
+        "https://*.bandcamp.com/*",
+        "http://*.nasty-2.local/*",
+        "http://localhost:3001/*",
+        "https://*.findmusic.club/*"
       ],
       "js": [
         "dist/main.js"

@@ -34,6 +34,8 @@ const fetchAudio = async request => {
   }
 };
 
+// TODO: move to just be a function used by callers of API
+// not sure how FindMusic will make sure this is triggered
 const getFMApiToken = async () => {
   const dbutils = new DBUtils();
   const db = await dbutils.getDB(); // TODO: remove class and make factory

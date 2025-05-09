@@ -18,6 +18,11 @@ export const initWaveformBackend = () => {
       return true;
     }
 
+    if (contentScriptQuery === "postCache") {
+      postCache(request, sendResponse).then(sendResponse);
+      return true;
+    }
+
     if (contentScriptQuery === "fetchAudio") {
       fetchAudio(request, sendResponse).then(sendResponse);
       return true;
@@ -107,6 +112,32 @@ const postMetadata = async request => {
   }
 };
 
+const postCache = async request => {
+  const authToken = await getFMApiToken();
+  if (!authToken) return null;
+
+  try {
+    log.debug("postCache");
+    const response = await fetch("http://nasty-2.local/api/cache", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`
+      },
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to send cache: ${response.status} ${response.statusText} - ${errorText}`
+      );
+    }
+  } catch (error) {
+    log.error("Error sending to cache:", error);
+    throw error;
+  }
+};
 // TODO: move to just be a function used by callers of API
 // not sure how FindMusic will make sure this is triggered
 const getFMApiToken = async () => {

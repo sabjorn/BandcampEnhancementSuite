@@ -8,6 +8,16 @@ export const initWaveformBackend = () => {
 
   chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     const { contentScriptQuery } = request;
+    if (contentScriptQuery === "fetchTrackMetadata") {
+      fetchMetadata(request, sendResponse).then(sendResponse);
+      return true;
+    }
+
+    if (contentScriptQuery === "postTrackMetadata") {
+      postMetadata(request, sendResponse).then(sendResponse);
+      return true;
+    }
+
     if (contentScriptQuery === "fetchAudio") {
       fetchAudio(request, sendResponse).then(sendResponse);
       return true;
@@ -31,6 +41,69 @@ const fetchAudio = async request => {
     return Buffer.from(arrayBuffer).toJSON();
   } catch (error) {
     log.error(error);
+  }
+};
+
+const fetchMetadata = async request => {
+  const authToken = await getFMApiToken();
+  if (!authToken) return null;
+
+  const trackId = request.trackId;
+  try {
+    log.debug("fetchMetadata");
+    const response = await fetch(
+      `http://nasty-2.local/api/metadata?track_id=${trackId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    log.debug(`data: ${JSON.stringify(data)}`);
+    return data;
+  } catch (error) {
+    log.error("Error fetching track metadata:", error);
+    return null;
+  }
+};
+
+const postMetadata = async request => {
+  const authToken = await getFMApiToken();
+  if (!authToken) return null;
+
+  const { trackId, waveform, bpm } = request;
+  try {
+    log.debug("postMetadata");
+    const response = await fetch("http://nasty-2.local/api/metadata", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        track_id: trackId,
+        waveform: waveform,
+        bpm: bpm
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to send metadata: ${response.status} ${response.statusText} - ${errorText}`
+      );
+    }
+  } catch (error) {
+    log.error("Error sending track metadata:", error);
+    throw error;
   }
 };
 

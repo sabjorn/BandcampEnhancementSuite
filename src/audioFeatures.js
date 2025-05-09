@@ -71,26 +71,68 @@ export default class AudioFeatures {
       .getContext("2d")
       .clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    const ctx = new AudioContext();
     const src = audio.src;
+    const trackId = (() => {
+      const afterPrefix = src.split("mp3-128/")[1];
+      const trackId = afterPrefix.split("?")[0];
 
-    // First, get the audio data and process it
-    const { rmsBuffer, bpm } = await this.processAudioData(
-      src,
-      ctx,
-      datapoints
-    );
+      return trackId;
+    })();
+
+    const cachedData = await (async () => {
+      return new Promise(resolve => {
+        chrome.runtime.sendMessage(
+          {
+            contentScriptQuery: "fetchTrackMetadata",
+            trackId: trackId
+          },
+          response => {
+            if (chrome.runtime.lastError || !response) {
+              resolve(null);
+              return;
+            }
+
+            const { waveform, bpm } = response;
+            resolve({
+              waveform,
+              bpm
+            });
+          }
+        );
+      });
+    })();
+
+    const { waveform, bpm } = await (async () => {
+      if (cachedData) {
+        return cachedData;
+      }
+
+      const ctx = new AudioContext();
+      const { rmsBuffer: waveform, bpm } = await this.processAudioData(
+        src,
+        ctx,
+        datapoints
+      );
+
+      chrome.runtime.sendMessage({
+        contentScriptQuery: "postTrackMetadata",
+        trackId,
+        waveform,
+        bpm
+      });
+      return { waveform, bpm };
+    })();
 
     // Now update the display with the results (moved from the callback)
     this.bpmDisplay.innerText = `bpm: ${bpm.toFixed(2)}`;
 
     this.log.info("visualizing");
-    const max = rmsBuffer.reduce(function(a, b) {
+    const max = waveform.reduce(function(a, b) {
       return Math.max(a, b);
     });
 
-    for (let i = 0; i < rmsBuffer.length; i++) {
-      let amplitude = rmsBuffer[i] / max;
+    for (let i = 0; i < waveform.length; i++) {
+      let amplitude = waveform[i] / max;
       AudioFeatures.fillBar(
         this.canvas,
         amplitude,

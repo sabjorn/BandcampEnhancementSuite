@@ -102,6 +102,32 @@ export function addAlbumToCart(
   });
 }
 
+function cachedFetch(url, options = {}) {
+  const method = options.method || "GET";
+  const body = options.body || null;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await fetch(url, options);
+
+      if (response.ok) {
+        const responseClone = response.clone();
+        const rawResponse = await responseClone.text();
+        chrome.runtime.sendMessage({
+          contentScriptQuery: "postCache",
+          url,
+          method,
+          body,
+          rawResponse
+        });
+      }
+
+      resolve(response);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 export function getTralbumDetails(item_id, item_type = "a") {
   const raw = JSON.stringify({
     tralbum_type: item_type,
@@ -124,7 +150,7 @@ export function getTralbumDetails(item_id, item_type = "a") {
     body: raw
   };
 
-  return fetch(`/api/mobile/25/tralbum_details`, requestOptions);
+  return cachedFetch(`/api/mobile/25/tralbum_details`, requestOptions);
 }
 
 export function downloadFile(filename, text) {

@@ -143,7 +143,7 @@ const postCache = async request => {
 const getFMApiToken = async () => {
   const dbutils = new DBUtils();
   const db = await dbutils.getDB(); // TODO: remove class and make factory
-  const fmtoken = await db.get("config", "fmtoken");
+  const fmtoken = await db.get("config", "fmtoken"); // TODO: check expirty
   if (fmtoken) {
     return fmtoken;
   }

@@ -117,8 +117,8 @@ function cachedFetch(url, options = {}) {
           contentScriptQuery: "postCache",
           url,
           method,
-          body,
-          rawResponse
+          request_data: body,
+          response_body: rawResponse
         });
       }
 

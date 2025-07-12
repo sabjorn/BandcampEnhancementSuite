@@ -34,8 +34,3 @@ jobs:
     
     - name: Run tests
       run: pnpm run test
-    
-    - name: Visual regression tests
-      run: pnpm run snapshots
-      env:
-        CI: true

@@ -2,8 +2,8 @@ import { defineConfig } from 'tsup'
 
 export default defineConfig({
   entry: {
-    main: './src/main.js',
-    background: './src/background.js'
+    main: './src/main.ts',
+    background: './src/background.ts'
   },
   format: ['iife'],
   target: 'es2022',

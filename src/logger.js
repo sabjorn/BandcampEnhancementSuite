@@ -1,64 +1,72 @@
 // Custom browser logger.
 // Only prints errors when NODE_ENV is 'production'.
-// Inspiration: https://github.com/winstonjs/winston/issues/287#issuecomment-647196496
+// Browser-compatible logger without Winston dependencies
 //
-// Usage: https://github.com/winstonjs/winston#using-logging-levels
-//
-//   import logger from './logger';
+// Usage:
+//   import Logger from './logger';
 //   const log = new Logger();
-//   logger.debug('got here');
-//   logger.info({some: 'object'});
-//   logger.error('Production problem!');
+//   log.debug('got here');
+//   log.info({some: 'object'});
+//   log.error('Production problem!');
 
-import * as winston from "winston";
-import { TransformableInfo } from "logform";
-import * as Transport from "winston-transport";
-
-// Customizing the Winston console transporter
-class CustomConsole extends Transport {
-  constructor(options = {}) {
-    super(options);
-
-    this.setMaxListeners(30);
-
-    // enumeration to assign color values to
-    this.levelColors = {
-      INFO: "darkturquoise",
-      DEBUG: "khaki",
-      ERROR: "tomato"
-    };
-
-    this.defaultColor = "color: inherit";
-  }
-
-  log(info, next) {
-    // styles a console log statement accordingly to the log level
-    // log level colors are taken from levelcolors enum
-    // eslint-disable-next-line no-console
-    console[info.level === "error" ? "error" : "log"](
-      `%c[%cBES ${info.level.toUpperCase()}%c]:`,
-      this.defaultColor,
-      `color: ${this.levelColors[info.level.toUpperCase()]};`,
-      this.defaultColor,
-      // message will be included after stylings
-      // through this objects and arrays will be expandable
-      info.message
-    );
-
-    // This is a stream, be sure to flow onward
-    next();
-  }
-}
-
-export default class Logger extends winston.createLogger {
+export default class Logger {
   constructor(level) {
     // When in production, only show errors.
-    const transportLevel =
-      level || process.env.NODE_ENV == "production" ? "error" : "debug";
-
-    // Provide `winston.createLogger()` args as usual...
-    super({
-      transports: [new CustomConsole({ level: transportLevel })]
-    });
+    this.level = level || (process.env.NODE_ENV === "production" ? "error" : "debug");
+    
+    // enumeration to assign color values to
+    this.levelColors = {
+      info: "darkturquoise",
+      debug: "khaki", 
+      error: "tomato"
+    };
+    
+    this.defaultColor = "color: inherit";
+    
+    // Define log levels in order of priority
+    this.levels = {
+      error: 0,
+      warn: 1,
+      info: 2,
+      debug: 3
+    };
+  }
+  
+  shouldLog(level) {
+    return this.levels[level] <= this.levels[this.level];
+  }
+  
+  formatMessage(level, message) {
+    return [
+      `%c[%cBES ${level.toUpperCase()}%c]:`,
+      this.defaultColor,
+      `color: ${this.levelColors[level]};`,
+      this.defaultColor,
+      message
+    ];
+  }
+  
+  debug(message) {
+    if (this.shouldLog('debug')) {
+      console.log(...this.formatMessage('debug', message));
+    }
+  }
+  
+  info(message) {
+    if (this.shouldLog('info')) {
+      console.log(...this.formatMessage('info', message));
+    }
+  }
+  
+  warn(message) {
+    if (this.shouldLog('warn')) {
+      console.warn(...this.formatMessage('warn', message));
+    }
+  }
+  
+  error(message) {
+    if (this.shouldLog('error')) {
+      console.error(...this.formatMessage('error', message));
+    }
   }
 }

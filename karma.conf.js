@@ -7,7 +7,6 @@ module.exports = function(config) {
       //'Chrome',       // Use this for viewing chrome.runtime errors
       //'Firefox',      // Maybe in the future?
     ],
-    //singleRun: true,
 
     /**
      * Level of logging
@@ -28,26 +27,29 @@ module.exports = function(config) {
      */
     browserNoActivityTimeout: 300000,
 
-    // 'karma-*' is default and loads all available plugins. Kept here
-    // for visibility and to prevent accidental override.
-    plugins: ['karma-*'],
+    // Explicitly list required karma plugins
+    plugins: [
+      'karma-mocha', 
+      'karma-chai',
+      'karma-chrome-launcher',
+      'karma-spec-reporter'
+    ],
     colors: true,
+    
+    // For now, run tests directly without preprocessing
+    // In the future, we can add TypeScript support here
     files: [
-      // each file acts as entry point for the webpack configuration
+      // Include test utilities first
+      { pattern: 'test/utils.js', watched: true },
+      // Include built source files for testing
+      { pattern: 'dist/**/*.js', included: false, served: true, watched: false },
+      // Include test files
       { pattern: 'test/**/*.js', watched: true },
     ],
 
-    preprocessors: {
-      // add webpack as preprocessor
-      './test/**/*.js': ['webpack'],
-    },
+    // Temporarily disable webpack preprocessing since we removed webpack
+    preprocessors: {},
 
-    webpack: require('./webpack.test.config.js'),
-    webpackMiddleware: {
-      // webpack-dev-middleware configuration
-      stats: 'errors-only',
-      noInfo: true
-    },
     client: {
       mocha: {
         // change Karma's debug.html to the mocha web reporter

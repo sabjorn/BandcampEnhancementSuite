@@ -137,7 +137,7 @@ export default class LabelView {
     document
       .querySelectorAll("li.music-grid-item[data-item-id]")
       .forEach(item => {
-        const idAndType = item.dataset.itemId;
+        const idAndType = (item as HTMLElement).dataset.itemId!;
         const id = idAndType.split("-")[1];
         const idType = idAndType.split("-")[0];
         let $preview = this.generatePreview(id, idType);
@@ -151,7 +151,7 @@ export default class LabelView {
         'li.music-grid-item[data-tralbumid][data-tralbumtype="a"]'
       )
       .forEach(item => {
-        const id = item.dataset.tralbumid;
+        const id = (item as HTMLElement).dataset.tralbumid!;
         let preview = this.generatePreview(id, "album");
         item.appendChild(preview);
 

@@ -14,7 +14,7 @@ export default class DownloadHelper {
   constructor() {
     this.log = new Logger();
 
-    this.mutationCallback = DownloadHelper.callback.bind(this); // necessary for class callback
+    this.mutationCallback = this.callbackImpl.bind(this); // necessary for class callback
     this.observer = new MutationObserver(this.mutationCallback);
 
     // re-import
@@ -93,13 +93,13 @@ export default class DownloadHelper {
     return "URLS=(\n" + fileList + "\n)\n";
   }
 
-  static callback(): void {
+  callbackImpl(): void {
     const allDownloadLinks = document.querySelectorAll(
       ".download-title .item-button"
     );
 
     const linksReady = [...allDownloadLinks].every(
-      element => element.style.display !== "none"
+      element => (element as HTMLElement).style.display !== "none"
     );
 
     this.log.info(`linksReady: ${linksReady}`);
@@ -109,6 +109,10 @@ export default class DownloadHelper {
     }
 
     this.disableButton();
+  }
+
+  static callback(): void {
+    // Legacy static method - not used
   }
 
   static getDownloadPreamble(): string {

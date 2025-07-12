@@ -27,9 +27,9 @@ const creatInput = (prefix: string, suffix: string, placeholder: number, inputCl
 
   const input = document.createElement("input");
   input.type = "number";
-  input.min = placeholder;
+  input.min = placeholder.toString();
   input.className = inputClass;
-  input.placeholder = Math.ceil(parseFloat(placeholder) * 100) / 100;
+  input.placeholder = (Math.ceil(parseFloat(placeholder.toString()) * 100) / 100).toString();
 
   input.addEventListener("focus", function() {
     if (this.value === this.placeholder) {

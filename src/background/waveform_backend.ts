@@ -17,8 +17,6 @@ export default class WaveformBackend {
   static processRequest(request: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void): boolean {
     if (request.contentScriptQuery != "renderBuffer") return false;
 
-    this.log.info("url recieved, beginning processing audio.");
-
     const url = "https://t4.bcbits.com/stream/" + request.url;
 
     fetch(url)
@@ -27,7 +25,7 @@ export default class WaveformBackend {
         let jsonResult = Buffer.from(arrayBuffer).toJSON();
         sendResponse(jsonResult);
       })
-      .catch(error => this.log.error(error));
+      .catch(error => console.error(error));
 
     return true;
   }

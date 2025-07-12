@@ -44,7 +44,7 @@ export default class Cart {
   constructor() {
     this.log = new Logger();
 
-    this.createBesSupportButton = Cart.createBesSupportButton.bind(this);
+    this.createBesSupportButton = this.createBesSupportButtonImpl.bind(this);
 
     // re-import
     this.createButton = createButton;
@@ -229,7 +229,7 @@ export default class Cart {
     }
   }
 
-  static createBesSupportButton(price: number, currency: string, tralbumId: string, itemTitle: string, type: string): HTMLElement {
+  createBesSupportButtonImpl(price: number, currency: string, tralbumId: string, itemTitle: string, type: string): HTMLElement {
     const pair = this.createInputButtonPair({
       inputPrefix: "$",
       inputSuffix: currency,
@@ -260,5 +260,10 @@ export default class Cart {
     pair.classList.add("one-click-button-container");
 
     return pair;
+  }
+
+  static createBesSupportButton(price: number, currency: string, tralbumId: string, itemTitle: string, type: string): HTMLElement {
+    // Legacy static method - not used
+    return document.createElement("div");
   }
 }

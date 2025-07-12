@@ -39,13 +39,13 @@ export default class Checkout {
   constructor(port: PortMessage) {
     this.log = new Logger();
 
-    this.checkoutButtonClicked = Checkout.checkoutButtonClicked.bind(this);
-    this.applyConfig = Checkout.applyConfig.bind(this);
-    this.closeDialogAndGoToCart = Checkout.closeDialogAndGoToCart.bind(this);
+    this.checkoutButtonClicked = this.checkoutButtonClickedImpl.bind(this);
+    this.applyConfig = this.applyConfigImpl.bind(this);
+    this.closeDialogAndGoToCart = this.closeDialogAndGoToCartImpl.bind(this);
     this.addAlbumToCart = addAlbumToCart.bind(this);
 
-    this.yesButtonClicked = Checkout.yesButtonClicked.bind(this);
-    this.noButtonClicked = Checkout.noButtonClicked.bind(this);
+    this.yesButtonClicked = this.yesButtonClickedImpl.bind(this);
+    this.noButtonClicked = this.noButtonClickedImpl.bind(this);
 
     this.port = port;
   }
@@ -81,29 +81,37 @@ export default class Checkout {
     this.port.postMessage({ requestConfig: {} }); // TO DO: this must be at end of init
   }
 
-  static applyConfig(msg: ConfigMessage): void {
+  applyConfigImpl(msg: ConfigMessage): void {
     this.log.info("config recieved from backend" + JSON.stringify(msg.config));
     this.config = msg.config;
   }
 
-  static checkoutButtonClicked(): void {
+  static applyConfig(msg: ConfigMessage): void {
+    // Legacy static method - not used
+  }
+
+  checkoutButtonClickedImpl(): void {
     const enough_time_passed =
-      Date.now() / 1000 - this.config.installDateUnixSeconds >
-      this.config.albumPurchaseTimeDelaySeconds;
+      Date.now() / 1000 - this.config!.installDateUnixSeconds >
+      this.config!.albumPurchaseTimeDelaySeconds;
     if (
-      !this.config.albumOnCheckoutDisabled &&
-      !this.config.albumPurchasedDuringCheckout &&
+      !this.config!.albumOnCheckoutDisabled &&
+      !this.config!.albumPurchasedDuringCheckout &&
       enough_time_passed
     ) {
-      this.dialog.style.display = "block";
+      this.dialog!.style.display = "block";
       return;
     }
 
     this.closeDialogAndGoToCart();
   }
 
-  static closeDialogAndGoToCart(): void {
-    this.dialog.style.display = "none";
+  static checkoutButtonClicked(): void {
+    // Legacy static method - not used
+  }
+
+  closeDialogAndGoToCartImpl(): void {
+    this.dialog!.style.display = "none";
 
     const clickEvent = new MouseEvent("click", {
       view: window,
@@ -114,11 +122,15 @@ export default class Checkout {
     checkout_button.dispatchEvent(clickEvent);
   }
 
-  static yesButtonClicked(): void {
-    let unit_price = parseFloat((this.dialog.querySelector("input") as HTMLInputElement).value);
+  static closeDialogAndGoToCart(): void {
+    // Legacy static method - not used
+  }
+
+  yesButtonClickedImpl(): void {
+    let unit_price = parseFloat((this.dialog!.querySelector("input") as HTMLInputElement).value);
     this.log.info(`price ${unit_price}`);
 
-    let error_div = this.dialog.querySelector("#bes_checkout_error") as HTMLElement;
+    let error_div = this.dialog!.querySelector("#bes_checkout_error") as HTMLElement;
     error_div.innerHTML = " ";
     if (unit_price < 5) {
       error_div.innerHTML = "value entered is under $5.00 CAD";
@@ -126,7 +138,7 @@ export default class Checkout {
     }
 
     this.log.info(`add ${albumsToPurchase} to cart`);
-    this.addAlbumToCart(albumsToPurchase, unit_price)
+    this.addAlbumToCart(albumsToPurchase[0], unit_price)
       .then(() => {
         this.log.info("update config");
         this.port.postMessage({
@@ -138,9 +150,17 @@ export default class Checkout {
       });
   }
 
-  static noButtonClicked(): void {
+  static yesButtonClicked(): void {
+    // Legacy static method - not used
+  }
+
+  noButtonClickedImpl(): void {
     this.port.postMessage({ config: { albumOnCheckoutDisabled: true } });
     this.closeDialogAndGoToCart();
+  }
+
+  static noButtonClicked(): void {
+    // Legacy static method - not used
   }
 
   static replaceCheckoutButton(): HTMLElement {

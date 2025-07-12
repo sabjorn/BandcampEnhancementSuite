@@ -47,25 +47,25 @@ const LARGE_SEEK_STEP_SIZE = 30;
 const VOLUME_STEP = 0.05;
 const DEFAULT_KEY_HANDLERS: KeyHandlers = {
   " ": () => {
-    const playButton = document.querySelector("div.playbutton");
+    const playButton = document.querySelector("div.playbutton") as HTMLElement;
     if (!playButton) return;
 
     playButton.click();
   },
   p: () => {
-    const playButton = document.querySelector("div.playbutton");
+    const playButton = document.querySelector("div.playbutton") as HTMLElement;
     if (!playButton) return;
 
     playButton.click();
   },
   ArrowUp: () => {
-    const prevButton = document.querySelector("div.prevbutton");
+    const prevButton = document.querySelector("div.prevbutton") as HTMLElement;
     if (!prevButton) return;
 
     prevButton.click();
   },
   ArrowDown: () => {
-    const nextButton = document.querySelector("div.nextbutton");
+    const nextButton = document.querySelector("div.nextbutton") as HTMLElement;
     if (!nextButton) return;
 
     nextButton.click();
@@ -95,23 +95,23 @@ const DEFAULT_KEY_HANDLERS: KeyHandlers = {
     audio.currentTime = audio.currentTime + LARGE_SEEK_STEP_SIZE;
   },
   "Shift+ArrowUp": () => {
-    let input = document.querySelector("input.volume");
+    let input = document.querySelector("input.volume") as HTMLInputElement;
     if (!input) return;
 
     const currentVolume = parseFloat(input.value);
     const newVolume = currentVolume + VOLUME_STEP;
-    input.value = newVolume > 1.0 ? 1.0 : newVolume;
+    input.value = (newVolume > 1.0 ? 1.0 : newVolume).toString();
 
     const event = new Event("input");
     input.dispatchEvent(event);
   },
   "Shift+ArrowDown": () => {
-    let input = document.querySelector("input.volume");
+    let input = document.querySelector("input.volume") as HTMLInputElement;
     if (!input) return;
 
     const currentVolume = parseFloat(input.value);
     const newVolume = currentVolume - VOLUME_STEP;
-    input.value = newVolume < 0.0 ? 0.0 : newVolume;
+    input.value = (newVolume < 0.0 ? 0.0 : newVolume).toString();
 
     const event = new Event("input");
     input.dispatchEvent(event);
@@ -143,7 +143,7 @@ export default class Player {
     this.keyHandlers = DEFAULT_KEY_HANDLERS;
     this.preventDefault = true;
 
-    this.keydownCallback = Player.keydownCallback.bind(this);
+    this.keydownCallback = this.keydownCallbackImpl.bind(this);
     this.volumeSliderCallback = Player.volumeSliderCallback.bind(this);
     this.createOneClickBuyButton = Player.createOneClickBuyButton.bind(this);
 
@@ -280,13 +280,13 @@ export default class Player {
     let input = document.createElement("input");
     input.type = "range";
     input.classList.add("volume", "thumb", "progbar_empty");
-    input.min = 0.0;
-    input.max = 1.0;
-    input.step = 0.01;
+    input.min = "0";
+    input.max = "1";
+    input.step = "0.01";
     input.title = "volume control";
 
     let audio = document.querySelector("audio") as HTMLAudioElement;
-    input.value = audio.volume;
+    input.value = audio.volume.toString();
 
     return input;
   }
@@ -323,7 +323,7 @@ export default class Player {
     return div;
   }
 
-  static keydownCallback(e: KeyboardEvent): void {
+  keydownCallbackImpl(e: KeyboardEvent): void {
     if (e.target !== document.body) {
       return;
     }
@@ -352,6 +352,10 @@ export default class Player {
     if (this.preventDefault) {
       e.preventDefault();
     }
+  }
+
+  static keydownCallback(e: KeyboardEvent): void {
+    // This method will be bound to instance in constructor
   }
 
   static mousedownCallback(e: MouseEvent): void {

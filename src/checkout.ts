@@ -3,15 +3,41 @@ import html from "../html/popup.html";
 import { centreElement, addAlbumToCart } from "./utilities.js";
 import Logger from "./logger";
 
+interface PortMessage {
+  onMessage: {
+    addListener: (callback: (message: any) => void) => void;
+  };
+  postMessage: (message: any) => void;
+}
+
+interface CheckoutConfig {
+  installDateUnixSeconds: number;
+  albumPurchaseTimeDelaySeconds: number;
+  albumOnCheckoutDisabled: boolean;
+  albumPurchasedDuringCheckout: boolean;
+}
+
+interface ConfigMessage {
+  config: CheckoutConfig;
+}
+
 const albumsToPurchase = [1609998585];
 
 export default class Checkout {
-  constructor(port) {
-    this.log = new Logger();
+  public log: Logger;
+  public config?: CheckoutConfig;
+  public dialog?: HTMLElement;
+  public checkout_button_sub?: HTMLElement;
+  public port: PortMessage;
+  public checkoutButtonClicked: () => void;
+  public applyConfig: (msg: ConfigMessage) => void;
+  public closeDialogAndGoToCart: () => void;
+  public addAlbumToCart: (item_id: string | number, unit_price: string | number, item_type?: string) => Promise<Response>;
+  public yesButtonClicked: () => void;
+  public noButtonClicked: () => void;
 
-    this.config;
-    this.dialog;
-    this.checkout_button_sub;
+  constructor(port: PortMessage) {
+    this.log = new Logger();
 
     this.checkoutButtonClicked = Checkout.checkoutButtonClicked.bind(this);
     this.applyConfig = Checkout.applyConfig.bind(this);
@@ -24,7 +50,7 @@ export default class Checkout {
     this.port = port;
   }
 
-  init() {
+  init(): void {
     this.log.info("Loaded Checkout");
 
     this.checkout_button_sub = Checkout.replaceCheckoutButton();
@@ -55,12 +81,12 @@ export default class Checkout {
     this.port.postMessage({ requestConfig: {} }); // TO DO: this must be at end of init
   }
 
-  static applyConfig(msg) {
+  static applyConfig(msg: ConfigMessage): void {
     this.log.info("config recieved from backend" + JSON.stringify(msg.config));
     this.config = msg.config;
   }
 
-  static checkoutButtonClicked() {
+  static checkoutButtonClicked(): void {
     const enough_time_passed =
       Date.now() / 1000 - this.config.installDateUnixSeconds >
       this.config.albumPurchaseTimeDelaySeconds;
@@ -76,7 +102,7 @@ export default class Checkout {
     this.closeDialogAndGoToCart();
   }
 
-  static closeDialogAndGoToCart() {
+  static closeDialogAndGoToCart(): void {
     this.dialog.style.display = "none";
 
     const clickEvent = new MouseEvent("click", {
@@ -84,15 +110,15 @@ export default class Checkout {
       bubbles: true,
       cancelable: false
     });
-    let checkout_button = document.querySelector("#sidecartCheckout");
+    let checkout_button = document.querySelector("#sidecartCheckout") as HTMLElement;
     checkout_button.dispatchEvent(clickEvent);
   }
 
-  static yesButtonClicked() {
-    let unit_price = parseFloat(this.dialog.querySelector("input").value);
+  static yesButtonClicked(): void {
+    let unit_price = parseFloat((this.dialog.querySelector("input") as HTMLInputElement).value);
     this.log.info(`price ${unit_price}`);
 
-    let error_div = this.dialog.querySelector("#bes_checkout_error");
+    let error_div = this.dialog.querySelector("#bes_checkout_error") as HTMLElement;
     error_div.innerHTML = " ";
     if (unit_price < 5) {
       error_div.innerHTML = "value entered is under $5.00 CAD";
@@ -112,15 +138,15 @@ export default class Checkout {
       });
   }
 
-  static noButtonClicked() {
+  static noButtonClicked(): void {
     this.port.postMessage({ config: { albumOnCheckoutDisabled: true } });
     this.closeDialogAndGoToCart();
   }
 
-  static replaceCheckoutButton() {
-    let checkout_button = document.querySelector("#sidecartCheckout");
+  static replaceCheckoutButton(): HTMLElement {
+    let checkout_button = document.querySelector("#sidecartCheckout") as HTMLElement;
 
-    let sidecart_footer = document.querySelector("#sidecartFooter");
+    let sidecart_footer = document.querySelector("#sidecartFooter") as HTMLElement;
     let checkout_button_sub = document.createElement("a");
     checkout_button_sub.className = "buttonLink notSkinnable";
     checkout_button_sub.innerHTML = checkout_button.innerHTML;
@@ -131,11 +157,11 @@ export default class Checkout {
     return checkout_button_sub;
   }
 
-  static createDialog() {
+  static createDialog(): HTMLElement {
     const element = document.createElement("div");
     element.insertAdjacentHTML("beforeend", html);
 
-    const dialog = element.querySelector("#bes_wrapper");
+    const dialog = element.querySelector("#bes_wrapper") as HTMLElement;
 
     window.document.body.appendChild(dialog);
 

@@ -3,6 +3,14 @@ import Logger from "./logger";
 import { downloadFile, dateString } from "./utilities";
 
 export default class DownloadHelper {
+  public log: Logger;
+  public mutationCallback: () => void;
+  public observer: MutationObserver;
+  public linksReady?: boolean;
+  public button?: HTMLButtonElement;
+  public static dateString: () => string;
+  public static downloadFile: (filename: string, text: string) => void;
+
   constructor() {
     this.log = new Logger();
 
@@ -13,11 +21,9 @@ export default class DownloadHelper {
     DownloadHelper.dateString = dateString;
     DownloadHelper.downloadFile = downloadFile;
 
-    this.linksReady;
-    this.button;
   }
 
-  init() {
+  init(): void {
     this.log.info("Initiating BES Download Helper");
 
     this.createButton();
@@ -34,10 +40,10 @@ export default class DownloadHelper {
     }
   }
 
-  createButton() {
+  createButton(): void {
     if (this.button) return;
 
-    let location = document.querySelector("div.download-titles");
+    let location = document.querySelector("div.download-titles") as HTMLElement;
 
     this.button = document.createElement("button");
     this.button.title =
@@ -49,7 +55,7 @@ export default class DownloadHelper {
     location.append(this.button);
   }
 
-  enableButton() {
+  enableButton(): void {
     this.log.info("enableButton()");
 
     this.button.disabled = false;
@@ -66,7 +72,7 @@ export default class DownloadHelper {
     });
   }
 
-  disableButton() {
+  disableButton(): void {
     this.log.info("disableButton()");
 
     this.button.disabled = true;
@@ -74,10 +80,10 @@ export default class DownloadHelper {
     this.button.textContent = "preparing download";
   }
 
-  static generateDownloadList() {
+  static generateDownloadList(): string {
     const urlSet = new Set(
       [...document.querySelectorAll("a.item-button")].map(item => {
-        return item.getAttribute("href");
+        return item.getAttribute("href")!;
       })
     );
 
@@ -87,7 +93,7 @@ export default class DownloadHelper {
     return "URLS=(\n" + fileList + "\n)\n";
   }
 
-  static callback() {
+  static callback(): void {
     const allDownloadLinks = document.querySelectorAll(
       ".download-title .item-button"
     );
@@ -105,11 +111,11 @@ export default class DownloadHelper {
     this.disableButton();
   }
 
-  static getDownloadPreamble() {
+  static getDownloadPreamble(): string {
     return preamble;
   }
 
-  static getDownloadPostamble() {
+  static getDownloadPostamble(): string {
     return postamble;
   }
 }

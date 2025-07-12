@@ -1,4 +1,11 @@
-export function createShoppingCartItem(options = {}) {
+interface ShoppingCartItemOptions {
+  itemId: string;
+  itemName: string;
+  itemPrice: number;
+  itemCurrency: string;
+}
+
+export function createShoppingCartItem(options: ShoppingCartItemOptions = {} as ShoppingCartItemOptions): HTMLDivElement {
   const { itemId, itemName, itemPrice, itemCurrency } = options;
 
   const itemContainer = document.createElement("div");

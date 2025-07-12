@@ -1,17 +1,20 @@
 import Logger from "../logger";
 
 export default class WaveformBackend {
+  public log: Logger;
+  public processRequest: (request: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => boolean;
+
   constructor() {
     this.log = new Logger();
     this.processRequest = WaveformBackend.processRequest.bind(this);
   }
 
-  init() {
+  init(): void {
     this.log.info("starting waveform backend.");
     chrome.runtime.onMessage.addListener(this.processRequest);
   }
 
-  static processRequest(request, sender, sendResponse) {
+  static processRequest(request: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void): boolean {
     if (request.contentScriptQuery != "renderBuffer") return false;
 
     this.log.info("url recieved, beginning processing audio.");

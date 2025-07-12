@@ -10,11 +10,42 @@ import {
 import { createInputButtonPair } from "./components/buttons.js";
 import { createShoppingCartItem } from "./components/shoppingCart.js";
 import { createPlusSvgIcon } from "./components/svgIcons";
+import { BandFollowInfo, FanTralbumData } from "./utilities";
+
+interface KeyCombo {
+  key: string;
+  alt?: boolean;
+  ctrl?: boolean;
+  shift?: boolean;
+  meta?: boolean;
+}
+
+interface KeyHandlers {
+  [key: string]: () => void;
+}
+
+interface TralbumTrack {
+  price: number;
+  currency: string;
+  track_id: string;
+  title: string;
+  is_purchasable: boolean;
+}
+
+interface TralbumDetails {
+  price: number;
+  currency: string;
+  id: string;
+  title: string;
+  is_purchasable: boolean;
+  type: string;
+  tracks: TralbumTrack[];
+}
 
 const SEEK_STEP_SIZE = 10;
 const LARGE_SEEK_STEP_SIZE = 30;
 const VOLUME_STEP = 0.05;
-const DEFAULT_KEY_HANDLERS = {
+const DEFAULT_KEY_HANDLERS: KeyHandlers = {
   " ": () => {
     const playButton = document.querySelector("div.playbutton");
     if (!playButton) return;
@@ -40,25 +71,25 @@ const DEFAULT_KEY_HANDLERS = {
     nextButton.click();
   },
   ArrowRight: () => {
-    let audio = document.querySelector("audio");
+    let audio = document.querySelector("audio") as HTMLAudioElement;
     if (!audio) return;
 
     audio.currentTime = audio.currentTime + SEEK_STEP_SIZE;
   },
   ArrowLeft: () => {
-    let audio = document.querySelector("audio");
+    let audio = document.querySelector("audio") as HTMLAudioElement;
     if (!audio) return;
 
     audio.currentTime = audio.currentTime - SEEK_STEP_SIZE;
   },
   "Shift+ArrowLeft": () => {
-    let audio = document.querySelector("audio");
+    let audio = document.querySelector("audio") as HTMLAudioElement;
     if (!audio) return;
 
     audio.currentTime = audio.currentTime - LARGE_SEEK_STEP_SIZE;
   },
   "Shift+ArrowRight": () => {
-    let audio = document.querySelector("audio");
+    let audio = document.querySelector("audio") as HTMLAudioElement;
     if (!audio) return;
 
     audio.currentTime = audio.currentTime + LARGE_SEEK_STEP_SIZE;
@@ -87,7 +118,7 @@ const DEFAULT_KEY_HANDLERS = {
   }
 };
 
-function keyComboToString(combo) {
+function keyComboToString(combo: KeyCombo): string {
   const { key, alt = false, ctrl = false, shift = false, meta = false } = combo;
   return `${alt ? "Alt+" : ""}${ctrl ? "Ctrl+" : ""}${shift ? "Shift+" : ""}${
     meta ? "Meta+" : ""
@@ -95,6 +126,18 @@ function keyComboToString(combo) {
 }
 
 export default class Player {
+  public log: Logger;
+  public keyHandlers: KeyHandlers;
+  public preventDefault: boolean;
+  public keydownCallback: (e: KeyboardEvent) => void;
+  public volumeSliderCallback: (e: Event) => void;
+  public createOneClickBuyButton: (price: number, currency: string, tralbumId: string, itemTitle: string, type: string) => HTMLElement;
+  public addAlbumToCart: (item_id: string | number, unit_price: string | number, item_type?: string) => Promise<Response>;
+  public createInputButtonPair: any;
+  public createShoppingCartItem: any;
+  public extractBandFollowInfo: () => BandFollowInfo;
+  public extractFanTralbumData: () => FanTralbumData;
+  public getTralbumDetails: (item_id: string | number, item_type?: string) => Promise<Response>;
   constructor() {
     this.log = new Logger();
     this.keyHandlers = DEFAULT_KEY_HANDLERS;
@@ -113,12 +156,12 @@ export default class Player {
     this.getTralbumDetails = getTralbumDetails.bind(this);
   }
 
-  init() {
+  init(): Promise<void> | void {
     this.log.info("Starting BES Player");
 
     document.addEventListener("keydown", this.keydownCallback);
 
-    let progressBar = document.querySelector(".progbar");
+    let progressBar = document.querySelector(".progbar") as HTMLElement;
     progressBar.style.cursor = "pointer";
     progressBar.addEventListener("click", mousedownCallback);
 
@@ -197,8 +240,8 @@ export default class Player {
           type
         );
 
-        document
-          .querySelector("ul.tralbumCommands .buyItem.digital h3.hd")
+        (document
+          .querySelector("ul.tralbumCommands .buyItem.digital h3.hd") as HTMLElement)
           .append(oneClick);
       })
       .catch(error => {
@@ -206,7 +249,7 @@ export default class Player {
       });
   }
 
-  updatePlayerControlInterface() {
+  updatePlayerControlInterface(): void {
     let controls = document.createElement("div");
     controls.classList.add("controls");
 
@@ -220,20 +263,20 @@ export default class Player {
     let prevNext = Player.transferPreviousNextButtons();
     controls.append(prevNext);
 
-    let inlineplayer = document.querySelector("div.inline_player");
+    let inlineplayer = document.querySelector("div.inline_player") as HTMLElement;
     if (!inlineplayer.classList.contains("hidden"))
       inlineplayer.prepend(controls);
   }
 
-  static movePlaylist() {
+  static movePlaylist(): void {
     const playlist = document.querySelector("table#track_table");
     if (playlist) {
-      const player = document.querySelector("div.inline_player");
+      const player = document.querySelector("div.inline_player") as HTMLElement;
       player.after(playlist);
     }
   }
 
-  static createVolumeSlider() {
+  static createVolumeSlider(): HTMLInputElement {
     let input = document.createElement("input");
     input.type = "range";
     input.classList.add("volume", "thumb", "progbar_empty");
@@ -242,16 +285,16 @@ export default class Player {
     input.step = 0.01;
     input.title = "volume control";
 
-    let audio = document.querySelector("audio");
+    let audio = document.querySelector("audio") as HTMLAudioElement;
     input.value = audio.volume;
 
     return input;
   }
 
-  static transferPlayButton() {
-    let play_cell = document.querySelector("td.play_cell");
+  static transferPlayButton(): HTMLDivElement {
+    let play_cell = document.querySelector("td.play_cell") as HTMLTableCellElement;
     play_cell.parentNode.removeChild(play_cell);
-    let play_button = play_cell.querySelector("a");
+    let play_button = play_cell.querySelector("a") as HTMLAnchorElement;
     let play_div = document.createElement("div");
     play_div.classList.add("play_cell");
     play_div.append(play_button);
@@ -259,17 +302,17 @@ export default class Player {
     return play_div;
   }
 
-  static transferPreviousNextButtons() {
-    let prev_cell = document.querySelector("td.prev_cell");
+  static transferPreviousNextButtons(): HTMLDivElement {
+    let prev_cell = document.querySelector("td.prev_cell") as HTMLTableCellElement;
     prev_cell.parentNode.removeChild(prev_cell);
-    let prev_button = prev_cell.querySelector("a");
+    let prev_button = prev_cell.querySelector("a") as HTMLAnchorElement;
     let prev_div = document.createElement("div");
     prev_div.classList.add("prev");
     prev_div.append(prev_button);
 
-    let next_cell = document.querySelector("td.next_cell");
+    let next_cell = document.querySelector("td.next_cell") as HTMLTableCellElement;
     next_cell.parentNode.removeChild(next_cell);
-    let next_button = next_cell.querySelector("a");
+    let next_button = next_cell.querySelector("a") as HTMLAnchorElement;
     let next_div = document.createElement("div");
     next_div.classList.add("next");
     next_div.append(next_button);
@@ -280,7 +323,7 @@ export default class Player {
     return div;
   }
 
-  static keydownCallback(e) {
+  static keydownCallback(e: KeyboardEvent): void {
     if (e.target !== document.body) {
       return;
     }
@@ -311,26 +354,26 @@ export default class Player {
     }
   }
 
-  static mousedownCallback(e) {
+  static mousedownCallback(e: MouseEvent): void {
     this.log.info("Mousedown");
     const elementOffset = e.offsetX;
     const elementWidth = e.path[1].offsetWidth;
     const scaleDurration = elementOffset / elementWidth;
 
-    let audio = document.querySelector("audio");
+    let audio = document.querySelector("audio") as HTMLAudioElement;
     let audioDuration = audio.duration;
     audio.currentTime = scaleDurration * audioDuration;
   }
 
-  static volumeSliderCallback(e) {
+  static volumeSliderCallback(e: Event): void {
     const volume = e.target.value;
-    const audio = document.querySelector("audio");
+    const audio = document.querySelector("audio") as HTMLAudioElement;
     audio.volume = volume;
 
     this.log.info(`volume: ${volume}`);
   }
 
-  static createOneClickBuyButton(price, currency, tralbumId, itemTitle, type) {
+  static createOneClickBuyButton(price: number, currency: string, tralbumId: string, itemTitle: string, type: string): HTMLElement {
     const pair = this.createInputButtonPair({
       inputPrefix: "$",
       inputSuffix: currency,
@@ -359,7 +402,7 @@ export default class Player {
             return;
           }
 
-          document.querySelector("#item_list").append(cartItem);
+          (document.querySelector("#item_list") as HTMLElement).append(cartItem);
         });
       }
     });

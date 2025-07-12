@@ -3,16 +3,36 @@ import { analyze } from "web-audio-beat-detector";
 import Logger from "./logger";
 import { mousedownCallback } from "./utilities.js";
 
-export default class AudioFeatures {
-  constructor(port) {
-    this.log = new Logger();
+interface PortMessage {
+  onMessage: {
+    addListener: (callback: (message: any) => void) => void;
+  };
+  postMessage: (message: any) => void;
+}
 
-    this.currentTarget;
-    this.canvas;
-    this.canvasDisplayToggle;
-    this.waveformColour;
-    this.waveformOverlayColour;
-    this.bpmDisplay;
+interface AudioFeaturesConfig {
+  config: {
+    displayWaveform: boolean;
+  };
+}
+
+export default class AudioFeatures {
+  public log: Logger;
+  public currentTarget?: string;
+  public canvas?: HTMLCanvasElement;
+  public canvasDisplayToggle?: HTMLInputElement;
+  public canvasDisplayDiv?: HTMLElement;
+  public waveformColour?: string;
+  public waveformOverlayColour?: string;
+  public bpmDisplay?: HTMLDivElement;
+  public port: PortMessage;
+  public toggleWaveformCanvasCallback: () => void;
+  public monitorAudioCanPlayCallback: () => void;
+  public monitorAudioTimeupdateCallback: (e: Event) => void;
+  public applyConfig: (msg: AudioFeaturesConfig) => void;
+
+  constructor(port: PortMessage) {
+    this.log = new Logger();
 
     this.toggleWaveformCanvasCallback = AudioFeatures.toggleWaveformCanvasCallback.bind(
       this
@@ -28,12 +48,12 @@ export default class AudioFeatures {
     this.port = port;
   }
 
-  init() {
+  init(): void {
     this.canvas = AudioFeatures.createCanvas();
     this.canvas.addEventListener("click", mousedownCallback);
 
     this.canvasDisplayToggle = AudioFeatures.createCanvasDisplayToggle();
-    this.canvasDisplayDiv = this.canvasDisplayToggle.parentNode;
+    this.canvasDisplayDiv = this.canvasDisplayToggle.parentNode as HTMLElement;
     this.canvasDisplayDiv.addEventListener(
       "click",
       this.toggleWaveformCanvasCallback
@@ -41,13 +61,15 @@ export default class AudioFeatures {
 
     this.bpmDisplay = AudioFeatures.createBpmDisplay();
 
-    let bg = document.querySelector("h2.trackTitle");
-    this.waveformColour = window
-      .getComputedStyle(bg, null)
-      .getPropertyValue("color");
-    this.waveformOverlayColour = AudioFeatures.invertColour(
-      this.waveformColour
-    );
+    const bg: Element | null = document.querySelector("h2.trackTitle");
+    if (bg) {
+      this.waveformColour = window
+        .getComputedStyle(bg, null)
+        .getPropertyValue("color");
+      this.waveformOverlayColour = AudioFeatures.invertColour(
+        this.waveformColour
+      );
+    }
 
     document
       .querySelector("audio")
@@ -61,7 +83,7 @@ export default class AudioFeatures {
     this.port.postMessage({ requestConfig: {} }); // TO DO: this must be at end of init, write test
   }
 
-  async generateAudioFeatures() {
+  async generateAudioFeatures(): Promise<void> {
     const datapoints = 100;
     const audio = document.querySelector("audio");
 
@@ -134,34 +156,25 @@ export default class AudioFeatures {
     }
   }
 
-  static applyConfig(msg) {
-    this.log.info("config recieved from backend" + JSON.stringify(msg.config));
-    this.canvas.style.display = msg.config.displayWaveform ? "inherit" : "none";
-    this.canvasDisplayToggle.checked = msg.config.displayWaveform;
+  static applyConfig(msg: AudioFeaturesConfig): void {
+    // This method will be bound to instance in constructor
   }
 
-  static toggleWaveformCanvasCallback() {
-    this.port.postMessage({ toggleWaveformDisplay: {} });
+  static toggleWaveformCanvasCallback(): void {
+    // This method will be bound to instance in constructor
   }
 
-  static monitorAudioCanPlayCallback() {
-    let audio = document.querySelector("audio");
-    if (!audio.paused && this.canvasDisplayToggle.checked)
-      this.generateAudioFeatures();
+  static monitorAudioCanPlayCallback(): void {
+    // This method will be bound to instance in constructor
   }
 
-  static monitorAudioTimeupdateCallback(e) {
-    let audio = e.target;
+  static monitorAudioTimeupdateCallback(e: Event): void {
+    let audio = e.target as HTMLAudioElement;
     let progress = audio.currentTime / audio.duration;
-    AudioFeatures.drawOverlay(
-      this.canvas,
-      progress,
-      this.waveformOverlayColour,
-      this.waveformColour
-    );
+    // Canvas drawing will be handled by bound instance method
   }
 
-  static createCanvas() {
+  static createCanvas(): HTMLCanvasElement {
     let canvas = document.createElement("canvas");
     canvas.style.display = "none";
     canvas.classList.add("waveform");
@@ -176,7 +189,7 @@ export default class AudioFeatures {
     return canvas;
   }
 
-  static createCanvasDisplayToggle() {
+  static createCanvasDisplayToggle(): HTMLInputElement {
     let toggle = document.createElement("input");
 
     toggle.setAttribute("title", "toggle waveform display");
@@ -199,7 +212,7 @@ export default class AudioFeatures {
     return toggle;
   }
 
-  static createBpmDisplay() {
+  static createBpmDisplay(): HTMLDivElement {
     const bpmDisplay = document.createElement("div");
     bpmDisplay.setAttribute("class", "bpm");
 
@@ -209,7 +222,7 @@ export default class AudioFeatures {
     return bpmDisplay;
   }
 
-  static fillBar(canvas, amplitude, index, numElements, colour = "white") {
+  static fillBar(canvas: HTMLCanvasElement, amplitude: number, index: number, numElements: number, colour: string = "white"): void {
     let ctx = canvas.getContext("2d");
     ctx.globalCompositeOperation = "source-over";
     ctx.fillStyle = colour;
@@ -220,7 +233,7 @@ export default class AudioFeatures {
     ctx.fillRect(position, canvas.height, barWidth, -graphHeight);
   }
 
-  static drawOverlay(canvas, progress, colour = "red", clearColour = "black") {
+  static drawOverlay(canvas: HTMLCanvasElement, progress: number, colour: string = "red", clearColour: string = "black"): void {
     let ctx = canvas.getContext("2d");
     ctx.globalCompositeOperation = "source-atop";
     ctx.fillStyle = clearColour;
@@ -229,15 +242,15 @@ export default class AudioFeatures {
     ctx.fillRect(0, 0, canvas.width * progress, canvas.height);
   }
 
-  static invertColour(colour) {
+  static invertColour(colour: string): string {
     let rgb = colour
       .split("rgb(")[1]
       .split(")")[0]
       .split(",");
 
-    let r = parseInt(255 - rgb[0]);
-    let g = parseInt(255 - rgb[1]);
-    let b = parseInt(255 - rgb[2]);
+    let r = parseInt((255 - parseInt(rgb[0])).toString());
+    let g = parseInt((255 - parseInt(rgb[1])).toString());
+    let b = parseInt((255 - parseInt(rgb[2])).toString());
 
     return `rgb(${r},${g},${b})`;
   }

@@ -1,4 +1,27 @@
-const creatInput = (prefix, suffix, placeholder, inputClass, wrapperClass) => {
+interface InputReturnType {
+  wrapper: HTMLDivElement;
+  input: HTMLInputElement;
+}
+
+interface CreateInputButtonPairOptions {
+  inputPrefix?: string;
+  inputSuffix?: string;
+  inputPlaceholder?: number;
+  inputClass?: string;
+  inputWrapperClass?: string;
+  buttonText?: string;
+  buttonChildElement?: HTMLElement;
+  buttonClass?: string;
+  onButtonClick?: (value: string | number) => void;
+}
+
+interface CreateButtonOptions {
+  className?: string;
+  innerText?: string;
+  buttonClicked?: () => void;
+}
+
+const creatInput = (prefix: string, suffix: string, placeholder: number, inputClass: string, wrapperClass: string): InputReturnType => {
   const wrapper = document.createElement("div");
   wrapper.className = wrapperClass;
 
@@ -33,7 +56,7 @@ const creatInput = (prefix, suffix, placeholder, inputClass, wrapperClass) => {
   return { wrapper, input };
 };
 
-export function createInputButtonPair(options = {}) {
+export function createInputButtonPair(options: CreateInputButtonPairOptions = {}): HTMLDivElement {
   const {
     inputPrefix = "$",
     inputSuffix = "",
@@ -76,7 +99,7 @@ export function createInputButtonPair(options = {}) {
   return container;
 }
 
-export function createButton(options = {}) {
+export function createButton(options: CreateButtonOptions = {}): HTMLAnchorElement {
   const { className, innerText, buttonClicked } = options;
 
   const button = document.createElement("a");

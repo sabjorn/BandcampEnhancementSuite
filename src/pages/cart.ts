@@ -15,7 +15,32 @@ import { createPlusSvgIcon } from "../components/svgIcons";
 const BES_SUPPORT_TRALBUM_ID = 1609998585;
 const BES_SUPPORT_TRALBUM_TYPE = "a";
 
+interface TrackExport {
+  band_name: string;
+  item_id: string;
+  item_title: string;
+  unit_price: number;
+  url: string;
+  currency: string;
+  item_type: string;
+}
+
+interface CartData {
+  items: any[];
+}
+
 export default class Cart {
+  public log: Logger;
+  public createBesSupportButton: (price: number, currency: string, tralbumId: string, itemTitle: string, type: string) => HTMLElement;
+  public createButton: any;
+  public loadJsonFile: () => Promise<any>;
+  public addAlbumToCart: (item_id: string | number, unit_price: string | number, item_type?: string) => Promise<Response>;
+  public createShoppingCartItem: any;
+  public downloadFile: (filename: string, text: string) => void;
+  public reloadWindow: () => void;
+  public getTralbumDetails: (item_id: string | number, item_type?: string) => Promise<Response>;
+  public createInputButtonPair: any;
+
   constructor() {
     this.log = new Logger();
 
@@ -32,7 +57,7 @@ export default class Cart {
     this.createInputButtonPair = createInputButtonPair;
   }
 
-  async init() {
+  async init(): Promise<void> {
     this.log.info("cart init");
 
     const importCartButton = this.createButton({
@@ -58,7 +83,7 @@ export default class Cart {
                 itemCurrency: track.currency
               });
 
-              document.querySelector("#item_list").append(cartItem);
+              (document.querySelector("#item_list") as HTMLElement).append(cartItem);
             })
           );
 
@@ -73,14 +98,14 @@ export default class Cart {
         }
       }
     });
-    document.querySelector("#sidecartReveal").prepend(importCartButton);
+    (document.querySelector("#sidecartReveal") as HTMLElement).prepend(importCartButton);
 
     const exportCartButton = this.createButton({
       className: "buttonLink",
       innerText: "export",
       buttonClicked: () => {
-        const { items } = JSON.parse(
-          document.querySelector("[data-cart]").getAttribute("data-cart")
+        const { items }: CartData = JSON.parse(
+          (document.querySelector("[data-cart]") as HTMLElement).getAttribute("data-cart")!
         );
         if (items.length < 1) {
           this.log.error("error trying to export cart with length of 0");
@@ -117,7 +142,7 @@ export default class Cart {
         this.downloadFile(filename, data);
       }
     });
-    document.querySelector("#sidecartReveal").append(exportCartButton);
+    (document.querySelector("#sidecartReveal") as HTMLElement).append(exportCartButton);
 
     const cartRefreshButton = this.createButton({
       className: "buttonLink",
@@ -125,7 +150,7 @@ export default class Cart {
       buttonClicked: () => this.reloadWindow()
     });
     cartRefreshButton.style.display = "none";
-    document.querySelector("#sidecartReveal").append(cartRefreshButton);
+    (document.querySelector("#sidecartReveal") as HTMLElement).append(cartRefreshButton);
 
     const observer = new MutationObserver(() => {
       const item_list = document.querySelectorAll("#item_list .item");
@@ -134,7 +159,7 @@ export default class Cart {
       if (!cartDataElement) {
         return;
       }
-      const actual_cart = JSON.parse(cartDataElement.getAttribute("data-cart"))
+      const actual_cart = JSON.parse(cartDataElement.getAttribute("data-cart")!)
         .items;
 
       cartRefreshButton.style.display =
@@ -198,13 +223,13 @@ export default class Cart {
       besSupport.className = "bes-support";
       besSupport.append(besSupportText);
       besSupport.append(oneClick);
-      document.querySelector("#sidecartSummary").after(besSupport);
+      (document.querySelector("#sidecartSummary") as HTMLElement).after(besSupport);
     } catch (error) {
       this.log.error(error);
     }
   }
 
-  static createBesSupportButton(price, currency, tralbumId, itemTitle, type) {
+  static createBesSupportButton(price: number, currency: string, tralbumId: string, itemTitle: string, type: string): HTMLElement {
     const pair = this.createInputButtonPair({
       inputPrefix: "$",
       inputSuffix: currency,

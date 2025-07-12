@@ -2,11 +2,13 @@ import DBUtils from "../utilities";
 import Logger from "../logger";
 
 export default class LabelViewBackend {
+  public log: Logger;
+
   constructor() {
     this.log = new Logger();
   }
 
-  init() {
+  init(): void {
     this.log.info("initializing LabelViewBackend");
     chrome.runtime.onConnect.addListener(function(port) {
       if (port.name !== "bandcamplabelview") {
@@ -25,13 +27,13 @@ export default class LabelViewBackend {
     });
 
     chrome.runtime.onInstalled.addListener(function() {
-      function isEmpty(obj) {
+      function isEmpty(obj: object): boolean {
         return Object.keys(obj).length === 0;
       }
     });
   }
 
-  static async query(storeName, key, port, dbUtils = new DBUtils()) {
+  static async query(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
     let db = await dbUtils.getDB();
     let value = await db.get(storeName, key);
 
@@ -43,7 +45,7 @@ export default class LabelViewBackend {
     port.postMessage({ id: { key: key, value: value } });
   }
 
-  static async toggle(storeName, key, port, dbUtils = new DBUtils()) {
+  static async toggle(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
     let db = await dbUtils.getDB();
     let value = await db.get(storeName, key);
 
@@ -53,7 +55,7 @@ export default class LabelViewBackend {
     port.postMessage({ id: { key: key, value: value } });
   }
 
-  static async setTrue(storeName, key, port, dbUtils = new DBUtils()) {
+  static async setTrue(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
     let db = await dbUtils.getDB();
     await db.put(storeName, true, key);
     port.postMessage({ id: { key: key, value: true } });

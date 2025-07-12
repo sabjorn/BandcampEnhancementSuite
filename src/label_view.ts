@@ -1,9 +1,13 @@
 import Logger from "./logger";
 
 export default class LabelView {
+  public log: Logger;
+  public previewId?: string;
+  public previewOpen: boolean;
+  public port?: chrome.runtime.Port;
+
   constructor() {
     this.log = new Logger();
-    this.previewId; // globally stores which 'preview' button was last clicked
     this.previewOpen = false; // globally stores if preveiw window is open
 
     try {
@@ -25,12 +29,12 @@ export default class LabelView {
     }
   }
 
-  init() {
+  init(): void {
     this.log.info("Rendering BES...");
     this.renderDom();
   }
 
-  setHistory(id, state) {
+  setHistory(id: string, state: boolean): void {
     // CSS.escape() is required for integer-only CSS IDs
     const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
     if (historybox) {
@@ -44,33 +48,33 @@ export default class LabelView {
     }
   }
 
-  setPreviewed(id) {
+  setPreviewed(id: string): void {
     this.port.postMessage({ setTrue: id });
   }
 
-  boxClicked(event) {
-    const id = event.target.parentElement.getAttribute("id");
+  boxClicked(event: Event): void {
+    const id = (event.target as HTMLElement).parentElement?.getAttribute("id");
 
     this.port.postMessage({ toggle: id });
   }
 
-  previewClicked(event) {
-    const id = event.target.parentElement.getAttribute("id");
+  previewClicked(event: Event): void {
+    const id = (event.target as HTMLElement).parentElement?.getAttribute("id");
 
     this.setPreviewed(id);
   }
 
-  fillFrame(event) {
+  fillFrame(event: Event): void {
     document.querySelectorAll(".preview-frame").forEach(item => {
       while (item.firstChild) {
         item.removeChild(item.firstChild);
       }
     });
 
-    let preview = event.target
+    let preview = (event.target as HTMLElement)
       .closest(".music-grid-item")
-      .querySelector(".preview-frame");
-    const idAndType = preview.getAttribute("id");
+      ?.querySelector(".preview-frame") as HTMLElement;
+    const idAndType = preview.getAttribute("id")!;
     const id = idAndType.split("-")[1];
     const idType = idAndType.split("-")[0];
 
@@ -98,7 +102,7 @@ export default class LabelView {
     }
   }
 
-  generatePreview(id, idType) {
+  generatePreview(id: string, idType: string): HTMLDivElement {
     let button = document.createElement("button");
     button.setAttribute("title", "load preview player");
     button.setAttribute("type", "button");
@@ -128,7 +132,7 @@ export default class LabelView {
     return parent;
   }
 
-  renderDom() {
+  renderDom(): void {
     // iterate over page to get album IDs and append buttons with value
     document
       .querySelectorAll("li.music-grid-item[data-item-id]")
@@ -154,8 +158,8 @@ export default class LabelView {
         this.port.postMessage({ query: id });
       });
 
-    const pagedata = document.querySelector("#pagedata");
-    const datablob = JSON.parse(pagedata.dataset.blob);
+    const pagedata = document.querySelector("#pagedata") as HTMLElement;
+    const datablob = JSON.parse(pagedata.dataset.blob!);
     const urlParams = new URLSearchParams(datablob.lo_querystr);
     const id = urlParams.get("item_id");
     if (id) {

@@ -1,69 +1,89 @@
-import { openDB } from "idb";
+import { openDB, IDBPDatabase } from "idb";
 
-export function mousedownCallback(e) {
-  const elementOffset = e.offsetX;
-  const elementWidth = e.target.offsetWidth;
-  const scaleDuration = elementOffset / elementWidth;
+interface MouseEventWithOffset extends MouseEvent {
+  offsetX: number;
+  target: HTMLElement & { offsetWidth: number };
+}
 
-  let audio = document.querySelector("audio");
-  let audioDuration = audio.duration;
+export function mousedownCallback(e: MouseEventWithOffset): void {
+  const elementOffset: number = e.offsetX;
+  const elementWidth: number = e.target.offsetWidth;
+  const scaleDuration: number = elementOffset / elementWidth;
 
+  const audio: HTMLAudioElement | null = document.querySelector("audio");
+  if (!audio) return;
+  
+  const audioDuration: number = audio.duration;
   audio.currentTime = scaleDuration * audioDuration;
 }
 
 export default class DBUtils {
+  public openDB: typeof openDB;
+
   constructor() {
     this.openDB = openDB;
   }
 
-  async getDB() {
-    const dbName = "BandcampEnhancementSuite";
-    const version = 2;
+  async getDB(name?: string): Promise<IDBPDatabase> {
+    const dbName: string = "BandcampEnhancementSuite";
+    const version: number = 2;
 
     const db = await this.openDB(dbName, version, {
-      upgrade(db, oldVersion, newVersion, transaction) {
+      upgrade(db: IDBPDatabase, oldVersion: number, newVersion: number | null, transaction: any): void {
         const stores = db.objectStoreNames;
 
         if (!stores.contains("previews")) db.createObjectStore("previews");
-
         if (!stores.contains("config")) db.createObjectStore("config");
       },
-      blocked() {},
-      blocking() {},
-      terminated() {}
+      blocked(): void {},
+      blocking(): void {},
+      terminated(): void {}
     });
 
     return db;
   }
 }
 
-export function extractBandFollowInfo() {
-  const data = document
-    .querySelector("[data-band-follow-info]")
-    .getAttribute("data-band-follow-info");
+interface BandFollowInfo {
+  tralbum_id?: number;
+  tralbum_type?: string;
+}
 
-  if (!data) {
-    return {};
-  }
+export function extractBandFollowInfo(): BandFollowInfo {
+  const element: Element | null = document.querySelector("[data-band-follow-info]");
+  if (!element) return {};
+  
+  const data: string | null = element.getAttribute("data-band-follow-info");
+  if (!data) return {};
 
   try {
-    const bandFollowInfo = JSON.parse(data);
+    const bandFollowInfo: BandFollowInfo = JSON.parse(data);
     return bandFollowInfo;
   } catch (error) {
     return {};
   }
 }
 
-export function extractFanTralbumData() {
-  const defaultData = { is_purchased: false, part_of_purchased_album: false };
-  const data = document.querySelector("[data-blob]").getAttribute("data-blob");
+interface FanTralbumData {
+  is_purchased: boolean;
+  part_of_purchased_album: boolean;
+}
 
-  if (!data) {
-    return defaultData;
-  }
+interface PageData {
+  fan_tralbum_data?: FanTralbumData;
+}
+
+export function extractFanTralbumData(): FanTralbumData {
+  const defaultData: FanTralbumData = { is_purchased: false, part_of_purchased_album: false };
+  const element: Element | null = document.querySelector("[data-blob]");
+  if (!element) return defaultData;
+  
+  const data: string | null = element.getAttribute("data-blob");
+  if (!data) return defaultData;
 
   try {
-    const { fan_tralbum_data } = JSON.parse(data);
+    const pageData: PageData = JSON.parse(data);
+    const { fan_tralbum_data } = pageData;
 
     if (!fan_tralbum_data) {
       return defaultData;
@@ -75,16 +95,16 @@ export function extractFanTralbumData() {
   }
 }
 
-export function getUrl() {
+export function getUrl(): string {
   return window.location.href.split("/")[2];
 }
 
 export function addAlbumToCart(
-  item_id,
-  unit_price,
-  item_type = "a",
-  url = getUrl()
-) {
+  item_id: string | number,
+  unit_price: string | number,
+  item_type: string = "a",
+  url: string = getUrl()
+): Promise<Response> {
   return fetch(`https://${url}/cart/cb`, {
     headers: {
       accept: "application/json, text/javascript, */*; q=0.01",
@@ -102,14 +122,14 @@ export function addAlbumToCart(
   });
 }
 
-export function getTralbumDetails(item_id, item_type = "a") {
-  const raw = JSON.stringify({
+export function getTralbumDetails(item_id: string | number, item_type: string = "a"): Promise<Response> {
+  const raw: string = JSON.stringify({
     tralbum_type: item_type,
     band_id: 12345,
     tralbum_id: item_id
   });
 
-  const requestOptions = {
+  const requestOptions: RequestInit = {
     method: "POST",
     headers: {
       accept: "application/json",
@@ -127,8 +147,8 @@ export function getTralbumDetails(item_id, item_type = "a") {
   return fetch(`/api/mobile/25/tralbum_details`, requestOptions);
 }
 
-export function downloadFile(filename, text) {
-  var element = document.createElement("a");
+export function downloadFile(filename: string, text: string): void {
+  const element: HTMLAnchorElement = document.createElement("a");
 
   element.setAttribute(
     "href",
@@ -144,42 +164,48 @@ export function downloadFile(filename, text) {
   document.body.removeChild(element);
 }
 
-export function dateString() {
-  const currentdate = new Date();
-  const ye = new Intl.DateTimeFormat("en", { year: "2-digit" }).format(
+export function dateString(): string {
+  const currentdate: Date = new Date();
+  const ye: string = new Intl.DateTimeFormat("en", { year: "2-digit" }).format(
     currentdate
   );
-  const mo = new Intl.DateTimeFormat("en", { month: "2-digit" }).format(
+  const mo: string = new Intl.DateTimeFormat("en", { month: "2-digit" }).format(
     currentdate
   );
-  const da = new Intl.DateTimeFormat("en", { day: "2-digit" }).format(
+  const da: string = new Intl.DateTimeFormat("en", { day: "2-digit" }).format(
     currentdate
   );
 
   return `${ye}-${mo}-${da}`;
 }
 
-export function loadJsonFile() {
+export function loadJsonFile(): Promise<any> {
   return new Promise((resolve, reject) => {
-    const fileInput = document.createElement("input");
+    const fileInput: HTMLInputElement = document.createElement("input");
     fileInput.type = "file";
     fileInput.accept = ".json";
 
-    fileInput.onchange = event => {
-      const file = event.target.files[0];
+    fileInput.onchange = (event: Event) => {
+      const target = event.target as HTMLInputElement;
+      const file: File | null = target.files?.[0] || null;
       if (file) {
-        const reader = new FileReader();
+        const reader: FileReader = new FileReader();
 
-        reader.onload = e => {
+        reader.onload = (e: ProgressEvent<FileReader>) => {
           try {
-            const jsonObject = JSON.parse(e.target.result);
-            resolve(jsonObject);
+            const result = e.target?.result;
+            if (typeof result === 'string') {
+              const jsonObject: any = JSON.parse(result);
+              resolve(jsonObject);
+            } else {
+              reject(new Error('Failed to read file as text'));
+            }
           } catch (error) {
             reject(error);
           }
         };
 
-        reader.onerror = error => reject(error);
+        reader.onerror = (error: ProgressEvent<FileReader>) => reject(error);
         reader.readAsText(file);
       }
     };
@@ -188,7 +214,7 @@ export function loadJsonFile() {
   });
 }
 
-export const CURRENCY_MINIMUMS = {
+export const CURRENCY_MINIMUMS: Record<string, number> = {
   USD: 0.5,
   AUD: 0.5,
   GBP: 0.25,
@@ -208,3 +234,21 @@ export const CURRENCY_MINIMUMS = {
   SEK: 3,
   CHF: 0.5
 };
+
+export function centreElement(element: HTMLElement): void {
+  const windowWidth: number = window.innerWidth;
+  const windowHeight: number = window.innerHeight;
+  const elementWidth: number = element.offsetWidth;
+  const elementHeight: number = element.offsetHeight;
+
+  const left: number = (windowWidth - elementWidth) / 2;
+  const top: number = (windowHeight - elementHeight) / 2;
+
+  element.style.position = 'fixed';
+  element.style.left = `${left}px`;
+  element.style.top = `${top}px`;
+  element.style.zIndex = '9999';
+}
+
+// Export types for use in other files
+export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset };

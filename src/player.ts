@@ -31,55 +31,55 @@ const LARGE_SEEK_STEP_SIZE = 30;
 const VOLUME_STEP = 0.05;
 const DEFAULT_KEY_HANDLERS: KeyHandlers = {
   " ": () => {
-    const playButton = document.querySelector("div.playbutton") as HTMLElement;
+    const playButton = document.querySelector("div.playbutton");
     if (!playButton) return;
 
     playButton.click();
   },
   p: () => {
-    const playButton = document.querySelector("div.playbutton") as HTMLElement;
+    const playButton = document.querySelector("div.playbutton");
     if (!playButton) return;
 
     playButton.click();
   },
   ArrowUp: () => {
-    const prevButton = document.querySelector("div.prevbutton") as HTMLElement;
+    const prevButton = document.querySelector("div.prevbutton");
     if (!prevButton) return;
 
     prevButton.click();
   },
   ArrowDown: () => {
-    const nextButton = document.querySelector("div.nextbutton") as HTMLElement;
+    const nextButton = document.querySelector("div.nextbutton");
     if (!nextButton) return;
 
     nextButton.click();
   },
   ArrowRight: () => {
-    let audio = document.querySelector("audio") as HTMLAudioElement;
+    const audio = document.querySelector("audio") as HTMLAudioElement;
     if (!audio) return;
 
     audio.currentTime = audio.currentTime + SEEK_STEP_SIZE;
   },
   ArrowLeft: () => {
-    let audio = document.querySelector("audio") as HTMLAudioElement;
+    const audio = document.querySelector("audio") as HTMLAudioElement;
     if (!audio) return;
 
     audio.currentTime = audio.currentTime - SEEK_STEP_SIZE;
   },
   "Shift+ArrowLeft": () => {
-    let audio = document.querySelector("audio") as HTMLAudioElement;
+    const audio = document.querySelector("audio") as HTMLAudioElement;
     if (!audio) return;
 
     audio.currentTime = audio.currentTime - LARGE_SEEK_STEP_SIZE;
   },
   "Shift+ArrowRight": () => {
-    let audio = document.querySelector("audio") as HTMLAudioElement;
+    const audio = document.querySelector("audio") as HTMLAudioElement;
     if (!audio) return;
 
     audio.currentTime = audio.currentTime + LARGE_SEEK_STEP_SIZE;
   },
   "Shift+ArrowUp": () => {
-    let input = document.querySelector("input.volume") as HTMLInputElement;
+    const input = document.querySelector("input.volume") as HTMLInputElement;
     if (!input) return;
 
     const currentVolume = parseFloat(input.value);
@@ -90,7 +90,7 @@ const DEFAULT_KEY_HANDLERS: KeyHandlers = {
     input.dispatchEvent(event);
   },
   "Shift+ArrowDown": () => {
-    let input = document.querySelector("input.volume") as HTMLInputElement;
+    const input = document.querySelector("input.volume") as HTMLInputElement;
     if (!input) return;
 
     const currentVolume = parseFloat(input.value);
@@ -145,9 +145,11 @@ export default class Player {
 
     document.addEventListener("keydown", this.keydownCallback);
 
-    let progressBar = document.querySelector(".progbar") as HTMLElement;
-    progressBar.style.cursor = "pointer";
-    progressBar.addEventListener("click", mousedownCallback);
+    const progressBar = document.querySelector(".progbar") as HTMLElement;
+    if (progressBar) {
+      progressBar.style.cursor = "pointer";
+      progressBar.addEventListener("click", mousedownCallback);
+    }
 
     Player.movePlaylist();
 
@@ -224,9 +226,10 @@ export default class Player {
           type
         );
 
-        (document
-          .querySelector("ul.tralbumCommands .buyItem.digital h3.hd") as HTMLElement)
-          .append(oneClick);
+        const buyItemElement = document.querySelector("ul.tralbumCommands .buyItem.digital h3.hd");
+        if (buyItemElement) {
+          buyItemElement.append(oneClick);
+        }
       })
       .catch(error => {
         this.log.error(error);
@@ -247,16 +250,19 @@ export default class Player {
     let prevNext = Player.transferPreviousNextButtons();
     controls.append(prevNext);
 
-    let inlineplayer = document.querySelector("div.inline_player") as HTMLElement;
-    if (!inlineplayer.classList.contains("hidden"))
+    const inlineplayer = document.querySelector("div.inline_player");
+    if (inlineplayer && !inlineplayer.classList.contains("hidden")) {
       inlineplayer.prepend(controls);
+    }
   }
 
   static movePlaylist(): void {
     const playlist = document.querySelector("table#track_table");
     if (playlist) {
-      const player = document.querySelector("div.inline_player") as HTMLElement;
-      player.after(playlist);
+      const player = document.querySelector("div.inline_player");
+      if (player) {
+        player.after(playlist);
+      }
     }
   }
 
@@ -269,39 +275,57 @@ export default class Player {
     input.step = "0.01";
     input.title = "volume control";
 
-    let audio = document.querySelector("audio") as HTMLAudioElement;
-    input.value = audio.volume.toString();
+    const audio = document.querySelector("audio") as HTMLAudioElement;
+    if (audio) {
+      input.value = audio.volume.toString();
+    }
 
     return input;
   }
 
   static transferPlayButton(): HTMLDivElement {
-    let play_cell = document.querySelector("td.play_cell") as HTMLTableCellElement;
+    const play_cell = document.querySelector("td.play_cell") as HTMLTableCellElement;
+    if (!play_cell || !play_cell.parentNode) {
+      return document.createElement("div");
+    }
+    
     play_cell.parentNode.removeChild(play_cell);
-    let play_button = play_cell.querySelector("a") as HTMLAnchorElement;
-    let play_div = document.createElement("div");
+    const play_button = play_cell.querySelector("a");
+    const play_div = document.createElement("div");
     play_div.classList.add("play_cell");
-    play_div.append(play_button);
+    if (play_button) {
+      play_div.append(play_button);
+    }
 
     return play_div;
   }
 
   static transferPreviousNextButtons(): HTMLDivElement {
-    let prev_cell = document.querySelector("td.prev_cell") as HTMLTableCellElement;
-    prev_cell.parentNode.removeChild(prev_cell);
-    let prev_button = prev_cell.querySelector("a") as HTMLAnchorElement;
-    let prev_div = document.createElement("div");
+    const prev_cell = document.querySelector("td.prev_cell") as HTMLTableCellElement;
+    const prev_div = document.createElement("div");
     prev_div.classList.add("prev");
-    prev_div.append(prev_button);
+    
+    if (prev_cell && prev_cell.parentNode) {
+      prev_cell.parentNode.removeChild(prev_cell);
+      const prev_button = prev_cell.querySelector("a");
+      if (prev_button) {
+        prev_div.append(prev_button);
+      }
+    }
 
-    let next_cell = document.querySelector("td.next_cell") as HTMLTableCellElement;
-    next_cell.parentNode.removeChild(next_cell);
-    let next_button = next_cell.querySelector("a") as HTMLAnchorElement;
-    let next_div = document.createElement("div");
+    const next_cell = document.querySelector("td.next_cell") as HTMLTableCellElement;
+    const next_div = document.createElement("div");
     next_div.classList.add("next");
-    next_div.append(next_button);
+    
+    if (next_cell && next_cell.parentNode) {
+      next_cell.parentNode.removeChild(next_cell);
+      const next_button = next_cell.querySelector("a");
+      if (next_button) {
+        next_div.append(next_button);
+      }
+    }
 
-    let div = document.createElement("div");
+    const div = document.createElement("div");
     div.append(prev_div);
     div.append(next_div);
     return div;
@@ -344,17 +368,30 @@ export default class Player {
 
   static mousedownCallback(e: MouseEvent): void {
     const elementOffset = e.offsetX;
-    const elementWidth = (e.composedPath()[1] as HTMLElement).offsetWidth;
+    const path = e.composedPath();
+    if (path.length < 2) return;
+    
+    const element = path[1] as HTMLElement;
+    if (!element || !element.offsetWidth) return;
+    
+    const elementWidth = element.offsetWidth;
     const scaleDurration = elementOffset / elementWidth;
 
-    let audio = document.querySelector("audio") as HTMLAudioElement;
-    let audioDuration = audio.duration;
+    const audio = document.querySelector("audio") as HTMLAudioElement;
+    if (!audio) return;
+    
+    const audioDuration = audio.duration;
     audio.currentTime = scaleDurration * audioDuration;
   }
 
   static volumeSliderCallback(e: Event): void {
-    const volume = (e.target as HTMLInputElement).value;
+    const target = e.target as HTMLInputElement;
+    if (!target || !target.value) return;
+    
+    const volume = target.value;
     const audio = document.querySelector("audio") as HTMLAudioElement;
+    if (!audio) return;
+    
     audio.volume = parseFloat(volume);
   }
 
@@ -382,12 +419,16 @@ export default class Player {
             itemCurrency: currency
           });
 
-          if ((document.querySelector("#sidecart") as HTMLElement).style.display === "none") {
+          const sidecart = document.querySelector("#sidecart") as HTMLElement;
+          if (sidecart && sidecart.style.display === "none") {
             window.location.reload();
             return;
           }
 
-          (document.querySelector("#item_list") as HTMLElement).append(cartItem);
+          const itemList = document.querySelector("#item_list");
+          if (itemList) {
+            itemList.append(cartItem);
+          }
         });
       }
     });

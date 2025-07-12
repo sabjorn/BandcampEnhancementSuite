@@ -71,10 +71,14 @@ export default class LabelView {
       }
     });
 
-    let preview = (event.target as HTMLElement)
+    const preview = (event.target as HTMLElement)
       .closest(".music-grid-item")
-      ?.querySelector(".preview-frame") as HTMLElement;
-    const idAndType = preview.getAttribute("id")!;
+      ?.querySelector(".preview-frame");
+    if (!preview) return;
+    
+    const idAndType = preview.getAttribute("id");
+    if (!idAndType) return;
+    
     const id = idAndType.split("-")[1];
     const idType = idAndType.split("-")[0];
 
@@ -137,7 +141,9 @@ export default class LabelView {
     document
       .querySelectorAll("li.music-grid-item[data-item-id]")
       .forEach(item => {
-        const idAndType = (item as HTMLElement).dataset.itemId!;
+        const idAndType = (item as HTMLElement).dataset.itemId;
+        if (!idAndType) return;
+        
         const id = idAndType.split("-")[1];
         const idType = idAndType.split("-")[0];
         let $preview = this.generatePreview(id, idType);
@@ -151,14 +157,16 @@ export default class LabelView {
         'li.music-grid-item[data-tralbumid][data-tralbumtype="a"]'
       )
       .forEach(item => {
-        const id = (item as HTMLElement).dataset.tralbumid!;
+        const id = (item as HTMLElement).dataset.tralbumid;
+        if (!id) return;
         let preview = this.generatePreview(id, "album");
         item.appendChild(preview);
 
         this.port.postMessage({ query: id });
       });
 
-    const pagedata = document.querySelector("#pagedata") as HTMLElement;
+    const pagedata = document.querySelector("#pagedata");
+    if (!pagedata) return;
     const datablob = JSON.parse(pagedata.dataset.blob!);
     const urlParams = new URLSearchParams(datablob.lo_querystr);
     const id = urlParams.get("item_id");

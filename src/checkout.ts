@@ -118,8 +118,10 @@ export default class Checkout {
       bubbles: true,
       cancelable: false
     });
-    let checkout_button = document.querySelector("#sidecartCheckout") as HTMLElement;
-    checkout_button.dispatchEvent(clickEvent);
+    const checkout_button = document.querySelector("#sidecartCheckout");
+    if (checkout_button) {
+      checkout_button.dispatchEvent(clickEvent);
+    }
   }
 
   static closeDialogAndGoToCart(): void {
@@ -127,10 +129,14 @@ export default class Checkout {
   }
 
   yesButtonClickedImpl(): void {
-    let unit_price = parseFloat((this.dialog!.querySelector("input") as HTMLInputElement).value);
+    const inputElement = this.dialog!.querySelector("input") as HTMLInputElement;
+    if (!inputElement) return;
+    
+    const unit_price = parseFloat(inputElement.value);
     this.log.info(`price ${unit_price}`);
 
-    let error_div = this.dialog!.querySelector("#bes_checkout_error") as HTMLElement;
+    const error_div = this.dialog!.querySelector("#bes_checkout_error");
+    if (!error_div) return;
     error_div.innerHTML = " ";
     if (unit_price < 5) {
       error_div.innerHTML = "value entered is under $5.00 CAD";
@@ -164,10 +170,14 @@ export default class Checkout {
   }
 
   static replaceCheckoutButton(): HTMLElement {
-    let checkout_button = document.querySelector("#sidecartCheckout") as HTMLElement;
+    const checkout_button = document.querySelector("#sidecartCheckout");
+    const sidecart_footer = document.querySelector("#sidecartFooter");
+    
+    if (!checkout_button || !sidecart_footer) {
+      return document.createElement("div");
+    }
 
-    let sidecart_footer = document.querySelector("#sidecartFooter") as HTMLElement;
-    let checkout_button_sub = document.createElement("a");
+    const checkout_button_sub = document.createElement("a");
     checkout_button_sub.className = "buttonLink notSkinnable";
     checkout_button_sub.innerHTML = checkout_button.innerHTML;
 
@@ -181,7 +191,10 @@ export default class Checkout {
     const element = document.createElement("div");
     element.insertAdjacentHTML("beforeend", html);
 
-    const dialog = element.querySelector("#bes_wrapper") as HTMLElement;
+    const dialog = element.querySelector("#bes_wrapper");
+    if (!dialog) {
+      throw new Error("Failed to create dialog element");
+    }
 
     window.document.body.appendChild(dialog);
 

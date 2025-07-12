@@ -53,11 +53,14 @@ export default class AudioFeatures {
     this.canvas.addEventListener("click", mousedownCallback);
 
     this.canvasDisplayToggle = AudioFeatures.createCanvasDisplayToggle();
-    this.canvasDisplayDiv = this.canvasDisplayToggle.parentNode as HTMLElement;
-    this.canvasDisplayDiv.addEventListener(
-      "click",
-      this.toggleWaveformCanvasCallback
-    );
+    const parentNode = this.canvasDisplayToggle.parentNode as HTMLElement;
+    if (parentNode) {
+      this.canvasDisplayDiv = parentNode;
+      this.canvasDisplayDiv.addEventListener(
+        "click",
+        this.toggleWaveformCanvasCallback
+      );
+    }
 
     this.bpmDisplay = AudioFeatures.createBpmDisplay();
 
@@ -85,7 +88,8 @@ export default class AudioFeatures {
 
   async generateAudioFeatures(): Promise<void> {
     const datapoints = 100;
-    const audio = document.querySelector("audio");
+    const audio = document.querySelector("audio") as HTMLAudioElement;
+    if (!audio) return;
 
     if (this.currentTarget !== audio.src) {
       this.currentTarget = audio.src;
@@ -167,14 +171,17 @@ export default class AudioFeatures {
   }
 
   monitorAudioCanPlayCallbackImpl(): void {
-    let audio = document.querySelector("audio") as HTMLAudioElement;
-    if (!audio.paused && this.canvasDisplayToggle!.checked)
+    const audio = document.querySelector("audio") as HTMLAudioElement;
+    if (audio && !audio.paused && this.canvasDisplayToggle!.checked) {
       this.generateAudioFeatures();
+    }
   }
 
   monitorAudioTimeupdateCallbackImpl(e: Event): void {
-    let audio = e.target as HTMLAudioElement;
-    let progress = audio.currentTime / audio.duration;
+    const audio = e.target as HTMLAudioElement;
+    if (!audio || !audio.duration) return;
+    
+    const progress = audio.currentTime / audio.duration;
     AudioFeatures.drawOverlay(
       this.canvas!,
       progress,
@@ -205,12 +212,14 @@ export default class AudioFeatures {
     canvas.classList.add("waveform");
 
     // configure element to properly hold canvas
-    let progbar = document.querySelector("div.progbar");
-    progbar.classList.add("waveform");
+    const progbar = document.querySelector("div.progbar");
+    if (progbar) {
+      progbar.classList.add("waveform");
 
-    let div = document.createElement("div");
-    div.append(canvas);
-    progbar.prepend(div);
+      const div = document.createElement("div");
+      div.append(canvas);
+      progbar.prepend(div);
+    }
     return canvas;
   }
 
@@ -231,8 +240,10 @@ export default class AudioFeatures {
     toggle_div.append(toggle);
     toggle_div.append(label);
 
-    let inlineplayer = document.querySelector("div.controls");
-    inlineplayer.append(toggle_div);
+    const inlineplayer = document.querySelector("div.controls");
+    if (inlineplayer) {
+      inlineplayer.append(toggle_div);
+    }
 
     return toggle;
   }
@@ -242,7 +253,9 @@ export default class AudioFeatures {
     bpmDisplay.setAttribute("class", "bpm");
 
     const inlineplayer = document.querySelector("div.progbar");
-    inlineplayer.append(bpmDisplay);
+    if (inlineplayer) {
+      inlineplayer.append(bpmDisplay);
+    }
 
     return bpmDisplay;
   }

@@ -74,7 +74,10 @@ export default class Cart {
                 itemCurrency: track.currency
               });
 
-              (document.querySelector("#item_list") as HTMLElement).append(cartItem);
+              const itemList = document.querySelector("#item_list");
+              if (itemList) {
+                itemList.append(cartItem);
+              }
             })
           );
 
@@ -89,15 +92,20 @@ export default class Cart {
         }
       }
     });
-    (document.querySelector("#sidecartReveal") as HTMLElement).prepend(importCartButton);
+    const sidecartReveal = document.querySelector("#sidecartReveal");
+    if (sidecartReveal) {
+      sidecartReveal.prepend(importCartButton);
+    }
 
     const exportCartButton = this.createButton({
       className: "buttonLink",
       innerText: "export",
       buttonClicked: () => {
-        const { items }: CartData = JSON.parse(
-          (document.querySelector("[data-cart]") as HTMLElement).getAttribute("data-cart")!
-        );
+        const cartElement = document.querySelector("[data-cart]");
+        const cartData = cartElement?.getAttribute("data-cart");
+        if (!cartData) return;
+        
+        const { items }: CartData = JSON.parse(cartData);
         if (items.length < 1) {
           this.log.error("error trying to export cart with length of 0");
           return;
@@ -133,7 +141,10 @@ export default class Cart {
         this.downloadFile(filename, data);
       }
     });
-    (document.querySelector("#sidecartReveal") as HTMLElement).append(exportCartButton);
+    const sidecartReveal2 = document.querySelector("#sidecartReveal");
+    if (sidecartReveal2) {
+      sidecartReveal2.append(exportCartButton);
+    }
 
     const cartRefreshButton = this.createButton({
       className: "buttonLink",
@@ -141,7 +152,10 @@ export default class Cart {
       buttonClicked: () => this.reloadWindow()
     });
     cartRefreshButton.style.display = "none";
-    (document.querySelector("#sidecartReveal") as HTMLElement).append(cartRefreshButton);
+    const sidecartReveal3 = document.querySelector("#sidecartReveal");
+    if (sidecartReveal3) {
+      sidecartReveal3.append(cartRefreshButton);
+    }
 
     const observer = new MutationObserver(() => {
       const item_list = document.querySelectorAll("#item_list .item");
@@ -214,7 +228,10 @@ export default class Cart {
       besSupport.className = "bes-support";
       besSupport.append(besSupportText);
       besSupport.append(oneClick);
-      (document.querySelector("#sidecartSummary") as HTMLElement).after(besSupport);
+      const sidecartSummary = document.querySelector("#sidecartSummary");
+      if (sidecartSummary) {
+        sidecartSummary.after(besSupport);
+      }
     } catch (error) {
       this.log.error(error);
     }
@@ -244,7 +261,10 @@ export default class Cart {
             itemCurrency: currency
           });
 
-          document.querySelector("#item_list").append(cartItem);
+          const itemList = document.querySelector("#item_list");
+          if (itemList) {
+            itemList.append(cartItem);
+          }
         });
       }
     });

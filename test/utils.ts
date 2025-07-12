@@ -3,8 +3,7 @@
  * Used in specific tests, but needed for most since renderDom()
  * is called in the constructor.
  */
-
-export const createPagedata = () => {
+export const createPagedata = (): void => {
   const pagedata = document.createElement("div");
   pagedata.setAttribute("id", "pagedata");
   pagedata.setAttribute(
@@ -19,7 +18,7 @@ export const createPagedata = () => {
  * Makes nodes with id='test-nodes' and adds the contents
  * in `tagString` as children.
  */
-export const createDomNodes = tagString => {
+export const createDomNodes = (tagString: string): DocumentFragment => {
   const testNodes = document.createElement("div");
   testNodes.setAttribute("id", "test-nodes");
   document.body.appendChild(testNodes);
@@ -27,8 +26,8 @@ export const createDomNodes = tagString => {
   // Make the parent of the first div in the document becomes the context node
   const range = document.createRange();
   range.selectNode(testNodes);
-  var documentFragment = range.createContextualFragment(tagString);
-  document.getElementById("test-nodes").appendChild(documentFragment);
+  const documentFragment = range.createContextualFragment(tagString);
+  document.getElementById("test-nodes")!.appendChild(documentFragment);
   return documentFragment;
 };
 
@@ -36,10 +35,10 @@ export const createDomNodes = tagString => {
  * DOM node cleanup helper.
  * Removes elements with id='test-nodes'
  */
-export const cleanupTestNodes = () => {
-  var elem = document.getElementById("test-nodes");
+export const cleanupTestNodes = (): void => {
+  const elem = document.getElementById("test-nodes");
   if (elem) {
-    elem.parentNode.removeChild(elem);
+    elem.parentNode!.removeChild(elem);
   }
 };
 
@@ -47,8 +46,8 @@ export const cleanupTestNodes = () => {
  * Mock API Response
  * used with sinon.stub of 'fetch'
  */
-export function mockApiResponse(body = {}) {
-  return new window.Response(JSON.stringify(body), {
+export function mockApiResponse(body: Record<string, any> = {}): Response {
+  return new Response(JSON.stringify(body), {
     status: 200,
     headers: { "Content-type": "application/json" }
   });

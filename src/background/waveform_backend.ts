@@ -22,7 +22,12 @@ export default class WaveformBackend {
     fetch(url)
       .then(response => response.arrayBuffer())
       .then(arrayBuffer => {
-        let jsonResult = Buffer.from(arrayBuffer).toJSON();
+        // Convert ArrayBuffer to Uint8Array, then to regular array to match Buffer.toJSON() format
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const jsonResult = {
+          type: 'Buffer',
+          data: Array.from(uint8Array)
+        };
         sendResponse(jsonResult);
       })
       .catch(error => {

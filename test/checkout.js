@@ -1,10 +1,8 @@
-import chai from "chai";
+import chai, { expect } from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
-import { assert, expect } from "chai";
 chai.use(sinonChai);
 
-import chrome from "sinon-chrome";
 chai.use(sinonChai);
 
 import Checkout from "../src/checkout.js";
@@ -235,18 +233,7 @@ describe("Checkout", () => {
     });
 
     it("sets 'albumPurchasedDuringCheckout' to 'true' in config and calls 'closeDialogAndGoToCart()'", () => {
-      // this is a horrible hack for faking promises
-      // please don't tell my mum
-      const fake_promise_success = {
-        then: then_func => {
-          then_func();
-          return {
-            finally: finally_func => {
-              finally_func();
-            }
-          };
-        }
-      };
+      const fake_promise_success = Promise.resolve();
       c.addAlbumToCart.returns(fake_promise_success);
       fake_input.value = "5.00";
 
@@ -259,15 +246,7 @@ describe("Checkout", () => {
     });
 
     it("skips setting config if fetch fails", () => {
-      const fake_promise_fail = {
-        then: then_func => {
-          return {
-            finally: finally_func => {
-              finally_func();
-            }
-          };
-        }
-      };
+      const fake_promise_fail = Promise.reject();
       c.addAlbumToCart.returns(fake_promise_fail);
       fake_input.value = "5.00";
 

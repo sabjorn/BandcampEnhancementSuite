@@ -76,7 +76,6 @@ export default class DownloadHelper {
     this.log.info("disableButton()");
 
     this.button.disabled = true;
-    this.button.removeEventListener("click", function() {});
     this.button.textContent = "preparing download";
   }
 

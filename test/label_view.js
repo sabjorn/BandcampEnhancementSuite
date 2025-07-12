@@ -1,8 +1,7 @@
 import { createPagedata, createDomNodes, cleanupTestNodes } from "./utils.js";
-import chai from "chai";
+import chai, { expect } from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
-import { assert, expect } from "chai";
 chai.use(sinonChai);
 
 import LabelView from "../src/label_view.js";
@@ -16,7 +15,7 @@ const mockPort = {
 
 const mockChrome = {
   runtime: {
-    connect: (extensionId, connectInfo) => mockPort
+    connect: (_extensionId, _connectInfo) => mockPort
   }
 };
 

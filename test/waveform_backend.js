@@ -1,12 +1,11 @@
 import { mockApiResponse } from "./utils.js";
 
-import chai from "chai";
+import chai, { expect } from "chai";
 import sinon from "sinon";
 import sinonStubPromise from "sinon-stub-promise";
 sinonStubPromise(sinon);
 
 import sinonChai from "sinon-chai";
-import { assert, expect } from "chai";
 chai.use(sinonChai);
 import chrome from "sinon-chrome";
 
@@ -55,7 +54,6 @@ describe("WaveformBackend", () => {
 
     let stubedFetch;
 
-    const buffer = new Uint8Array([0, 1, 2, 3]);
 
     beforeEach(() => {
       request = {

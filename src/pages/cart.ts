@@ -15,15 +15,6 @@ import { createPlusSvgIcon } from "../components/svgIcons";
 const BES_SUPPORT_TRALBUM_ID = 1609998585;
 const BES_SUPPORT_TRALBUM_TYPE = "a";
 
-interface TrackExport {
-  band_name: string;
-  item_id: string;
-  item_title: string;
-  unit_price: number;
-  url: string;
-  currency: string;
-  item_type: string;
-}
 
 interface CartData {
   items: any[];
@@ -262,8 +253,4 @@ export default class Cart {
     return pair;
   }
 
-  static createBesSupportButton(price: number, currency: string, tralbumId: string, itemTitle: string, type: string): HTMLElement {
-    // Legacy static method - not used
-    return document.createElement("div");
-  }
 }

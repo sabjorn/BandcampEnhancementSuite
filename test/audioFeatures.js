@@ -1,9 +1,8 @@
-import { createPagedata, createDomNodes, cleanupTestNodes } from "./utils.js";
+import { createDomNodes, cleanupTestNodes } from "./utils.js";
 
-import chai from "chai";
+import chai, { expect } from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
-import { assert, expect } from "chai";
 chai.use(sinonChai);
 
 import chrome from "sinon-chrome";
@@ -73,13 +72,11 @@ describe("AudioFeatures", () => {
 
     let bpmDivSpy = sinon.spy();
 
-    let trackTitleElement;
 
     let audioSpy = {
       addEventListener: sinon.spy()
     };
 
-    let getPropertyValueStub = sinon.stub().returns("rgb(255, 0, 0)");
 
     beforeEach(() => {
       sandbox.stub(AudioFeatures, "createCanvas").returns(canvasSpy);
@@ -234,11 +231,10 @@ describe("AudioFeatures", () => {
 
       wf.generateAudioFeatures();
 
-      let expectedMessage = {
+      expect(chrome.runtime.sendMessage).to.be.calledWith({
         contentScriptQuery: "renderBuffer",
         url: "src"
-      };
-      expect(chrome.runtime.sendMessage).to.be.calledWith(expectedMessage);
+      });
     });
 
     it("calls 'decodAudioData'", () => {
@@ -247,10 +243,6 @@ describe("AudioFeatures", () => {
 
       wf.generateAudioFeatures();
 
-      let expectedMessage = {
-        contentScriptQuery: "renderBuffer",
-        url: "src"
-      };
       ctx.expects("decodeAudioData").once();
     });
   });
@@ -299,7 +291,6 @@ describe("AudioFeatures", () => {
   describe("monitorAudioCanPlayCallback()", () => {
     let audioSpy = { paused: true };
     let displayToggle = { checked: false };
-    let generateAudioFeaturesSpy;
 
     beforeEach(() => {
       sandbox.stub(document, "querySelector").returns(audioSpy);

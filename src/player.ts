@@ -24,13 +24,6 @@ interface KeyHandlers {
   [key: string]: () => void;
 }
 
-interface TralbumTrack {
-  price: number;
-  currency: string;
-  track_id: string;
-  title: string;
-  is_purchasable: boolean;
-}
 
 
 const SEEK_STEP_SIZE = 10;

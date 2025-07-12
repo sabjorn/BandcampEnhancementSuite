@@ -1,8 +1,7 @@
-import { createDomNodes, cleanupTestNodes } from "./utils.js";
-import chai from "chai";
+import { cleanupTestNodes } from "./utils.js";
+import chai, { expect } from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
-import { assert, expect } from "chai";
 import chrome from "sinon-chrome";
 chai.use(sinonChai);
 

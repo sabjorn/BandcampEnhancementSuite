@@ -1,8 +1,7 @@
 import { createDomNodes, cleanupTestNodes } from "./utils.js";
-import chai from "chai";
+import chai, { expect, assert } from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
-import { expect, assert } from "chai";
 chai.use(sinonChai);
 
 import DownloadHelper from "../src/download_helper.js";
@@ -66,7 +65,7 @@ describe("Download Helper", () => {
       dh.createButton();
       const button = document.querySelector(".bes-downloadall");
 
-      expect(button != null).to.be.true;
+      expect(button !== null).to.be.true;
     });
 
     it("should not replace existing button at the end of div.download-titles", async () => {
@@ -86,7 +85,7 @@ describe("Download Helper", () => {
 
       {
         const button = document.querySelectorAll(".bes-downloadall");
-        assert(button.length == 1);
+        assert(button.length === 1);
         const idAttribute = button[0].getAttribute("id");
         expect(idAttribute).to.be.equal("someId");
       }
@@ -183,7 +182,7 @@ describe("Download Helper", () => {
 
       //change DOM nodes
       let nodes = document.querySelectorAll(".download-title .item-button");
-      nodes.forEach(function(element, index) {
+      nodes.forEach(function(element, _index) {
         element.style.display = "";
       });
 
@@ -205,7 +204,7 @@ describe("Download Helper", () => {
 
       //change DOM nodes
       let nodes = document.querySelectorAll(".download-title .item-button");
-      nodes.forEach(function(element, index) {
+      nodes.forEach(function(element, _index) {
         element.style.display = "none";
       });
 
@@ -244,7 +243,7 @@ describe("Download Helper", () => {
       const configExpectation = { attributes: true, attributeFilter: ["href"] }; //
 
       let nodes = document.querySelectorAll(".download-title .item-button");
-      nodes.forEach(function(element, index) {
+      nodes.forEach(function(element, _index) {
         expect(dh.observer.observe).to.have.been.calledWith(
           element,
           configExpectation

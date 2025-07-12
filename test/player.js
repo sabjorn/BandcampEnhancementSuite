@@ -1,8 +1,7 @@
 import { createDomNodes, cleanupTestNodes } from "./utils.js";
-import chai from "chai";
+import chai, { expect } from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
-import { expect } from "chai";
 chai.use(sinonChai);
 
 import { mousedownCallback } from "../src/utilities.js";
@@ -426,7 +425,7 @@ describe("Player", () => {
 
   describe("updatePlayerControlInterface()", () => {
     let inlineplayer;
-    let input;
+    let _input;
 
     let controls = document.createElement("div");
     let volumeSlider = document.createElement("input");
@@ -434,7 +433,7 @@ describe("Player", () => {
     let prevNext = document.createElement("div");
 
     beforeEach(() => {
-      input = { addEventListener: sinon.spy() };
+      _input = { addEventListener: sinon.spy() };
       inlineplayer = {
         classList: { contains: sinon.stub() },
         prepend: sinon.spy()
@@ -578,7 +577,7 @@ describe("Player", () => {
     });
 
     it("removes the td.prev_cell and td.next_cell from DOM", () => {
-      let prevNext = Player.transferPreviousNextButtons();
+      let _prevNext = Player.transferPreviousNextButtons();
 
       expect(prev_cell.parentNode.removeChild).to.be.calledWith(prev_cell);
       expect(next_cell.parentNode.removeChild).to.be.calledWith(next_cell);

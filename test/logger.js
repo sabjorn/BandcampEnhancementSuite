@@ -1,7 +1,6 @@
-import chai from "chai";
+import chai, { expect } from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
-import { expect } from "chai";
 chai.use(sinonChai);
 
 import Logger from "../src/logger.js";

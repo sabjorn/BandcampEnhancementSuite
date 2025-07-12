@@ -1,6 +1,6 @@
 // bypasses the Checkout step to ask user for contributions
 import html from "../html/popup.html";
-import { centreElement, addAlbumToCart } from "./utilities.js";
+import { addAlbumToCart } from "./utilities.js";
 import Logger from "./logger";
 
 interface PortMessage {
@@ -86,7 +86,7 @@ export default class Checkout {
     this.config = msg.config;
   }
 
-  static applyConfig(msg: ConfigMessage): void {
+  static applyConfig(_msg: ConfigMessage): void {
     // Legacy static method - not used
   }
 

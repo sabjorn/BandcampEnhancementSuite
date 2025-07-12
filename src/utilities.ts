@@ -24,12 +24,12 @@ export default class DBUtils {
     this.openDB = openDB;
   }
 
-  async getDB(name?: string): Promise<IDBPDatabase> {
+  async getDB(_name?: string): Promise<IDBPDatabase> {
     const dbName: string = "BandcampEnhancementSuite";
     const version: number = 2;
 
     const db = await this.openDB(dbName, version, {
-      upgrade(db: IDBPDatabase, oldVersion: number, newVersion: number | null, transaction: any): void {
+      upgrade(db: IDBPDatabase, _oldVersion: number, _newVersion: number | null, _transaction: any): void {
         const stores = db.objectStoreNames;
 
         if (!stores.contains("previews")) db.createObjectStore("previews");
@@ -59,7 +59,7 @@ export function extractBandFollowInfo(): BandFollowInfo {
   try {
     const bandFollowInfo: BandFollowInfo = JSON.parse(data);
     return bandFollowInfo;
-  } catch (error) {
+  } catch (_error) {
     return {};
   }
 }
@@ -90,7 +90,7 @@ export function extractFanTralbumData(): FanTralbumData {
     }
 
     return fan_tralbum_data;
-  } catch (error) {
+  } catch (_error) {
     return defaultData;
   }
 }

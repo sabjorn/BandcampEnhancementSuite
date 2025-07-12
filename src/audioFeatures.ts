@@ -183,7 +183,7 @@ export default class AudioFeatures {
     );
   }
 
-  static applyConfig(msg: AudioFeaturesConfig): void {
+  static applyConfig(_msg: AudioFeaturesConfig): void {
     // This method will be bound to instance in constructor
   }
 
@@ -195,7 +195,7 @@ export default class AudioFeatures {
     // This method will be bound to instance in constructor
   }
 
-  static monitorAudioTimeupdateCallback(e: Event): void {
+  static monitorAudioTimeupdateCallback(_e: Event): void {
     // This method will be bound to instance in constructor
   }
 

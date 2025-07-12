@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest'
-import { createPagedata, createDomNodes, cleanupTestNodes } from './utils'
+import { createDomNodes, cleanupTestNodes } from './utils'
 
 import { mousedownCallback } from '../src/utilities'
 import AudioFeatures from '../src/audioFeatures'
 
 describe('AudioFeatures', () => {
   let wf: any
-  let sandbox: any
+  let _sandbox: any
 
   let ctx = {
     globalCompositeOperation: {},
@@ -73,13 +73,13 @@ describe('AudioFeatures', () => {
 
     let bpmDivSpy = vi.fn()
 
-    let trackTitleElement: any
+    let _trackTitleElement: any
 
     let audioSpy = {
       addEventListener: vi.fn()
     }
 
-    let getPropertyValueStub = vi.fn().mockReturnValue('rgb(255, 0, 0)')
+    let _getPropertyValueStub = vi.fn().mockReturnValue('rgb(255, 0, 0)')
 
     beforeEach(() => {
       vi.spyOn(AudioFeatures, 'createCanvas').mockReturnValue(canvasSpy as any)
@@ -177,7 +177,7 @@ describe('AudioFeatures', () => {
       } as any
     })
 
-    let ctx: any
+    let _ctx: any
 
     let audioSpy = {
       src: 'stream/nothing',
@@ -194,7 +194,7 @@ describe('AudioFeatures', () => {
 
       wf.bpmDisplay = { innerText: '' }
 
-      ctx = vi.fn() // Mock AudioContext
+      _ctx = vi.fn() // Mock AudioContext
 
       wf.canvas = canvas
     })

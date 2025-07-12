@@ -23,7 +23,7 @@ describe('Cart', () => {
     ]
   }
 
-  const mockResponse = {
+  const _mockResponse = {
     ok: true,
     json: vi.fn().mockResolvedValue(mockTralbumDetails)
   }

@@ -1,9 +1,8 @@
-import { createPagedata, createDomNodes, cleanupTestNodes } from "./utils.js";
+import { createDomNodes, cleanupTestNodes } from "./utils.js";
 
-import chai from "chai";
+import chai, { expect } from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
-import { assert, expect } from "chai";
 chai.use(sinonChai);
 
 import Cart from "../src/pages/cart.js";

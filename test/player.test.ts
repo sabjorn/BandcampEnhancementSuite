@@ -403,7 +403,7 @@ describe('Player', () => {
 
   describe('updatePlayerControlInterface()', () => {
     let inlineplayer: any
-    let input: any
+    let _input: any
 
     let controls = document.createElement('div')
     let volumeSlider = document.createElement('input')
@@ -411,7 +411,7 @@ describe('Player', () => {
     let prevNext = document.createElement('div')
 
     beforeEach(() => {
-      input = { addEventListener: vi.fn() }
+      _input = { addEventListener: vi.fn() }
       inlineplayer = {
         classList: { contains: vi.fn() },
         prepend: vi.fn()
@@ -623,7 +623,7 @@ describe('Player', () => {
     })
 
     it('removes the td.prev_cell and td.next_cell from DOM', () => {
-      let prevNext = Player.transferPreviousNextButtons()
+      let _prevNext = Player.transferPreviousNextButtons()
 
       expect(prev_cell.parentNode.removeChild).toHaveBeenCalledWith(prev_cell)
       expect(next_cell.parentNode.removeChild).toHaveBeenCalledWith(next_cell)

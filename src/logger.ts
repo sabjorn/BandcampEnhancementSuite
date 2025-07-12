@@ -70,24 +70,28 @@ export default class Logger {
   
   debug(message: any): void {
     if (this.shouldLog('debug')) {
+      // eslint-disable-next-line no-console
       console.log(...this.formatMessage('debug', message));
     }
   }
   
   info(message: any): void {
     if (this.shouldLog('info')) {
+      // eslint-disable-next-line no-console
       console.log(...this.formatMessage('info', message));
     }
   }
   
   warn(message: any): void {
     if (this.shouldLog('warn')) {
+      // eslint-disable-next-line no-console
       console.warn(...this.formatMessage('warn', message));
     }
   }
   
   error(message: any): void {
     if (this.shouldLog('error')) {
+      // eslint-disable-next-line no-console
       console.error(...this.formatMessage('error', message));
     }
   }

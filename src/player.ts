@@ -32,15 +32,6 @@ interface TralbumTrack {
   is_purchasable: boolean;
 }
 
-interface TralbumDetails {
-  price: number;
-  currency: string;
-  id: string;
-  title: string;
-  is_purchasable: boolean;
-  type: string;
-  tracks: TralbumTrack[];
-}
 
 const SEEK_STEP_SIZE = 10;
 const LARGE_SEEK_STEP_SIZE = 30;
@@ -354,7 +345,7 @@ export default class Player {
     }
   }
 
-  static keydownCallback(e: KeyboardEvent): void {
+  static keydownCallback(_e: KeyboardEvent): void {
     // This method will be bound to instance in constructor
   }
 
@@ -412,7 +403,7 @@ export default class Player {
     return pair;
   }
 
-  static createOneClickBuyButton(price: number, currency: string, tralbumId: string, itemTitle: string, type: string): HTMLElement {
+  static createOneClickBuyButton(_price: number, _currency: string, _tralbumId: string, _itemTitle: string, _type: string): HTMLElement {
     // This method will be bound to instance in constructor
     return document.createElement("div");
   }

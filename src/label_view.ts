@@ -79,7 +79,7 @@ export default class LabelView {
     const idType = idAndType.split("-")[0];
 
     // determine if preview window needs to be open
-    if (this.previewOpen == true && this.previewId == id) {
+    if (this.previewOpen === true && this.previewId === id) {
       this.previewOpen = false;
     } else {
       this.previewId = id;
@@ -166,7 +166,7 @@ export default class LabelView {
       this.setPreviewed(id);
     }
 
-    const openFrame = document
+    const _openFrame = document
       .querySelectorAll(".open-iframe")
       .forEach(item => {
         item.addEventListener("click", event => {
@@ -175,7 +175,7 @@ export default class LabelView {
         });
       });
 
-    const historybox = document
+    const _historybox = document
       .querySelectorAll(".historybox")
       .forEach(item => {
         item.addEventListener("click", event => {

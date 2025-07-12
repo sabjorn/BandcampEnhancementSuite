@@ -44,11 +44,11 @@ export default class ConfigBackend {
     chrome.runtime.onConnect.addListener(this.connectionListenerCallback);
   }
 
-  static connectionListenerCallback(port: chrome.runtime.Port): void {
+  static connectionListenerCallback(_port: chrome.runtime.Port): void {
     // This method will be bound to instance in constructor
   }
 
-  static async portListenerCallback(msg: any): Promise<void> {
+  static async portListenerCallback(_msg: any): Promise<void> {
     // This method will be bound to instance in constructor
   }
 

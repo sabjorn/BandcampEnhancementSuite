@@ -1,13 +1,10 @@
-import chai from "chai";
+import chai, { expect } from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
-import { assert, expect } from "chai";
 import { createDomNodes, cleanupTestNodes } from "./utils.js";
 chai.use(sinonChai);
 
-import { mousedownCallback } from "../src/utilities.js";
-import DBUtils from "../src/utilities.js";
-import { extractBandFollowInfo } from "../src/utilities.js";
+import DBUtils, { mousedownCallback, extractBandFollowInfo } from "../src/utilities.js";
 
 describe("mousedownCallback", () => {
   const spyElement = { click: sinon.spy() };
@@ -49,7 +46,7 @@ describe("DBUtils", () => {
   });
   describe("getDB", () => {
     it("should call idb openDB with specific args", async () => {
-      const db = await dbu.getDB("somename");
+      const _db = await dbu.getDB("somename");
 
       expect(openDBStub).to.be.calledWith(
         "BandcampEnhancementSuite",

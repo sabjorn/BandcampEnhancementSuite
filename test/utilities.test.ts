@@ -44,7 +44,7 @@ describe('DBUtils', () => {
   
   describe('getDB', () => {
     it('should call idb openDB with specific args', async () => {
-      const db = await dbu.getDB('somename')
+      const _db = await dbu.getDB('somename')
 
       expect(openDBStub).toHaveBeenCalledWith(
         'BandcampEnhancementSuite',

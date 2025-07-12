@@ -43,7 +43,11 @@ export default class DownloadHelper {
   createButton(): void {
     if (this.button) return;
 
-    let location = document.querySelector("div.download-titles") as HTMLElement;
+    const location = document.querySelector("div.download-titles");
+    if (!location) {
+      this.log.warn("Cannot create download button: div.download-titles element not found");
+      return;
+    }
 
     this.button = document.createElement("button");
     this.button.title =

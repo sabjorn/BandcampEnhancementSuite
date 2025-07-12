@@ -236,7 +236,7 @@ export default class Player {
   static createVolumeSlider() {
     let input = document.createElement("input");
     input.type = "range";
-    input.classList = "volume thumb progbar_empty";
+    input.classList.add("volume", "thumb", "progbar_empty");
     input.min = 0.0;
     input.max = 1.0;
     input.step = 0.01;

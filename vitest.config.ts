@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  // Handle HTML assets
+  assetsInclude: ['**/*.html'],
   test: {
     // Use happy-dom for browser-like environment (faster than jsdom)
     environment: 'happy-dom',
@@ -10,7 +12,7 @@ export default defineConfig({
     exclude: [
       'test/**/*.bak', 
       'node_modules/**',
-      // Exclude old karma test files that haven't been migrated yet
+      // Exclude old karma test files - now migrated to .test.ts versions
       'test/audioFeatures.js',
       'test/cart.js',
       'test/checkout.js', 

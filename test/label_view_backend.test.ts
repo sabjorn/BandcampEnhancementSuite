@@ -29,7 +29,7 @@ describe('Label View Backend', () => {
   it('should manage label view backend operations', () => {
     const mockMessage = { action: 'getLabelData' }
     
-    globalThis.chrome.runtime.onMessage.addListener.mockImplementation((callback) => {
+    vi.mocked(globalThis.chrome.runtime.onMessage.addListener).mockImplementation((callback) => {
       callback(mockMessage, {}, vi.fn())
     })
 

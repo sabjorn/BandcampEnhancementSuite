@@ -145,7 +145,7 @@ export default class Player {
 
     this.keydownCallback = this.keydownCallbackImpl.bind(this);
     this.volumeSliderCallback = Player.volumeSliderCallback.bind(this);
-    this.createOneClickBuyButton = Player.createOneClickBuyButton.bind(this);
+    this.createOneClickBuyButton = this.createOneClickBuyButtonImpl.bind(this);
 
     // re-import
     this.addAlbumToCart = addAlbumToCart;
@@ -359,9 +359,8 @@ export default class Player {
   }
 
   static mousedownCallback(e: MouseEvent): void {
-    this.log.info("Mousedown");
     const elementOffset = e.offsetX;
-    const elementWidth = e.path[1].offsetWidth;
+    const elementWidth = (e.composedPath()[1] as HTMLElement).offsetWidth;
     const scaleDurration = elementOffset / elementWidth;
 
     let audio = document.querySelector("audio") as HTMLAudioElement;
@@ -370,14 +369,12 @@ export default class Player {
   }
 
   static volumeSliderCallback(e: Event): void {
-    const volume = e.target.value;
+    const volume = (e.target as HTMLInputElement).value;
     const audio = document.querySelector("audio") as HTMLAudioElement;
-    audio.volume = volume;
-
-    this.log.info(`volume: ${volume}`);
+    audio.volume = parseFloat(volume);
   }
 
-  static createOneClickBuyButton(price: number, currency: string, tralbumId: string, itemTitle: string, type: string): HTMLElement {
+  createOneClickBuyButtonImpl(price: number, currency: string, tralbumId: string, itemTitle: string, type: string): HTMLElement {
     const pair = this.createInputButtonPair({
       inputPrefix: "$",
       inputSuffix: currency,
@@ -401,7 +398,7 @@ export default class Player {
             itemCurrency: currency
           });
 
-          if (document.querySelector("#sidecart").style.display === "none") {
+          if ((document.querySelector("#sidecart") as HTMLElement).style.display === "none") {
             window.location.reload();
             return;
           }
@@ -413,5 +410,10 @@ export default class Player {
     pair.classList.add("one-click-button-container");
 
     return pair;
+  }
+
+  static createOneClickBuyButton(price: number, currency: string, tralbumId: string, itemTitle: string, type: string): HTMLElement {
+    // This method will be bound to instance in constructor
+    return document.createElement("div");
   }
 }

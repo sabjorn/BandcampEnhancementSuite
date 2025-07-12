@@ -85,7 +85,7 @@ describe('AudioFeatures', () => {
       vi.spyOn(AudioFeatures, 'createCanvas').mockReturnValue(canvasSpy as any)
       vi.spyOn(AudioFeatures, 'createCanvasDisplayToggle').mockReturnValue(toggleSpy as any)
       vi.spyOn(AudioFeatures, 'createBpmDisplay').mockReturnValue(bpmDivSpy as any)
-      vi.spyOn(AudioFeatures, 'invertColour').mockImplementation(() => {})
+      vi.spyOn(AudioFeatures, 'invertColour').mockImplementation(() => 'rgb(0,0,0)')
       vi.spyOn(document, 'querySelector').mockImplementation((selector) => {
         if (selector === 'audio') return audioSpy as any
         return null
@@ -425,7 +425,7 @@ describe('AudioFeatures', () => {
 
   describe('fillBar()', () => {
     it('should draw narrow rectangular bar on canvas', () => {
-      AudioFeatures.fillBar(canvas, 0.5, 10, 100)
+      AudioFeatures.fillBar(canvas as any, 0.5, 10, 100)
 
       expect(ctx.globalCompositeOperation).toBe('source-over')
       expect(ctx.fillStyle).toBe('white')
@@ -435,7 +435,7 @@ describe('AudioFeatures', () => {
 
   describe('drawOverlay()', () => {
     it('should draw progress bar on canvas', () => {
-      AudioFeatures.drawOverlay(canvas, 0.5)
+      AudioFeatures.drawOverlay(canvas as any, 0.5)
 
       expect(ctx.globalCompositeOperation).toBe('source-atop')
       expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 100, 100)

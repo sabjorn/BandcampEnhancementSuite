@@ -94,7 +94,7 @@ export default class Cart {
             this.reloadWindow();
           });
         } catch (error) {
-          this.log.error("Error loading JSON:", error);
+          this.log.error("Error loading JSON: " + String(error));
         }
       }
     });

@@ -69,7 +69,7 @@ describe('Checkout', () => {
       })
       
       // Mock body.appendChild
-      vi.spyOn(document.body, 'appendChild').mockImplementation(() => {})
+      vi.spyOn(document.body, 'appendChild').mockImplementation(() => document.createElement('div'))
       
       vi.spyOn(document, 'querySelector').mockImplementation((selector) => {
         if (selector === '#sidecartCheckout') return mockCheckoutButton as any

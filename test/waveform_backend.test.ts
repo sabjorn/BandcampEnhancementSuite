@@ -29,7 +29,7 @@ describe('Waveform Backend', () => {
   it('should manage waveform rendering backend operations', () => {
     const mockMessage = { contentScriptQuery: 'renderBuffer', url: 'test.mp3' }
     
-    globalThis.chrome.runtime.onMessage.addListener.mockImplementation((callback) => {
+    vi.mocked(globalThis.chrome.runtime.onMessage.addListener).mockImplementation((callback) => {
       callback(mockMessage, {}, vi.fn())
     })
 

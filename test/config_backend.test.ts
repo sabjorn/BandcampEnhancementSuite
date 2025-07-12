@@ -28,8 +28,10 @@ describe('Config Backend', () => {
 
   it('should manage configuration settings', () => {
     const mockConfig = { displayWaveform: true }
-    globalThis.chrome.storage.local.get.mockImplementation((keys, callback) => {
-      callback(mockConfig)
+    vi.mocked(globalThis.chrome.storage.local.get).mockImplementation((keys, callback) => {
+      if (typeof callback === 'function') {
+        callback(mockConfig)
+      }
     })
 
     // Test basic config operations

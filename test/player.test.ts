@@ -118,7 +118,7 @@ describe('Player', () => {
 
           return ul as any
         }
-        return document.querySelector.wrappedMethod?.(selector) || null
+        return null
       })
     })
 
@@ -305,7 +305,7 @@ describe('Player', () => {
         expect(player.createOneClickBuyButton).toHaveBeenNthCalledWith(2,
           expected_price,
           mockTralbumDetails.currency,
-          mockTralbumDetails.track_id,
+          mockTralbumDetails.tralbumId,
           mockTralbumDetails.title,
           mockTralbumDetails.type
         )
@@ -429,7 +429,7 @@ describe('Player', () => {
 
       vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
         if (tagName === 'div') return controls
-        return document.createElement.wrappedMethod?.(tagName) || document.createElement(tagName)
+        return document.createElement(tagName)
       })
 
       vi.spyOn(controls, 'append')
@@ -538,7 +538,7 @@ describe('Player', () => {
           })
           return div as any
         }
-        return document.createElement.wrappedMethod?.(tag) || {}
+        return document.createElement(tag)
       })
     })
     
@@ -608,7 +608,7 @@ describe('Player', () => {
           if (createElementCallCount === 2) return mockNextDiv
           if (createElementCallCount === 3) return mockContainerDiv
         }
-        return document.createElement.wrappedMethod?.(tag) || {}
+        return document.createElement(tag)
       })
 
       vi.spyOn(document, 'querySelector').mockImplementation((selector) => {

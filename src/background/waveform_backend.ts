@@ -15,7 +15,7 @@ export default class WaveformBackend {
   }
 
   static processRequest(request: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void): boolean {
-    if (request.contentScriptQuery != "renderBuffer") return false;
+    if (request.contentScriptQuery !== "renderBuffer") return false;
 
     const url = "https://t4.bcbits.com/stream/" + request.url;
 
@@ -25,7 +25,11 @@ export default class WaveformBackend {
         let jsonResult = Buffer.from(arrayBuffer).toJSON();
         sendResponse(jsonResult);
       })
-      .catch(error => console.error(error));
+      .catch(error => {
+        // Note: console.error is intentionally used here for debugging
+        // eslint-disable-next-line no-console
+        console.error(error);
+      });
 
     return true;
   }

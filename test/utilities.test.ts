@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createDomNodes, cleanupTestNodes } from './utils'
 
-import { mousedownCallback } from '../src/utilities'
-import DBUtils from '../src/utilities'
-import { extractBandFollowInfo } from '../src/utilities'
+import DBUtils, { mousedownCallback, extractBandFollowInfo } from '../src/utilities'
 
 describe('mousedownCallback', () => {
   const spyElement = { click: vi.fn(), duration: 0, currentTime: 0 }

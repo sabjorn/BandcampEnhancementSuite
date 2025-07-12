@@ -27,9 +27,7 @@ export default class LabelViewBackend {
     });
 
     chrome.runtime.onInstalled.addListener(function() {
-      function isEmpty(obj: object): boolean {
-        return Object.keys(obj).length === 0;
-      }
+      // Empty listener for onInstalled event
     });
   }
 

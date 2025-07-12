@@ -87,7 +87,7 @@ export default class AudioFeatures {
     const datapoints = 100;
     const audio = document.querySelector("audio");
 
-    if (this.currentTarget != audio.src) {
+    if (this.currentTarget !== audio.src) {
       this.currentTarget = audio.src;
 
       this.bpmDisplay.innerText = "";

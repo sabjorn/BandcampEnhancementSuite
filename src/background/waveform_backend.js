@@ -141,12 +141,12 @@ const postCache = async request => {
 // TODO: move to just be a function used by callers of API
 // not sure how FindMusic will make sure this is triggered
 const getFMApiToken = async () => {
-  const dbutils = new DBUtils();
-  const db = await dbutils.getDB(); // TODO: remove class and make factory
-  const fmtoken = await db.get("config", "fmtoken"); // TODO: check expirty
-  if (fmtoken) {
-    return fmtoken;
-  }
+  //const dbutils = new DBUtils();
+  //const db = await dbutils.getDB(); // TODO: remove class and make factory
+  //const fmtoken = await db.get("config", "fmtoken"); // TODO: check expirty
+  //if (fmtoken) {
+  //  return fmtoken;
+  //}
 
   const bc_cookie = await chrome.cookies.get({
     url: "https://bandcamp.com/",
@@ -154,7 +154,7 @@ const getFMApiToken = async () => {
   });
   const bc_token = bc_cookie.value;
 
-  const response = await fetch("http://nasty-2.local/api/bctoken", {
+  const response = await fetch("https://findmusic.club/api/bctoken", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -163,36 +163,38 @@ const getFMApiToken = async () => {
   });
 
   if (!response.ok) {
+    log.info("response not ok");
     throw new Error(`HTTP error! Status: ${response.status}`);
   }
 
   const data = await response.json();
+  log.info(data);
 
-  await db.put("config", data.token, "fmtoken");
+  //await db.put("config", data.token, "fmtoken");
 
-  [
-    "https://bandcamp.com/",
-    "https://findmusic.club/",
-    "http://localhost:3001/",
-    "http://nasty-2.local/"
-  ].forEach(url => {
-    chrome.cookies.set(
-      {
-        url,
-        name: "findmusic",
-        value: data.token,
-        expirationDate: new Date().getTime() / 1000 + 3600 * 24 * 14, // 14 days
-        path: "/",
-        secure: true,
-        httpOnly: false
-      },
-      () => {
-        if (chrome.runtime.lastError) {
-          log.error(chrome.runtime.lastError);
-        }
-      }
-    );
-  });
+  //[
+  //  "https://bandcamp.com/",
+  //  "https://findmusic.club/",
+  //  "http://localhost:3001/",
+  //  "http://nasty-2.local/"
+  //].forEach(url => {
+  //  chrome.cookies.set(
+  //    {
+  //      url,
+  //      name: "findmusic",
+  //      value: data.token,
+  //      expirationDate: new Date().getTime() / 1000 + 3600 * 24 * 14, // 14 days
+  //      path: "/",
+  //      secure: true,
+  //      httpOnly: false
+  //    },
+  //    () => {
+  //      if (chrome.runtime.lastError) {
+  //        log.error(chrome.runtime.lastError);
+  //      }
+  //    }
+  //  );
+  //});
 
   return data.token;
 };

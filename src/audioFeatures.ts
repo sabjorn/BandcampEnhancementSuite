@@ -34,17 +34,17 @@ export default class AudioFeatures {
   constructor(port: PortMessage) {
     this.log = new Logger();
 
-    this.toggleWaveformCanvasCallback = AudioFeatures.toggleWaveformCanvasCallback.bind(
+    this.toggleWaveformCanvasCallback = this.toggleWaveformCanvasCallbackImpl.bind(
       this
     );
-    this.monitorAudioCanPlayCallback = AudioFeatures.monitorAudioCanPlayCallback.bind(
+    this.monitorAudioCanPlayCallback = this.monitorAudioCanPlayCallbackImpl.bind(
       this
     );
-    this.monitorAudioTimeupdateCallback = AudioFeatures.monitorAudioTimeupdateCallback.bind(
+    this.monitorAudioTimeupdateCallback = this.monitorAudioTimeupdateCallbackImpl.bind(
       this
     );
 
-    this.applyConfig = AudioFeatures.applyConfig.bind(this);
+    this.applyConfig = this.applyConfigImpl.bind(this);
     this.port = port;
   }
 
@@ -156,6 +156,33 @@ export default class AudioFeatures {
     }
   }
 
+  applyConfigImpl(msg: AudioFeaturesConfig): void {
+    this.log.info("config recieved from backend" + JSON.stringify(msg.config));
+    this.canvas!.style.display = msg.config.displayWaveform ? "inherit" : "none";
+    this.canvasDisplayToggle!.checked = msg.config.displayWaveform;
+  }
+
+  toggleWaveformCanvasCallbackImpl(): void {
+    this.port.postMessage({ toggleWaveformDisplay: {} });
+  }
+
+  monitorAudioCanPlayCallbackImpl(): void {
+    let audio = document.querySelector("audio") as HTMLAudioElement;
+    if (!audio.paused && this.canvasDisplayToggle!.checked)
+      this.generateAudioFeatures();
+  }
+
+  monitorAudioTimeupdateCallbackImpl(e: Event): void {
+    let audio = e.target as HTMLAudioElement;
+    let progress = audio.currentTime / audio.duration;
+    AudioFeatures.drawOverlay(
+      this.canvas!,
+      progress,
+      this.waveformOverlayColour!,
+      this.waveformColour!
+    );
+  }
+
   static applyConfig(msg: AudioFeaturesConfig): void {
     // This method will be bound to instance in constructor
   }
@@ -169,9 +196,7 @@ export default class AudioFeatures {
   }
 
   static monitorAudioTimeupdateCallback(e: Event): void {
-    let audio = e.target as HTMLAudioElement;
-    let progress = audio.currentTime / audio.duration;
-    // Canvas drawing will be handled by bound instance method
+    // This method will be bound to instance in constructor
   }
 
   static createCanvas(): HTMLCanvasElement {

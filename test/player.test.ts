@@ -272,7 +272,7 @@ describe('Player', () => {
         const mockTralbumDetails = {
           price: 0.0,
           currency: 'CAD',
-          tralbumId: '987',
+          id: '987',
           title: 'Test Album',
           is_purchasable: true,
           type: 'a',
@@ -305,7 +305,7 @@ describe('Player', () => {
         expect(player.createOneClickBuyButton).toHaveBeenNthCalledWith(2,
           expected_price,
           mockTralbumDetails.currency,
-          mockTralbumDetails.tralbumId,
+          mockTralbumDetails.id,
           mockTralbumDetails.title,
           mockTralbumDetails.type
         )
@@ -749,7 +749,7 @@ describe('Player', () => {
       player.keydownCallback(event)
 
       expect(document.querySelector).toHaveBeenCalledWith('input.volume')
-      expect(spyElement.value).toBe(0.05)
+      expect(spyElement.value).toBe('0.05')
       expect(spyElement.dispatchEvent).toHaveBeenCalled()
     })
 
@@ -760,7 +760,7 @@ describe('Player', () => {
       player.keydownCallback(event)
 
       expect(document.querySelector).toHaveBeenCalledWith('input.volume')
-      expect(spyElement.value).toBe(0.95)
+      expect(spyElement.value).toBe('0.95')
       expect(spyElement.dispatchEvent).toHaveBeenCalled()
     })
 

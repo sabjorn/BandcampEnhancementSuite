@@ -88,6 +88,7 @@ describe('AudioFeatures', () => {
       vi.spyOn(AudioFeatures, 'invertColour').mockImplementation(() => 'rgb(0,0,0)')
       vi.spyOn(document, 'querySelector').mockImplementation((selector) => {
         if (selector === 'audio') return audioSpy as any
+        if (selector === 'h2.trackTitle') return {} as any
         return null
       })
 

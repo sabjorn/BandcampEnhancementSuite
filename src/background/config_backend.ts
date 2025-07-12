@@ -44,12 +44,31 @@ export default class ConfigBackend {
     chrome.runtime.onConnect.addListener(this.connectionListenerCallback);
   }
 
-  static connectionListenerCallback(_port: chrome.runtime.Port): void {
-    // This method will be bound to instance in constructor
+  static connectionListenerCallback(port: chrome.runtime.Port): void {
+    this.log.info("connection listener callback");
+    if (port.name !== "bandcamplabelview") {
+      this.log.error(
+        `Unexpected chrome.runtime.onConnect port name: ${port.name}`
+      );
+      return;
+    }
+
+    this.port = port;
+    this.port.onMessage.addListener(this.portListenerCallback);
   }
 
-  static async portListenerCallback(_msg: any): Promise<void> {
-    // This method will be bound to instance in constructor
+  static async portListenerCallback(msg: any): Promise<void> {
+    this.log.info("port listener callback");
+
+    const db = await this.dbUtils.getDB();
+
+    this.setupDB(db);
+
+    if (msg.config) this.synchronizeConfig(db, msg.config);
+
+    if (msg.toggleWaveformDisplay) this.toggleWaveformDisplay(db);
+
+    if (msg.requestConfig) this.broadcastConfig(db);
   }
 
   async synchronizeConfig(db: any, config: Partial<Config>): Promise<void> {

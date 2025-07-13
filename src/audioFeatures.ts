@@ -74,13 +74,11 @@ export default class AudioFeatures {
       );
     }
 
-    document
-      .querySelector("audio")
-      .addEventListener("canplay", this.monitorAudioCanPlayCallback);
-
-    document
-      .querySelector("audio")
-      .addEventListener("timeupdate", this.monitorAudioTimeupdateCallback);
+    const audio = document.querySelector("audio");
+    if (audio) {
+      audio.addEventListener("canplay", this.monitorAudioCanPlayCallback);
+      audio.addEventListener("timeupdate", this.monitorAudioTimeupdateCallback);
+    }
 
     this.port.onMessage.addListener(this.applyConfig);
     this.port.postMessage({ requestConfig: {} }); // TO DO: this must be at end of init, write test

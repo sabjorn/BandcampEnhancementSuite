@@ -153,8 +153,9 @@ describe('Player', () => {
 
     describe('add one click add to cart buttons', () => {
       it.skip('should be called for each track and album when getTralbumDetails succeeds and when is_purchasable is true', async () => {
-        // TODO: Fix complex integration test
-        await player.init()
+        // TODO: Fix complex integration test - async promise chain in init() not properly mocked
+        const initPromise = player.init()
+        await initPromise
 
         expect(player.getTralbumDetails).toHaveBeenCalledWith(
           bandFollowInfoFake.tralbum_id,
@@ -178,6 +179,7 @@ describe('Player', () => {
       })
 
       it.skip('should modify DOM correctly', async () => {
+        // TODO: Fix complex integration test - DOM modifications in async promise chain not testable with current mock setup
         await player.init()
 
         const rows = document.querySelectorAll('tr.track_row_view')
@@ -228,6 +230,7 @@ describe('Player', () => {
       })
 
       it.skip('should only add album if no track_row_view in DOM', async () => {
+        // TODO: Fix complex integration test - async behavior with DOM queries not properly isolated
         document
           .querySelectorAll('tr.track_row_view')
           .forEach(item => item.remove())

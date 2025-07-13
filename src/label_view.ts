@@ -167,7 +167,7 @@ export default class LabelView {
 
     const pagedata = document.querySelector("#pagedata");
     if (!pagedata) return;
-    const datablob = JSON.parse(pagedata.dataset.blob!);
+    const datablob = JSON.parse((pagedata as HTMLElement).dataset.blob!);
     const urlParams = new URLSearchParams(datablob.lo_querystr);
     const id = urlParams.get("item_id");
     if (id) {

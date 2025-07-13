@@ -183,7 +183,7 @@ export default class Checkout {
 
     sidecart_footer.appendChild(checkout_button_sub);
 
-    checkout_button.style.display = "none";
+    (checkout_button as HTMLElement).style.display = "none";
     return checkout_button_sub;
   }
 
@@ -198,6 +198,6 @@ export default class Checkout {
 
     window.document.body.appendChild(dialog);
 
-    return dialog;
+    return dialog as HTMLElement;
   }
 }

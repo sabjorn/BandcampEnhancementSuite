@@ -22,8 +22,6 @@ export default class ConfigBackend {
   public dbUtils: DBUtils;
   public defaultConfig: Config;
   public port?: chrome.runtime.Port;
-  public connectionListenerCallback: (port: chrome.runtime.Port) => void;
-  public portListenerCallback: (msg: any) => Promise<void>;
 
   constructor() {
     this.log = new Logger();
@@ -31,11 +29,9 @@ export default class ConfigBackend {
 
     this.defaultConfig = defaultConfig;
 
-    this.connectionListenerCallback = ConfigBackend.connectionListenerCallback.bind(
-      this
-    );
-
-    this.portListenerCallback = ConfigBackend.portListenerCallback.bind(this);
+    // Bind methods to maintain 'this' context
+    this.connectionListenerCallback = this.connectionListenerCallback.bind(this);
+    this.portListenerCallback = this.portListenerCallback.bind(this);
   }
 
   init(): void {
@@ -44,7 +40,7 @@ export default class ConfigBackend {
     chrome.runtime.onConnect.addListener(this.connectionListenerCallback);
   }
 
-  static connectionListenerCallback(port: chrome.runtime.Port): void {
+  connectionListenerCallback(port: chrome.runtime.Port): void {
     this.log.info("connection listener callback");
     if (port.name !== "bandcamplabelview") {
       this.log.error(
@@ -57,7 +53,7 @@ export default class ConfigBackend {
     this.port.onMessage.addListener(this.portListenerCallback);
   }
 
-  static async portListenerCallback(msg: any): Promise<void> {
+  async portListenerCallback(msg: any): Promise<void> {
     this.log.info("port listener callback");
 
     const db = await this.dbUtils.getDB();

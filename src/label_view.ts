@@ -107,14 +107,14 @@ export default class LabelView {
   }
 
   generatePreview(id: string, idType: string): HTMLDivElement {
-    let button = document.createElement("button");
+    const button = document.createElement("button");
     button.setAttribute("title", "load preview player");
     button.setAttribute("type", "button");
     button.setAttribute("class", "follow-unfollow open-iframe");
     button.setAttribute("style", "width: 90%");
     button.append("Preview");
 
-    let checkbox = document.createElement("button");
+    const checkbox = document.createElement("button");
     checkbox.setAttribute("title", "preview history (click to toggle)");
     checkbox.setAttribute(
       "style",
@@ -122,11 +122,11 @@ export default class LabelView {
     );
     checkbox.setAttribute("class", "follow-unfollow historybox");
 
-    let preview = document.createElement("div");
+    const preview = document.createElement("div");
     preview.setAttribute("class", "preview-frame");
     preview.setAttribute("id", `${idType}-${id}`);
 
-    let parent = document.createElement("div");
+    const parent = document.createElement("div");
     parent.setAttribute("id", id);
     parent.setAttribute("class", "preview");
     parent.appendChild(button);
@@ -146,7 +146,7 @@ export default class LabelView {
         
         const id = idAndType.split("-")[1];
         const idType = idAndType.split("-")[0];
-        let $preview = this.generatePreview(id, idType);
+        const $preview = this.generatePreview(id, idType);
         item.appendChild($preview);
 
         this.port.postMessage({ query: id });
@@ -159,7 +159,7 @@ export default class LabelView {
       .forEach(item => {
         const id = (item as HTMLElement).dataset.tralbumid;
         if (!id) return;
-        let preview = this.generatePreview(id, "album");
+        const preview = this.generatePreview(id, "album");
         item.appendChild(preview);
 
         this.port.postMessage({ query: id });

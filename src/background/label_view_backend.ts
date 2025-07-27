@@ -32,7 +32,7 @@ export default class LabelViewBackend {
   }
 
   static async query(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
-    let db = await dbUtils.getDB();
+    const db = await dbUtils.getDB();
     let value = await db.get(storeName, key);
 
     if (!value) {
@@ -44,7 +44,7 @@ export default class LabelViewBackend {
   }
 
   static async toggle(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
-    let db = await dbUtils.getDB();
+    const db = await dbUtils.getDB();
     let value = await db.get(storeName, key);
 
     value = !value;
@@ -54,7 +54,7 @@ export default class LabelViewBackend {
   }
 
   static async setTrue(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
-    let db = await dbUtils.getDB();
+    const db = await dbUtils.getDB();
     await db.put(storeName, true, key);
     port.postMessage({ id: { key: key, value: true } });
   }

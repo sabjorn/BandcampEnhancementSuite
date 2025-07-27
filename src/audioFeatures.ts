@@ -121,7 +121,7 @@ export default class AudioFeatures {
 
           decodePromise.then(decodedAudio => {
             this.log.info("calculating rms");
-            let leftChannel = decodedAudio.getChannelData(0);
+            const leftChannel = decodedAudio.getChannelData(0);
 
             const stepSize = Math.round(decodedAudio.length / datapoints);
 
@@ -132,18 +132,18 @@ export default class AudioFeatures {
               let rms = 0.0;
               for (let sample = 0; sample < rmsSize; sample++) {
                 const sampleIndex = i * stepSize + sample * subStepSize;
-                let audioSample = leftChannel[sampleIndex];
+                const audioSample = leftChannel[sampleIndex];
                 rms += audioSample ** 2;
               }
               rmsBuffer.push(Math.sqrt(rms / rmsSize));
             }
 
             this.log.info("visualizing");
-            let max = rmsBuffer.reduce(function(a, b) {
+            const max = rmsBuffer.reduce(function(a, b) {
               return Math.max(a, b);
             });
             for (let i = 0; i < rmsBuffer.length; i++) {
-              let amplitude = rmsBuffer[i] / max;
+              const amplitude = rmsBuffer[i] / max;
               AudioFeatures.fillBar(
                 this.canvas,
                 amplitude,
@@ -205,7 +205,7 @@ export default class AudioFeatures {
   }
 
   static createCanvas(): HTMLCanvasElement {
-    let canvas = document.createElement("canvas");
+    const canvas = document.createElement("canvas");
     canvas.style.display = "none";
     canvas.classList.add("waveform");
 
@@ -222,19 +222,19 @@ export default class AudioFeatures {
   }
 
   static createCanvasDisplayToggle(): HTMLInputElement {
-    let toggle = document.createElement("input");
+    const toggle = document.createElement("input");
 
     toggle.setAttribute("title", "toggle waveform display");
     toggle.setAttribute("type", "checkbox");
     toggle.setAttribute("class", "waveform");
     toggle.setAttribute("id", "switch");
 
-    let label = document.createElement("label");
+    const label = document.createElement("label");
     label.setAttribute("class", "waveform");
     label.htmlFor = "switch";
     label.innerHTML = "Toggle";
 
-    let toggle_div = document.createElement("div");
+    const toggle_div = document.createElement("div");
     toggle_div.append(toggle);
     toggle_div.append(label);
 
@@ -259,18 +259,18 @@ export default class AudioFeatures {
   }
 
   static fillBar(canvas: HTMLCanvasElement, amplitude: number, index: number, numElements: number, colour: string = "white"): void {
-    let ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d");
     ctx.globalCompositeOperation = "source-over";
     ctx.fillStyle = colour;
 
-    let graphHeight = canvas.height * amplitude;
-    let barWidth = canvas.width / numElements;
-    let position = index * barWidth;
+    const graphHeight = canvas.height * amplitude;
+    const barWidth = canvas.width / numElements;
+    const position = index * barWidth;
     ctx.fillRect(position, canvas.height, barWidth, -graphHeight);
   }
 
   static drawOverlay(canvas: HTMLCanvasElement, progress: number, colour: string = "red", clearColour: string = "black"): void {
-    let ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d");
     ctx.globalCompositeOperation = "source-atop";
     ctx.fillStyle = clearColour;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -279,14 +279,14 @@ export default class AudioFeatures {
   }
 
   static invertColour(colour: string): string {
-    let rgb = colour
+    const rgb = colour
       .split("rgb(")[1]
       .split(")")[0]
       .split(",");
 
-    let r = parseInt((255 - parseInt(rgb[0])).toString());
-    let g = parseInt((255 - parseInt(rgb[1])).toString());
-    let b = parseInt((255 - parseInt(rgb[2])).toString());
+    const r = parseInt((255 - parseInt(rgb[0])).toString());
+    const g = parseInt((255 - parseInt(rgb[1])).toString());
+    const b = parseInt((255 - parseInt(rgb[2])).toString());
 
     return `rgb(${r},${g},${b})`;
   }

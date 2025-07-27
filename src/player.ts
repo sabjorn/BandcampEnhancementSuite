@@ -237,17 +237,17 @@ export default class Player {
   }
 
   updatePlayerControlInterface(): void {
-    let controls = document.createElement("div");
+    const controls = document.createElement("div");
     controls.classList.add("controls");
 
-    let volumeSlider = Player.createVolumeSlider();
+    const volumeSlider = Player.createVolumeSlider();
     volumeSlider.addEventListener("input", this.volumeSliderCallback);
     controls.append(volumeSlider);
 
-    let playButton = Player.transferPlayButton();
+    const playButton = Player.transferPlayButton();
     controls.append(playButton);
 
-    let prevNext = Player.transferPreviousNextButtons();
+    const prevNext = Player.transferPreviousNextButtons();
     controls.append(prevNext);
 
     const inlineplayer = document.querySelector("div.inline_player");
@@ -267,7 +267,7 @@ export default class Player {
   }
 
   static createVolumeSlider(): HTMLInputElement {
-    let input = document.createElement("input");
+    const input = document.createElement("input");
     input.type = "range";
     input.classList.add("volume", "thumb", "progbar_empty");
     input.min = "0";

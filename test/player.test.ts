@@ -101,12 +101,14 @@ describe('Player', () => {
       `)
 
       // Mock querySelector for specific selectors
+      const originalQuerySelector = document.querySelector.bind(document)
       vi.spyOn(document, 'querySelector').mockImplementation((selector) => {
         if (selector === '.progbar') return progressbar as any
         if (selector === '#sidecartReveal') return sidecarReveal as any
         if (selector === 'ul.tralbumCommands .buyItem.digital h3.hd') {
           const h3 = document.createElement('h3')
           h3.classList.add('hd')
+          h3.append = vi.fn()
 
           const buyItem = document.createElement('div')
           buyItem.classList.add('buyItem', 'digital')
@@ -116,9 +118,10 @@ describe('Player', () => {
           ul.classList.add('tralbumCommands')
           ul.appendChild(buyItem)
 
-          return ul as any
+          return h3 as any
         }
-        return null
+        // Fall back to original querySelector for other selectors
+        return originalQuerySelector(selector)
       })
     })
 
@@ -153,7 +156,16 @@ describe('Player', () => {
 
     describe('add one click add to cart buttons', () => {
       it.skip('should be called for each track and album when getTralbumDetails succeeds and when is_purchasable is true', async () => {
-        // TODO: Fix complex integration test - async promise chain in init() not properly mocked
+        // Debug: check DOM setup
+        const trackRows = document.querySelectorAll('tr.track_row_view')
+        expect(trackRows).toHaveLength(2)
+        
+        // Debug: ensure download-col exists in each row
+        trackRows.forEach((row, i) => {
+          const downloadCol = row.querySelector('.download-col')
+          expect(downloadCol).not.toBeNull()
+        })
+        
         const initPromise = player.init()
         await initPromise
 
@@ -161,6 +173,10 @@ describe('Player', () => {
           bandFollowInfoFake.tralbum_id,
           bandFollowInfoFake.tralbum_type
         )
+        
+        // Verify the mock response was processed correctly  
+        expect(mockResponse.json).toHaveBeenCalled()
+        
         expect(player.createOneClickBuyButton).toHaveBeenCalledTimes(2)
         expect(player.createOneClickBuyButton).toHaveBeenNthCalledWith(1,
           mockTralbumDetails.tracks[1].price,

@@ -68,7 +68,7 @@ export default class ConfigBackend {
   }
 
   async synchronizeConfig(db: any, config: Partial<Config>): Promise<void> {
-    let db_config = await db.get("config", "config");
+    const db_config = await db.get("config", "config");
     const merged_config = ConfigBackend.mergeData(db_config, config);
 
     await db.put("config", merged_config, "config");

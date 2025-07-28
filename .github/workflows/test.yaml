@@ -1,21 +1,36 @@
-name: Node.js CI
+name: TypeScript CI
 
-on: [push]
+on: push
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js
-      uses: actions/setup-node@v1
+    - uses: actions/checkout@v4
+    
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
       with:
-        node-version: '14.x'
-    - run: npm install
-    - run: npm run build --if-present
-    - run: npm test
-    - run: npm run snapshots
-      env:
-        CI: true
+        version: 9.14.4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+        cache: 'pnpm'
+    
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+    
+    - name: TypeScript type check
+      run: pnpm run typecheck
+    
+    - name: Build project
+      run: pnpm run build
+    
+    - name: Run linter
+      run: pnpm run lint
+    
+    - name: Run tests
+      run: pnpm run test

@@ -67,3 +67,6 @@ node_modules/
 
 # Build/Distribution
 dist/
+
+# random files
+*.bak

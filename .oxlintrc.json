@@ -1,0 +1,48 @@
+{
+  "env": {
+    "browser": true,
+    "es6": true,
+    "node": true
+  },
+  "globals": {
+    "chrome": "readonly",
+    "globalThis": "readonly",
+    "Buffer": "readonly",
+    "vi": "readonly",
+    "describe": "readonly",
+    "it": "readonly",
+    "expect": "readonly",
+    "beforeEach": "readonly",
+    "afterEach": "readonly",
+    "beforeAll": "readonly",
+    "afterAll": "readonly"
+  },
+  "plugins": [
+    "typescript",
+    "import",
+    "unicorn"
+  ],
+  "rules": {
+    "no-console": "error",
+    "no-unused-vars": "warn",
+    "prefer-const": "error",
+    "no-var": "error",
+    "eqeqeq": "error",
+    "no-duplicate-imports": "error",
+    "unicorn/prefer-module": "off",
+    "import/no-default-export": "off"
+  },
+  "overrides": [
+    {
+      "files": ["test/**/*.ts", "test/**/*.js"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "dist/**",
+    "node_modules/**",
+    "*.min.js"
+  ]
+}

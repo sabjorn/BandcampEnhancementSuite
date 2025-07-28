@@ -1,4 +1,4 @@
-import DBUtils from "../utilities";
+import { getDB } from "../utilities";
 import Logger from "../logger";
 
 export default class LabelViewBackend {
@@ -31,8 +31,8 @@ export default class LabelViewBackend {
     });
   }
 
-  static async query(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
-    const db = await dbUtils.getDB();
+  static async query(storeName: string, key: string, port: chrome.runtime.Port): Promise<void> {
+    const db = await getDB();
     let value = await db.get(storeName, key);
 
     if (!value) {
@@ -43,8 +43,8 @@ export default class LabelViewBackend {
     port.postMessage({ id: { key: key, value: value } });
   }
 
-  static async toggle(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
-    const db = await dbUtils.getDB();
+  static async toggle(storeName: string, key: string, port: chrome.runtime.Port): Promise<void> {
+    const db = await getDB();
     let value = await db.get(storeName, key);
 
     value = !value;
@@ -53,8 +53,8 @@ export default class LabelViewBackend {
     port.postMessage({ id: { key: key, value: value } });
   }
 
-  static async setTrue(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
-    const db = await dbUtils.getDB();
+  static async setTrue(storeName: string, key: string, port: chrome.runtime.Port): Promise<void> {
+    const db = await getDB();
     await db.put(storeName, true, key);
     port.postMessage({ id: { key: key, value: true } });
   }

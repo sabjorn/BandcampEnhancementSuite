@@ -1,5 +1,5 @@
 import Logger from "../logger.js";
-import DBUtils from "../utilities.js";
+import { getDB } from "../utilities.js";
 
 interface Config {
   displayWaveform: boolean;
@@ -19,14 +19,11 @@ const defaultConfig: Config = {
 
 export default class ConfigBackend {
   public log: Logger;
-  public dbUtils: DBUtils;
   public defaultConfig: Config;
   public port?: chrome.runtime.Port;
 
   constructor() {
     this.log = new Logger();
-    this.dbUtils = new DBUtils();
-
     this.defaultConfig = defaultConfig;
 
     // Bind methods to maintain 'this' context
@@ -56,7 +53,7 @@ export default class ConfigBackend {
   async portListenerCallback(msg: any): Promise<void> {
     this.log.info("port listener callback");
 
-    const db = await this.dbUtils.getDB();
+    const db = await getDB();
 
     this.setupDB(db);
 

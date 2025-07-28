@@ -33,26 +33,20 @@ export default class AudioFeatures {
 
   constructor(port: PortMessage) {
     this.log = new Logger();
-
-    this.toggleWaveformCanvasCallback = this.toggleWaveformCanvasCallbackImpl.bind(
-      this
-    );
-    this.monitorAudioCanPlayCallback = this.monitorAudioCanPlayCallbackImpl.bind(
-      this
-    );
-    this.monitorAudioTimeupdateCallback = this.monitorAudioTimeupdateCallbackImpl.bind(
-      this
-    );
-
-    this.applyConfig = this.applyConfigImpl.bind(this);
     this.port = port;
+
+    // Use arrow functions for automatic binding instead of manual bind
+    this.toggleWaveformCanvasCallback = () => this.toggleWaveformCanvasCallbackImpl();
+    this.monitorAudioCanPlayCallback = () => this.monitorAudioCanPlayCallbackImpl();
+    this.monitorAudioTimeupdateCallback = (e: Event) => this.monitorAudioTimeupdateCallbackImpl(e);
+    this.applyConfig = (msg: AudioFeaturesConfig) => this.applyConfigImpl(msg);
   }
 
   init(): void {
-    this.canvas = AudioFeatures.createCanvas();
+    this.canvas = createCanvas();
     this.canvas.addEventListener("click", mousedownCallback);
 
-    this.canvasDisplayToggle = AudioFeatures.createCanvasDisplayToggle();
+    this.canvasDisplayToggle = createCanvasDisplayToggle();
     const parentNode = this.canvasDisplayToggle.parentNode as HTMLElement;
     if (parentNode) {
       this.canvasDisplayDiv = parentNode;
@@ -62,14 +56,14 @@ export default class AudioFeatures {
       );
     }
 
-    this.bpmDisplay = AudioFeatures.createBpmDisplay();
+    this.bpmDisplay = createBpmDisplay();
 
     const bg: Element | null = document.querySelector("h2.trackTitle");
     if (bg) {
       this.waveformColour = window
         .getComputedStyle(bg, null)
         .getPropertyValue("color");
-      this.waveformOverlayColour = AudioFeatures.invertColour(
+      this.waveformOverlayColour = invertColour(
         this.waveformColour
       );
     }
@@ -144,12 +138,12 @@ export default class AudioFeatures {
             });
             for (let i = 0; i < rmsBuffer.length; i++) {
               const amplitude = rmsBuffer[i] / max;
-              AudioFeatures.fillBar(
-                this.canvas,
+              fillBar(
+                this.canvas!,
                 amplitude,
                 i,
                 datapoints,
-                this.waveformColour
+                this.waveformColour!
               );
             }
           });
@@ -180,7 +174,7 @@ export default class AudioFeatures {
     if (!audio || !audio.duration) return;
     
     const progress = audio.currentTime / audio.duration;
-    AudioFeatures.drawOverlay(
+    drawOverlay(
       this.canvas!,
       progress,
       this.waveformOverlayColour!,
@@ -188,106 +182,92 @@ export default class AudioFeatures {
     );
   }
 
-  static applyConfig(_msg: AudioFeaturesConfig): void {
-    // This method will be bound to instance in constructor
+}
+
+// Extracted utility functions for better modularity and testability
+export function createCanvas(): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.style.display = "none";
+  canvas.classList.add("waveform");
+
+  // configure element to properly hold canvas
+  const progbar = document.querySelector("div.progbar");
+  if (progbar) {
+    progbar.classList.add("waveform");
+
+    const div = document.createElement("div");
+    div.append(canvas);
+    progbar.prepend(div);
+  }
+  return canvas;
+}
+
+export function createCanvasDisplayToggle(): HTMLInputElement {
+  const toggle = document.createElement("input");
+
+  toggle.setAttribute("title", "toggle waveform display");
+  toggle.setAttribute("type", "checkbox");
+  toggle.setAttribute("class", "waveform");
+  toggle.setAttribute("id", "switch");
+
+  const label = document.createElement("label");
+  label.setAttribute("class", "waveform");
+  label.htmlFor = "switch";
+  label.innerHTML = "Toggle";
+
+  const toggle_div = document.createElement("div");
+  toggle_div.append(toggle);
+  toggle_div.append(label);
+
+  const inlineplayer = document.querySelector("div.controls");
+  if (inlineplayer) {
+    inlineplayer.append(toggle_div);
   }
 
-  static toggleWaveformCanvasCallback(): void {
-    // This method will be bound to instance in constructor
+  return toggle;
+}
+
+export function createBpmDisplay(): HTMLDivElement {
+  const bpmDisplay = document.createElement("div");
+  bpmDisplay.setAttribute("class", "bpm");
+
+  const inlineplayer = document.querySelector("div.progbar");
+  if (inlineplayer) {
+    inlineplayer.append(bpmDisplay);
   }
 
-  static monitorAudioCanPlayCallback(): void {
-    // This method will be bound to instance in constructor
-  }
+  return bpmDisplay;
+}
 
-  static monitorAudioTimeupdateCallback(_e: Event): void {
-    // This method will be bound to instance in constructor
-  }
+export function fillBar(canvas: HTMLCanvasElement, amplitude: number, index: number, numElements: number, colour: string = "white"): void {
+  const ctx = canvas.getContext("2d")!;
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = colour;
 
-  static createCanvas(): HTMLCanvasElement {
-    const canvas = document.createElement("canvas");
-    canvas.style.display = "none";
-    canvas.classList.add("waveform");
+  const graphHeight = canvas.height * amplitude;
+  const barWidth = canvas.width / numElements;
+  const position = index * barWidth;
+  ctx.fillRect(position, canvas.height, barWidth, -graphHeight);
+}
 
-    // configure element to properly hold canvas
-    const progbar = document.querySelector("div.progbar");
-    if (progbar) {
-      progbar.classList.add("waveform");
+export function drawOverlay(canvas: HTMLCanvasElement, progress: number, colour: string = "red", clearColour: string = "black"): void {
+  const ctx = canvas.getContext("2d")!;
+  ctx.globalCompositeOperation = "source-atop";
+  ctx.fillStyle = clearColour;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = colour;
+  ctx.fillRect(0, 0, canvas.width * progress, canvas.height);
+}
 
-      const div = document.createElement("div");
-      div.append(canvas);
-      progbar.prepend(div);
-    }
-    return canvas;
-  }
+export function invertColour(colour: string): string {
+  const rgb = colour
+    .split("rgb(")[1]
+    .split(")")[0]
+    .split(",");
 
-  static createCanvasDisplayToggle(): HTMLInputElement {
-    const toggle = document.createElement("input");
+  const r = parseInt((255 - parseInt(rgb[0])).toString());
+  const g = parseInt((255 - parseInt(rgb[1])).toString());
+  const b = parseInt((255 - parseInt(rgb[2])).toString());
 
-    toggle.setAttribute("title", "toggle waveform display");
-    toggle.setAttribute("type", "checkbox");
-    toggle.setAttribute("class", "waveform");
-    toggle.setAttribute("id", "switch");
-
-    const label = document.createElement("label");
-    label.setAttribute("class", "waveform");
-    label.htmlFor = "switch";
-    label.innerHTML = "Toggle";
-
-    const toggle_div = document.createElement("div");
-    toggle_div.append(toggle);
-    toggle_div.append(label);
-
-    const inlineplayer = document.querySelector("div.controls");
-    if (inlineplayer) {
-      inlineplayer.append(toggle_div);
-    }
-
-    return toggle;
-  }
-
-  static createBpmDisplay(): HTMLDivElement {
-    const bpmDisplay = document.createElement("div");
-    bpmDisplay.setAttribute("class", "bpm");
-
-    const inlineplayer = document.querySelector("div.progbar");
-    if (inlineplayer) {
-      inlineplayer.append(bpmDisplay);
-    }
-
-    return bpmDisplay;
-  }
-
-  static fillBar(canvas: HTMLCanvasElement, amplitude: number, index: number, numElements: number, colour: string = "white"): void {
-    const ctx = canvas.getContext("2d");
-    ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = colour;
-
-    const graphHeight = canvas.height * amplitude;
-    const barWidth = canvas.width / numElements;
-    const position = index * barWidth;
-    ctx.fillRect(position, canvas.height, barWidth, -graphHeight);
-  }
-
-  static drawOverlay(canvas: HTMLCanvasElement, progress: number, colour: string = "red", clearColour: string = "black"): void {
-    const ctx = canvas.getContext("2d");
-    ctx.globalCompositeOperation = "source-atop";
-    ctx.fillStyle = clearColour;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = colour;
-    ctx.fillRect(0, 0, canvas.width * progress, canvas.height);
-  }
-
-  static invertColour(colour: string): string {
-    const rgb = colour
-      .split("rgb(")[1]
-      .split(")")[0]
-      .split(",");
-
-    const r = parseInt((255 - parseInt(rgb[0])).toString());
-    const g = parseInt((255 - parseInt(rgb[1])).toString());
-    const b = parseInt((255 - parseInt(rgb[2])).toString());
-
-    return `rgb(${r},${g},${b})`;
-  }
+  return `rgb(${r},${g},${b})`;
 }

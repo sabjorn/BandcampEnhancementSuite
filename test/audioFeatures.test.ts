@@ -2,7 +2,20 @@ import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } 
 import { createDomNodes, cleanupTestNodes } from './utils'
 
 import { mousedownCallback } from '../src/utilities'
-import AudioFeatures from '../src/audioFeatures'
+import AudioFeatures, { createCanvas, createCanvasDisplayToggle, createBpmDisplay, fillBar, drawOverlay, invertColour } from '../src/audioFeatures'
+
+vi.mock('../src/audioFeatures', async () => {
+  const actual = await vi.importActual('../src/audioFeatures') as any
+  return {
+    ...actual,
+    createCanvas: vi.fn(),
+    createCanvasDisplayToggle: vi.fn(),
+    createBpmDisplay: vi.fn(),
+    fillBar: vi.fn(),
+    drawOverlay: vi.fn(),
+    invertColour: vi.fn()
+  }
+})
 
 describe('AudioFeatures', () => {
   let wf: any
@@ -82,10 +95,10 @@ describe('AudioFeatures', () => {
     let _getPropertyValueStub = vi.fn().mockReturnValue('rgb(255, 0, 0)')
 
     beforeEach(() => {
-      vi.spyOn(AudioFeatures, 'createCanvas').mockReturnValue(canvasSpy as any)
-      vi.spyOn(AudioFeatures, 'createCanvasDisplayToggle').mockReturnValue(toggleSpy as any)
-      vi.spyOn(AudioFeatures, 'createBpmDisplay').mockReturnValue(bpmDivSpy as any)
-      vi.spyOn(AudioFeatures, 'invertColour').mockImplementation(() => 'rgb(0,0,0)')
+      (createCanvas as any).mockReturnValue(canvasSpy)
+      ;(createCanvasDisplayToggle as any).mockReturnValue(toggleSpy)
+      ;(createBpmDisplay as any).mockReturnValue(bpmDivSpy)
+      ;(invertColour as any).mockImplementation(() => 'rgb(0,0,0)')
       vi.spyOn(document, 'querySelector').mockImplementation((selector) => {
         if (selector === 'audio') return audioSpy as any
         if (selector === 'h2.trackTitle') return {} as any
@@ -103,7 +116,7 @@ describe('AudioFeatures', () => {
 
     it('creates canvas with clickable interface', () => {
       wf.init()
-      expect(AudioFeatures.createCanvas).toHaveBeenCalled()
+      expect(createCanvas).toHaveBeenCalled()
       expect(canvasSpy.addEventListener).toHaveBeenCalledWith(
         'click',
         mousedownCallback
@@ -112,7 +125,7 @@ describe('AudioFeatures', () => {
 
     it('creates toggle which acts as a display for toggle state', () => {
       wf.init()
-      expect(AudioFeatures.createCanvasDisplayToggle).toHaveBeenCalled()
+      expect(createCanvasDisplayToggle).toHaveBeenCalled()
     })
 
     it('creates div which can be clicked on to trigger state changes', () => {
@@ -125,7 +138,7 @@ describe('AudioFeatures', () => {
 
     it('creates div to display audio bpm', () => {
       wf.init()
-      expect(AudioFeatures.createBpmDisplay).toHaveBeenCalled()
+      expect(createBpmDisplay).toHaveBeenCalled()
     })
 
     it('gets the background colour for specific element', () => {
@@ -133,7 +146,7 @@ describe('AudioFeatures', () => {
 
       const rgbResult = 'rgb(255, 0, 0)'
       expect(wf.waveformColour).toBe(rgbResult)
-      expect(AudioFeatures.invertColour).toHaveBeenCalledWith(rgbResult)
+      expect(invertColour).toHaveBeenCalledWith(rgbResult)
     })
 
     it('adds eventListener for audio element canplay', () => {
@@ -328,8 +341,8 @@ describe('AudioFeatures', () => {
   })
 
   describe('monitorAudioTimeupdateCallback()', () => {
-    it('should update audioFeatures overlay by calling AudioFeatures.drawOverlay', () => {
-      vi.spyOn(AudioFeatures, 'drawOverlay').mockImplementation(() => {})
+    it('should update audioFeatures overlay by calling drawOverlay', () => {
+      (drawOverlay as any).mockImplementation(() => {})
 
       const event = {
         target: {
@@ -340,7 +353,7 @@ describe('AudioFeatures', () => {
 
       wf.monitorAudioTimeupdateCallback(event)
       const expectedProgress = 0.1
-      expect(AudioFeatures.drawOverlay).toHaveBeenCalledWith(
+      expect(drawOverlay).toHaveBeenCalledWith(
         wf.canvas,
         expectedProgress,
         wf.waveformOverlayColour,
@@ -351,16 +364,30 @@ describe('AudioFeatures', () => {
 
   describe('createCanvas()', () => {
     beforeEach(() => {
+      vi.unmock('../src/audioFeatures')
       createDomNodes(`
         <div class="progbar"></div>
       `)
     })
     afterEach(() => {
       cleanupTestNodes()
+      vi.doMock('../src/audioFeatures', async () => {
+        const actual = await vi.importActual('../src/audioFeatures') as any
+        return {
+          ...actual,
+          createCanvas: vi.fn(),
+          createCanvasDisplayToggle: vi.fn(),
+          createBpmDisplay: vi.fn(),
+          fillBar: vi.fn(),
+          drawOverlay: vi.fn(),
+          invertColour: vi.fn()
+        }
+      })
     })
 
-    it('should call create a canvas in the DOM', () => {
-      let canvas = AudioFeatures.createCanvas()
+    it('should call create a canvas in the DOM', async () => {
+      const { createCanvas } = await vi.importActual('../src/audioFeatures') as any
+      let canvas = createCanvas()
 
       let progbarNodes = document.querySelector('div.waveform')
       let domDiv = progbarNodes?.getElementsByTagName('div')[0]
@@ -372,6 +399,7 @@ describe('AudioFeatures', () => {
 
   describe('createCanvasDisplayToggle()', () => {
     beforeEach(() => {
+      vi.unmock('../src/audioFeatures')
       createDomNodes(`
         <div class="controls"></div>
       `)
@@ -380,8 +408,9 @@ describe('AudioFeatures', () => {
       cleanupTestNodes()
     })
 
-    it('should call create a toggle in the DOM', () => {
-      let toggle = AudioFeatures.createCanvasDisplayToggle()
+    it('should call create a toggle in the DOM', async () => {
+      const { createCanvasDisplayToggle } = await vi.importActual('../src/audioFeatures') as any
+      let toggle = createCanvasDisplayToggle()
 
       let inlineplayerNodes = document.querySelector('div.controls')
 
@@ -404,6 +433,7 @@ describe('AudioFeatures', () => {
 
   describe('createBpmDisplay()', () => {
     beforeEach(() => {
+      vi.unmock('../src/audioFeatures')
       createDomNodes(`
         <div class="progbar"></div>
       `)
@@ -412,8 +442,9 @@ describe('AudioFeatures', () => {
       cleanupTestNodes()
     })
 
-    it('should call create a div in the DOM', () => {
-      let bpmDiv = AudioFeatures.createBpmDisplay()
+    it('should call create a div in the DOM', async () => {
+      const { createBpmDisplay } = await vi.importActual('../src/audioFeatures') as any
+      let bpmDiv = createBpmDisplay()
 
       let inlineplayerNodes = document.querySelector('div.progbar')
 
@@ -425,8 +456,9 @@ describe('AudioFeatures', () => {
   })
 
   describe('fillBar()', () => {
-    it('should draw narrow rectangular bar on canvas', () => {
-      AudioFeatures.fillBar(canvas as any, 0.5, 10, 100)
+    it('should draw narrow rectangular bar on canvas', async () => {
+      const { fillBar } = await vi.importActual('../src/audioFeatures') as any
+      fillBar(canvas as any, 0.5, 10, 100)
 
       expect(ctx.globalCompositeOperation).toBe('source-over')
       expect(ctx.fillStyle).toBe('white')
@@ -435,8 +467,9 @@ describe('AudioFeatures', () => {
   })
 
   describe('drawOverlay()', () => {
-    it('should draw progress bar on canvas', () => {
-      AudioFeatures.drawOverlay(canvas as any, 0.5)
+    it('should draw progress bar on canvas', async () => {
+      const { drawOverlay } = await vi.importActual('../src/audioFeatures') as any
+      drawOverlay(canvas as any, 0.5)
 
       expect(ctx.globalCompositeOperation).toBe('source-atop')
       expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 100, 100)
@@ -446,14 +479,15 @@ describe('AudioFeatures', () => {
   })
 
   describe('invertColour()', () => {
-    it('should invert rgb colors correctly', () => {
-      let inverted = AudioFeatures.invertColour('rgb(255,255,255')
+    it('should invert rgb colors correctly', async () => {
+      const { invertColour } = await vi.importActual('../src/audioFeatures') as any
+      let inverted = invertColour('rgb(255,255,255')
       expect(inverted).toBe('rgb(0,0,0)')
 
-      inverted = AudioFeatures.invertColour('rgb(0,0,0')
+      inverted = invertColour('rgb(0,0,0')
       expect(inverted).toBe('rgb(255,255,255)')
 
-      inverted = AudioFeatures.invertColour('rgb(55,155,200')
+      inverted = invertColour('rgb(55,155,200')
       expect(inverted).toBe('rgb(200,100,55)')
     })
   })

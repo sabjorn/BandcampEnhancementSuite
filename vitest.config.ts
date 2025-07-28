@@ -12,18 +12,6 @@ export default defineConfig({
     exclude: [
       'test/**/*.bak', 
       'node_modules/**',
-      // Exclude old karma test files - now migrated to .test.ts versions
-      'test/audioFeatures.js',
-      'test/cart.js',
-      'test/checkout.js', 
-      'test/config_backend.js',
-      'test/download_helper.js',
-      'test/label_view.js',
-      'test/label_view_backend.js',
-      'test/logger.js',
-      'test/player.js',
-      'test/utilities.js',
-      'test/waveform_backend.js',
       // Exclude setup and utils files
       'test/setup.ts',
       'test/utils.ts'

@@ -36,7 +36,7 @@ describe('Player', () => {
       tralbum_type: 'p'
     }
     const mockTralbumDetails = {
-      price: '5.00',
+      price: 5.00,
       currency: 'USD',
       id: '987',
       title: 'Test Album',
@@ -44,14 +44,14 @@ describe('Player', () => {
       type: 'a',
       tracks: [
         {
-          price: '1.00',
+          price: 1.00,
           currency: 'USD',
           track_id: '123',
           title: 'Test Track',
           is_purchasable: false
         },
         {
-          price: '2.00',
+          price: 2.00,
           currency: 'EUR',
           track_id: '456',
           title: 'Track 2',
@@ -97,7 +97,11 @@ describe('Player', () => {
                 </tr>
             </tbody>
         </table>
-        <ul class="tralbumCommands"></ul>
+        <ul class="tralbumCommands">
+          <li class="buyItem digital">
+            <h3 class="hd"></h3>
+          </li>
+        </ul>
       `)
 
       // Mock querySelector for specific selectors
@@ -105,21 +109,6 @@ describe('Player', () => {
       vi.spyOn(document, 'querySelector').mockImplementation((selector) => {
         if (selector === '.progbar') return progressbar as any
         if (selector === '#sidecartReveal') return sidecarReveal as any
-        if (selector === 'ul.tralbumCommands .buyItem.digital h3.hd') {
-          const h3 = document.createElement('h3')
-          h3.classList.add('hd')
-          h3.append = vi.fn()
-
-          const buyItem = document.createElement('div')
-          buyItem.classList.add('buyItem', 'digital')
-          buyItem.appendChild(h3)
-
-          const ul = document.createElement('ul')
-          ul.classList.add('tralbumCommands')
-          ul.appendChild(buyItem)
-
-          return h3 as any
-        }
         // Fall back to original querySelector for other selectors
         return originalQuerySelector(selector)
       })
@@ -155,47 +144,96 @@ describe('Player', () => {
     })
 
     describe('add one click add to cart buttons', () => {
-      it.skip('should be called for each track and album when getTralbumDetails succeeds and when is_purchasable is true', async () => {
-        // Debug: check DOM setup
-        const trackRows = document.querySelectorAll('tr.track_row_view')
-        expect(trackRows).toHaveLength(2)
-        
-        // Debug: ensure download-col exists in each row
-        trackRows.forEach((row, i) => {
-          const downloadCol = row.querySelector('.download-col')
-          expect(downloadCol).not.toBeNull()
-        })
-        
-        const initPromise = player.init()
-        await initPromise
+      it('should be called for each track and album when getTralbumDetails succeeds and when is_purchasable is true', async () => {
+        // Use same pattern as working tests - create fresh mock data
+        const testMockTralbumDetails = {
+          price: 5.00,
+          currency: 'USD',
+          id: '987',
+          title: 'Test Album',
+          is_purchasable: true,
+          type: 'a',
+          tracks: [
+            {
+              price: 1.00,
+              currency: 'USD',
+              track_id: '123',
+              title: 'Test Track',
+              is_purchasable: false
+            },
+            {
+              price: 2.00,
+              currency: 'EUR',
+              track_id: '456',
+              title: 'Track 2',
+              is_purchasable: true
+            }
+          ]
+        }
+        const testMockResponse = {
+          ok: true,
+          json: vi.fn().mockResolvedValue(testMockTralbumDetails)
+        }
+        player.getTralbumDetails = vi.fn().mockResolvedValue(testMockResponse)
+
+        await player.init()
 
         expect(player.getTralbumDetails).toHaveBeenCalledWith(
           bandFollowInfoFake.tralbum_id,
           bandFollowInfoFake.tralbum_type
         )
         
-        // Verify the mock response was processed correctly  
-        expect(mockResponse.json).toHaveBeenCalled()
+        expect(testMockResponse.json).toHaveBeenCalled()
         
         expect(player.createOneClickBuyButton).toHaveBeenCalledTimes(2)
         expect(player.createOneClickBuyButton).toHaveBeenNthCalledWith(1,
-          mockTralbumDetails.tracks[1].price,
-          mockTralbumDetails.tracks[1].currency,
-          mockTralbumDetails.tracks[1].track_id,
-          mockTralbumDetails.tracks[1].title,
+          testMockTralbumDetails.tracks[1].price,
+          testMockTralbumDetails.tracks[1].currency,
+          testMockTralbumDetails.tracks[1].track_id,
+          testMockTralbumDetails.tracks[1].title,
           't'
         )
         expect(player.createOneClickBuyButton).toHaveBeenNthCalledWith(2,
-          mockTralbumDetails.price,
-          mockTralbumDetails.currency,
-          mockTralbumDetails.id,
-          mockTralbumDetails.title,
-          mockTralbumDetails.type
+          testMockTralbumDetails.price,
+          testMockTralbumDetails.currency,
+          testMockTralbumDetails.id,
+          testMockTralbumDetails.title,
+          testMockTralbumDetails.type
         )
       })
 
-      it.skip('should modify DOM correctly', async () => {
-        // TODO: Fix complex integration test - DOM modifications in async promise chain not testable with current mock setup
+      it('should modify DOM correctly', async () => {
+        // Use same pattern as working test
+        const testMockTralbumDetails = {
+          price: 5.00,
+          currency: 'USD',
+          id: '987',
+          title: 'Test Album',
+          is_purchasable: true,
+          type: 'a',
+          tracks: [
+            {
+              price: 1.00,
+              currency: 'USD',
+              track_id: '123',
+              title: 'Test Track',
+              is_purchasable: false
+            },
+            {
+              price: 2.00,
+              currency: 'EUR',
+              track_id: '456',
+              title: 'Track 2',
+              is_purchasable: true
+            }
+          ]
+        }
+        const testMockResponse = {
+          ok: true,
+          json: vi.fn().mockResolvedValue(testMockTralbumDetails)
+        }
+        player.getTralbumDetails = vi.fn().mockResolvedValue(testMockResponse)
+
         await player.init()
 
         const rows = document.querySelectorAll('tr.track_row_view')
@@ -245,11 +283,34 @@ describe('Player', () => {
         expect(player.createOneClickBuyButton).toHaveBeenCalledTimes(2)
       })
 
-      it.skip('should only add album if no track_row_view in DOM', async () => {
-        // TODO: Fix complex integration test - async behavior with DOM queries not properly isolated
+      it('should only add album if no track_row_view in DOM', async () => {
+        // Remove track rows from DOM
         document
           .querySelectorAll('tr.track_row_view')
           .forEach(item => item.remove())
+
+        const testMockTralbumDetails = {
+          price: 5.00,
+          currency: 'USD',
+          id: '987',
+          title: 'Test Album',
+          is_purchasable: true,
+          type: 'a',
+          tracks: [
+            {
+              price: 2.00,
+              currency: 'EUR',
+              track_id: '456',
+              title: 'Track 2',
+              is_purchasable: true
+            }
+          ]
+        }
+        const testMockResponse = {
+          ok: true,
+          json: vi.fn().mockResolvedValue(testMockTralbumDetails)
+        }
+        player.getTralbumDetails = vi.fn().mockResolvedValue(testMockResponse)
 
         await player.init()
 

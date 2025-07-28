@@ -2,7 +2,18 @@ import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } 
 import { createDomNodes, cleanupTestNodes } from './utils'
 
 import { mousedownCallback } from '../src/utilities'
-import AudioFeatures, { createCanvas, createCanvasDisplayToggle, createBpmDisplay, fillBar, drawOverlay, invertColour } from '../src/audioFeatures'
+import AudioFeatures, { 
+  createCanvas, 
+  createCanvasDisplayToggle, 
+  createBpmDisplay, 
+  fillBar, 
+  drawOverlay, 
+  invertColour,
+  toggleWaveformCanvas,
+  monitorAudioCanPlay,
+  monitorAudioTimeupdate,
+  applyAudioConfig
+} from '../src/audioFeatures'
 
 vi.mock('../src/audioFeatures', async () => {
   const actual = await vi.importActual('../src/audioFeatures') as any
@@ -13,7 +24,11 @@ vi.mock('../src/audioFeatures', async () => {
     createBpmDisplay: vi.fn(),
     fillBar: vi.fn(),
     drawOverlay: vi.fn(),
-    invertColour: vi.fn()
+    invertColour: vi.fn(),
+    toggleWaveformCanvas: vi.fn(),
+    monitorAudioCanPlay: vi.fn(),
+    monitorAudioTimeupdate: vi.fn(),
+    applyAudioConfig: vi.fn()
   }
 })
 
@@ -132,7 +147,7 @@ describe('AudioFeatures', () => {
       wf.init()
       expect(toggleDivSpy.addEventListener).toHaveBeenCalledWith(
         'click',
-        wf.toggleWaveformCanvasCallback
+        expect.any(Function)
       )
     })
 
@@ -153,7 +168,7 @@ describe('AudioFeatures', () => {
       wf.init()
       expect(audioSpy.addEventListener).toHaveBeenCalledWith(
         'canplay',
-        wf.monitorAudioCanPlayCallback
+        expect.any(Function)
       )
     })
 
@@ -161,14 +176,14 @@ describe('AudioFeatures', () => {
       wf.init()
       expect(audioSpy.addEventListener).toHaveBeenCalledWith(
         'timeupdate',
-        wf.monitorAudioTimeupdateCallback
+        expect.any(Function)
       )
     })
 
     it('adds listener to port.onMessage', () => {
       wf.init()
       expect(mockPort.onMessage.addListener).toHaveBeenCalledWith(
-        wf.applyConfig
+        expect.any(Function)
       )
     })
 
@@ -262,40 +277,35 @@ describe('AudioFeatures', () => {
     })
   })
 
-  describe('applyConfig()', () => {
+  describe('applyAudioConfig()', () => {
     const canvasFake = {
       style: { display: 'inherit' }
     }
     const displayToggle = { checked: false }
-
-    beforeEach(() => {
-      wf.canvas = canvasFake
-      wf.canvasDisplayToggle = displayToggle
-    })
+    const mockLog = { info: vi.fn() } as any
 
     it('sets the display value of the audioFeatures from config object', () => {
-      wf.applyConfig({ config: { displayWaveform: false } })
+      applyAudioConfig({ config: { displayWaveform: false } }, canvasFake as any, displayToggle as any, mockLog)
       expect(canvasFake.style.display).toBe('none')
 
-      wf.applyConfig({ config: { displayWaveform: true } })
+      applyAudioConfig({ config: { displayWaveform: true } }, canvasFake as any, displayToggle as any, mockLog)
       expect(canvasFake.style.display).toBe('inherit')
     })
 
     it('sets the display of the onscreen toggle', () => {
-      wf.applyConfig({ config: { displayWaveform: false } })
-      expect(canvasFake.style.display).toBe('none')
+      applyAudioConfig({ config: { displayWaveform: false } }, canvasFake as any, displayToggle as any, mockLog)
+      expect(displayToggle.checked).toBe(false)
 
-      wf.applyConfig({ config: { displayWaveform: true } })
-      expect(canvasFake.style.display).toBe('inherit')
+      applyAudioConfig({ config: { displayWaveform: true } }, canvasFake as any, displayToggle as any, mockLog)
+      expect(displayToggle.checked).toBe(true)
     })
   })
 
-  describe('wf.toggleWaveformCanvasCallback()', () => {
+  describe('toggleWaveformCanvas()', () => {
     it('should send command to backend to invert audioFeaturesDisplay', () => {
       const expectedMessage = { toggleWaveformDisplay: {} }
-      wf.port = mockPort
 
-      wf.toggleWaveformCanvasCallback()
+      toggleWaveformCanvas(mockPort)
 
       expect(mockPort.postMessage).toHaveBeenCalledWith(
         expect.objectContaining(expectedMessage)
@@ -303,14 +313,14 @@ describe('AudioFeatures', () => {
     })
   })
 
-  describe('monitorAudioCanPlayCallback()', () => {
+  describe('monitorAudioCanPlay()', () => {
     let audioSpy = { paused: true }
     let displayToggle = { checked: false }
+    let generateAudioFeaturesSpy = vi.fn()
 
     beforeEach(() => {
       vi.spyOn(document, 'querySelector').mockReturnValue(audioSpy as any)
-      wf.generateAudioFeatures = vi.fn()
-      wf.canvasDisplayToggle = displayToggle
+      generateAudioFeaturesSpy.mockClear()
     })
     
     afterEach(() => {
@@ -320,27 +330,27 @@ describe('AudioFeatures', () => {
     it('should call generateAudioFeatures() ', () => {
       audioSpy.paused = false
       displayToggle.checked = true
-      wf.monitorAudioCanPlayCallback()
+      monitorAudioCanPlay(displayToggle as any, generateAudioFeaturesSpy)
 
-      expect(wf.generateAudioFeatures).toHaveBeenCalled()
+      expect(generateAudioFeaturesSpy).toHaveBeenCalled()
     })
 
     it('should not call generateAudioFeatures() ', () => {
       audioSpy.paused = true
       displayToggle.checked = true
-      wf.monitorAudioCanPlayCallback()
+      monitorAudioCanPlay(displayToggle as any, generateAudioFeaturesSpy)
 
-      expect(wf.generateAudioFeatures).not.toHaveBeenCalled()
+      expect(generateAudioFeaturesSpy).not.toHaveBeenCalled()
 
       audioSpy.paused = true
       displayToggle.checked = false
-      wf.monitorAudioCanPlayCallback()
+      monitorAudioCanPlay(displayToggle as any, generateAudioFeaturesSpy)
 
-      expect(wf.generateAudioFeatures).not.toHaveBeenCalled()
+      expect(generateAudioFeaturesSpy).not.toHaveBeenCalled()
     })
   })
 
-  describe('monitorAudioTimeupdateCallback()', () => {
+  describe('monitorAudioTimeupdate()', () => {
     it('should update audioFeatures overlay by calling drawOverlay', () => {
       (drawOverlay as any).mockImplementation(() => {})
 
@@ -351,13 +361,17 @@ describe('AudioFeatures', () => {
         }
       }
 
-      wf.monitorAudioTimeupdateCallback(event)
+      const mockCanvas = {} as HTMLCanvasElement
+      const mockOverlayColour = 'red'
+      const mockWaveformColour = 'blue'
+
+      monitorAudioTimeupdate(event as any, mockCanvas, mockOverlayColour, mockWaveformColour)
       const expectedProgress = 0.1
       expect(drawOverlay).toHaveBeenCalledWith(
-        wf.canvas,
+        mockCanvas,
         expectedProgress,
-        wf.waveformOverlayColour,
-        wf.waveformColour
+        mockOverlayColour,
+        mockWaveformColour
       )
     })
   })

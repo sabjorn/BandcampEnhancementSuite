@@ -16,6 +16,45 @@ interface AudioFeaturesConfig {
   };
 }
 
+// Standalone callback functions (no longer need binding)
+export function toggleWaveformCanvas(port: PortMessage): void {
+  port.postMessage({ toggleWaveformDisplay: {} });
+}
+
+export function monitorAudioCanPlay(
+  canvasDisplayToggle: HTMLInputElement, 
+  generateAudioFeatures: () => void
+): void {
+  const audio = document.querySelector("audio") as HTMLAudioElement;
+  if (audio && !audio.paused && canvasDisplayToggle.checked) {
+    generateAudioFeatures();
+  }
+}
+
+export function monitorAudioTimeupdate(
+  e: Event, 
+  canvas: HTMLCanvasElement, 
+  waveformOverlayColour: string, 
+  waveformColour: string
+): void {
+  const audio = e.target as HTMLAudioElement;
+  if (!audio || !audio.duration) return;
+  
+  const progress = audio.currentTime / audio.duration;
+  drawOverlay(canvas, progress, waveformOverlayColour, waveformColour);
+}
+
+export function applyAudioConfig(
+  msg: AudioFeaturesConfig, 
+  canvas: HTMLCanvasElement, 
+  canvasDisplayToggle: HTMLInputElement, 
+  log: Logger
+): void {
+  log.info("config recieved from backend" + JSON.stringify(msg.config));
+  canvas.style.display = msg.config.displayWaveform ? "inherit" : "none";
+  canvasDisplayToggle.checked = msg.config.displayWaveform;
+}
+
 export default class AudioFeatures {
   public log: Logger;
   public currentTarget?: string;
@@ -26,20 +65,10 @@ export default class AudioFeatures {
   public waveformOverlayColour?: string;
   public bpmDisplay?: HTMLDivElement;
   public port: PortMessage;
-  public toggleWaveformCanvasCallback: () => void;
-  public monitorAudioCanPlayCallback: () => void;
-  public monitorAudioTimeupdateCallback: (e: Event) => void;
-  public applyConfig: (msg: AudioFeaturesConfig) => void;
 
   constructor(port: PortMessage) {
     this.log = new Logger();
     this.port = port;
-
-    // Use arrow functions for automatic binding instead of manual bind
-    this.toggleWaveformCanvasCallback = () => this.toggleWaveformCanvasCallbackImpl();
-    this.monitorAudioCanPlayCallback = () => this.monitorAudioCanPlayCallbackImpl();
-    this.monitorAudioTimeupdateCallback = (e: Event) => this.monitorAudioTimeupdateCallbackImpl(e);
-    this.applyConfig = (msg: AudioFeaturesConfig) => this.applyConfigImpl(msg);
   }
 
   init(): void {
@@ -52,7 +81,7 @@ export default class AudioFeatures {
       this.canvasDisplayDiv = parentNode;
       this.canvasDisplayDiv.addEventListener(
         "click",
-        this.toggleWaveformCanvasCallback
+        () => toggleWaveformCanvas(this.port)
       );
     }
 
@@ -70,11 +99,17 @@ export default class AudioFeatures {
 
     const audio = document.querySelector("audio");
     if (audio) {
-      audio.addEventListener("canplay", this.monitorAudioCanPlayCallback);
-      audio.addEventListener("timeupdate", this.monitorAudioTimeupdateCallback);
+      audio.addEventListener("canplay", () => 
+        monitorAudioCanPlay(this.canvasDisplayToggle!, () => this.generateAudioFeatures())
+      );
+      audio.addEventListener("timeupdate", (e: Event) =>
+        monitorAudioTimeupdate(e, this.canvas!, this.waveformOverlayColour!, this.waveformColour!)
+      );
     }
 
-    this.port.onMessage.addListener(this.applyConfig);
+    this.port.onMessage.addListener((msg: AudioFeaturesConfig) => 
+      applyAudioConfig(msg, this.canvas!, this.canvasDisplayToggle!, this.log)
+    );
     this.port.postMessage({ requestConfig: {} }); // TO DO: this must be at end of init, write test
   }
 
@@ -152,35 +187,6 @@ export default class AudioFeatures {
     }
   }
 
-  applyConfigImpl(msg: AudioFeaturesConfig): void {
-    this.log.info("config recieved from backend" + JSON.stringify(msg.config));
-    this.canvas!.style.display = msg.config.displayWaveform ? "inherit" : "none";
-    this.canvasDisplayToggle!.checked = msg.config.displayWaveform;
-  }
-
-  toggleWaveformCanvasCallbackImpl(): void {
-    this.port.postMessage({ toggleWaveformDisplay: {} });
-  }
-
-  monitorAudioCanPlayCallbackImpl(): void {
-    const audio = document.querySelector("audio") as HTMLAudioElement;
-    if (audio && !audio.paused && this.canvasDisplayToggle!.checked) {
-      this.generateAudioFeatures();
-    }
-  }
-
-  monitorAudioTimeupdateCallbackImpl(e: Event): void {
-    const audio = e.target as HTMLAudioElement;
-    if (!audio || !audio.duration) return;
-    
-    const progress = audio.currentTime / audio.duration;
-    drawOverlay(
-      this.canvas!,
-      progress,
-      this.waveformOverlayColour!,
-      this.waveformColour!
-    );
-  }
 
 }
 

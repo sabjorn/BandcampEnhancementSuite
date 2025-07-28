@@ -2,7 +2,24 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createDomNodes, cleanupTestNodes } from './utils'
 
 import { mousedownCallback } from '../src/utilities'
-import Player from '../src/player'
+import Player, { 
+  movePlaylist, 
+  createVolumeSlider, 
+  transferPlayButton, 
+  transferPreviousNextButtons 
+} from '../src/player'
+
+// Mock the functions
+vi.mock('../src/player', async () => {
+  const actual = await vi.importActual('../src/player') as any
+  return {
+    ...actual,
+    movePlaylist: vi.fn(),
+    createVolumeSlider: vi.fn(),
+    transferPlayButton: vi.fn(),
+    transferPreviousNextButtons: vi.fn()
+  }
+})
 
 describe('Player', () => {
   let player: any
@@ -66,7 +83,10 @@ describe('Player', () => {
 
     beforeEach(() => {
       vi.spyOn(document, 'addEventListener')
-      vi.spyOn(Player, 'movePlaylist').mockImplementation(() => {})
+      ;(movePlaylist as any).mockImplementation(() => {})
+      ;(createVolumeSlider as any).mockReturnValue(document.createElement('input'))
+      ;(transferPlayButton as any).mockReturnValue(document.createElement('div'))
+      ;(transferPreviousNextButtons as any).mockReturnValue(document.createElement('div'))
 
       player.updatePlayerControlInterface = vi.fn()
       player.extractBandFollowInfo = vi.fn().mockReturnValue(bandFollowInfoFake)
@@ -140,7 +160,7 @@ describe('Player', () => {
     it('calls movePlaylist()', () => {
       player.init()
 
-      expect(Player.movePlaylist).toHaveBeenCalled()
+      expect(movePlaylist).toHaveBeenCalled()
     })
 
     describe('add one click add to cart buttons', () => {
@@ -463,7 +483,7 @@ describe('Player', () => {
         return null
       })
 
-      Player.movePlaylist()
+      movePlaylist()
 
       expect(playerSpy.after).toHaveBeenCalledWith(playlist)
     })
@@ -475,7 +495,7 @@ describe('Player', () => {
         return null
       })
 
-      Player.movePlaylist()
+      movePlaylist()
 
       expect(playerSpy.after).not.toHaveBeenCalled()
     })
@@ -498,9 +518,9 @@ describe('Player', () => {
       }
 
       volumeSlider.addEventListener = vi.fn()
-      vi.spyOn(Player, 'createVolumeSlider').mockReturnValue(volumeSlider)
-      vi.spyOn(Player, 'transferPlayButton').mockReturnValue(playButton)
-      vi.spyOn(Player, 'transferPreviousNextButtons').mockReturnValue(prevNext)
+      ;(createVolumeSlider as any).mockReturnValue(volumeSlider)
+      ;(transferPlayButton as any).mockReturnValue(playButton)
+      ;(transferPreviousNextButtons as any).mockReturnValue(prevNext)
 
       vi.spyOn(document, 'querySelector').mockImplementation((selector) => {
         if (selector === 'div.inline_player') return inlineplayer
@@ -522,7 +542,7 @@ describe('Player', () => {
     it('runs createVolumeSlider() and adds to eventListener', () => {
       player.updatePlayerControlInterface()
 
-      expect(Player.createVolumeSlider).toHaveBeenCalled()
+      expect(createVolumeSlider).toHaveBeenCalled()
       expect(volumeSlider.addEventListener).toHaveBeenCalledWith(
         'input',
         player.volumeSliderCallback
@@ -532,13 +552,13 @@ describe('Player', () => {
     it('runs transferPlayButton()', () => {
       player.updatePlayerControlInterface()
 
-      expect(Player.transferPlayButton).toHaveBeenCalled()
+      expect(transferPlayButton).toHaveBeenCalled()
     })
 
     it('runs transferPreviousNextButtons()', () => {
       player.updatePlayerControlInterface()
 
-      expect(Player.transferPreviousNextButtons).toHaveBeenCalled()
+      expect(transferPreviousNextButtons).toHaveBeenCalled()
     })
 
     it('appends input to document element if that element is not hidden and the returned item added to the DOM contains the added elements', () => {
@@ -576,7 +596,7 @@ describe('Player', () => {
     })
 
     it('creates an input element with specific attributes', () => {
-      let volumeSlider = Player.createVolumeSlider()
+      let volumeSlider = createVolumeSlider()
 
       expect(volumeSlider.type).toBe('range')
       expect(volumeSlider.min).toBe('0')
@@ -627,13 +647,13 @@ describe('Player', () => {
     })
 
     it('removes the td.play_cell element from DOM', () => {
-      Player.transferPlayButton()
+      transferPlayButton()
 
       expect(play_cell.parentNode.removeChild).toHaveBeenCalledWith(play_cell)
     })
 
     it('creates a div with specific attributes', () => {
-      let playdiv = Player.transferPlayButton()
+      let playdiv = transferPlayButton()
 
       const playdiv_a = playdiv.querySelector('a')
       expect(playdiv_a).toBe(expected_a)
@@ -703,14 +723,14 @@ describe('Player', () => {
     })
 
     it('removes the td.prev_cell and td.next_cell from DOM', () => {
-      let _prevNext = Player.transferPreviousNextButtons()
+      let _prevNext = transferPreviousNextButtons()
 
       expect(prev_cell.parentNode.removeChild).toHaveBeenCalledWith(prev_cell)
       expect(next_cell.parentNode.removeChild).toHaveBeenCalledWith(next_cell)
     })
 
     it('creates a div with specific attributes', () => {
-      let prevNext = Player.transferPreviousNextButtons()
+      let prevNext = transferPreviousNextButtons()
 
       const divs = prevNext.querySelectorAll('div')
       expect(divs[0].querySelector('a')).toBe(expected_prev_a)

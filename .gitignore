@@ -70,3 +70,4 @@ dist/
 
 # random files
 *.bak
+.mcp.json

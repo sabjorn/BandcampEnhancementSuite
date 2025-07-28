@@ -17,84 +17,94 @@ const defaultConfig: Config = {
   installDateUnixSeconds: Math.floor(Date.now() / 1000)
 };
 
+// Standalone callback functions (no longer need binding)
+export function connectionListenerCallback(
+  port: chrome.runtime.Port, 
+  log: Logger,
+  portState: { port?: chrome.runtime.Port }
+): void {
+  log.info("connection listener callback");
+  
+  if (port.name !== "bandcamplabelview") {
+    log.error(
+      `Unexpected chrome.runtime.onConnect port name: ${port.name}`
+    );
+    return;
+  }
+
+  portState.port = port;
+  portState.port.onMessage.addListener((msg: any) => 
+    portListenerCallback(msg, log, portState)
+  );
+}
+
+export async function portListenerCallback(
+  msg: any, 
+  log: Logger,
+  portState: { port?: chrome.runtime.Port }
+): Promise<void> {
+  log.info("port listener callback");
+
+  const db = await getDB();
+
+  await setupDB(db);
+
+  if (msg.config) await synchronizeConfig(db, msg.config, portState.port);
+
+  if (msg.toggleWaveformDisplay) await toggleWaveformDisplay(db, log, portState.port);
+
+  if (msg.requestConfig) await broadcastConfig(db, log, portState.port);
+}
+
+// Main initialization function (replaces ConfigBackend class)
+export async function initConfigBackend(): Promise<void> {
+  const log = new Logger();
+  const portState: { port?: chrome.runtime.Port } = {};
+  
+  log.info("initializing ConfigBackend");
+
+  chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) => 
+    connectionListenerCallback(port, log, portState)
+  );
+}
+
+export async function synchronizeConfig(db: any, config: Partial<Config>, port?: chrome.runtime.Port): Promise<void> {
+  const db_config = await db.get("config", "config");
+  const merged_config = mergeData(db_config, config);
+
+  await db.put("config", merged_config, "config");
+  port?.postMessage({ config: merged_config });
+}
+
+export async function toggleWaveformDisplay(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+  log.info("toggleing waveform display");
+
+  let db_config = await db.get("config", "config");
+  db_config["displayWaveform"] = !db_config["displayWaveform"];
+  await db.put("config", db_config, "config");
+  port?.postMessage({ config: db_config });
+}
+
+export async function broadcastConfig(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+  log.info("broadcasting config data");
+
+  const config = await db.get("config", "config");
+  port?.postMessage({ config: config });
+}
+
+export async function setupDB(db: any): Promise<void> {
+  const dbConfig = await db.get("config", "config");
+  const mergedConfig = mergeData(defaultConfig, dbConfig);
+  await db.put("config", mergedConfig, "config");
+}
+
+export function mergeData(reference_config: Config, new_config: Partial<Config>): Config {
+  return Object.assign({}, reference_config, new_config);
+}
+
+// Backward compatibility - maintain class-like interface
 export default class ConfigBackend {
-  public log: Logger;
-  public defaultConfig: Config;
-  public port?: chrome.runtime.Port;
-
-  constructor() {
-    this.log = new Logger();
-    this.defaultConfig = defaultConfig;
-
-    // Bind methods to maintain 'this' context
-    this.connectionListenerCallback = this.connectionListenerCallback.bind(this);
-    this.portListenerCallback = this.portListenerCallback.bind(this);
-  }
-
-  init(): void {
-    this.log.info("initializing ConfigBackend");
-
-    chrome.runtime.onConnect.addListener(this.connectionListenerCallback);
-  }
-
-  connectionListenerCallback(port: chrome.runtime.Port): void {
-    this.log.info("connection listener callback");
-    if (port.name !== "bandcamplabelview") {
-      this.log.error(
-        `Unexpected chrome.runtime.onConnect port name: ${port.name}`
-      );
-      return;
-    }
-
-    this.port = port;
-    this.port.onMessage.addListener(this.portListenerCallback);
-  }
-
-  async portListenerCallback(msg: any): Promise<void> {
-    this.log.info("port listener callback");
-
-    const db = await getDB();
-
-    this.setupDB(db);
-
-    if (msg.config) this.synchronizeConfig(db, msg.config);
-
-    if (msg.toggleWaveformDisplay) this.toggleWaveformDisplay(db);
-
-    if (msg.requestConfig) this.broadcastConfig(db);
-  }
-
-  async synchronizeConfig(db: any, config: Partial<Config>): Promise<void> {
-    const db_config = await db.get("config", "config");
-    const merged_config = ConfigBackend.mergeData(db_config, config);
-
-    await db.put("config", merged_config, "config");
-    this.port.postMessage({ config: merged_config });
-  }
-
-  async toggleWaveformDisplay(db: any): Promise<void> {
-    this.log.info("toggleing waveform display");
-
-    let db_config = await db.get("config", "config");
-    db_config["displayWaveform"] = !db_config["displayWaveform"];
-    await db.put("config", db_config, "config");
-    this.port.postMessage({ config: db_config });
-  }
-
-  async broadcastConfig(db: any): Promise<void> {
-    this.log.info("broadcasting config data");
-
-    const config = await db.get("config", "config");
-    this.port.postMessage({ config: config });
-  }
-
-  async setupDB(db: any): Promise<void> {
-    const dbConfig = await db.get("config", "config");
-    const mergedConfig = ConfigBackend.mergeData(this.defaultConfig, dbConfig);
-    await db.put("config", mergedConfig, "config");
-  }
-
-  static mergeData(reference_config: Config, new_config: Partial<Config>): Config {
-    return Object.assign({}, reference_config, new_config);
+  async init(): Promise<void> {
+    return initConfigBackend();
   }
 }

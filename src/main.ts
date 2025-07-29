@@ -1,20 +1,18 @@
-import Logger from "./logger";
-import LabelView from "./label_view";
-import DownloadHelper from "./download_helper";
-import Player from "./player";
-import AudioFeatures from "./audioFeatures";
-import Cart from "./pages/cart";
+import { createLogger } from "./logger";
+import { initLabelView } from "./label_view";
+import { initDownloadHelper } from "./download_helper";
+import { initPlayer } from "./player";
+import { initAudioFeatures } from "./audioFeatures";
+import { initCart } from "./pages/cart";
 
 const main = async (): Promise<void> => {
-  const log = new Logger();
+  const log = createLogger();
 
-  const lv = new LabelView();
-  lv.init();
+  initLabelView();
 
   const checkIsDownloadPage: Element | null = document.querySelector(".download-item-container");
   if (checkIsDownloadPage) {
-    const dh = new DownloadHelper();
-    dh.init();
+    initDownloadHelper();
   }
 
   const checkIsPageWithPlayer: Element | null = document.querySelector("div.inline_player");
@@ -22,8 +20,7 @@ const main = async (): Promise<void> => {
     checkIsPageWithPlayer &&
     window.location.href !== "https://bandcamp.com/"
   ) {
-    const player = new Player();
-    player.init();
+    await initPlayer();
 
     let config_port: chrome.runtime.Port;
     try {
@@ -39,8 +36,7 @@ const main = async (): Promise<void> => {
       }
     }
 
-    const audioFeatures = new AudioFeatures(config_port);
-    audioFeatures.init();
+    initAudioFeatures(config_port);
   }
 
   const dataBlobElement: Element | null = document.querySelector("[data-blob]");
@@ -49,8 +45,7 @@ const main = async (): Promise<void> => {
     if (dataBlobAttr) {
       const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
       if (has_cart) {
-        const cart = new Cart();
-        await cart.init();
+        await initCart();
       }
     }
   }

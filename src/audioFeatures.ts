@@ -55,15 +55,137 @@ export function applyAudioConfig(
   canvasDisplayToggle.checked = msg.config.displayWaveform;
 }
 
+export async function generateAudioFeatures(
+  canvas: HTMLCanvasElement,
+  bpmDisplay: HTMLDivElement,
+  waveformColour: string,
+  log: Logger,
+  currentTarget: { value?: string }
+): Promise<void> {
+  const datapoints = 100;
+  const audio = document.querySelector("audio") as HTMLAudioElement;
+  if (!audio) return;
+
+  if (currentTarget.value !== audio.src) {
+    currentTarget.value = audio.src;
+
+    bpmDisplay.innerText = "";
+    canvas
+      .getContext("2d")!
+      .clearRect(0, 0, canvas.width, canvas.height);
+
+    const ctx = new AudioContext();
+    const src = audio.src.split("stream/")[1];
+
+    chrome.runtime.sendMessage(
+      {
+        contentScriptQuery: "renderBuffer",
+        url: src
+      },
+      audioData => {
+        const audioBuffer_ = new Uint8Array(audioData.data).buffer;
+        const decodePromise = ctx.decodeAudioData(audioBuffer_);
+
+        decodePromise.then(decodedAudio => {
+          analyze(decodedAudio)
+            .then(
+              bmp => (bpmDisplay.innerText = `bpm: ${bmp.toFixed(2)}`)
+            )
+            .catch(err =>
+              log.error(`error finding bpm for track: ${err}`)
+            );
+        });
+
+        decodePromise.then(decodedAudio => {
+          log.info("calculating rms");
+          const leftChannel = decodedAudio.getChannelData(0);
+
+          const stepSize = Math.round(decodedAudio.length / datapoints);
+
+          const rmsSize = Math.min(stepSize, 128);
+          const subStepSize = Math.round(stepSize / rmsSize); // used to do RMS over subset of each buffer step
+          let rmsBuffer = [];
+          for (let i = 0; i < datapoints; i++) {
+            let rms = 0.0;
+            for (let sample = 0; sample < rmsSize; sample++) {
+              const sampleIndex = i * stepSize + sample * subStepSize;
+              const audioSample = leftChannel[sampleIndex];
+              rms += audioSample ** 2;
+            }
+            rmsBuffer.push(Math.sqrt(rms / rmsSize));
+          }
+
+          log.info("visualizing");
+          const max = rmsBuffer.reduce(function(a, b) {
+            return Math.max(a, b);
+          });
+          for (let i = 0; i < rmsBuffer.length; i++) {
+            const amplitude = rmsBuffer[i] / max;
+            fillBar(
+              canvas,
+              amplitude,
+              i,
+              datapoints,
+              waveformColour
+            );
+          }
+        });
+      }
+    );
+  }
+}
+
+// Main AudioFeatures initialization function (replaces AudioFeatures class)
+export function initAudioFeatures(port: PortMessage): void {
+  const log = new Logger();
+  const currentTarget = { value: undefined as string | undefined };
+
+  const canvas = createCanvas();
+  canvas.addEventListener("click", mousedownCallback);
+
+  const canvasDisplayToggle = createCanvasDisplayToggle();
+  const parentNode = canvasDisplayToggle.parentNode as HTMLElement;
+  if (parentNode) {
+    parentNode.addEventListener(
+      "click",
+      () => toggleWaveformCanvas(port)
+    );
+  }
+
+  const bpmDisplay = createBpmDisplay();
+
+  let waveformColour: string = "white";
+  let waveformOverlayColour: string = "black";
+  
+  const bg: Element | null = document.querySelector("h2.trackTitle");
+  if (bg) {
+    waveformColour = window
+      .getComputedStyle(bg, null)
+      .getPropertyValue("color");
+    waveformOverlayColour = invertColour(waveformColour);
+  }
+
+  const audio = document.querySelector("audio");
+  if (audio) {
+    audio.addEventListener("canplay", () => 
+      monitorAudioCanPlay(canvasDisplayToggle, () => 
+        generateAudioFeatures(canvas, bpmDisplay, waveformColour, log, currentTarget)
+      )
+    );
+    audio.addEventListener("timeupdate", (e: Event) =>
+      monitorAudioTimeupdate(e, canvas, waveformOverlayColour, waveformColour)
+    );
+  }
+
+  port.onMessage.addListener((msg: AudioFeaturesConfig) => 
+    applyAudioConfig(msg, canvas, canvasDisplayToggle, log)
+  );
+  port.postMessage({ requestConfig: {} }); // TO DO: this must be at end of init, write test
+}
+
+// Backward compatibility - maintain class-like interface
 export default class AudioFeatures {
   public log: Logger;
-  public currentTarget?: string;
-  public canvas?: HTMLCanvasElement;
-  public canvasDisplayToggle?: HTMLInputElement;
-  public canvasDisplayDiv?: HTMLElement;
-  public waveformColour?: string;
-  public waveformOverlayColour?: string;
-  public bpmDisplay?: HTMLDivElement;
   public port: PortMessage;
 
   constructor(port: PortMessage) {
@@ -72,122 +194,8 @@ export default class AudioFeatures {
   }
 
   init(): void {
-    this.canvas = createCanvas();
-    this.canvas.addEventListener("click", mousedownCallback);
-
-    this.canvasDisplayToggle = createCanvasDisplayToggle();
-    const parentNode = this.canvasDisplayToggle.parentNode as HTMLElement;
-    if (parentNode) {
-      this.canvasDisplayDiv = parentNode;
-      this.canvasDisplayDiv.addEventListener(
-        "click",
-        () => toggleWaveformCanvas(this.port)
-      );
-    }
-
-    this.bpmDisplay = createBpmDisplay();
-
-    const bg: Element | null = document.querySelector("h2.trackTitle");
-    if (bg) {
-      this.waveformColour = window
-        .getComputedStyle(bg, null)
-        .getPropertyValue("color");
-      this.waveformOverlayColour = invertColour(
-        this.waveformColour
-      );
-    }
-
-    const audio = document.querySelector("audio");
-    if (audio) {
-      audio.addEventListener("canplay", () => 
-        monitorAudioCanPlay(this.canvasDisplayToggle!, () => this.generateAudioFeatures())
-      );
-      audio.addEventListener("timeupdate", (e: Event) =>
-        monitorAudioTimeupdate(e, this.canvas!, this.waveformOverlayColour!, this.waveformColour!)
-      );
-    }
-
-    this.port.onMessage.addListener((msg: AudioFeaturesConfig) => 
-      applyAudioConfig(msg, this.canvas!, this.canvasDisplayToggle!, this.log)
-    );
-    this.port.postMessage({ requestConfig: {} }); // TO DO: this must be at end of init, write test
+    initAudioFeatures(this.port);
   }
-
-  async generateAudioFeatures(): Promise<void> {
-    const datapoints = 100;
-    const audio = document.querySelector("audio") as HTMLAudioElement;
-    if (!audio) return;
-
-    if (this.currentTarget !== audio.src) {
-      this.currentTarget = audio.src;
-
-      this.bpmDisplay.innerText = "";
-      this.canvas
-        .getContext("2d")
-        .clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-      const ctx = new AudioContext();
-      const src = audio.src.split("stream/")[1];
-
-      chrome.runtime.sendMessage(
-        {
-          contentScriptQuery: "renderBuffer",
-          url: src
-        },
-        audioData => {
-          const audioBuffer_ = new Uint8Array(audioData.data).buffer;
-          const decodePromise = ctx.decodeAudioData(audioBuffer_);
-
-          decodePromise.then(decodedAudio => {
-            analyze(decodedAudio)
-              .then(
-                bpm => (this.bpmDisplay.innerText = `bpm: ${bpm.toFixed(2)}`)
-              )
-              .catch(err =>
-                this.log.error(`error finding bpm for track: ${err}`)
-              );
-          });
-
-          decodePromise.then(decodedAudio => {
-            this.log.info("calculating rms");
-            const leftChannel = decodedAudio.getChannelData(0);
-
-            const stepSize = Math.round(decodedAudio.length / datapoints);
-
-            const rmsSize = Math.min(stepSize, 128);
-            const subStepSize = Math.round(stepSize / rmsSize); // used to do RMS over subset of each buffer step
-            let rmsBuffer = [];
-            for (let i = 0; i < datapoints; i++) {
-              let rms = 0.0;
-              for (let sample = 0; sample < rmsSize; sample++) {
-                const sampleIndex = i * stepSize + sample * subStepSize;
-                const audioSample = leftChannel[sampleIndex];
-                rms += audioSample ** 2;
-              }
-              rmsBuffer.push(Math.sqrt(rms / rmsSize));
-            }
-
-            this.log.info("visualizing");
-            const max = rmsBuffer.reduce(function(a, b) {
-              return Math.max(a, b);
-            });
-            for (let i = 0; i < rmsBuffer.length; i++) {
-              const amplitude = rmsBuffer[i] / max;
-              fillBar(
-                this.canvas!,
-                amplitude,
-                i,
-                datapoints,
-                this.waveformColour!
-              );
-            }
-          });
-        }
-      );
-    }
-  }
-
-
 }
 
 // Extracted utility functions for better modularity and testability

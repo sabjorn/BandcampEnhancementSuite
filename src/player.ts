@@ -109,7 +109,6 @@ function keyComboToString(combo: KeyCombo): string {
   }${key}`;
 }
 
-// Standalone callback functions (no longer need binding)
 export function keydownCallback(e: KeyboardEvent, keyHandlers: KeyHandlers, preventDefault: boolean, log: Logger): void {
   if (e.target !== document.body) {
     return;
@@ -202,7 +201,6 @@ export function createOneClickBuyButton(
   return pair;
 }
 
-// Main player initialization function (replaces Player class)
 export async function initPlayer(): Promise<void> {
   const log = new Logger();
   const keyHandlers = DEFAULT_KEY_HANDLERS;
@@ -401,9 +399,3 @@ export function transferPreviousNextButtons(): HTMLDivElement {
   return div;
 }
 
-// Backward compatibility - maintain class-like interface
-export default class Player {
-  async init(): Promise<void> {
-    return initPlayer();
-  }
-}

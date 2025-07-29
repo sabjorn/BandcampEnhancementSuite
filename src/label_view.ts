@@ -192,9 +192,3 @@ export function renderDom(
     });
 }
 
-// Backward compatibility - maintain class-like interface
-export default class LabelView {
-  async init(): Promise<void> {
-    return initLabelView();
-  }
-}

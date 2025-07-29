@@ -16,7 +16,6 @@ interface AudioFeaturesConfig {
   };
 }
 
-// Standalone callback functions (no longer need binding)
 export function toggleWaveformCanvas(port: PortMessage): void {
   port.postMessage({ toggleWaveformDisplay: {} });
 }
@@ -135,7 +134,6 @@ export async function generateAudioFeatures(
   }
 }
 
-// Main AudioFeatures initialization function (replaces AudioFeatures class)
 export function initAudioFeatures(port: PortMessage): void {
   const log = new Logger();
   const currentTarget = { value: undefined as string | undefined };
@@ -180,31 +178,15 @@ export function initAudioFeatures(port: PortMessage): void {
   port.onMessage.addListener((msg: AudioFeaturesConfig) => 
     applyAudioConfig(msg, canvas, canvasDisplayToggle, log)
   );
-  port.postMessage({ requestConfig: {} }); // TO DO: this must be at end of init, write test
+  port.postMessage({ requestConfig: {} });
 }
 
-// Backward compatibility - maintain class-like interface
-export default class AudioFeatures {
-  public log: Logger;
-  public port: PortMessage;
 
-  constructor(port: PortMessage) {
-    this.log = new Logger();
-    this.port = port;
-  }
-
-  init(): void {
-    initAudioFeatures(this.port);
-  }
-}
-
-// Extracted utility functions for better modularity and testability
 export function createCanvas(): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.style.display = "none";
   canvas.classList.add("waveform");
 
-  // configure element to properly hold canvas
   const progbar = document.querySelector("div.progbar");
   if (progbar) {
     progbar.classList.add("waveform");

@@ -102,9 +102,3 @@ export function mergeData(reference_config: Config, new_config: Partial<Config>)
   return Object.assign({}, reference_config, new_config);
 }
 
-// Backward compatibility - maintain class-like interface
-export default class ConfigBackend {
-  async init(): Promise<void> {
-    return initConfigBackend();
-  }
-}

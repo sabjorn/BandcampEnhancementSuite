@@ -212,14 +212,7 @@ export async function initCart(): Promise<void> {
     }
   }
 
-// Backward compatibility - maintain class-like interface
-export default class Cart {
-  async init(): Promise<void> {
-    return initCart();
-  }
-}
 
-// Standalone function (no longer needs binding)
 export function createBesSupportButton(
   price: number, 
   currency: string, 

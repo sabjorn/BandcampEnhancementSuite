@@ -1,28 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createDomNodes, cleanupTestNodes } from './utils'
-import DownloadHelper from '../src/download_helper'
+import { initDownloadHelper } from '../src/download_helper'
 
 describe('DownloadHelper', () => {
-  let downloadHelper: any
-
-  beforeEach(() => {
-    downloadHelper = new DownloadHelper()
-
-    downloadHelper.log = {
-      info: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      debug: vi.fn()
-    }
-  })
-
   afterEach(() => {
     cleanupTestNodes()
     vi.restoreAllMocks()
-  })
-
-  it('should instantiate DownloadHelper', () => {
-    expect(downloadHelper).toBeInstanceOf(DownloadHelper)
   })
 
   describe('init()', () => {
@@ -37,13 +20,12 @@ describe('DownloadHelper', () => {
       `)
     })
 
-    it('should initialize download helper functionality', () => {
-      // Basic test to ensure init runs without errors  
-      expect(() => downloadHelper.init()).not.toThrow()
+    it('should initialize download helper functionality', async () => {
+      await expect(initDownloadHelper()).resolves.not.toThrow()
     })
 
-    it('should create download button', () => {
-      downloadHelper.init()
+    it('should create download button', async () => {
+      await initDownloadHelper()
       const button = document.querySelector('.bes-downloadall')
       expect(button).toBeTruthy()
       expect(button?.textContent).toContain('Download')

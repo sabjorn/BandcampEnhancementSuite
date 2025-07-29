@@ -1,15 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createDomNodes, cleanupTestNodes } from './utils'
-
-import Player, { 
+import { 
   createVolumeSlider, 
   keydownCallback, 
-  volumeSliderCallback 
+  volumeSliderCallback,
+  initPlayer
 } from '../src/player'
 import Logger from '../src/logger'
-
-// Since we've migrated to functional architecture, let's test the core functionality
-// rather than the complex mocking setup
 
 describe('Player', () => {
   beforeEach(() => {
@@ -29,18 +26,11 @@ describe('Player', () => {
     vi.restoreAllMocks()
   })
 
-  it('should initialize Player functionality', () => {
-    const player = new Player()
-    
-    // Test that the constructor works
-    expect(player).toBeDefined()
-    expect(player.init).toBeDefined()
-    expect(typeof player.init).toBe('function')
+  it('should initialize Player functionality', async () => {
+    expect(() => initPlayer()).not.toThrow()
   })
 
-  // Test basic functionality of the utility functions
   it('should test utility functions', () => {
-    // Test createVolumeSlider function
     const volumeSlider = createVolumeSlider()
     expect(volumeSlider.type).toBe('range')
     expect(volumeSlider.min).toBe('0')
@@ -49,7 +39,6 @@ describe('Player', () => {
     expect(volumeSlider.title).toBe('volume control')
     expect(volumeSlider.classList.contains('volume')).toBe(true)
 
-    // Test volumeSliderCallback function
     const audioElement = document.querySelector('audio') as HTMLAudioElement
     const mockVolumeEvent = {
       target: { value: '0.8' }
@@ -58,7 +47,6 @@ describe('Player', () => {
     expect(() => volumeSliderCallback(mockVolumeEvent)).not.toThrow()
     expect(audioElement.volume).toBe(0.8)
 
-    // Test keydownCallback function with mock logger
     const mockLogger = new Logger()
     const mockKeyHandlers = {
       'p': vi.fn(),

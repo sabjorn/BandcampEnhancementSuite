@@ -34,9 +34,3 @@ export async function initWaveformBackend(): Promise<void> {
   chrome.runtime.onMessage.addListener(processRequest);
 }
 
-// Backward compatibility - maintain class-like interface
-export default class WaveformBackend {
-  async init(): Promise<void> {
-    return initWaveformBackend();
-  }
-}

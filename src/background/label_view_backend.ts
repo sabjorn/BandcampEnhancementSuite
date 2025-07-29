@@ -52,13 +52,6 @@ export async function initLabelViewBackend(): Promise<void> {
   });
 
   chrome.runtime.onInstalled.addListener(function() {
-    // Empty listener for onInstalled event
   });
 }
 
-// Backward compatibility - maintain class-like interface
-export default class LabelViewBackend {
-  async init(): Promise<void> {
-    return initLabelViewBackend();
-  }
-}

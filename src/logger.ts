@@ -75,35 +75,38 @@ function formatMessage(config: LoggerConfig, level: LogLevel, message: any): (st
 export function createLogger(level?: LogLevel) {
   const config = createLoggerConfig(level);
   
-  return {
-    debug: (message: any) => {
-      if (shouldLog(config, 'debug')) {
-        // eslint-disable-next-line no-console
-        console.log(...formatMessage(config, 'debug', message));
-      }
-    },
+  // Pre-determine which methods should actually log vs be no-ops
+  const logger = {
+    debug: shouldLog(config, 'debug') 
+      ? (message: any) => {
+          // eslint-disable-next-line no-console
+          console.log(...formatMessage(config, 'debug', message));
+        }
+      : () => {}, // no-op function
     
-    info: (message: any) => {
-      if (shouldLog(config, 'info')) {
-        // eslint-disable-next-line no-console
-        console.log(...formatMessage(config, 'info', message));
-      }
-    },
+    info: shouldLog(config, 'info') 
+      ? (message: any) => {
+          // eslint-disable-next-line no-console
+          console.log(...formatMessage(config, 'info', message));
+        }
+      : () => {}, // no-op function
     
-    warn: (message: any) => {
-      if (shouldLog(config, 'warn')) {
-        // eslint-disable-next-line no-console
-        console.warn(...formatMessage(config, 'warn', message));
-      }
-    },
+    warn: shouldLog(config, 'warn') 
+      ? (message: any) => {
+          // eslint-disable-next-line no-console
+          console.warn(...formatMessage(config, 'warn', message));
+        }
+      : () => {}, // no-op function
     
-    error: (message: any) => {
-      if (shouldLog(config, 'error')) {
-        // eslint-disable-next-line no-console
-        console.error(...formatMessage(config, 'error', message));
-      }
-    }
+    error: shouldLog(config, 'error') 
+      ? (message: any) => {
+          // eslint-disable-next-line no-console
+          console.error(...formatMessage(config, 'error', message));
+        }
+      : () => {} // no-op function
   };
+  
+  return logger;
 }
 
 // Backward compatibility - maintain class-like interface

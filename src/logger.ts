@@ -61,24 +61,28 @@ export function createLogger(level?: LogLevel) {
   const logger = {
     debug: shouldLog(config, 'debug') 
       ? (message: any) => {
+          // eslint-disable-next-line no-console
           console.log(...formatMessage(config, 'debug', message));
         }
       : () => {},
     
     info: shouldLog(config, 'info') 
       ? (message: any) => {
+          // eslint-disable-next-line no-console
           console.log(...formatMessage(config, 'info', message));
         }
       : () => {},
     
     warn: shouldLog(config, 'warn') 
       ? (message: any) => {
+          // eslint-disable-next-line no-console
           console.warn(...formatMessage(config, 'warn', message));
         }
       : () => {},
     
     error: shouldLog(config, 'error') 
       ? (message: any) => {
+          // eslint-disable-next-line no-console
           console.error(...formatMessage(config, 'error', message));
         }
       : () => {}
@@ -104,24 +108,28 @@ export default class Logger {
   
   debug(message: any): void {
     if (this.shouldLog('debug')) {
+      // eslint-disable-next-line no-console
       console.log(...this.formatMessage('debug', message));
     }
   }
   
   info(message: any): void {
     if (this.shouldLog('info')) {
+      // eslint-disable-next-line no-console
       console.log(...this.formatMessage('info', message));
     }
   }
   
   warn(message: any): void {
     if (this.shouldLog('warn')) {
+      // eslint-disable-next-line no-console
       console.warn(...this.formatMessage('warn', message));
     }
   }
   
   error(message: any): void {
     if (this.shouldLog('error')) {
+      // eslint-disable-next-line no-console
       console.error(...this.formatMessage('error', message));
     }
   }

@@ -1,13 +1,3 @@
-// Custom browser logger.
-// Only prints errors when NODE_ENV is 'production'.
-// Browser-compatible logger without Winston dependencies
-//
-// Usage:
-//   import Logger from './logger';
-//   const log = new Logger();
-//   log.debug('got here');
-//   log.info({some: 'object'});
-//   log.error('Production problem!');
 
 type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
@@ -25,47 +15,95 @@ interface LogLevels {
   readonly debug: number;
 }
 
-export default class Logger {
-  private readonly level: LogLevel;
-  private readonly levelColors: LevelColors;
-  private readonly defaultColor: string;
-  private readonly levels: LogLevels;
+interface LoggerConfig {
+  level: LogLevel;
+  levelColors: LevelColors;
+  defaultColor: string;
+  levels: LogLevels;
+}
 
-  constructor(level?: LogLevel) {
-    // When in production, only show errors.
-    this.level = level || (process.env.NODE_ENV === "production" ? "error" : "debug");
-    
-    // enumeration to assign color values to
-    this.levelColors = {
+function createLoggerConfig(level?: LogLevel): LoggerConfig {
+  return {
+    level: level || (process.env.NODE_ENV === "production" ? "error" : "debug"),
+    levelColors: {
       info: "darkturquoise",
       debug: "khaki", 
       error: "tomato",
       warn: "orange"
-    };
-    
-    this.defaultColor = "color: inherit";
-    
-    // Define log levels in order of priority
-    this.levels = {
+    },
+    defaultColor: "color: inherit",
+    levels: {
       error: 0,
       warn: 1,
       info: 2,
       debug: 3
-    };
+    }
+  };
+}
+
+function shouldLog(config: LoggerConfig, level: LogLevel): boolean {
+  return config.levels[level] <= config.levels[config.level];
+}
+
+function formatMessage(config: LoggerConfig, level: LogLevel, message: any): (string | any)[] {
+  return [
+    `%c[%cBES ${level.toUpperCase()}%c]:`,
+    config.defaultColor,
+    `color: ${config.levelColors[level]};`,
+    config.defaultColor,
+    message
+  ];
+}
+
+export function createLogger(level?: LogLevel) {
+  const config = createLoggerConfig(level);
+  
+  const logger = {
+    debug: shouldLog(config, 'debug') 
+      ? (message: any) => {
+          // eslint-disable-next-line no-console
+          console.log(...formatMessage(config, 'debug', message));
+        }
+      : () => {},
+    
+    info: shouldLog(config, 'info') 
+      ? (message: any) => {
+          // eslint-disable-next-line no-console
+          console.log(...formatMessage(config, 'info', message));
+        }
+      : () => {},
+    
+    warn: shouldLog(config, 'warn') 
+      ? (message: any) => {
+          // eslint-disable-next-line no-console
+          console.warn(...formatMessage(config, 'warn', message));
+        }
+      : () => {},
+    
+    error: shouldLog(config, 'error') 
+      ? (message: any) => {
+          // eslint-disable-next-line no-console
+          console.error(...formatMessage(config, 'error', message));
+        }
+      : () => {}
+  };
+  
+  return logger;
+}
+
+export default class Logger {
+  private readonly config: LoggerConfig;
+
+  constructor(level?: LogLevel) {
+    this.config = createLoggerConfig(level);
   }
   
   private shouldLog(level: LogLevel): boolean {
-    return this.levels[level] <= this.levels[this.level];
+    return shouldLog(this.config, level);
   }
   
   private formatMessage(level: LogLevel, message: any): (string | any)[] {
-    return [
-      `%c[%cBES ${level.toUpperCase()}%c]:`,
-      this.defaultColor,
-      `color: ${this.levelColors[level]};`,
-      this.defaultColor,
-      message
-    ];
+    return formatMessage(this.config, level, message);
   }
   
   debug(message: any): void {

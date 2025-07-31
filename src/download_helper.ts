@@ -1,143 +1,108 @@
 import Logger from "./logger";
-
 import { downloadFile, dateString } from "./utilities";
 
-export default class DownloadHelper {
-  public log: Logger;
-  public mutationCallback: () => void;
-  public observer: MutationObserver;
-  public linksReady?: boolean;
-  public button?: HTMLButtonElement;
-  public static dateString: () => string;
-  public static downloadFile: (filename: string, text: string) => void;
+// Standalone callback function (no longer needs binding)
+export function mutationCallback(
+  button: HTMLButtonElement | undefined, 
+  log: Logger
+): void {
+  const allDownloadLinks = document.querySelectorAll(
+    ".download-title .item-button"
+  );
 
-  constructor() {
-    this.log = new Logger();
+  const linksReady = [...allDownloadLinks].every(
+    element => (element as HTMLElement).style.display !== "none"
+  );
 
-    this.mutationCallback = this.callbackImpl.bind(this); // necessary for class callback
-    this.observer = new MutationObserver(this.mutationCallback);
-
-    // re-import
-    DownloadHelper.dateString = dateString;
-    DownloadHelper.downloadFile = downloadFile;
-
+  log.info(`linksReady: ${linksReady}`);
+  if (linksReady) {
+    enableButton(button, log);
+    return;
   }
 
-  init(): void {
-    this.log.info("Initiating BES Download Helper");
+  disableButton(button, log);
+}
 
-    this.createButton();
-
-    this.mutationCallback();
-
-    const config = { attributes: true, attributeFilter: ["href"] }; // observe if download links change
-    const targetNodes = document.querySelectorAll(
-      ".download-title .item-button"
-    );
-
-    for (let node of targetNodes) {
-      this.observer.observe(node, config);
-    }
+export function createButton(log: Logger): HTMLButtonElement | undefined {
+  const location = document.querySelector("div.download-titles");
+  if (!location) {
+    log.warn("Cannot create download button: div.download-titles element not found");
+    return undefined;
   }
 
-  createButton(): void {
-    if (this.button) return;
+  const button = document.createElement("button");
+  button.title = "Generates a file for automating downloads using 'cURL'";
+  button.className = "bes-downloadall";
+  button.disabled = true;
+  button.textContent = "preparing download";
 
-    const location = document.querySelector("div.download-titles");
-    if (!location) {
-      this.log.warn("Cannot create download button: div.download-titles element not found");
-      return;
-    }
+  location.append(button);
+  return button;
+}
 
-    this.button = document.createElement("button");
-    this.button.title =
-      "Generates a file for automating downloads using 'cURL'";
-    this.button.className = "bes-downloadall";
-    this.button.disabled = true;
-    this.button.textContent = "preparing download";
+export function enableButton(button: HTMLButtonElement | undefined, log: Logger): void {
+  if (!button) return;
+  
+  log.info("enableButton()");
 
-    location.append(this.button);
-  }
+  button.disabled = false;
+  button.textContent = "Download cURL File";
 
-  enableButton(): void {
-    this.log.info("enableButton()");
+  button.addEventListener("click", function() {
+    const date = dateString();
+    const downloadList = generateDownloadList();
+    const preamble = getDownloadPreamble();
+    const postamble = getDownloadPostamble();
+    const downloadDocument = preamble + downloadList + postamble;
 
-    this.button.disabled = false;
-    this.button.textContent = "Download cURL File";
+    downloadFile(`bandcamp_${date}.txt`, downloadDocument);
+  });
+}
 
-    this.button.addEventListener("click", function() {
-      const date = DownloadHelper.dateString();
-      const downloadList = DownloadHelper.generateDownloadList();
-      const preamble = DownloadHelper.getDownloadPreamble();
-      const postamble = DownloadHelper.getDownloadPostamble();
-      const downloadDocument = preamble + downloadList + postamble;
+export function disableButton(button: HTMLButtonElement | undefined, log: Logger): void {
+  if (!button) return;
+  
+  log.info("disableButton()");
 
-      DownloadHelper.downloadFile(`bandcamp_${date}.txt`, downloadDocument);
-    });
-  }
+  button.disabled = true;
+  button.textContent = "preparing download";
+}
 
-  disableButton(): void {
-    this.log.info("disableButton()");
+// Main initialization function (replaces DownloadHelper class)
+export async function initDownloadHelper(): Promise<void> {
+  const log = new Logger();
+  
+  log.info("Initiating BES Download Helper");
 
-    this.button.disabled = true;
-    this.button.textContent = "preparing download";
-  }
+  const button = createButton(log);
 
-  static generateDownloadList(): string {
-    const urlSet = new Set(
-      [...document.querySelectorAll("a.item-button")].map(item => {
-        return item.getAttribute("href")!;
-      })
-    );
+  const callback = () => mutationCallback(button, log);
+  const observer = new MutationObserver(callback);
 
-    if (urlSet.size === 0) return "URLS=()\n";
+  callback(); // Run initial check
 
-    const fileList = [...urlSet].map(url => `\t"${url}"`).join("\n");
-    return "URLS=(\n" + fileList + "\n)\n";
-  }
+  const config = { attributes: true, attributeFilter: ["href"] }; // observe if download links change
+  const targetNodes = document.querySelectorAll(".download-title .item-button");
 
-  callbackImpl(): void {
-    const allDownloadLinks = document.querySelectorAll(
-      ".download-title .item-button"
-    );
-
-    const linksReady = [...allDownloadLinks].every(
-      element => (element as HTMLElement).style.display !== "none"
-    );
-
-    this.log.info(`linksReady: ${linksReady}`);
-    if (linksReady) {
-      this.enableButton();
-      return;
-    }
-
-    this.disableButton();
-  }
-
-  static callback(): void {
-    // Legacy static method - not used
-  }
-
-  static getDownloadPreamble(): string {
-    return preamble;
-  }
-
-  static getDownloadPostamble(): string {
-    return postamble;
+  for (let node of targetNodes) {
+    observer.observe(node, config);
   }
 }
 
-const preamble = `#!/usr/bin/env bash
+export function generateDownloadList(): string {
+  const urlSet = new Set(
+    [...document.querySelectorAll("a.item-button")].map(item => {
+      return item.getAttribute("href")!;
+    })
+  );
 
-# Generated by Bandcamp Enhancement Suite (https://github.com/sabjorn/BandcampEnhancementSuite)
-#
-# The following can be used to batch download your recent purchases.
-# NOTE: pasting into terminal may not work properly--please follow new instructions below
-#
-# Usage (Mac/Linux):
-# 1) open Terminal
-# 2) move to desired download directory (e.g. \`cd ~/Downloads/bandcamp\`)
-# 3) run script (e.g. \`bash <this filename>.txt\`
+  if (urlSet.size === 0) return "URLS=()\n";
+
+  const fileList = [...urlSet].map(url => `\t"${url}"`).join("\n");
+  return "URLS=(\n" + fileList + "\n)\n";
+}
+
+const preamble = `#!/usr/bin/env bash
 
 `;
 
@@ -195,3 +160,11 @@ read -n 1
 
 exit $FAILED
 `;
+
+export function getDownloadPreamble(): string {
+  return preamble;
+}
+
+export function getDownloadPostamble(): string {
+  return postamble;
+}

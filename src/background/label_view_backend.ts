@@ -1,61 +1,57 @@
-import DBUtils from "../utilities";
+import { getDB } from "../utilities";
 import Logger from "../logger";
 
-export default class LabelViewBackend {
-  public log: Logger;
+// Standalone query functions (no longer need to be static methods)
+export async function query(storeName: string, key: string, port: chrome.runtime.Port): Promise<void> {
+  const db = await getDB();
+  let value = await db.get(storeName, key);
 
-  constructor() {
-    this.log = new Logger();
+  if (!value) {
+    value = false;
+    await db.put(storeName, value, key);
   }
 
-  init(): void {
-    this.log.info("initializing LabelViewBackend");
-    chrome.runtime.onConnect.addListener(function(port) {
-      if (port.name !== "bandcamplabelview") {
-        this.log.error(
-          `Unexpected chrome.runtime.onConnect port name: ${port.name}`
-        );
-      }
+  port.postMessage({ id: { key: key, value: value } });
+}
 
-      // get values of initial
-      port.onMessage.addListener(function(msg) {
-        if (msg.query) LabelViewBackend.query("previews", msg.query, port);
-        if (msg.toggle) LabelViewBackend.toggle("previews", msg.toggle, port);
-        if (msg.setTrue)
-          LabelViewBackend.setTrue("previews", msg.setTrue, port);
-      });
-    });
+export async function toggle(storeName: string, key: string, port: chrome.runtime.Port): Promise<void> {
+  const db = await getDB();
+  let value = await db.get(storeName, key);
 
-    chrome.runtime.onInstalled.addListener(function() {
-      // Empty listener for onInstalled event
-    });
-  }
+  value = !value;
 
-  static async query(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
-    const db = await dbUtils.getDB();
-    let value = await db.get(storeName, key);
+  await db.put(storeName, value, key);
+  port.postMessage({ id: { key: key, value: value } });
+}
 
-    if (!value) {
-      value = false;
-      await db.put(storeName, value, key);
+export async function setTrue(storeName: string, key: string, port: chrome.runtime.Port): Promise<void> {
+  const db = await getDB();
+  await db.put(storeName, true, key);
+  port.postMessage({ id: { key: key, value: true } });
+}
+
+// Main initialization function (replaces LabelViewBackend class)
+export async function initLabelViewBackend(): Promise<void> {
+  const log = new Logger();
+  
+  log.info("initializing LabelViewBackend");
+  
+  chrome.runtime.onConnect.addListener(function(port) {
+    if (port.name !== "bandcamplabelview") {
+      log.error(
+        `Unexpected chrome.runtime.onConnect port name: ${port.name}`
+      );
     }
 
-    port.postMessage({ id: { key: key, value: value } });
-  }
+    // get values of initial
+    port.onMessage.addListener(function(msg) {
+      if (msg.query) query("previews", msg.query, port);
+      if (msg.toggle) toggle("previews", msg.toggle, port);
+      if (msg.setTrue) setTrue("previews", msg.setTrue, port);
+    });
+  });
 
-  static async toggle(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
-    const db = await dbUtils.getDB();
-    let value = await db.get(storeName, key);
-
-    value = !value;
-
-    await db.put(storeName, value, key);
-    port.postMessage({ id: { key: key, value: value } });
-  }
-
-  static async setTrue(storeName: string, key: string, port: chrome.runtime.Port, dbUtils: DBUtils = new DBUtils()): Promise<void> {
-    const db = await dbUtils.getDB();
-    await db.put(storeName, true, key);
-    port.postMessage({ id: { key: key, value: true } });
-  }
+  chrome.runtime.onInstalled.addListener(function() {
+  });
 }
+

@@ -20,45 +20,19 @@ interface CartData {
   items: any[];
 }
 
-export default class Cart {
-  public log: Logger;
-  public createBesSupportButton: (price: number, currency: string, tralbumId: string, itemTitle: string, type: string) => HTMLElement;
-  public createButton: any;
-  public loadJsonFile: () => Promise<any>;
-  public addAlbumToCart: (item_id: string | number, unit_price: string | number, item_type?: string) => Promise<Response>;
-  public createShoppingCartItem: any;
-  public downloadFile: (filename: string, text: string) => void;
-  public reloadWindow: () => void;
-  public getTralbumDetails: (item_id: string | number, item_type?: string) => Promise<Response>;
-  public createInputButtonPair: any;
+// Main initialization function (replaces Cart class)
+export async function initCart(): Promise<void> {
+  const log = new Logger();
+  log.info("cart init");
 
-  constructor() {
-    this.log = new Logger();
-
-    this.createBesSupportButton = this.createBesSupportButtonImpl.bind(this);
-
-    // re-import
-    this.createButton = createButton;
-    this.loadJsonFile = loadJsonFile;
-    this.addAlbumToCart = addAlbumToCart;
-    this.createShoppingCartItem = createShoppingCartItem;
-    this.downloadFile = downloadFile;
-    this.reloadWindow = () => location.reload();
-    this.getTralbumDetails = getTralbumDetails.bind(this);
-    this.createInputButtonPair = createInputButtonPair;
-  }
-
-  async init(): Promise<void> {
-    this.log.info("cart init");
-
-    const importCartButton = this.createButton({
+    const importCartButton = createButton({
       className: "buttonLink",
       innerText: "import",
       buttonClicked: async () => {
         try {
-          const { tracks_export } = await this.loadJsonFile();
+          const { tracks_export } = await loadJsonFile();
           const promises = tracks_export.map(track =>
-            this.addAlbumToCart(
+            addAlbumToCart(
               track.item_id,
               track.unit_price,
               track.item_type
@@ -67,7 +41,7 @@ export default class Cart {
                 throw new Error(`HTTP error! status: ${response.status}`);
               }
 
-              const cartItem = this.createShoppingCartItem({
+              const cartItem = createShoppingCartItem({
                 itemId: track.item_id,
                 itemName: track.item_title,
                 itemPrice: track.unit_price,
@@ -85,10 +59,10 @@ export default class Cart {
             if (!results || results.length < 1) {
               return;
             }
-            this.reloadWindow();
+            location.reload();
           });
         } catch (error) {
-          this.log.error("Error loading JSON: " + String(error));
+          log.error("Error loading JSON: " + String(error));
         }
       }
     });
@@ -97,7 +71,7 @@ export default class Cart {
       sidecartReveal.prepend(importCartButton);
     }
 
-    const exportCartButton = this.createButton({
+    const exportCartButton = createButton({
       className: "buttonLink",
       innerText: "export",
       buttonClicked: () => {
@@ -107,7 +81,7 @@ export default class Cart {
         
         const { items }: CartData = JSON.parse(cartData);
         if (items.length < 1) {
-          this.log.error("error trying to export cart with length of 0");
+          log.error("error trying to export cart with length of 0");
           return;
         }
 
@@ -138,7 +112,7 @@ export default class Cart {
 
         const filename = `${date}_${cart_id}_bes_cart_export.json`;
         const data = JSON.stringify({ date, cart_id, tracks_export }, null, 2);
-        this.downloadFile(filename, data);
+        downloadFile(filename, data);
       }
     });
     const sidecartReveal2 = document.querySelector("#sidecartReveal");
@@ -146,10 +120,10 @@ export default class Cart {
       sidecartReveal2.append(exportCartButton);
     }
 
-    const cartRefreshButton = this.createButton({
+    const cartRefreshButton = createButton({
       className: "buttonLink",
       innerText: "⟳",
-      buttonClicked: () => this.reloadWindow()
+      buttonClicked: () => location.reload()
     });
     cartRefreshButton.style.display = "none";
     const sidecartReveal3 = document.querySelector("#sidecartReveal");
@@ -182,7 +156,7 @@ export default class Cart {
     }
 
     try {
-      const response = await this.getTralbumDetails(
+      const response = await getTralbumDetails(
         BES_SUPPORT_TRALBUM_ID,
         BES_SUPPORT_TRALBUM_TYPE
       );
@@ -206,18 +180,19 @@ export default class Cart {
 
       const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
       if (!minimumPrice) {
-        this.log.error(
+        log.error(
           `could not get minimum price for ${tralbumId}. Skipping adding to cart`
         );
         return;
       }
 
-      const oneClick = this.createBesSupportButton(
+      const oneClick = createBesSupportButton(
         minimumPrice,
         currency,
         tralbumId,
         itemTitle,
-        type
+        type,
+        log
       );
 
       const besSupportText = document.createElement("div");
@@ -233,44 +208,51 @@ export default class Cart {
         sidecartSummary.after(besSupport);
       }
     } catch (error) {
-      this.log.error(error);
+      log.error(error);
     }
   }
 
-  createBesSupportButtonImpl(price: number, currency: string, tralbumId: string, itemTitle: string, type: string): HTMLElement {
-    const pair = this.createInputButtonPair({
-      inputPrefix: "$",
-      inputSuffix: currency,
-      inputPlaceholder: price,
-      buttonChildElement: createPlusSvgIcon(),
-      onButtonClick: value => {
-        if (value < price) {
-          this.log.error("track price too low");
-          return;
+
+export function createBesSupportButton(
+  price: number, 
+  currency: string, 
+  tralbumId: string, 
+  itemTitle: string, 
+  type: string, 
+  log: Logger
+): HTMLElement {
+  const pair = createInputButtonPair({
+    inputPrefix: "$",
+    inputSuffix: currency,
+    inputPlaceholder: price,
+    buttonChildElement: createPlusSvgIcon() as HTMLElement,
+    onButtonClick: value => {
+      const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+      if (numericValue < price) {
+        log.error("track price too low");
+        return;
+      }
+
+      addAlbumToCart(tralbumId, numericValue, type).then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        this.addAlbumToCart(tralbumId, value, type).then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-          const cartItem = this.createShoppingCartItem({
-            itemId: tralbumId,
-            itemName: itemTitle,
-            itemPrice: value,
-            itemCurrency: currency
-          });
-
-          const itemList = document.querySelector("#item_list");
-          if (itemList) {
-            itemList.append(cartItem);
-          }
+        const cartItem = createShoppingCartItem({
+          itemId: tralbumId,
+          itemName: itemTitle,
+          itemPrice: numericValue,
+          itemCurrency: currency
         });
-      }
-    });
-    pair.classList.add("one-click-button-container");
 
-    return pair;
-  }
+        const itemList = document.querySelector("#item_list");
+        if (itemList) {
+          itemList.append(cartItem);
+        }
+      });
+    }
+  });
+  pair.classList.add("one-click-button-container");
 
+  return pair;
 }

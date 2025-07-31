@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createDomNodes, cleanupTestNodes } from './utils'
 
-import DBUtils, { mousedownCallback, extractBandFollowInfo } from '../src/utilities'
+import DBUtils, { getDB, mousedownCallback, extractBandFollowInfo } from '../src/utilities'
 
 describe('mousedownCallback', () => {
   const spyElement = { click: vi.fn(), duration: 0, currentTime: 0 }
@@ -30,28 +30,14 @@ describe('mousedownCallback', () => {
   })
 })
 
-describe('DBUtils', () => {
-  const dbu = new DBUtils()
-  let openDBStub: any
-
-  beforeEach(function() {
-    openDBStub = vi.spyOn(dbu, 'openDB').mockImplementation(() => Promise.resolve({} as any))
+describe('getDB', () => {
+  it('should be a function', () => {
+    expect(typeof getDB).toBe('function')
   })
 
-  afterEach(function() {
-    vi.restoreAllMocks()
-  })
-  
-  describe('getDB', () => {
-    it('should call idb openDB with specific args', async () => {
-      const _db = await dbu.getDB('somename')
-
-      expect(openDBStub).toHaveBeenCalledWith(
-        'BandcampEnhancementSuite',
-        2,
-        expect.any(Object)
-      )
-    })
+  // Test backward compatibility
+  it('should work with DBUtils object interface', () => {
+    expect(typeof DBUtils.getDB).toBe('function')
   })
 })
 

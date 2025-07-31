@@ -17,32 +17,27 @@ export function mousedownCallback(e: MouseEventWithOffset): void {
   audio.currentTime = scaleDuration * audioDuration;
 }
 
-export default class DBUtils {
-  public openDB: typeof openDB;
+export async function getDB(_name?: string): Promise<IDBPDatabase> {
+  const dbName: string = "BandcampEnhancementSuite";
+  const version: number = 2;
 
-  constructor() {
-    this.openDB = openDB;
-  }
+  const db = await openDB(dbName, version, {
+    upgrade(db: IDBPDatabase, _oldVersion: number, _newVersion: number | null, _transaction: any): void {
+      const stores = db.objectStoreNames;
 
-  async getDB(_name?: string): Promise<IDBPDatabase> {
-    const dbName: string = "BandcampEnhancementSuite";
-    const version: number = 2;
+      if (!stores.contains("previews")) db.createObjectStore("previews");
+      if (!stores.contains("config")) db.createObjectStore("config");
+    },
+    blocked(): void {},
+    blocking(): void {},
+    terminated(): void {}
+  });
 
-    const db = await this.openDB(dbName, version, {
-      upgrade(db: IDBPDatabase, _oldVersion: number, _newVersion: number | null, _transaction: any): void {
-        const stores = db.objectStoreNames;
-
-        if (!stores.contains("previews")) db.createObjectStore("previews");
-        if (!stores.contains("config")) db.createObjectStore("config");
-      },
-      blocked(): void {},
-      blocking(): void {},
-      terminated(): void {}
-    });
-
-    return db;
-  }
+  return db;
 }
+
+// For backward compatibility, export a default object with the getDB function
+export default { getDB };
 
 interface BandFollowInfo {
   tralbum_id?: number;

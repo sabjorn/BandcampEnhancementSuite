@@ -35,7 +35,6 @@ describe('getDB', () => {
     expect(typeof getDB).toBe('function')
   })
 
-  // Test backward compatibility
   it('should work with DBUtils object interface', () => {
     expect(typeof DBUtils.getDB).toBe('function')
   })

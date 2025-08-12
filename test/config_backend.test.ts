@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 describe('Config Backend', () => {
   beforeEach(() => {
-    // Setup chrome API mock
     globalThis.chrome = {
       storage: {
         local: {
@@ -15,7 +14,6 @@ describe('Config Backend', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
-    // Clean up chrome mock
     if ('chrome' in globalThis) {
       ;(globalThis as any).chrome = undefined
     }
@@ -34,7 +32,6 @@ describe('Config Backend', () => {
       }
     })
 
-    // Test basic config operations
     expect(globalThis.chrome.storage.local.get).toBeDefined()
   })
 })

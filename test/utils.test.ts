@@ -3,7 +3,6 @@ import { createPagedata, createDomNodes, cleanupTestNodes, mockApiResponse } fro
 
 describe('Test Utils', () => {
   beforeEach(() => {
-    // Clean up DOM before each test
     document.body.innerHTML = ''
   })
 

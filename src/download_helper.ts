@@ -1,7 +1,6 @@
 import Logger from "./logger";
 import { downloadFile, dateString } from "./utilities";
 
-// Standalone callback function (no longer needs binding)
 export function mutationCallback(
   button: HTMLButtonElement | undefined, 
   log: Logger
@@ -68,7 +67,6 @@ export function disableButton(button: HTMLButtonElement | undefined, log: Logger
   button.textContent = "preparing download";
 }
 
-// Main initialization function (replaces DownloadHelper class)
 export async function initDownloadHelper(): Promise<void> {
   const log = new Logger();
   
@@ -79,9 +77,9 @@ export async function initDownloadHelper(): Promise<void> {
   const callback = () => mutationCallback(button, log);
   const observer = new MutationObserver(callback);
 
-  callback(); // Run initial check
+  callback(); 
 
-  const config = { attributes: true, attributeFilter: ["href"] }; // observe if download links change
+  const config = { attributes: true, attributeFilter: ["href"] }; 
   const targetNodes = document.querySelectorAll(".download-title .item-button");
 
   for (let node of targetNodes) {

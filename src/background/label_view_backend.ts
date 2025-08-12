@@ -1,7 +1,6 @@
 import { getDB } from "../utilities";
 import Logger from "../logger";
 
-// Standalone query functions (no longer need to be static methods)
 export async function query(storeName: string, key: string, port: chrome.runtime.Port): Promise<void> {
   const db = await getDB();
   let value = await db.get(storeName, key);
@@ -30,7 +29,6 @@ export async function setTrue(storeName: string, key: string, port: chrome.runti
   port.postMessage({ id: { key: key, value: true } });
 }
 
-// Main initialization function (replaces LabelViewBackend class)
 export async function initLabelViewBackend(): Promise<void> {
   const log = new Logger();
   
@@ -43,7 +41,6 @@ export async function initLabelViewBackend(): Promise<void> {
       );
     }
 
-    // get values of initial
     port.onMessage.addListener(function(msg) {
       if (msg.query) query("previews", msg.query, port);
       if (msg.toggle) toggle("previews", msg.toggle, port);

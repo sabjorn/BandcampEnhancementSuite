@@ -32,14 +32,11 @@ export default defineConfig({
     }
   },
   esbuildOptions(options) {
-    // Browser extension compatibility
     options.define = {
       ...options.define,
       global: 'globalThis',
     }
-    // Polyfill Node.js globals for browser
     options.inject = options.inject || []
   },
-  // Development server for watch mode
   onSuccess: process.env.NODE_ENV === 'development' ? 'echo "Build completed"' : undefined,
 })

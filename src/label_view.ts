@@ -1,8 +1,6 @@
 import Logger from "./logger";
 
-// Standalone callback functions (no longer need binding)
 export function setHistory(id: string, state: boolean): void {
-  // CSS.escape() is required for integer-only CSS IDs
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
   if (historybox) {
     historybox.classList.add("follow-unfollow");
@@ -50,7 +48,6 @@ export function fillFrame(
   const id = idAndType.split("-")[1];
   const idType = idAndType.split("-")[0];
 
-  // determine if preview window needs to be open
   if (previewState.previewOpen === true && previewState.previewId === id) {
     previewState.previewOpen = false;
   } else {
@@ -74,29 +71,24 @@ export function fillFrame(
   }
 }
 
-// Main initialization function (replaces LabelView class)
 export async function initLabelView(): Promise<void> {
   const log = new Logger();
   const previewState = { previewOpen: false, previewId: undefined };
   let port: chrome.runtime.Port;
 
   try {
-    // connect to background
     port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
 
-    // kickstart
     port.onMessage.addListener(msg => {
       if (msg.id) setHistory(msg.id.key, msg.id.value);
     });
   } catch (e) {
     if (e.message.includes("Error in invocation of runtime.connect")) {
-      // This only occurs in testing, ignoring for now
       log.error(e);
       return;
-    } else {
-      // Ensure other errors are escalated
-      throw e;
-    }
+    } 
+
+    throw e;
   }
 
   log.info("Rendering BES...");
@@ -137,7 +129,6 @@ export function renderDom(
   port: chrome.runtime.Port, 
   previewState: { previewOpen: boolean; previewId?: string }
 ): void {
-  // iterate over page to get album IDs and append buttons with value
   document
     .querySelectorAll("li.music-grid-item[data-item-id]")
     .forEach(item => {

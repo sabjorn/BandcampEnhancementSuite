@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 describe('Label View Backend', () => {
   beforeEach(() => {
-    // Setup chrome API mock
     globalThis.chrome = {
       runtime: {
         onMessage: {
@@ -15,7 +14,6 @@ describe('Label View Backend', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
-    // Clean up chrome mock
     if ('chrome' in globalThis) {
       ;(globalThis as any).chrome = undefined
     }
@@ -33,7 +31,6 @@ describe('Label View Backend', () => {
       callback(mockMessage, {}, vi.fn())
     })
 
-    // Test basic backend operations
     expect(globalThis.chrome.runtime.onMessage.addListener).toBeDefined()
   })
 })

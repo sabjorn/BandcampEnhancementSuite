@@ -20,7 +20,6 @@ interface CartData {
   items: any[];
 }
 
-// Main initialization function (replaces Cart class)
 export async function initCart(): Promise<void> {
   const log = new Logger();
   log.info("cart init");

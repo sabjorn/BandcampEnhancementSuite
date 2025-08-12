@@ -5,7 +5,6 @@ describe('Logger', () => {
   let consoleSpy: any
   
   beforeEach(() => {
-    // Mock console methods
     consoleSpy = {
       log: vi.spyOn(console, 'log').mockImplementation(() => {}),
       warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
@@ -23,13 +22,11 @@ describe('Logger', () => {
   })
 
   it('should default to debug level in development', () => {
-    // Mock NODE_ENV as development
     const originalEnv = process.env.NODE_ENV
     process.env.NODE_ENV = 'development'
     
     const log = new Logger()
     
-    // Debug should be logged in development
     log.debug('test message')
     expect(consoleSpy.log).toHaveBeenCalled()
     
@@ -42,11 +39,9 @@ describe('Logger', () => {
     
     const log = new Logger()
     
-    // Debug should NOT be logged in production
     log.debug('test message')
     expect(consoleSpy.log).not.toHaveBeenCalled()
     
-    // Error should be logged in production
     log.error('error message')
     expect(consoleSpy.error).toHaveBeenCalled()
     
@@ -56,12 +51,10 @@ describe('Logger', () => {
   it('should respect custom log level', () => {
     const log = new Logger('warn')
     
-    // Debug and info should not be logged
     log.debug('debug message')
     log.info('info message')
     expect(consoleSpy.log).not.toHaveBeenCalled()
     
-    // Warn and error should be logged
     log.warn('warn message')
     expect(consoleSpy.warn).toHaveBeenCalled()
     

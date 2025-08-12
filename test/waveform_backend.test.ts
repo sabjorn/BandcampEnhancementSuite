@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 describe('Waveform Backend', () => {
   beforeEach(() => {
-    // Setup chrome API mock
     globalThis.chrome = {
       runtime: {
         onMessage: {
@@ -15,7 +14,6 @@ describe('Waveform Backend', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
-    // Clean up chrome mock
     if ('chrome' in globalThis) {
       ;(globalThis as any).chrome = undefined
     }
@@ -33,14 +31,12 @@ describe('Waveform Backend', () => {
       callback(mockMessage, {}, vi.fn())
     })
 
-    // Test basic waveform backend operations
     expect(globalThis.chrome.runtime.onMessage.addListener).toBeDefined()
   })
 
   it('should handle audio buffer processing', () => {
     const mockArrayBuffer = new ArrayBuffer(1024)
     
-    // Test basic audio processing capabilities
     expect(mockArrayBuffer.byteLength).toBe(1024)
   })
 })

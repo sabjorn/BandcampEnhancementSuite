@@ -102,7 +102,7 @@ export async function generateAudioFeatures(
           const stepSize = Math.round(decodedAudio.length / datapoints);
 
           const rmsSize = Math.min(stepSize, 128);
-          const subStepSize = Math.round(stepSize / rmsSize); // used to do RMS over subset of each buffer step
+          const subStepSize = Math.round(stepSize / rmsSize);
           let rmsBuffer = [];
           for (let i = 0; i < datapoints; i++) {
             let rms = 0.0;

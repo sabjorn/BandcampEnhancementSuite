@@ -21,7 +21,6 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     
-    // Strict type checking options (gradually enable these)
     "strict": false,
     "noImplicitAny": false,
     "strictNullChecks": false,
@@ -32,7 +31,6 @@
     "useUnknownInCatchVariables": false,
     "alwaysStrict": true,
     
-    // Additional checks (gradually enable these)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "exactOptionalPropertyTypes": false,
@@ -42,12 +40,10 @@
     "noImplicitOverride": false,
     "noPropertyAccessFromIndexSignature": false,
     
-    // Type checking
     "verbatimModuleSyntax": false,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     
-    // Browser extension support
     "types": ["chrome", "node"]
   },
   "include": [

@@ -17,7 +17,6 @@ const defaultConfig: Config = {
   installDateUnixSeconds: Math.floor(Date.now() / 1000)
 };
 
-// Standalone callback functions (no longer need binding)
 export function connectionListenerCallback(
   port: chrome.runtime.Port, 
   log: Logger,
@@ -56,7 +55,6 @@ export async function portListenerCallback(
   if (msg.requestConfig) await broadcastConfig(db, log, portState.port);
 }
 
-// Main initialization function (replaces ConfigBackend class)
 export async function initConfigBackend(): Promise<void> {
   const log = new Logger();
   const portState: { port?: chrome.runtime.Port } = {};

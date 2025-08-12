@@ -36,7 +36,6 @@ export async function getDB(_name?: string): Promise<IDBPDatabase> {
   return db;
 }
 
-// For backward compatibility, export a default object with the getDB function
 export default { getDB };
 
 interface BandFollowInfo {
@@ -245,5 +244,4 @@ export function centreElement(element: HTMLElement): void {
   element.style.zIndex = '9999';
 }
 
-// Export types for use in other files
 export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset };

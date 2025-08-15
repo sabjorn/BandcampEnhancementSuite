@@ -5,10 +5,9 @@ import {
   downloadFile,
   dateString,
   loadJsonFile,
-  addAlbumToCart,
-  CURRENCY_MINIMUMS,
-  getTralbumDetails
+  CURRENCY_MINIMUMS
 } from "../utilities";
+import { addAlbumToCart, getTralbumDetails } from "../bclient";
 import { createShoppingCartItem } from "../components/shoppingCart.js";
 import { createPlusSvgIcon } from "../components/svgIcons";
 

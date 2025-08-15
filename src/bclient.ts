@@ -1,14 +1,9 @@
-export function getUrl(): string {
-  return window.location.href.split("/")[2];
-}
-
 export function addAlbumToCart(
   item_id: string | number,
   unit_price: string | number,
   item_type: string = "a",
-  url: string = getUrl()
 ): Promise<Response> {
-  return fetch(`https://${url}/cart/cb`, {
+  return fetch(`/cart/cb`, {
     headers: {
       accept: "application/json, text/javascript, */*; q=0.01",
       "content-type": "application/x-www-form-urlencoded",

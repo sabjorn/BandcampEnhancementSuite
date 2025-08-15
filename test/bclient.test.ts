@@ -1,25 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { getUrl, addAlbumToCart, getTralbumDetails } from '../src/bclient'
+import { addAlbumToCart, getTralbumDetails } from '../src/bclient'
 
 describe('bclient', () => {
   afterEach(() => {
     vi.restoreAllMocks()
-  })
-
-  describe('getUrl', () => {
-    beforeEach(() => {
-      Object.defineProperty(window, 'location', {
-        value: {
-          href: 'https://example.bandcamp.com/album/test'
-        },
-        writable: true
-      })
-    })
-
-    it('should extract domain from current URL', () => {
-      const result = getUrl()
-      expect(result).toBe('example.bandcamp.com')
-    })
   })
 
   describe('addAlbumToCart', () => {
@@ -29,20 +13,13 @@ describe('bclient', () => {
       fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
         new Response('{"success": true}', { status: 200 })
       )
-      
-      Object.defineProperty(window, 'location', {
-        value: {
-          href: 'https://test.bandcamp.com/album/example'
-        },
-        writable: true
-      })
     })
 
     it('should make POST request to cart endpoint with correct parameters', async () => {
       await addAlbumToCart('123', '10.00', 'a')
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        'https://test.bandcamp.com/cart/cb',
+        '/cart/cb',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -56,20 +33,12 @@ describe('bclient', () => {
       )
     })
 
-    it('should use provided URL parameter', async () => {
-      await addAlbumToCart('456', '15.00', 't', 'custom.bandcamp.com')
-
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'https://custom.bandcamp.com/cart/cb',
-        expect.anything()
-      )
-    })
 
     it('should default item_type to "a"', async () => {
       await addAlbumToCart('789', '20.00')
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.any(String),
+        '/cart/cb',
         expect.objectContaining({
           body: 'req=add&item_type=a&item_id=789&unit_price=20.00&quantity=1&sync_num=1'
         })

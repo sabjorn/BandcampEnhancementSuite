@@ -4,6 +4,7 @@ import { initDownloadHelper } from "./download_helper";
 import { initPlayer } from "./player";
 import { initAudioFeatures } from "./audioFeatures";
 import { initCart } from "./pages/cart";
+import { initHideUnhide } from "./pages/hideUnhide";
 
 const main = async (): Promise<void> => {
   const log = createLogger();
@@ -48,6 +49,11 @@ const main = async (): Promise<void> => {
         await initCart();
       }
     }
+  }
+
+  const checkIsCollectionPage: Element | null = document.querySelector('ol.collection-grid.editable.ui-sortable');
+  if (checkIsCollectionPage) {
+    await initHideUnhide();
   }
 };
 

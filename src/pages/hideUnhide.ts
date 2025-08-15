@@ -6,7 +6,7 @@ export async function initHideUnhide(): Promise<void> {
   log.info("hideUnhide init");
 
   const hideButton = createButton({
-    className: "follow-unfollow",
+    className: "follow-unfollow bes-hideUnhide",
     innerText: "hide",
     buttonClicked: () => {
       console.log("hide button clicked");
@@ -14,7 +14,7 @@ export async function initHideUnhide(): Promise<void> {
   });
 
   const unhideButton = createButton({
-    className: "follow-unfollow",
+    className: "follow-unfollow bes-hideUnhide",
     innerText: "unhide",
     buttonClicked: () => {
       console.log("unhide button clicked");
@@ -22,8 +22,10 @@ export async function initHideUnhide(): Promise<void> {
   });
 
   const collectionItemsDiv = document.querySelector("div.collection-items");
-  if (collectionItemsDiv) {
-    collectionItemsDiv.insertBefore(hideButton, collectionItemsDiv.firstChild);
-    collectionItemsDiv.insertBefore(unhideButton, collectionItemsDiv.firstChild);
+  if (!collectionItemsDiv) {
+        return;
   }
+
+  collectionItemsDiv.insertBefore(unhideButton, collectionItemsDiv.firstChild);
+  collectionItemsDiv.insertBefore(hideButton, collectionItemsDiv.firstChild);
 }

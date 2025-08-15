@@ -300,3 +300,8 @@ button.bes-downloadall[disabled]::after {
   width: 1.1em;
   text-align: left;
 }
+
+a.bes-hideUnhide {
+    margin: 10px;
+    margin-bottom: 20px;
+}

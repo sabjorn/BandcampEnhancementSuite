@@ -29,6 +29,8 @@ vi.mock('../src/logger', () => ({
 describe('HideUnhide', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Clear any existing crumbs data elements
+    document.querySelectorAll('#js-crumbs-data').forEach(el => el.remove())
   })
 
   afterEach(() => {
@@ -82,7 +84,15 @@ describe('HideUnhide', () => {
       expect(mockPort.onMessage.addListener).toHaveBeenCalled()
     })
 
-    it('should send unhide message when unhide button is clicked', async () => {
+    it('should send unhide message with crumb when unhide button is clicked', async () => {
+      // Add the crumbs data element to the DOM using createDomNodes
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb-value'
+      }
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `)
+      
       await initHideUnhide()
       
       const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
@@ -92,7 +102,90 @@ describe('HideUnhide', () => {
       unhideButton.click()
       
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        unhide: { crumb: null } 
+        unhide: { crumb: 'test-crumb-value' } 
+      })
+    })
+  })
+
+  describe('startUnhideProcess', () => {
+    it('should extract crumb from page data and send unhide message', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'extracted-crumb-123',
+        'other/endpoint': 'other-crumb'
+      }
+      createDomNodes(`
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `)
+      
+      await initHideUnhide()
+      
+      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
+      const unhideButton = Array.from(buttons).find(btn => btn.textContent === 'unhide all') as HTMLElement
+      
+      unhideButton.click()
+      
+      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
+        unhide: { crumb: 'extracted-crumb-123' } 
+      })
+    })
+
+    it('should handle missing crumbs data element gracefully', async () => {
+      createDomNodes(`
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+      `)
+      
+      await initHideUnhide()
+      
+      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
+      const unhideButton = Array.from(buttons).find(btn => btn.textContent === 'unhide all') as HTMLElement
+      
+      // This should throw an error when trying to access the missing element
+      expect(() => unhideButton.click()).toThrow()
+    })
+
+    it('should handle invalid JSON in crumbs data', async () => {
+      createDomNodes(`
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="js-crumbs-data" data-crumbs="invalid-json{"></div>
+      `)
+      
+      await initHideUnhide()
+      
+      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
+      const unhideButton = Array.from(buttons).find(btn => btn.textContent === 'unhide all') as HTMLElement
+      
+      // This should throw an error when trying to parse invalid JSON
+      expect(() => unhideButton.click()).toThrow()
+    })
+
+    it('should handle missing specific crumb in data', async () => {
+      const crumbsData = {
+        'other/endpoint': 'other-crumb'
+        // Missing 'api/collectionowner/1/hide_unhide_item'
+      }
+      createDomNodes(`
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `)
+      
+      await initHideUnhide()
+      
+      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
+      const unhideButton = Array.from(buttons).find(btn => btn.textContent === 'unhide all') as HTMLElement
+      
+      unhideButton.click()
+      
+      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
+        unhide: { crumb: undefined } 
       })
     })
   })

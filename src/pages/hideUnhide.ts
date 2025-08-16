@@ -59,9 +59,10 @@ export async function initHideUnhide(): Promise<void> {
 }
 
 function startUnhideProcess(port: chrome.runtime.Port): void {
-  const crumb = null;
-  
   log.info("Starting unhide all process");
+  const crumbs = JSON.parse(document.getElementById('js-crumbs-data').getAttribute('data-crumbs'));
+  const crumb = crumbs['api/collectionowner/1/hide_unhide_item']
+  
   port.postMessage({ unhide: { crumb } });
 }
 

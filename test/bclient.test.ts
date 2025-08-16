@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { addAlbumToCart, getTralbumDetails, getCollectionSummary } from '../src/bclient'
+import { addAlbumToCart, getTralbumDetails, getCollectionSummary, hideUnhide } from '../src/bclient'
 
 describe('bclient', () => {
   afterEach(() => {
@@ -201,6 +201,146 @@ describe('bclient', () => {
       expect(result.username).toBe("dataist")
       expect(result.tralbum_lookup).toBeDefined()
       expect(result.follows).toBeDefined()
+    })
+  })
+
+  describe('hideUnhide', () => {
+    let fetchSpy: any
+
+    beforeEach(() => {
+      fetchSpy = vi.spyOn(global, 'fetch')
+    })
+
+    it('should make POST request to hide_unhide_item endpoint with correct parameters', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
+
+      await hideUnhide('hide', '896389', 'track', 123456, 'valid_crumb')
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/api/collectionowner/1/hide_unhide_item',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'accept': 'application/json, text/javascript, */*; q=0.01',
+            'content-type': 'application/json',
+            'x-requested-with': 'XMLHttpRequest'
+          }),
+          body: JSON.stringify({
+            fan_id: '896389',
+            item_type: 'track',
+            item_id: 123456,
+            action: 'hide',
+            crumb: 'valid_crumb',
+            collection_index: null
+          }),
+          mode: 'cors'
+        })
+      )
+    })
+
+    it('should return true when API returns ok: true', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
+
+      const result = await hideUnhide('unhide', '896389', 'album', 789, 'valid_crumb')
+      expect(result).toBe(true)
+    })
+
+    it('should return false when API returns ok: false', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: false }), { status: 200 })
+      )
+
+      const result = await hideUnhide('hide', '896389', 'track', 123, 'valid_crumb')
+      expect(result).toBe(false)
+    })
+
+    it('should handle null crumb parameter', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
+
+      await hideUnhide('hide', '896389', 'track', 123456)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/api/collectionowner/1/hide_unhide_item',
+        expect.objectContaining({
+          body: JSON.stringify({
+            fan_id: '896389',
+            item_type: 'track',
+            item_id: 123456,
+            action: 'hide',
+            crumb: null,
+            collection_index: null
+          })
+        })
+      )
+    })
+
+    it('should retry with new crumb when invalid_crumb error is returned', async () => {
+      const invalidCrumbResponse = {
+        error: 'invalid_crumb',
+        crumb: '|api/collectionowner/1/hide_unhide_item|1755307667|z5GoHoaxgXuO2LNi30A625SNbmc='
+      }
+      const successResponse = { ok: true }
+
+      fetchSpy
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(invalidCrumbResponse), { status: 200 })
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(successResponse), { status: 200 })
+        )
+
+      const result = await hideUnhide('hide', '896389', 'track', 123456, 'old_crumb')
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      
+      // First call with old crumb
+      expect(fetchSpy).toHaveBeenNthCalledWith(1,
+        '/api/collectionowner/1/hide_unhide_item',
+        expect.objectContaining({
+          body: JSON.stringify({
+            fan_id: '896389',
+            item_type: 'track',
+            item_id: 123456,
+            action: 'hide',
+            crumb: 'old_crumb',
+            collection_index: null
+          })
+        })
+      )
+
+      // Second call with new crumb
+      expect(fetchSpy).toHaveBeenNthCalledWith(2,
+        '/api/collectionowner/1/hide_unhide_item',
+        expect.objectContaining({
+          body: JSON.stringify({
+            fan_id: '896389',
+            item_type: 'track',
+            item_id: 123456,
+            action: 'hide',
+            crumb: '|api/collectionowner/1/hide_unhide_item|1755307667|z5GoHoaxgXuO2LNi30A625SNbmc=',
+            collection_index: null
+          })
+        })
+      )
+
+      expect(result).toBe(true)
+    })
+
+    it('should not retry if invalid_crumb error has no crumb field', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ error: 'invalid_crumb' }), { status: 200 })
+      )
+
+      const result = await hideUnhide('hide', '896389', 'track', 123456, 'old_crumb')
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      expect(result).toBe(false)
     })
   })
 })

@@ -81,3 +81,44 @@ export async function getCollectionSummary(): Promise<CollectionSummary> {
   const data = await response.json();
   return data.collection_summary;
 }
+
+export async function hideUnhide(action: "hide" | "unhide", fan_id: string, item_type: "track" | "album", item_id: number, crumb: string | null = null): Promise<boolean> {
+  const makeRequest = async (crumbValue: string | null) => {
+    const body = JSON.stringify({
+      fan_id,
+      item_type,
+      item_id,
+      action,
+      crumb: crumbValue,
+      collection_index: null,
+    });
+
+    const response = await fetch("/api/collectionowner/1/hide_unhide_item", {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/javascript, */*; q=0.01",
+        "content-type": "application/json",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "x-requested-with": "XMLHttpRequest"
+      },
+      referrer: "https://halfpastvibe.bandcamp.com/album/vielen-dank",
+      referrerPolicy: "no-referrer-when-downgrade",
+      body: body,
+      mode: "cors"
+    });
+
+    return response;
+  };
+
+  let response = await makeRequest(crumb);
+  let data = await response.json();
+
+  if (data.error === 'invalid_crumb' && data.crumb) {
+    response = await makeRequest(data.crumb);
+    data = await response.json();
+  }
+
+  return data.ok === true;
+}

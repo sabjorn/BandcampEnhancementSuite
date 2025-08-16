@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { showNotification, showSuccessMessage, showErrorMessage } from '../src/components/notifications'
+import { showNotification, showSuccessMessage, showErrorMessage, showInfoMessage, showWarningMessage, updateStatusDisplay, hideStatusDisplay, removeStatusDisplay } from '../src/components/notifications'
 
 describe('notifications', () => {
   beforeEach(() => {
@@ -171,6 +171,120 @@ describe('notifications', () => {
       // After 5 seconds total, second notification should be removed
       vi.advanceTimersByTime(4000)
       expect(document.querySelectorAll('.bes-notification').length).toBe(0)
+    })
+  })
+
+  describe('showInfoMessage', () => {
+    it('should create info notification with correct message', () => {
+      showInfoMessage('Info message')
+
+      const notification = document.querySelector('.bes-notification')
+      expect(notification?.classList.contains('bes-info')).toBe(true)
+      expect(notification?.textContent).toBe('Info message')
+    })
+  })
+
+  describe('showWarningMessage', () => {
+    it('should create warning notification with correct message', () => {
+      showWarningMessage('Warning message')
+
+      const notification = document.querySelector('.bes-notification')
+      expect(notification?.classList.contains('bes-warning')).toBe(true)
+      expect(notification?.textContent).toBe('Warning message')
+    })
+  })
+
+  describe('status display functions', () => {
+    const testId = 'test-status'
+
+    afterEach(() => {
+      removeStatusDisplay(testId)
+    })
+
+    describe('updateStatusDisplay', () => {
+      it('should create and show status display', () => {
+        updateStatusDisplay({
+          id: testId,
+          content: '<div>Test content</div>',
+          show: true
+        })
+
+        const statusElement = document.getElementById(testId)
+        expect(statusElement).toBeTruthy()
+        expect(statusElement?.classList.contains('bes-status-display')).toBe(true)
+        expect(statusElement?.innerHTML).toBe('<div>Test content</div>')
+        expect(statusElement?.style.display).toBe('block')
+      })
+
+      it('should update existing status display', () => {
+        // Create initial status
+        updateStatusDisplay({
+          id: testId,
+          content: 'Initial content',
+          show: true
+        })
+
+        // Update content
+        updateStatusDisplay({
+          id: testId,
+          content: 'Updated content',
+          show: true
+        })
+
+        const statusElement = document.getElementById(testId)
+        expect(statusElement?.innerHTML).toBe('Updated content')
+        expect(document.querySelectorAll(`#${testId}`).length).toBe(1)
+      })
+
+      it('should hide status display when show is false', () => {
+        updateStatusDisplay({
+          id: testId,
+          content: 'Test content',
+          show: false
+        })
+
+        const statusElement = document.getElementById(testId)
+        expect(statusElement?.style.display).toBe('none')
+      })
+    })
+
+    describe('hideStatusDisplay', () => {
+      it('should hide existing status display', () => {
+        updateStatusDisplay({
+          id: testId,
+          content: 'Test content',
+          show: true
+        })
+
+        hideStatusDisplay(testId)
+
+        const statusElement = document.getElementById(testId)
+        expect(statusElement?.style.display).toBe('none')
+      })
+
+      it('should not throw when hiding non-existent status display', () => {
+        expect(() => hideStatusDisplay('non-existent')).not.toThrow()
+      })
+    })
+
+    describe('removeStatusDisplay', () => {
+      it('should remove status display from DOM', () => {
+        updateStatusDisplay({
+          id: testId,
+          content: 'Test content',
+          show: true
+        })
+
+        expect(document.getElementById(testId)).toBeTruthy()
+        
+        removeStatusDisplay(testId)
+        
+        expect(document.getElementById(testId)).toBeNull()
+      })
+
+      it('should not throw when removing non-existent status display', () => {
+        expect(() => removeStatusDisplay('non-existent')).not.toThrow()
+      })
     })
   })
 })

@@ -107,7 +107,7 @@ export async function getCollectionSummary(): Promise<CollectionSummary> {
 }
 
 interface HideUnhideBody {
-  fan_id: string;
+  fan_id: number;
   item_type: "track" | "album";
   item_id: number;
   action: "hide" | "unhide";
@@ -121,7 +121,7 @@ interface HideUnhideResponse {
   crumb?: string;
 }
 
-export async function hideUnhide(action: "hide" | "unhide", fan_id: string, item_type: "track" | "album", item_id: number, crumb: string | null = null): Promise<boolean> {
+export async function hideUnhide(action: "hide" | "unhide", fan_id: number, item_type: "track" | "album", item_id: number, crumb: string | null = null): Promise<boolean> {
   const makeRequest = async (crumbValue: string | null) => {
     const bodyData: HideUnhideBody = {
       fan_id,
@@ -160,4 +160,127 @@ export async function hideUnhide(action: "hide" | "unhide", fan_id: string, item
   }
 
   return data.ok === true;
+}
+
+interface GetHiddenItemsBody {
+  fan_id: number;
+  older_than_token: string;
+  dupe_gift_ids: any[];
+  count: number;
+}
+
+interface HiddenItemArt {
+  url: string;
+  thumb_url: string;
+  art_id: number;
+}
+
+interface HiddenItemUrlHints {
+  subdomain: string;
+  custom_domain: string | null;
+  custom_domain_verified: boolean | null;
+  slug: string;
+  item_type: string;
+}
+
+interface HiddenItem {
+  fan_id: number;
+  item_id: number;
+  item_type: string;
+  band_id: number;
+  added: string;
+  updated: string;
+  purchased: string;
+  sale_item_id: number;
+  sale_item_type: string;
+  tralbum_id: number;
+  tralbum_type: string;
+  featured_track: number;
+  why: string | null;
+  hidden: number;
+  index: number | null;
+  also_collected_count: number | null;
+  url_hints: HiddenItemUrlHints;
+  item_title: string;
+  item_url: string;
+  item_art_id: number;
+  item_art_url: string;
+  item_art: HiddenItemArt;
+  band_name: string;
+  band_url: string;
+  genre_id: number;
+  featured_track_title: string;
+  featured_track_number: number | null;
+  featured_track_is_custom: boolean;
+  featured_track_duration: number;
+  featured_track_url: string | null;
+  featured_track_encodings_id: number;
+  package_details: any | null;
+  num_streamable_tracks: number;
+  is_purchasable: boolean;
+  is_private: boolean;
+  is_preorder: boolean;
+  is_giftable: boolean;
+  is_subscriber_only: boolean;
+  is_subscription_item: boolean;
+  service_name: string | null;
+  service_url_fragment: string | null;
+  gift_sender_name: string | null;
+  gift_sender_note: string | null;
+  gift_id: string | null;
+  gift_recipient_name: string | null;
+  album_id: number | null;
+  album_title: string | null;
+  listen_in_app_url: string;
+  band_location: string | null;
+  band_image_id: number | null;
+  release_count: number | null;
+  message_count: number | null;
+  is_set_price: boolean;
+  price: number;
+  has_digital_download: boolean | null;
+  merch_ids: any[] | null;
+  merch_sold_out: boolean | null;
+  currency: string;
+  label: string | null;
+  label_id: number | null;
+  require_email: boolean | null;
+  item_art_ids: any[] | null;
+}
+
+export interface GetHiddenItemsResponse {
+  items: HiddenItem[];
+  redownload_urls: Record<string, string>;
+  item_lookup: Record<string, any>;
+  last_token: string;
+  similar_gift_ids: Record<string, any>;
+  last_token_is_gift: boolean;
+}
+
+export async function getHiddenItems(fan_id: number, older_than_token: string, count: number = 20): Promise<GetHiddenItemsResponse> {
+  const bodyData: GetHiddenItemsBody = {
+    fan_id,
+    older_than_token,
+    dupe_gift_ids: [],
+    count
+  };
+
+  const response = await fetch("/api/fancollection/1/hidden_items", {
+    method: "POST",
+    headers: {
+      accept: "application/json, text/javascript, */*; q=0.01",
+      "content-type": "application/json",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin",
+      "x-requested-with": "XMLHttpRequest"
+    },
+    referrer: "https://halfpastvibe.bandcamp.com/album/vielen-dank",
+    referrerPolicy: "no-referrer-when-downgrade",
+    body: JSON.stringify(bodyData),
+    mode: "cors"
+  });
+
+  const data = await response.json();
+  return data;
 }

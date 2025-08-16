@@ -1,6 +1,6 @@
 import Logger from "../logger";
 import { createButton } from "../components/buttons.js";
-import { showSuccessMessage, showErrorMessage, updateStatusDisplay, hideStatusDisplay } from "../components/notifications.js";
+import { showSuccessMessage, showErrorMessage, showPersistentNotification, updatePersistentNotification, removePersistentNotification } from "../components/notifications";
 
 const log = new Logger();
 
@@ -20,8 +20,8 @@ export async function initHideUnhide(): Promise<void> {
       if (msg.unhideComplete) {
         log.info(`Unhide completed: ${JSON.stringify(msg.unhideComplete)}`);
         showSuccessMessage(`✅ Unhide completed: ${msg.unhideComplete.message}`, 8000);
-        // Hide status display when complete
-        hideStatusDisplay(UNHIDE_STATUS_ID);
+        // Remove status notification when complete
+        removePersistentNotification(UNHIDE_STATUS_ID);
       }
       if (msg.unhideError) {
         log.error(`Unhide error: ${JSON.stringify(msg.unhideError)}`);
@@ -64,42 +64,37 @@ export async function initHideUnhide(): Promise<void> {
   collectionItemsDiv.insertBefore(hideButton, collectionItemsDiv.firstChild);
 }
 
-const UNHIDE_STATUS_ID = 'bes-unhide-status';
+const UNHIDE_STATUS_ID = 'bes-unhide-status-notification';
 
 function updateUnhideButtonState(state: any): void {
   const unhideButton = document.getElementById("bes-unhide-button") as HTMLButtonElement;
   
   if (!unhideButton) return;
 
-  if (state.isProcessing) {
-    unhideButton.disabled = true;
-    unhideButton.innerText = `Unhiding... (${state.processedCount}/${state.totalCount})`;
-    
-    const remaining = state.totalCount - state.processedCount;
-    const statusContent = `
-      <div style="font-weight: bold; margin-bottom: 8px;">🔄 Unhiding your collection items...</div>
-      <div>Progress: ${state.processedCount} completed, ${remaining} remaining</div>
-      <div style="color: #d32f2f; font-weight: bold; margin-top: 8px;">⚠️ Do not refresh or navigate away from this page</div>
-      ${state.errors.length > 0 ? `<div style="color: #d32f2f; margin-top: 4px;">${state.errors.length} errors occurred</div>` : ''}
-    `;
-    
-    // Insert status display after the button if it doesn't exist
-    if (!document.getElementById(UNHIDE_STATUS_ID)) {
-      const statusDiv = document.createElement('div');
-      statusDiv.id = UNHIDE_STATUS_ID;
-      statusDiv.className = 'bes-status-display';
-      unhideButton.parentElement?.insertBefore(statusDiv, unhideButton.nextSibling);
-    }
-    
-    updateStatusDisplay({
-      id: UNHIDE_STATUS_ID,
-      content: statusContent,
-      show: true
-    });
-  } else {
+  if (!state.isProcessing) {
     unhideButton.disabled = false;
-    unhideButton.innerText = "unhide all";
-    hideStatusDisplay(UNHIDE_STATUS_ID);
+    removePersistentNotification(UNHIDE_STATUS_ID);
+        return;
   }
+  unhideButton.disabled = true;
+  
+  const remaining = state.totalCount - state.processedCount;
+  const statusContent = `
+    <div style="font-weight: bold; margin-bottom: 8px;">🔄 Unhiding your collection items...</div>
+    <div>Progress: ${state.processedCount} completed, ${remaining} remaining</div>
+    <div style="color: #d32f2f; font-weight: bold; margin-top: 8px;">⚠️ Do not refresh or navigate away from this page</div>
+    ${state.errors.length > 0 ? `<div style="color: #d32f2f; margin-top: 4px;">${state.errors.length} errors occurred</div>` : ''}
+  `;
+  
+  if (document.getElementById(UNHIDE_STATUS_ID)) {
+    updatePersistentNotification(UNHIDE_STATUS_ID, statusContent);
+    return;
+  } 
+
+  showPersistentNotification({
+    id: UNHIDE_STATUS_ID,
+    message: statusContent,
+    type: 'status'
+  });
 }
 

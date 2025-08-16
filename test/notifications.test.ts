@@ -78,7 +78,7 @@ describe('notifications', () => {
     })
 
     it('should not add click handler for persistent notifications', () => {
-      showNotification({ message: 'Test message', type: 'status', delay: 0 })
+      showNotification({ message: 'Test message', type: 'status', delay: null })
 
       const notification = document.querySelector('.bes-notification') as HTMLElement
       expect(notification).toBeTruthy()

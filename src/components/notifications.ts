@@ -3,7 +3,7 @@ export type NotificationType = 'success' | 'error' | 'info' | 'warning' | 'statu
 export interface NotificationOptions {
   message: string;
   type: NotificationType;
-  delay?: number;
+  delay?: number | null;
 }
 
 export interface StatusDisplayOptions {
@@ -32,25 +32,25 @@ export function showNotification(options: NotificationOptions): void {
   
   const notification = document.createElement("div");
   notification.className = `bes-notification bes-${type}`;
-  notification.innerHTML = message; // Use innerHTML to support HTML content
+  notification.innerHTML = message;
   
   container.appendChild(notification);
   
-  // Add click-to-dismiss and auto-remove for non-persistent notifications
-  if (delay > 0) {
-    notification.style.cursor = 'pointer';
-    notification.title = 'Click to dismiss';
-    notification.addEventListener('click', () => {
-      notification.remove();
-    });
-    
-    setTimeout(() => {
-      // Check if notification still exists (might have been clicked)
-      if (notification.parentElement) {
-        notification.remove();
-      }
-    }, delay);
+  if (delay === null) {
+    return;
   }
+
+  notification.style.cursor = 'pointer';
+  notification.title = 'Click to dismiss';
+  notification.addEventListener('click', () => {
+    notification.remove();
+  });
+  
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, delay);
 }
 
 export function showSuccessMessage(message: string, delay?: number): void {
@@ -69,7 +69,7 @@ export function showWarningMessage(message: string, delay?: number): void {
   showNotification({ message, type: 'warning', delay });
 }
 
-export function showStatusMessage(message: string, delay?: number): void {
+export function showStatusMessage(message: string, delay?: number | null): void {
   showNotification({ message, type: 'status', delay });
 }
 
@@ -84,13 +84,14 @@ export function showPersistentNotification(options: PersistentNotificationOption
   
   removePersistentNotification(id);
   
-  showNotification({ message, type, delay: 0 });
+  const container = getOrCreateNotificationContainer();
   
-  const notifications = document.querySelectorAll('.bes-notification');
-  const lastNotification = notifications[notifications.length - 1] as HTMLElement;
-  if (lastNotification) {
-    lastNotification.id = id;
-  }
+  const notification = document.createElement("div");
+  notification.id = id;
+  notification.className = `bes-notification bes-${type}`;
+  notification.innerHTML = message;
+  
+  container.appendChild(notification);
 }
 
 export function updatePersistentNotification(id: string, message: string): void {

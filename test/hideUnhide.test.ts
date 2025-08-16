@@ -109,11 +109,16 @@ describe('HideUnhide', () => {
         }
       })
       
-      const statusDiv = document.getElementById('bes-unhide-status') as HTMLDivElement
-      expect(statusDiv).toBeTruthy()
-      expect(statusDiv.style.display).toBe('block')
-      expect(statusDiv.innerHTML).toContain('5 completed, 5 remaining')
-      expect(statusDiv.innerHTML).toContain('Do not refresh or navigate away')
+      const statusNotification = document.getElementById('bes-unhide-status-notification') as HTMLDivElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLButtonElement
+      
+      expect(statusNotification).toBeTruthy()
+      expect(statusNotification.classList.contains('bes-notification')).toBe(true)
+      expect(statusNotification.classList.contains('bes-status')).toBe(true)
+      expect(statusNotification.innerHTML).toContain('5 completed, 5 remaining')
+      expect(statusNotification.innerHTML).toContain('Do not refresh or navigate away')
+      expect(unhideButton.disabled).toBe(true)
+      expect(unhideButton.textContent).toBe('unhide all') // Button text doesn't change
     })
 
     it('should hide status display when processing is complete', async () => {
@@ -127,6 +132,7 @@ describe('HideUnhide', () => {
       await initHideUnhide()
       
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLButtonElement
       
       // First show processing state
       messageHandler({
@@ -138,8 +144,24 @@ describe('HideUnhide', () => {
         }
       })
       
-      const statusDiv = document.getElementById('bes-unhide-status') as HTMLDivElement
-      expect(statusDiv.style.display).toBe('block')
+      const statusNotification = document.getElementById('bes-unhide-status-notification') as HTMLDivElement
+      expect(statusNotification).toBeTruthy()
+      expect(statusNotification.classList.contains('bes-status')).toBe(true)
+      expect(unhideButton.disabled).toBe(true)
+      
+      // Then show not processing state
+      messageHandler({
+        unhideState: {
+          isProcessing: false,
+          processedCount: 10,
+          totalCount: 10,
+          errors: []
+        }
+      })
+      
+      expect(document.getElementById('bes-unhide-status-notification')).toBeNull()
+      expect(unhideButton.disabled).toBe(false)
+      expect(unhideButton.textContent).toBe('unhide all') // Button text stays the same
       
       // Then show completion
       messageHandler({
@@ -148,7 +170,7 @@ describe('HideUnhide', () => {
         }
       })
       
-      expect(statusDiv.style.display).toBe('none')
+      expect(document.getElementById('bes-unhide-status-notification')).toBeNull()
     })
 
     it('should show error count in status display', async () => {
@@ -171,8 +193,8 @@ describe('HideUnhide', () => {
         }
       })
       
-      const statusDiv = document.getElementById('bes-unhide-status') as HTMLDivElement
-      expect(statusDiv.innerHTML).toContain('2 errors occurred')
+      const statusNotification = document.getElementById('bes-unhide-status-notification') as HTMLDivElement
+      expect(statusNotification.innerHTML).toContain('2 errors occurred')
     })
 
     it('should send unhide message with crumb when unhide button is clicked', async () => {

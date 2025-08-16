@@ -59,11 +59,13 @@ describe('HideUnhide', () => {
       const buttons = collectionItemsDiv?.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
       expect(buttons).toHaveLength(2)
       
-      const hideButton = Array.from(buttons || []).find(btn => btn.textContent === 'hide')
-      const unhideButton = Array.from(buttons || []).find(btn => btn.textContent === 'unhide all')
+      const hideButton = document.getElementById('bes-hide-button')
+      const unhideButton = document.getElementById('bes-unhide-button')
       
       expect(hideButton).toBeTruthy()
+      expect(hideButton?.textContent).toBe('hide')
       expect(unhideButton).toBeTruthy()
+      expect(unhideButton?.textContent).toBe('unhide all')
     })
 
     it('should insert buttons as first children', async () => {
@@ -73,7 +75,9 @@ describe('HideUnhide', () => {
       const firstChild = collectionItemsDiv?.firstChild as HTMLElement
       const secondChild = firstChild?.nextSibling as HTMLElement
       
+      expect(firstChild.id).toBe('bes-hide-button')
       expect(firstChild.textContent).toBe('hide')
+      expect(secondChild.id).toBe('bes-unhide-button')
       expect(secondChild.textContent).toBe('unhide all')
     })
 
@@ -82,6 +86,93 @@ describe('HideUnhide', () => {
       
       expect(chrome.runtime.connect).toHaveBeenCalledWith(null, { name: "bandcampenhancementsuite" })
       expect(mockPort.onMessage.addListener).toHaveBeenCalled()
+    })
+
+    it('should create status display when unhide state is processing', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      }
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `)
+      
+      await initHideUnhide()
+      
+      // Simulate unhide state message
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
+      messageHandler({
+        unhideState: {
+          isProcessing: true,
+          processedCount: 5,
+          totalCount: 10,
+          errors: []
+        }
+      })
+      
+      const statusDiv = document.getElementById('bes-unhide-status') as HTMLDivElement
+      expect(statusDiv).toBeTruthy()
+      expect(statusDiv.style.display).toBe('block')
+      expect(statusDiv.innerHTML).toContain('5 completed, 5 remaining')
+      expect(statusDiv.innerHTML).toContain('Do not refresh or navigate away')
+    })
+
+    it('should hide status display when processing is complete', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      }
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `)
+      
+      await initHideUnhide()
+      
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
+      
+      // First show processing state
+      messageHandler({
+        unhideState: {
+          isProcessing: true,
+          processedCount: 5,
+          totalCount: 10,
+          errors: []
+        }
+      })
+      
+      const statusDiv = document.getElementById('bes-unhide-status') as HTMLDivElement
+      expect(statusDiv.style.display).toBe('block')
+      
+      // Then show completion
+      messageHandler({
+        unhideComplete: {
+          message: 'All items unhidden'
+        }
+      })
+      
+      expect(statusDiv.style.display).toBe('none')
+    })
+
+    it('should show error count in status display', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      }
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `)
+      
+      await initHideUnhide()
+      
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
+      messageHandler({
+        unhideState: {
+          isProcessing: true,
+          processedCount: 3,
+          totalCount: 10,
+          errors: ['Error 1', 'Error 2']
+        }
+      })
+      
+      const statusDiv = document.getElementById('bes-unhide-status') as HTMLDivElement
+      expect(statusDiv.innerHTML).toContain('2 errors occurred')
     })
 
     it('should send unhide message with crumb when unhide button is clicked', async () => {
@@ -95,8 +186,7 @@ describe('HideUnhide', () => {
       
       await initHideUnhide()
       
-      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
-      const unhideButton = Array.from(buttons).find(btn => btn.textContent === 'unhide all') as HTMLElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement
       
       expect(unhideButton).toBeTruthy()
       unhideButton.click()
@@ -122,8 +212,7 @@ describe('HideUnhide', () => {
       
       await initHideUnhide()
       
-      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
-      const unhideButton = Array.from(buttons).find(btn => btn.textContent === 'unhide all') as HTMLElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement
       
       unhideButton.click()
       
@@ -141,8 +230,7 @@ describe('HideUnhide', () => {
       
       await initHideUnhide()
       
-      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
-      const unhideButton = Array.from(buttons).find(btn => btn.textContent === 'unhide all') as HTMLElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement
       
       // This should throw an error when trying to access the missing element
       expect(() => unhideButton.click()).toThrow()
@@ -158,8 +246,7 @@ describe('HideUnhide', () => {
       
       await initHideUnhide()
       
-      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
-      const unhideButton = Array.from(buttons).find(btn => btn.textContent === 'unhide all') as HTMLElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement
       
       // This should throw an error when trying to parse invalid JSON
       expect(() => unhideButton.click()).toThrow()
@@ -179,8 +266,7 @@ describe('HideUnhide', () => {
       
       await initHideUnhide()
       
-      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
-      const unhideButton = Array.from(buttons).find(btn => btn.textContent === 'unhide all') as HTMLElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement
       
       unhideButton.click()
       

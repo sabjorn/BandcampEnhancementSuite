@@ -175,8 +175,15 @@ describe('unhide_backend', () => {
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
       expect(getHiddenItems).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      
+      // Wait for queue processing to complete
+      await new Promise(resolve => setTimeout(resolve, 0))
+      
+      // Should send completion message after processing
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        unhideComplete: { message: 'Successfully unhidden 1 items' }
+      })
     })
-
 
     it('should handle getUnhideState message', async () => {
       const message = { getUnhideState: true }

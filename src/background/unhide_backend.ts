@@ -90,6 +90,13 @@ class RateLimitedQueue {
     this.isProcessing = false;
     log.info(`Finished processing unhide queue. Processed: ${this.processedCount}, Errors: ${this.errors.length}`);
     this.broadcastState();
+    
+    // Send completion message
+    const completionMessage = this.errors.length > 0 
+      ? `${this.processedCount} items unhidden with ${this.errors.length} errors`
+      : `Successfully unhidden ${this.processedCount} items`;
+    
+    this.port?.postMessage({ unhideComplete: { message: completionMessage } });
   }
 
   private broadcastState(): void {

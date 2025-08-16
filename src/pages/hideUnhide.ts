@@ -45,7 +45,9 @@ export async function initHideUnhide(): Promise<void> {
     innerText: "unhide all",
     buttonClicked: () => {
       log.info("unhide all button clicked");
-      startUnhideProcess(port);
+      const crumbs = JSON.parse(document.getElementById('js-crumbs-data').getAttribute('data-crumbs'));
+      const crumb = crumbs['api/collectionowner/1/hide_unhide_item'];
+      port.postMessage({ unhide: { crumb } });
     }
   });
 
@@ -56,14 +58,6 @@ export async function initHideUnhide(): Promise<void> {
 
   collectionItemsDiv.insertBefore(unhideButton, collectionItemsDiv.firstChild);
   collectionItemsDiv.insertBefore(hideButton, collectionItemsDiv.firstChild);
-}
-
-function startUnhideProcess(port: chrome.runtime.Port): void {
-  log.info("Starting unhide all process");
-  const crumbs = JSON.parse(document.getElementById('js-crumbs-data').getAttribute('data-crumbs'));
-  const crumb = crumbs['api/collectionowner/1/hide_unhide_item']
-  
-  port.postMessage({ unhide: { crumb } });
 }
 
 function updateUnhideButtonState(state: any): void {

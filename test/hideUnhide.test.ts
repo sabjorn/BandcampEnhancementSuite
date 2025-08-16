@@ -107,8 +107,8 @@ describe('HideUnhide', () => {
     })
   })
 
-  describe('startUnhideProcess', () => {
-    it('should extract crumb from page data and send unhide message', async () => {
+  describe('unhide button with crumb extraction', () => {
+    it('should extract crumb from page data and send unhide message when button clicked', async () => {
       const crumbsData = {
         'api/collectionowner/1/hide_unhide_item': 'extracted-crumb-123',
         'other/endpoint': 'other-crumb'
@@ -132,7 +132,7 @@ describe('HideUnhide', () => {
       })
     })
 
-    it('should handle missing crumbs data element gracefully', async () => {
+    it('should throw error when crumbs data element is missing', async () => {
       createDomNodes(`
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
@@ -148,7 +148,7 @@ describe('HideUnhide', () => {
       expect(() => unhideButton.click()).toThrow()
     })
 
-    it('should handle invalid JSON in crumbs data', async () => {
+    it('should throw error when crumbs data contains invalid JSON', async () => {
       createDomNodes(`
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
@@ -165,7 +165,7 @@ describe('HideUnhide', () => {
       expect(() => unhideButton.click()).toThrow()
     })
 
-    it('should handle missing specific crumb in data', async () => {
+    it('should send undefined crumb when specific endpoint is missing', async () => {
       const crumbsData = {
         'other/endpoint': 'other-crumb'
         // Missing 'api/collectionowner/1/hide_unhide_item'

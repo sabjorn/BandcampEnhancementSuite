@@ -305,3 +305,23 @@ a.bes-hideUnhide {
     margin: 10px;
     margin-bottom: 20px;
 }
+
+/* Notification styles */
+.bes-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 4px;
+    z-index: 10000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.bes-notification.bes-success {
+    background: #4CAF50;
+}
+
+.bes-notification.bes-error {
+    background: #f44336;
+}

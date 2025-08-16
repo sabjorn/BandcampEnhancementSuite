@@ -1,5 +1,6 @@
 import Logger from "../logger";
 import { createButton } from "../components/buttons.js";
+import { showSuccessMessage, showErrorMessage } from "../components/notifications.js";
 
 const log = new Logger();
 
@@ -18,11 +19,11 @@ export async function initHideUnhide(): Promise<void> {
       }
       if (msg.unhideComplete) {
         log.info(`Unhide completed: ${JSON.stringify(msg.unhideComplete)}`);
-        showCompletionMessage(msg.unhideComplete.message);
+        showSuccessMessage(`Unhide completed: ${msg.unhideComplete.message}`, 5000);
       }
       if (msg.unhideError) {
         log.error(`Unhide error: ${JSON.stringify(msg.unhideError)}`);
-        showErrorMessage(msg.unhideError.message);
+        showErrorMessage(`Unhide error: ${msg.unhideError.message}`);
       }
     });
   } catch (e: any) {
@@ -78,54 +79,3 @@ function updateUnhideButtonState(state: any): void {
   }
 }
 
-function showCompletionMessage(message: string): void {
-  log.info(`Unhide process completed: ${message}`);
-  
-  // Create a temporary notification
-  const notification = document.createElement("div");
-  notification.className = "bes-notification bes-success";
-  notification.textContent = `Unhide completed: ${message}`;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #4CAF50;
-    color: white;
-    padding: 12px 20px;
-    border-radius: 4px;
-    z-index: 10000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  `;
-  
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.remove();
-  }, 5000);
-}
-
-function showErrorMessage(message: string): void {
-  log.error(`Unhide process error: ${message}`);
-  
-  // Create a temporary error notification
-  const notification = document.createElement("div");
-  notification.className = "bes-notification bes-error";
-  notification.textContent = `Unhide error: ${message}`;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #f44336;
-    color: white;
-    padding: 12px 20px;
-    border-radius: 4px;
-    z-index: 10000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  `;
-  
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.remove();
-  }, 8000);
-}

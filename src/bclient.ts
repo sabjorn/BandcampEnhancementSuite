@@ -44,3 +44,40 @@ export function getTralbumDetails(item_id: string | number, item_type: string = 
 
   return fetch(`/api/mobile/25/tralbum_details`, requestOptions);
 }
+
+export interface TrackItem {
+  item_type: string;
+  item_id: number;
+  band_id: number;
+  purchased: string;
+}
+
+export interface CollectionSummary {
+  fan_id: number;
+  username: string;
+  url: string;
+  tralbum_lookup: Record<string, TrackItem>;
+  follows: {
+    following: Record<string, boolean>;
+  };
+}
+
+export async function getCollectionSummary(): Promise<CollectionSummary> {
+  const response = await fetch(`/api/fan/2/collection_summary`,  {
+    method: "GET",
+    headers: {
+      accept: "application/json, text/javascript, */*; q=0.01",
+      "content-type": "application/x-www-form-urlencoded",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin",
+      "x-requested-with": "XMLHttpRequest"
+    },
+    referrer: "https://halfpastvibe.bandcamp.com/album/vielen-dank",
+    referrerPolicy: "no-referrer-when-downgrade",
+    mode: "cors"
+  });
+  
+  const data = await response.json();
+  return data.collection_summary;
+}

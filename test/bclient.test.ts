@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { addAlbumToCart, getTralbumDetails } from '../src/bclient'
+import { addAlbumToCart, getTralbumDetails, getCollectionSummary } from '../src/bclient'
 
 describe('bclient', () => {
   afterEach(() => {
@@ -116,6 +116,91 @@ describe('bclient', () => {
           })
         })
       )
+    })
+  })
+
+  describe('getCollectionSummary', () => {
+    let fetchSpy: any
+
+    beforeEach(() => {
+      const mockResponseData = {
+        fan_id: 896389,
+        collection_summary: {
+          fan_id: 896389,
+          username: "dataist",
+          url: "https://bandcamp.com/dataist",
+          tralbum_lookup: {
+            "t3872546743": {
+              item_type: "t",
+              item_id: 3872546743,
+              band_id: 1212584164,
+              purchased: "07 Aug 2025 03:50:49 GMT"
+            }
+          },
+          follows: {
+            following: {
+              "1430990": true
+            }
+          }
+        }
+      }
+      
+      fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify(mockResponseData), { status: 200 })
+      )
+    })
+
+    it('should make GET request to collection_summary endpoint', async () => {
+      await getCollectionSummary()
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/api/fan/2/collection_summary',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({
+            'accept': 'application/json, text/javascript, */*; q=0.01',
+            'content-type': 'application/x-www-form-urlencoded',
+            'x-requested-with': 'XMLHttpRequest',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-dest': 'empty'
+          }),
+          referrer: 'https://halfpastvibe.bandcamp.com/album/vielen-dank',
+          referrerPolicy: 'no-referrer-when-downgrade',
+          mode: 'cors'
+        })
+      )
+    })
+
+    it('should return collection_summary object from response', async () => {
+      const result = await getCollectionSummary()
+      
+      expect(result).toEqual({
+        fan_id: 896389,
+        username: "dataist",
+        url: "https://bandcamp.com/dataist",
+        tralbum_lookup: {
+          "t3872546743": {
+            item_type: "t",
+            item_id: 3872546743,
+            band_id: 1212584164,
+            purchased: "07 Aug 2025 03:50:49 GMT"
+          }
+        },
+        follows: {
+          following: {
+            "1430990": true
+          }
+        }
+      })
+    })
+
+    it('should handle response data correctly', async () => {
+      const result = await getCollectionSummary()
+      expect(result.fan_id).toBe(896389)
+      expect(result.username).toBe("dataist")
+      expect(result.tralbum_lookup).toBeDefined()
+      expect(result.follows).toBeDefined()
     })
   })
 })

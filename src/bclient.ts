@@ -1,9 +1,30 @@
+interface AddAlbumToCartBody {
+  req: string;
+  item_type: string;
+  item_id: string | number;
+  unit_price: string | number;
+  quantity: number;
+  sync_num: number;
+}
+
 export function addAlbumToCart(
   item_id: string | number,
   unit_price: string | number,
   item_type: string = "a",
 ): Promise<Response> {
+  const bodyData: AddAlbumToCartBody = {
+    req: "add",
+    item_type,
+    item_id,
+    unit_price,
+    quantity: 1,
+    sync_num: 1
+  };
+
+  const body = new URLSearchParams(bodyData as any).toString();
+
   return fetch(`/cart/cb`, {
+    method: "POST",
     headers: {
       accept: "application/json, text/javascript, */*; q=0.01",
       "content-type": "application/x-www-form-urlencoded",
@@ -14,20 +35,25 @@ export function addAlbumToCart(
     },
     referrer: "https://halfpastvibe.bandcamp.com/album/vielen-dank",
     referrerPolicy: "no-referrer-when-downgrade",
-    body: `req=add&item_type=${item_type}&item_id=${item_id}&unit_price=${unit_price}&quantity=1&sync_num=1`,
-    method: "POST",
+    body: body,
     mode: "cors"
   });
 }
 
+interface TralbumDetailsBody {
+  tralbum_type: string;
+  band_id: number;
+  tralbum_id: string | number;
+}
+
 export function getTralbumDetails(item_id: string | number, item_type: string = "a"): Promise<Response> {
-  const raw: string = JSON.stringify({
+  const bodyData: TralbumDetailsBody = {
     tralbum_type: item_type,
     band_id: 12345,
     tralbum_id: item_id
-  });
+  };
 
-  const requestOptions: RequestInit = {
+  return fetch(`/api/mobile/25/tralbum_details`, {
     method: "POST",
     headers: {
       accept: "application/json",
@@ -39,13 +65,11 @@ export function getTralbumDetails(item_id: string | number, item_type: string = 
       "accept-encoding": "gzip: deflate: br",
       "sec-fetch-mode": "cors"
     },
-    body: raw
-  };
-
-  return fetch(`/api/mobile/25/tralbum_details`, requestOptions);
+    body: JSON.stringify(bodyData)
+  });
 }
 
-export interface TrackItem {
+interface TrackItem {
   item_type: string;
   item_id: number;
   band_id: number;
@@ -82,16 +106,31 @@ export async function getCollectionSummary(): Promise<CollectionSummary> {
   return data.collection_summary;
 }
 
+interface HideUnhideBody {
+  fan_id: string;
+  item_type: "track" | "album";
+  item_id: number;
+  action: "hide" | "unhide";
+  crumb: string | null;
+  collection_index: null;
+}
+
+interface HideUnhideResponse {
+  ok?: boolean;
+  error?: string;
+  crumb?: string;
+}
+
 export async function hideUnhide(action: "hide" | "unhide", fan_id: string, item_type: "track" | "album", item_id: number, crumb: string | null = null): Promise<boolean> {
   const makeRequest = async (crumbValue: string | null) => {
-    const body = JSON.stringify({
+    const bodyData: HideUnhideBody = {
       fan_id,
       item_type,
       item_id,
       action,
       crumb: crumbValue,
       collection_index: null,
-    });
+    };
 
     const response = await fetch("/api/collectionowner/1/hide_unhide_item", {
       method: "POST",
@@ -105,7 +144,7 @@ export async function hideUnhide(action: "hide" | "unhide", fan_id: string, item
       },
       referrer: "https://halfpastvibe.bandcamp.com/album/vielen-dank",
       referrerPolicy: "no-referrer-when-downgrade",
-      body: body,
+      body: JSON.stringify(bodyData),
       mode: "cors"
     });
 
@@ -113,7 +152,7 @@ export async function hideUnhide(action: "hide" | "unhide", fan_id: string, item
   };
 
   let response = await makeRequest(crumb);
-  let data = await response.json();
+  let data: HideUnhideResponse = await response.json();
 
   if (data.error === 'invalid_crumb' && data.crumb) {
     response = await makeRequest(data.crumb);

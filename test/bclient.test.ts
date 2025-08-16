@@ -50,6 +50,28 @@ describe('bclient', () => {
       expect(response).toBeInstanceOf(Response)
       expect(response.status).toBe(200)
     })
+
+    it('should use relative URL when baseUrl is null', async () => {
+      await addAlbumToCart('123', '10.00', 'a', null)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/cart/cb',
+        expect.objectContaining({
+          method: 'POST'
+        })
+      )
+    })
+
+    it('should use absolute URL when baseUrl is provided', async () => {
+      await addAlbumToCart('123', '10.00', 'a', 'https://bandcamp.com')
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://bandcamp.com/cart/cb',
+        expect.objectContaining({
+          method: 'POST'
+        })
+      )
+    })
   })
 
   describe('getTralbumDetails', () => {
@@ -114,6 +136,28 @@ describe('bclient', () => {
             band_id: 12345,
             tralbum_id: 999
           })
+        })
+      )
+    })
+
+    it('should use relative URL when baseUrl is null', async () => {
+      await getTralbumDetails('123', 'a', null)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/api/mobile/25/tralbum_details',
+        expect.objectContaining({
+          method: 'POST'
+        })
+      )
+    })
+
+    it('should use absolute URL when baseUrl is provided', async () => {
+      await getTralbumDetails('123', 'a', 'https://bandcamp.com')
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://bandcamp.com/api/mobile/25/tralbum_details',
+        expect.objectContaining({
+          method: 'POST'
         })
       )
     })
@@ -201,6 +245,28 @@ describe('bclient', () => {
       expect(result.username).toBe("dataist")
       expect(result.tralbum_lookup).toBeDefined()
       expect(result.follows).toBeDefined()
+    })
+
+    it('should use relative URL when baseUrl is null', async () => {
+      await getCollectionSummary(null)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/api/fan/2/collection_summary',
+        expect.objectContaining({
+          method: 'GET'
+        })
+      )
+    })
+
+    it('should use absolute URL when baseUrl is provided', async () => {
+      await getCollectionSummary('https://bandcamp.com')
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://bandcamp.com/api/fan/2/collection_summary',
+        expect.objectContaining({
+          method: 'GET'
+        })
+      )
     })
   })
 
@@ -341,6 +407,36 @@ describe('bclient', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(1)
       expect(result).toBe(false)
+    })
+
+    it('should use relative URL when baseUrl is null', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
+
+      await hideUnhide('hide', 896389, 'track', 123456, 'crumb', null)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/api/collectionowner/1/hide_unhide_item',
+        expect.objectContaining({
+          method: 'POST'
+        })
+      )
+    })
+
+    it('should use absolute URL when baseUrl is provided', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      )
+
+      await hideUnhide('hide', 896389, 'track', 123456, 'crumb', 'https://bandcamp.com')
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://bandcamp.com/api/collectionowner/1/hide_unhide_item',
+        expect.objectContaining({
+          method: 'POST'
+        })
+      )
     })
   })
 
@@ -522,6 +618,54 @@ describe('bclient', () => {
       expect(result.items[0].item_title).toBe("Stay On Track")
       expect(result.last_token).toBe("1751674430:2101898392:t::")
       expect(result.last_token_is_gift).toBe(false)
+    })
+
+    it('should use relative URL when baseUrl is null', async () => {
+      const mockResponse = {
+        items: [],
+        redownload_urls: {},
+        item_lookup: {},
+        last_token: "token",
+        similar_gift_ids: {},
+        last_token_is_gift: false
+      }
+
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify(mockResponse), { status: 200 })
+      )
+
+      await getHiddenItems(896389, "token", 20, null)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/api/fancollection/1/hidden_items',
+        expect.objectContaining({
+          method: 'POST'
+        })
+      )
+    })
+
+    it('should use absolute URL when baseUrl is provided', async () => {
+      const mockResponse = {
+        items: [],
+        redownload_urls: {},
+        item_lookup: {},
+        last_token: "token",
+        similar_gift_ids: {},
+        last_token_is_gift: false
+      }
+
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify(mockResponse), { status: 200 })
+      )
+
+      await getHiddenItems(896389, "token", 20, 'https://bandcamp.com')
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://bandcamp.com/api/fancollection/1/hidden_items',
+        expect.objectContaining({
+          method: 'POST'
+        })
+      )
     })
 
   })

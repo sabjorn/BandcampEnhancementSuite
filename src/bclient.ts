@@ -11,6 +11,7 @@ export function addAlbumToCart(
   item_id: string | number,
   unit_price: string | number,
   item_type: string = "a",
+  baseUrl: string | null = null
 ): Promise<Response> {
   const bodyData: AddAlbumToCartBody = {
     req: "add",
@@ -23,7 +24,9 @@ export function addAlbumToCart(
 
   const body = new URLSearchParams(bodyData as any).toString();
 
-  return fetch(`/cart/cb`, {
+  const url = baseUrl ? `${baseUrl}/cart/cb` : `/cart/cb`;
+
+  return fetch(url, {
     method: "POST",
     headers: {
       accept: "application/json, text/javascript, */*; q=0.01",
@@ -46,14 +49,16 @@ interface TralbumDetailsBody {
   tralbum_id: string | number;
 }
 
-export function getTralbumDetails(item_id: string | number, item_type: string = "a"): Promise<Response> {
+export function getTralbumDetails(item_id: string | number, item_type: string = "a", baseUrl: string | null = null): Promise<Response> {
   const bodyData: TralbumDetailsBody = {
     tralbum_type: item_type,
     band_id: 12345,
     tralbum_id: item_id
   };
 
-  return fetch(`/api/mobile/25/tralbum_details`, {
+  const url = baseUrl ? `${baseUrl}/api/mobile/25/tralbum_details` : `/api/mobile/25/tralbum_details`;
+
+  return fetch(url, {
     method: "POST",
     headers: {
       accept: "application/json",
@@ -86,8 +91,10 @@ export interface CollectionSummary {
   };
 }
 
-export async function getCollectionSummary(): Promise<CollectionSummary> {
-  const response = await fetch(`/api/fan/2/collection_summary`,  {
+export async function getCollectionSummary(baseUrl: string | null = null): Promise<CollectionSummary> {
+  const url = baseUrl ? `${baseUrl}/api/fan/2/collection_summary` : `/api/fan/2/collection_summary`;
+
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       accept: "application/json, text/javascript, */*; q=0.01",
@@ -121,7 +128,7 @@ interface HideUnhideResponse {
   crumb?: string;
 }
 
-export async function hideUnhide(action: "hide" | "unhide", fan_id: number, item_type: "track" | "album", item_id: number, crumb: string | null = null): Promise<boolean> {
+export async function hideUnhide(action: "hide" | "unhide", fan_id: number, item_type: "track" | "album", item_id: number, crumb: string | null = null, baseUrl: string | null = null): Promise<boolean> {
   const makeRequest = async (crumbValue: string | null) => {
     const bodyData: HideUnhideBody = {
       fan_id,
@@ -132,7 +139,9 @@ export async function hideUnhide(action: "hide" | "unhide", fan_id: number, item
       collection_index: null,
     };
 
-    const response = await fetch("/api/collectionowner/1/hide_unhide_item", {
+    const url = baseUrl ? `${baseUrl}/api/collectionowner/1/hide_unhide_item` : `/api/collectionowner/1/hide_unhide_item`;
+
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         accept: "application/json, text/javascript, */*; q=0.01",
@@ -183,7 +192,7 @@ interface HiddenItemUrlHints {
   item_type: string;
 }
 
-interface HiddenItem {
+export interface HiddenItem {
   fan_id: number;
   item_id: number;
   item_type: string;
@@ -257,7 +266,7 @@ export interface GetHiddenItemsResponse {
   last_token_is_gift: boolean;
 }
 
-export async function getHiddenItems(fan_id: number, older_than_token: string, count: number = 20): Promise<GetHiddenItemsResponse> {
+export async function getHiddenItems(fan_id: number, older_than_token: string, count: number = 20, baseUrl: string | null = null): Promise<GetHiddenItemsResponse> {
   const bodyData: GetHiddenItemsBody = {
     fan_id,
     older_than_token,
@@ -265,7 +274,9 @@ export async function getHiddenItems(fan_id: number, older_than_token: string, c
     count
   };
 
-  const response = await fetch("/api/fancollection/1/hidden_items", {
+  const url = baseUrl ? `${baseUrl}/api/fancollection/1/hidden_items` : `/api/fancollection/1/hidden_items`;
+
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       accept: "application/json, text/javascript, */*; q=0.01",
@@ -280,6 +291,10 @@ export async function getHiddenItems(fan_id: number, older_than_token: string, c
     body: JSON.stringify(bodyData),
     mode: "cors"
   });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
 
   const data = await response.json();
   return data;

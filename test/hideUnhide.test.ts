@@ -2,43 +2,37 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createDomNodes, cleanupTestNodes } from './utils'
 import { initHideUnhide } from '../src/pages/hideUnhide'
 
-const mockHideFunction = vi.fn()
-const mockUnhideFunction = vi.fn()
-
-vi.mock('../src/pages/hideUnhide', async () => {
-  const actual = await vi.importActual('../src/pages/hideUnhide')
-  return {
-    ...actual,
-    initHideUnhide: vi.fn().mockImplementation(async () => {
-      const { createButton } = await import('../src/components/buttons.js')
-      
-      const hideButton = createButton({
-        className: "follow-unfollow bes-hideUnhide",
-        innerText: "hide",
-        buttonClicked: mockHideFunction
-      })
-
-      const unhideButton = createButton({
-        className: "follow-unfollow bes-hideUnhide", 
-        innerText: "unhide",
-        buttonClicked: mockUnhideFunction
-      })
-
-      const collectionItemsDiv = document.querySelector("div.collection-items")
-      if (!collectionItemsDiv) {
-        return
-      }
-
-      collectionItemsDiv.insertBefore(unhideButton, collectionItemsDiv.firstChild)
-      collectionItemsDiv.insertBefore(hideButton, collectionItemsDiv.firstChild)
-    })
+// Mock chrome.runtime
+const mockPort = {
+  postMessage: vi.fn(),
+  onMessage: {
+    addListener: vi.fn()
   }
-})
+}
+
+global.chrome = {
+  runtime: {
+    connect: vi.fn().mockReturnValue(mockPort)
+  }
+} as any
+
+// Mock the logger
+vi.mock('../src/logger', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn()
+  }))
+}))
 
 describe('HideUnhide', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   afterEach(() => {
     cleanupTestNodes()
-    vi.clearAllMocks()
   })
 
   describe('initHideUnhide()', () => {
@@ -64,7 +58,7 @@ describe('HideUnhide', () => {
       expect(buttons).toHaveLength(2)
       
       const hideButton = Array.from(buttons || []).find(btn => btn.textContent === 'hide')
-      const unhideButton = Array.from(buttons || []).find(btn => btn.textContent === 'unhide')
+      const unhideButton = Array.from(buttons || []).find(btn => btn.textContent === 'unhide all')
       
       expect(hideButton).toBeTruthy()
       expect(unhideButton).toBeTruthy()
@@ -78,28 +72,28 @@ describe('HideUnhide', () => {
       const secondChild = firstChild?.nextSibling as HTMLElement
       
       expect(firstChild.textContent).toBe('hide')
-      expect(secondChild.textContent).toBe('unhide')
+      expect(secondChild.textContent).toBe('unhide all')
     })
 
-    it('should call mocked hide function when hide button is clicked', async () => {
+    it('should connect to background script with correct port name', async () => {
       await initHideUnhide()
       
-      const hideButton = document.querySelector('a.follow-unfollow.bes-hideUnhide') as HTMLElement
-      expect(hideButton.textContent).toBe('hide')
-      
-      hideButton.click()
-      expect(mockHideFunction).toHaveBeenCalledTimes(1)
+      expect(chrome.runtime.connect).toHaveBeenCalledWith(null, { name: "bandcampenhancementsuite" })
+      expect(mockPort.onMessage.addListener).toHaveBeenCalled()
     })
 
-    it('should call mocked unhide function when unhide button is clicked', async () => {
+    it('should send unhide message when unhide button is clicked', async () => {
       await initHideUnhide()
       
       const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
-      const unhideButton = Array.from(buttons).find(btn => btn.textContent === 'unhide') as HTMLElement
+      const unhideButton = Array.from(buttons).find(btn => btn.textContent === 'unhide all') as HTMLElement
       
       expect(unhideButton).toBeTruthy()
       unhideButton.click()
-      expect(mockUnhideFunction).toHaveBeenCalledTimes(1)
+      
+      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
+        unhide: { crumb: null } 
+      })
     })
   })
 

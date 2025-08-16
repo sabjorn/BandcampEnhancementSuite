@@ -173,8 +173,8 @@ describe('unhide_backend', () => {
 
       await portListenerCallback(message, portState)
 
-      expect(getCollectionSummary).toHaveBeenCalled()
-      expect(getHiddenItems).toHaveBeenCalledWith(123456, '', 20)
+      expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
+      expect(getHiddenItems).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
     })
 
 
@@ -224,8 +224,8 @@ describe('unhide_backend', () => {
 
       await portListenerCallback(message, portState)
 
-      expect(getCollectionSummary).toHaveBeenCalled()
-      expect(getHiddenItems).toHaveBeenCalledWith(123456, '', 20)
+      expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
+      expect(getHiddenItems).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
         unhideComplete: { message: "No hidden items found" } 
       })
@@ -243,7 +243,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        unhideError: { message: "Error: Error: API Error" } 
+        unhideError: { message: "Failed to get collection summary: Error: API Error" } 
       })
     })
   })

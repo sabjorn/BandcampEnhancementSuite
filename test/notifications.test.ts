@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { showNotification, showSuccessMessage, showErrorMessage, showInfoMessage, showWarningMessage, updateStatusDisplay, hideStatusDisplay, removeStatusDisplay } from '../src/components/notifications'
+import { showNotification, showSuccessMessage, showErrorMessage, showInfoMessage, showWarningMessage, showStatusMessage, updateStatusDisplay, hideStatusDisplay, removeStatusDisplay, showPersistentNotification, updatePersistentNotification, removePersistentNotification } from '../src/components/notifications'
 
 describe('notifications', () => {
   beforeEach(() => {
@@ -62,11 +62,37 @@ describe('notifications', () => {
       expect(document.querySelector('.bes-notification')).toBeNull()
     })
 
-    it('should append notification to document body', () => {
+    it('should remove notification when clicked (for non-persistent notifications)', () => {
+      showNotification({ message: 'Test message', type: 'success', delay: 5000 })
+
+      const notification = document.querySelector('.bes-notification') as HTMLElement
+      expect(notification).toBeTruthy()
+      expect(notification.style.cursor).toBe('pointer')
+      expect(notification.title).toBe('Click to dismiss')
+
+      // Click the notification
+      notification.click()
+
+      // Should be removed immediately
+      expect(document.querySelector('.bes-notification')).toBeNull()
+    })
+
+    it('should not add click handler for persistent notifications', () => {
+      showNotification({ message: 'Test message', type: 'status', delay: 0 })
+
+      const notification = document.querySelector('.bes-notification') as HTMLElement
+      expect(notification).toBeTruthy()
+      expect(notification.style.cursor).toBe('')
+      expect(notification.title).toBe('')
+    })
+
+    it('should append notification to notification container', () => {
       showNotification({ message: 'Test message', type: 'success' })
 
       const notification = document.querySelector('.bes-notification')
-      expect(notification?.parentElement).toBe(document.body)
+      const container = document.getElementById('bes-notification-container')
+      expect(notification?.parentElement).toBe(container)
+      expect(container?.parentElement).toBe(document.body)
     })
   })
 
@@ -194,6 +220,16 @@ describe('notifications', () => {
     })
   })
 
+  describe('showStatusMessage', () => {
+    it('should create status notification with correct message', () => {
+      showStatusMessage('Status message')
+
+      const notification = document.querySelector('.bes-notification')
+      expect(notification?.classList.contains('bes-status')).toBe(true)
+      expect(notification?.textContent).toBe('Status message')
+    })
+  })
+
   describe('status display functions', () => {
     const testId = 'test-status'
 
@@ -284,6 +320,90 @@ describe('notifications', () => {
 
       it('should not throw when removing non-existent status display', () => {
         expect(() => removeStatusDisplay('non-existent')).not.toThrow()
+      })
+    })
+  })
+
+  describe('persistent notification functions', () => {
+    const testId = 'test-persistent'
+
+    afterEach(() => {
+      removePersistentNotification(testId)
+    })
+
+    describe('showPersistentNotification', () => {
+      it('should create persistent notification with correct properties', () => {
+        showPersistentNotification({
+          id: testId,
+          message: '<div>Test content</div>',
+          type: 'status'
+        })
+
+        const notification = document.getElementById(testId)
+        expect(notification).toBeTruthy()
+        expect(notification?.classList.contains('bes-notification')).toBe(true)
+        expect(notification?.classList.contains('bes-status')).toBe(true)
+        expect(notification?.innerHTML).toBe('<div>Test content</div>')
+      })
+
+      it('should replace existing notification with same ID', () => {
+        // Create initial notification
+        showPersistentNotification({
+          id: testId,
+          message: 'Initial content',
+          type: 'info'
+        })
+
+        // Create another with same ID
+        showPersistentNotification({
+          id: testId,
+          message: 'Updated content',
+          type: 'status'
+        })
+
+        const notifications = document.querySelectorAll(`#${testId}`)
+        expect(notifications.length).toBe(1)
+        expect(notifications[0].innerHTML).toBe('Updated content')
+        expect(notifications[0].classList.contains('bes-status')).toBe(true)
+      })
+    })
+
+    describe('updatePersistentNotification', () => {
+      it('should update existing notification content', () => {
+        showPersistentNotification({
+          id: testId,
+          message: 'Initial content',
+          type: 'status'
+        })
+
+        updatePersistentNotification(testId, 'Updated content')
+
+        const notification = document.getElementById(testId)
+        expect(notification?.innerHTML).toBe('Updated content')
+      })
+
+      it('should not throw when updating non-existent notification', () => {
+        expect(() => updatePersistentNotification('non-existent', 'content')).not.toThrow()
+      })
+    })
+
+    describe('removePersistentNotification', () => {
+      it('should remove notification from DOM', () => {
+        showPersistentNotification({
+          id: testId,
+          message: 'Test content',
+          type: 'status'
+        })
+
+        expect(document.getElementById(testId)).toBeTruthy()
+        
+        removePersistentNotification(testId)
+        
+        expect(document.getElementById(testId)).toBeNull()
+      })
+
+      it('should not throw when removing non-existent notification', () => {
+        expect(() => removePersistentNotification('non-existent')).not.toThrow()
       })
     })
   })

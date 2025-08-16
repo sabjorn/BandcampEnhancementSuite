@@ -1,4 +1,4 @@
-export type NotificationType = 'success' | 'error' | 'info' | 'warning';
+export type NotificationType = 'success' | 'error' | 'info' | 'warning' | 'status';
 
 export interface NotificationOptions {
   message: string;
@@ -12,18 +12,45 @@ export interface StatusDisplayOptions {
   show: boolean;
 }
 
+function getOrCreateNotificationContainer(): HTMLElement {
+  let container = document.getElementById('bes-notification-container');
+  
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'bes-notification-container';
+    container.className = 'bes-notification-container';
+    document.body.appendChild(container);
+  }
+  
+  return container;
+}
+
 export function showNotification(options: NotificationOptions): void {
   const { message, type, delay = 8000 } = options;
   
+  const container = getOrCreateNotificationContainer();
+  
   const notification = document.createElement("div");
   notification.className = `bes-notification bes-${type}`;
-  notification.textContent = message;
+  notification.innerHTML = message; // Use innerHTML to support HTML content
   
-  document.body.appendChild(notification);
+  container.appendChild(notification);
   
-  setTimeout(() => {
-    notification.remove();
-  }, delay);
+  // Add click-to-dismiss and auto-remove for non-persistent notifications
+  if (delay > 0) {
+    notification.style.cursor = 'pointer';
+    notification.title = 'Click to dismiss';
+    notification.addEventListener('click', () => {
+      notification.remove();
+    });
+    
+    setTimeout(() => {
+      // Check if notification still exists (might have been clicked)
+      if (notification.parentElement) {
+        notification.remove();
+      }
+    }, delay);
+  }
 }
 
 export function showSuccessMessage(message: string, delay?: number): void {
@@ -40,6 +67,44 @@ export function showInfoMessage(message: string, delay?: number): void {
 
 export function showWarningMessage(message: string, delay?: number): void {
   showNotification({ message, type: 'warning', delay });
+}
+
+export function showStatusMessage(message: string, delay?: number): void {
+  showNotification({ message, type: 'status', delay });
+}
+
+export interface PersistentNotificationOptions {
+  id: string;
+  message: string;
+  type: NotificationType;
+}
+
+export function showPersistentNotification(options: PersistentNotificationOptions): void {
+  const { id, message, type } = options;
+  
+  removePersistentNotification(id);
+  
+  showNotification({ message, type, delay: 0 });
+  
+  const notifications = document.querySelectorAll('.bes-notification');
+  const lastNotification = notifications[notifications.length - 1] as HTMLElement;
+  if (lastNotification) {
+    lastNotification.id = id;
+  }
+}
+
+export function updatePersistentNotification(id: string, message: string): void {
+  const notification = document.getElementById(id);
+  if (notification) {
+    notification.innerHTML = message;
+  }
+}
+
+export function removePersistentNotification(id: string): void {
+  const notification = document.getElementById(id);
+  if (notification) {
+    notification.remove();
+  }
 }
 
 export function updateStatusDisplay(options: StatusDisplayOptions): void {

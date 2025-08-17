@@ -16,7 +16,7 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
         log.info(`Unhide completed: ${JSON.stringify(msg.unhideComplete)}`);
         showSuccessMessage(`✅ Unhide completed: ${msg.unhideComplete.message}`, 8000);
         // Remove status notification when complete
-        removePersistentNotification(UNHIDE_STATUS_ID);
+        removePersistentNotification(HIDE_UNHIDE_STATUS_ID);
       }
       if (msg.unhideError) {
         log.error(`Unhide error: ${JSON.stringify(msg.unhideError)}`);
@@ -30,7 +30,7 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
         log.info(`Hide completed: ${JSON.stringify(msg.hideComplete)}`);
         showSuccessMessage(`✅ Hide completed: ${msg.hideComplete.message}`, 8000);
         // Remove status notification when complete
-        removePersistentNotification(HIDE_STATUS_ID);
+        removePersistentNotification(HIDE_UNHIDE_STATUS_ID);
       }
       if (msg.hideError) {
         log.error(`Hide error: ${JSON.stringify(msg.hideError)}`);
@@ -43,6 +43,15 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     innerText: "hide all",
     buttonClicked: () => {
       log.info("hide all button clicked");
+      
+      // Immediately disable button and show initial notification
+      hideButton.disable();
+      showPersistentNotification({
+        id: HIDE_UNHIDE_STATUS_ID,
+        message: '<div style="font-weight: bold;">🔄 Hide process is beginning...</div>',
+        type: 'status'
+      });
+      
       const crumbs = JSON.parse(document.getElementById('js-crumbs-data').getAttribute('data-crumbs'));
       const crumb = crumbs['api/collectionowner/1/hide_unhide_item'];
       port.postMessage({ hide: { crumb } });
@@ -55,6 +64,15 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     innerText: "unhide all",
     buttonClicked: () => {
       log.info("unhide all button clicked");
+      
+      // Immediately disable button and show initial notification
+      unhideButton.disable();
+      showPersistentNotification({
+        id: HIDE_UNHIDE_STATUS_ID,
+        message: '<div style="font-weight: bold;">🔄 Unhide process is beginning...</div>',
+        type: 'status'
+      });
+      
       const crumbs = JSON.parse(document.getElementById('js-crumbs-data').getAttribute('data-crumbs'));
       const crumb = crumbs['api/collectionowner/1/hide_unhide_item'];
       port.postMessage({ unhide: { crumb } });
@@ -67,15 +85,11 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     const { hidden_data: { item_count }, collection_count } = JSON.parse(pageDataElement.getAttribute('data-blob'));
     
     if (item_count === collection_count) {
-      hideButton.style.opacity = '0.5';
-      hideButton.style.pointerEvents = 'none';
-      hideButton.setAttribute('disabled', 'true');
+      hideButton.disable();
     }
     
     if (item_count === 0) {
-      unhideButton.style.opacity = '0.5';
-      unhideButton.style.pointerEvents = 'none';
-      unhideButton.setAttribute('disabled', 'true');
+      unhideButton.disable();
     }
   }
 
@@ -88,20 +102,19 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
   collectionItemsDiv.insertBefore(hideButton, collectionItemsDiv.firstChild);
 }
 
-const UNHIDE_STATUS_ID = 'bes-unhide-status-notification';
-const HIDE_STATUS_ID = 'bes-hide-status-notification';
+const HIDE_UNHIDE_STATUS_ID = 'bes-hide-unhide-status-notification';
 
 function updateUnhideButtonState(state: any): void {
-  const unhideButton = document.getElementById("bes-unhide-button") as HTMLButtonElement;
+  const unhideButton = document.getElementById("bes-unhide-button") as HTMLAnchorElement & { disable: () => void; enable: () => void };
   
   if (!unhideButton) return;
 
   if (!state.isProcessing) {
-    unhideButton.disabled = false;
-    removePersistentNotification(UNHIDE_STATUS_ID);
+    unhideButton.enable();
+    removePersistentNotification(HIDE_UNHIDE_STATUS_ID);
         return;
   }
-  unhideButton.disabled = true;
+  unhideButton.disable();
   
   const remaining = state.totalCount - state.processedCount;
   const statusContent = `
@@ -111,29 +124,29 @@ function updateUnhideButtonState(state: any): void {
     ${state.errors.length > 0 ? `<div style="color: #d32f2f; margin-top: 4px;">${state.errors.length} errors occurred</div>` : ''}
   `;
   
-  if (document.getElementById(UNHIDE_STATUS_ID)) {
-    updatePersistentNotification(UNHIDE_STATUS_ID, statusContent);
+  if (document.getElementById(HIDE_UNHIDE_STATUS_ID)) {
+    updatePersistentNotification(HIDE_UNHIDE_STATUS_ID, statusContent);
     return;
   } 
 
   showPersistentNotification({
-    id: UNHIDE_STATUS_ID,
+    id: HIDE_UNHIDE_STATUS_ID,
     message: statusContent,
     type: 'status'
   });
 }
 
 function updateHideButtonState(state: any): void {
-  const hideButton = document.getElementById("bes-hide-button") as HTMLButtonElement;
+  const hideButton = document.getElementById("bes-hide-button") as HTMLAnchorElement & { disable: () => void; enable: () => void };
   
   if (!hideButton) return;
 
   if (!state.isProcessing) {
-    hideButton.disabled = false;
-    removePersistentNotification(HIDE_STATUS_ID);
+    hideButton.enable();
+    removePersistentNotification(HIDE_UNHIDE_STATUS_ID);
         return;
   }
-  hideButton.disabled = true;
+  hideButton.disable();
   
   const remaining = state.totalCount - state.processedCount;
   const statusContent = `
@@ -143,13 +156,13 @@ function updateHideButtonState(state: any): void {
     ${state.errors.length > 0 ? `<div style="color: #d32f2f; margin-top: 4px;">${state.errors.length} errors occurred</div>` : ''}
   `;
   
-  if (document.getElementById(HIDE_STATUS_ID)) {
-    updatePersistentNotification(HIDE_STATUS_ID, statusContent);
+  if (document.getElementById(HIDE_UNHIDE_STATUS_ID)) {
+    updatePersistentNotification(HIDE_UNHIDE_STATUS_ID, statusContent);
     return;
   } 
 
   showPersistentNotification({
-    id: HIDE_STATUS_ID,
+    id: HIDE_UNHIDE_STATUS_ID,
     message: statusContent,
     type: 'status'
   });

@@ -101,15 +101,17 @@ describe('HideUnhide', () => {
         }
       })
       
-      const statusNotification = document.getElementById('bes-unhide-status-notification') as HTMLDivElement
-      const unhideButton = document.getElementById('bes-unhide-button') as HTMLButtonElement
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
       
       expect(statusNotification).toBeTruthy()
       expect(statusNotification.classList.contains('bes-notification')).toBe(true)
       expect(statusNotification.classList.contains('bes-status')).toBe(true)
       expect(statusNotification.innerHTML).toContain('5 completed, 5 remaining')
       expect(statusNotification.innerHTML).toContain('Do not refresh or navigate away')
-      expect(unhideButton.disabled).toBe(true)
+      expect(unhideButton.getAttribute('disabled')).toBe('true')
+      expect(unhideButton.style.opacity).toBe('0.5')
+      expect(unhideButton.style.pointerEvents).toBe('none')
       expect(unhideButton.textContent).toBe('unhide all') 
     })
 
@@ -124,7 +126,7 @@ describe('HideUnhide', () => {
       await initHideUnhide(mockPort as any)
       
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
-      const unhideButton = document.getElementById('bes-unhide-button') as HTMLButtonElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
       
       messageHandler({
         unhideState: {
@@ -135,10 +137,12 @@ describe('HideUnhide', () => {
         }
       })
       
-      const statusNotification = document.getElementById('bes-unhide-status-notification') as HTMLDivElement
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
       expect(statusNotification).toBeTruthy()
       expect(statusNotification.classList.contains('bes-status')).toBe(true)
-      expect(unhideButton.disabled).toBe(true)
+      expect(unhideButton.getAttribute('disabled')).toBe('true')
+      expect(unhideButton.style.opacity).toBe('0.5')
+      expect(unhideButton.style.pointerEvents).toBe('none')
       
       messageHandler({
         unhideState: {
@@ -149,8 +153,10 @@ describe('HideUnhide', () => {
         }
       })
       
-      expect(document.getElementById('bes-unhide-status-notification')).toBeNull()
-      expect(unhideButton.disabled).toBe(false)
+      expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull()
+      expect(unhideButton.getAttribute('disabled')).toBeNull()
+      expect(unhideButton.style.opacity).toBe('')
+      expect(unhideButton.style.pointerEvents).toBe('')
       expect(unhideButton.textContent).toBe('unhide all')
       
       messageHandler({
@@ -159,7 +165,7 @@ describe('HideUnhide', () => {
         }
       })
       
-      expect(document.getElementById('bes-unhide-status-notification')).toBeNull()
+      expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull()
     })
 
     it('should show error count in status display', async () => {
@@ -182,7 +188,7 @@ describe('HideUnhide', () => {
         }
       })
       
-      const statusNotification = document.getElementById('bes-unhide-status-notification') as HTMLDivElement
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
       expect(statusNotification.innerHTML).toContain('2 errors occurred')
     })
 
@@ -248,8 +254,8 @@ describe('HideUnhide', () => {
         }
       })
       
-      const statusNotification = document.getElementById('bes-hide-status-notification') as HTMLDivElement
-      const hideButton = document.getElementById('bes-hide-button') as HTMLButtonElement
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
       
       expect(statusNotification).toBeTruthy()
       expect(statusNotification.classList.contains('bes-notification')).toBe(true)
@@ -257,7 +263,9 @@ describe('HideUnhide', () => {
       expect(statusNotification.innerHTML).toContain('Hiding your collection items')
       expect(statusNotification.innerHTML).toContain('3 completed, 5 remaining')
       expect(statusNotification.innerHTML).toContain('Do not refresh or navigate away')
-      expect(hideButton.disabled).toBe(true)
+      expect(hideButton.getAttribute('disabled')).toBe('true')
+      expect(hideButton.style.opacity).toBe('0.5')
+      expect(hideButton.style.pointerEvents).toBe('none')
       expect(hideButton.textContent).toBe('hide all') 
     })
 
@@ -272,7 +280,7 @@ describe('HideUnhide', () => {
       await initHideUnhide(mockPort as any)
       
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
-      const hideButton = document.getElementById('bes-hide-button') as HTMLButtonElement
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
       
       messageHandler({
         hideState: {
@@ -283,10 +291,12 @@ describe('HideUnhide', () => {
         }
       })
       
-      const statusNotification = document.getElementById('bes-hide-status-notification') as HTMLDivElement
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
       expect(statusNotification).toBeTruthy()
       expect(statusNotification.classList.contains('bes-status')).toBe(true)
-      expect(hideButton.disabled).toBe(true)
+      expect(hideButton.getAttribute('disabled')).toBe('true')
+      expect(hideButton.style.opacity).toBe('0.5')
+      expect(hideButton.style.pointerEvents).toBe('none')
       
       messageHandler({
         hideState: {
@@ -297,8 +307,10 @@ describe('HideUnhide', () => {
         }
       })
       
-      expect(document.getElementById('bes-hide-status-notification')).toBeNull()
-      expect(hideButton.disabled).toBe(false)
+      expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull()
+      expect(hideButton.getAttribute('disabled')).toBeNull()
+      expect(hideButton.style.opacity).toBe('')
+      expect(hideButton.style.pointerEvents).toBe('')
       expect(hideButton.textContent).toBe('hide all')
       
       messageHandler({
@@ -307,7 +319,7 @@ describe('HideUnhide', () => {
         }
       })
       
-      expect(document.getElementById('bes-hide-status-notification')).toBeNull()
+      expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull()
     })
 
     it('should show error count in hide status display', async () => {
@@ -330,7 +342,7 @@ describe('HideUnhide', () => {
         }
       })
       
-      const statusNotification = document.getElementById('bes-hide-status-notification') as HTMLDivElement
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
       expect(statusNotification.innerHTML).toContain('3 errors occurred')
     })
 
@@ -550,8 +562,8 @@ describe('HideUnhide', () => {
 
       await initHideUnhide(mockPort as any)
       
-      const hideButton = document.getElementById('bes-hide-button') as HTMLButtonElement
-      const unhideButton = document.getElementById('bes-unhide-button') as HTMLButtonElement
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
       
       expect(hideButton.getAttribute('disabled')).toBe('true')
       expect(hideButton.style.opacity).toBe('0.5')
@@ -570,8 +582,8 @@ describe('HideUnhide', () => {
 
       await initHideUnhide(mockPort as any)
       
-      const hideButton = document.getElementById('bes-hide-button') as HTMLButtonElement
-      const unhideButton = document.getElementById('bes-unhide-button') as HTMLButtonElement
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
       
       expect(hideButton.getAttribute('disabled')).toBeNull() 
       expect(unhideButton.getAttribute('disabled')).toBe('true')
@@ -590,8 +602,8 @@ describe('HideUnhide', () => {
 
       await initHideUnhide(mockPort as any)
       
-      const hideButton = document.getElementById('bes-hide-button') as HTMLButtonElement
-      const unhideButton = document.getElementById('bes-unhide-button') as HTMLButtonElement
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
       
       expect(hideButton.getAttribute('disabled')).toBeNull()
       expect(hideButton.style.opacity).toBe('')

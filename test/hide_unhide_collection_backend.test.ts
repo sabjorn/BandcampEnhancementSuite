@@ -6,7 +6,7 @@ vi.mock('../src/bclient', () => ({
   getCollectionSummary: vi.fn(),
   getHiddenItemsRateLimited: vi.fn(),
   getCollectionItemsRateLimited: vi.fn(),
-  hideUnhide: vi.fn()
+  hideUnhideRateLimited: vi.fn()
 }))
 
 // Mock the logger
@@ -19,7 +19,7 @@ vi.mock('../src/logger', () => ({
   }))
 }))
 
-import { getCollectionSummary, getHiddenItemsRateLimited, getCollectionItemsRateLimited, hideUnhide } from '../src/bclient'
+import { getCollectionSummary, getHiddenItemsRateLimited, getCollectionItemsRateLimited, hideUnhideRateLimited } from '../src/bclient'
 
 describe('unhide_backend', () => {
   let mockPort: any
@@ -164,7 +164,7 @@ describe('unhide_backend', () => {
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
       vi.mocked(getHiddenItemsRateLimited).mockResolvedValue(mockHiddenItemsResponse)
-      vi.mocked(hideUnhide).mockResolvedValue(true)
+      vi.mocked(hideUnhideRateLimited).mockResolvedValue(true)
 
       const message = {
         unhide: {
@@ -195,7 +195,6 @@ describe('unhide_backend', () => {
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
         unhideState: expect.objectContaining({
           isProcessing: expect.any(Boolean),
-          queue: expect.any(Array),
           processedCount: expect.any(Number),
           totalCount: expect.any(Number),
           errors: expect.any(Array),
@@ -443,7 +442,7 @@ describe('unhide_backend', () => {
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
       vi.mocked(getCollectionItemsRateLimited).mockResolvedValue(mockCollectionItemsResponse)
-      vi.mocked(hideUnhide).mockResolvedValue(true)
+      vi.mocked(hideUnhideRateLimited).mockResolvedValue(true)
 
       const message = {
         hide: {
@@ -460,8 +459,8 @@ describe('unhide_backend', () => {
       await new Promise(resolve => setTimeout(resolve, 0))
       
       // Should only hide the visible item (hidden: null), not the already hidden one (hidden: 1)
-      expect(hideUnhide).toHaveBeenCalledWith('hide', 123456, 'track', 789, 'test-crumb', 'https://bandcamp.com')
-      expect(hideUnhide).not.toHaveBeenCalledWith('hide', 123456, 'album', 790, expect.anything(), expect.anything())
+      expect(hideUnhideRateLimited).toHaveBeenCalledWith('hide', 123456, 'track', 789, 'test-crumb', 'https://bandcamp.com')
+      expect(hideUnhideRateLimited).not.toHaveBeenCalledWith('hide', 123456, 'album', 790, expect.anything(), expect.anything())
       
       // Should send completion message after processing (check all calls for the completion message)
       expect(mockPort.postMessage).toHaveBeenCalledWith({
@@ -629,7 +628,7 @@ describe('unhide_backend', () => {
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
       vi.mocked(getCollectionItemsRateLimited).mockResolvedValue(mockCollectionItemsResponse)
-      vi.mocked(hideUnhide).mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(true), 100)))
+      vi.mocked(hideUnhideRateLimited).mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(true), 100)))
 
       // Start hide operation
       const hideMessage = {
@@ -650,7 +649,6 @@ describe('unhide_backend', () => {
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
         hideState: expect.objectContaining({
           isProcessing: expect.any(Boolean),
-          queue: expect.any(Array),
           processedCount: expect.any(Number),
           totalCount: expect.any(Number),
           errors: expect.any(Array),
@@ -779,7 +777,7 @@ describe('unhide_backend', () => {
       expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
       
       // Should not call hideUnhide because the item is already hidden
-      expect(hideUnhide).not.toHaveBeenCalled()
+      expect(hideUnhideRateLimited).not.toHaveBeenCalled()
       
       // Should send completion message indicating no visible items
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 

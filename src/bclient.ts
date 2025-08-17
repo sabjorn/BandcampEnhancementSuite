@@ -462,3 +462,4 @@ export async function getCollectionItems(fan_id: number, older_than_token: strin
 // 2 second delay to be conservative with Bandcamp's rate limits
 export const getHiddenItemsRateLimited = createRateLimitedFunction(getHiddenItems, 2000);
 export const getCollectionItemsRateLimited = createRateLimitedFunction(getCollectionItems, 2000);
+export const hideUnhideRateLimited = createRateLimitedFunction(hideUnhide, 2000);

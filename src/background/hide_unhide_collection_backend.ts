@@ -1,9 +1,9 @@
 import Logger from "../logger.js";
-import { getCollectionSummary, getHiddenItemsRateLimited, getCollectionItemsRateLimited, hideUnhide, type GetHiddenItemsResponse, type HiddenItem, type GetCollectionItemsResponse, type CollectionItem } from "../bclient.js";
+import { getCollectionSummary, getHiddenItemsRateLimited, getCollectionItemsRateLimited, hideUnhideRateLimited, type GetHiddenItemsResponse, type HiddenItem, type GetCollectionItemsResponse, type CollectionItem } from "../bclient.js";
 
 const log = new Logger();
 
-interface HideUnhideQueueItem {
+interface HideUnhideItem {
   fan_id: number;
   item_id: number;
   item_type: "track" | "album";
@@ -14,60 +14,47 @@ interface HideUnhideQueueItem {
 
 interface HideUnhideState {
   isProcessing: boolean;
-  queue: HideUnhideQueueItem[];
   processedCount: number;
   totalCount: number;
   errors: string[];
   action: "hide" | "unhide";
 }
 
-class RateLimitedQueue {
-  private queue: HideUnhideQueueItem[] = [];
+class ProgressTracker {
   private isProcessing = false;
-  private delay: number;
-  private port?: chrome.runtime.Port;
   private processedCount = 0;
   private totalCount = 0;
   private errors: string[] = [];
   private currentAction: "hide" | "unhide" = "unhide";
+  private port?: chrome.runtime.Port;
 
-  constructor(delayMs: number = 2000, port?: chrome.runtime.Port) {
-    this.delay = delayMs;
+  constructor(port?: chrome.runtime.Port) {
     this.port = port;
   }
 
-  async addItems(items: HideUnhideQueueItem[]): Promise<void> {
-    this.queue.push(...items);
-    this.totalCount += items.length;
-    if (items.length > 0) {
-      this.currentAction = items[0].action;
-    }
-    log.info(`Added ${items.length} items to ${this.currentAction} queue. Total: ${this.queue.length}`);
+  async processItems(items: HideUnhideItem[], action: "hide" | "unhide"): Promise<void> {
+    this.currentAction = action;
     
-    this.broadcastState();
-    
-    if (!this.isProcessing) {
-      await this.processQueue();
-    }
-  }
-
-  private async processQueue(): Promise<void> {
-    if (this.isProcessing || this.queue.length === 0) {
+    if (items.length === 0) {
+      const messageKey = this.currentAction === "hide" ? "hideComplete" : "unhideComplete";
+      this.port?.postMessage({ [messageKey]: { message: `No ${this.currentAction === "hide" ? "visible" : "hidden"} items found` } });
       return;
     }
 
     this.isProcessing = true;
+    this.processedCount = 0;
+    this.totalCount = items.length;
+    this.errors = [];
+
+    log.info(`Starting to process ${this.currentAction} operation with ${items.length} items`);
     this.broadcastState();
 
-    log.info(`Starting to process ${this.currentAction} queue with ${this.queue.length} items`);
-
-    while (this.queue.length > 0) {
-      const item = this.queue.shift()!;
-      
+    // Process all items concurrently - rate limiting handled by hideUnhideRateLimited
+    const promises = items.map(async (item) => {
       try {
-        log.info(`${item.action}ing item ${item.item_id} (${item.item_type}) with crumb: ${item.crumb ? 'provided' : 'null'}`);
+        log.info(`${item.action}ing item ${item.item_id} (${item.item_type})`);
         
-        const result = await hideUnhide(item.action, item.fan_id, item.item_type, item.item_id, item.crumb, item.baseUrl);
+        const result = await hideUnhideRateLimited(item.action, item.fan_id, item.item_type, item.item_id, item.crumb, item.baseUrl);
         
         if (result) {
           this.processedCount++;
@@ -84,17 +71,15 @@ class RateLimitedQueue {
         log.error(`Error ${item.action}ing item ${item.item_id}: ${error}`);
       }
 
+      // Broadcast progress after each completion
       this.broadcastState();
+    });
 
-      // Rate limiting delay
-      if (this.queue.length > 0) {
-        log.info(`Waiting ${this.delay}ms before next ${item.action} request`);
-        await new Promise(resolve => setTimeout(resolve, this.delay));
-      }
-    }
+    // Wait for all operations to complete
+    await Promise.all(promises);
 
     this.isProcessing = false;
-    log.info(`Finished processing ${this.currentAction} queue. Processed: ${this.processedCount}, Errors: ${this.errors.length}`);
+    log.info(`Finished processing ${this.currentAction} operation. Processed: ${this.processedCount}, Errors: ${this.errors.length}`);
     this.broadcastState();
     
     // Send completion message
@@ -110,7 +95,6 @@ class RateLimitedQueue {
   private broadcastState(): void {
     const state: HideUnhideState = {
       isProcessing: this.isProcessing,
-      queue: [...this.queue],
       processedCount: this.processedCount,
       totalCount: this.totalCount,
       errors: [...this.errors],
@@ -124,7 +108,6 @@ class RateLimitedQueue {
   getState(): HideUnhideState {
     return {
       isProcessing: this.isProcessing,
-      queue: [...this.queue],
       processedCount: this.processedCount,
       totalCount: this.totalCount,
       errors: [...this.errors],
@@ -133,7 +116,7 @@ class RateLimitedQueue {
   }
 }
 
-let hideUnhideQueue: RateLimitedQueue;
+let progressTracker: ProgressTracker;
 
 export function connectionListenerCallback(
   port: chrome.runtime.Port, 
@@ -149,7 +132,7 @@ export function connectionListenerCallback(
   }
 
   portState.port = port;
-  hideUnhideQueue = new RateLimitedQueue(2000, port); // 2 second delay
+  progressTracker = new ProgressTracker(port);
   
   portState.port.onMessage.addListener((msg: any) => 
     portListenerCallback(msg, portState)
@@ -171,7 +154,7 @@ export async function portListenerCallback(
   }
 
   if (msg.getUnhideState) {
-    const state = hideUnhideQueue?.getState();
+    const state = progressTracker?.getState();
     const messageKey = state?.action === "hide" ? "hideState" : "unhideState";
     portState.port?.postMessage({ [messageKey]: state });
   }
@@ -186,14 +169,16 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
 
     // Get collection summary to get fan_id
     log.info("Fetching collection summary...");
-    let collectionSummary;
-    try {
-      collectionSummary = await getCollectionSummary(baseUrl);
-      log.info(`Collection summary fetched successfully: ${JSON.stringify(collectionSummary)}`);
-    } catch (error) {
-      log.error(`Failed to fetch collection summary: ${error}`);
-      throw new Error(`Failed to get collection summary: ${error}`);
-    }
+    const collectionSummary = await (async () => {
+      try {
+        const result = await getCollectionSummary(baseUrl);
+        log.info(`Collection summary fetched successfully: ${JSON.stringify(result)}`);
+        return result;
+      } catch (error) {
+        log.error(`Failed to fetch collection summary: ${error}`);
+        throw new Error(`Failed to get collection summary: ${error}`);
+      }
+    })();
 
     const fan_id = collectionSummary.fan_id;
     log.info(`Got fan_id: ${fan_id}`);
@@ -205,7 +190,7 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
     let older_than_token = `${currentUnixTime}:999999999:t::`;
     let hasMore = true;
     let batchCount = 0;
-    const allHiddenItems: HideUnhideQueueItem[] = [];
+    const allHiddenItems: HideUnhideItem[] = [];
 
     log.info(`Starting to fetch hidden items for fan_id: ${fan_id} with initial token: ${older_than_token}`);
 
@@ -235,7 +220,7 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
       }
       
       // Convert hidden items to queue items
-      const queueItems: HideUnhideQueueItem[] = hiddenItemsResponse.items.map((item: HiddenItem) => ({
+      const queueItems: HideUnhideItem[] = hiddenItemsResponse.items.map((item: HiddenItem) => ({
         fan_id: fan_id,
         item_id: item.item_id,
         item_type: item.item_type as "track" | "album",
@@ -260,12 +245,8 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
 
     log.info(`Found total of ${allHiddenItems.length} hidden items to unhide`);
 
-    if (allHiddenItems.length > 0) {
-      await hideUnhideQueue.addItems(allHiddenItems);
-    } else {
-      log.info("No hidden items found, sending completion message");
-      port?.postMessage({ unhideComplete: { message: "No hidden items found" } });
-    }
+    // Process all items using the progress tracker
+    await progressTracker.processItems(allHiddenItems, "unhide");
 
   } catch (error) {
     log.error(`Error in unhide process: ${error}`);
@@ -283,14 +264,16 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
 
     // Get collection summary to get fan_id
     log.info("Fetching collection summary...");
-    let collectionSummary;
-    try {
-      collectionSummary = await getCollectionSummary(baseUrl);
-      log.info(`Collection summary fetched successfully: ${JSON.stringify(collectionSummary)}`);
-    } catch (error) {
-      log.error(`Failed to fetch collection summary: ${error}`);
-      throw new Error(`Failed to get collection summary: ${error}`);
-    }
+    const collectionSummary = await (async () => {
+      try {
+        const result = await getCollectionSummary(baseUrl);
+        log.info(`Collection summary fetched successfully: ${JSON.stringify(result)}`);
+        return result;
+      } catch (error) {
+        log.error(`Failed to fetch collection summary: ${error}`);
+        throw new Error(`Failed to get collection summary: ${error}`);
+      }
+    })();
 
     const fan_id = collectionSummary.fan_id;
     log.info(`Got fan_id: ${fan_id}`);
@@ -300,7 +283,7 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
     let older_than_token = `${currentUnixTime}:999999999:t::`;
     let hasMore = true;
     let batchCount = 0;
-    const allCollectionItems: HideUnhideQueueItem[] = [];
+    const allCollectionItems: HideUnhideItem[] = [];
 
     log.info(`Starting to fetch collection items for fan_id: ${fan_id} with initial token: ${older_than_token}`);
 
@@ -330,7 +313,7 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
       }
       
       // Convert collection items to queue items (only non-hidden items)
-      const queueItems: HideUnhideQueueItem[] = collectionItemsResponse.items
+      const queueItems: HideUnhideItem[] = collectionItemsResponse.items
         .filter((item: CollectionItem) => item.hidden === null) // Only include visible items
         .map((item: CollectionItem) => ({
           fan_id: fan_id,
@@ -357,12 +340,8 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
 
     log.info(`Found total of ${allCollectionItems.length} visible items to hide`);
 
-    if (allCollectionItems.length > 0) {
-      await hideUnhideQueue.addItems(allCollectionItems);
-    } else {
-      log.info("No visible items found, sending completion message");
-      port?.postMessage({ hideComplete: { message: "No visible items found" } });
-    }
+    // Process all items using the progress tracker
+    await progressTracker.processItems(allCollectionItems, "hide");
 
   } catch (error) {
     log.error(`Error in hide process: ${error}`);

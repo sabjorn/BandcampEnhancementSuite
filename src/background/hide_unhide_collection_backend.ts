@@ -200,7 +200,7 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
       
       let hiddenItemsResponse: GetHiddenItemsResponse;
       try {
-        hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 20, baseUrl);
+        hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
         log.info(`Hidden items batch ${batchCount} fetched successfully. Response: ${JSON.stringify(hiddenItemsResponse)}`);
         
         // Validate response structure
@@ -234,7 +234,7 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
       log.info(`Found ${queueItems.length} hidden items in batch ${batchCount}. Total so far: ${allHiddenItems.length}`);
 
       // Check if there are more items
-      if (hiddenItemsResponse.items.length < 20 || !hiddenItemsResponse.last_token) {
+      if (hiddenItemsResponse.items.length < 100 || !hiddenItemsResponse.last_token) {
         hasMore = false;
         log.info(`No more items to fetch. Completed ${batchCount} batches.`);
       } else {
@@ -293,7 +293,7 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
       
       let collectionItemsResponse: GetCollectionItemsResponse;
       try {
-        collectionItemsResponse = await getCollectionItemsRateLimited(fan_id, older_than_token, 20, baseUrl);
+        collectionItemsResponse = await getCollectionItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
         log.info(`Collection items batch ${batchCount} fetched successfully. Found ${collectionItemsResponse.items.length} items`);
         
         // Validate response structure

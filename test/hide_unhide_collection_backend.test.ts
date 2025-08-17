@@ -175,7 +175,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
       
       // Wait for queue processing to complete
       await new Promise(resolve => setTimeout(resolve, 0))
@@ -233,7 +233,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
         unhideComplete: { message: "No hidden items found" } 
       })
@@ -453,7 +453,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
       
       // Wait for queue processing to complete
       await new Promise(resolve => setTimeout(resolve, 0))
@@ -500,7 +500,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
         hideComplete: { message: "No visible items found" } 
       })
@@ -774,7 +774,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
       
       // Should not call hideUnhide because the item is already hidden
       expect(hideUnhideRateLimited).not.toHaveBeenCalled()

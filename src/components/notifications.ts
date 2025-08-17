@@ -13,14 +13,19 @@ export interface StatusDisplayOptions {
 }
 
 function getOrCreateNotificationContainer(): HTMLElement {
-  let container = document.getElementById('bes-notification-container');
-  
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'bes-notification-container';
-    container.className = 'bes-notification-container';
-    document.body.appendChild(container);
-  }
+  const container = (() => {
+    const existing = document.getElementById('bes-notification-container');
+    
+    if (existing) {
+      return existing;
+    }
+    
+    const newContainer = document.createElement('div');
+    newContainer.id = 'bes-notification-container';
+    newContainer.className = 'bes-notification-container';
+    document.body.appendChild(newContainer);
+    return newContainer;
+  })();
   
   return container;
 }
@@ -111,14 +116,19 @@ export function removePersistentNotification(id: string): void {
 export function updateStatusDisplay(options: StatusDisplayOptions): void {
   const { id, content, show } = options;
   
-  let statusElement = document.getElementById(id) as HTMLDivElement;
-  
-  if (!statusElement) {
-    statusElement = document.createElement('div');
-    statusElement.id = id;
-    statusElement.className = 'bes-status-display';
-    document.body.appendChild(statusElement);
-  }
+  const statusElement = (() => {
+    const existing = document.getElementById(id) as HTMLDivElement;
+    
+    if (existing) {
+      return existing;
+    }
+    
+    const newElement = document.createElement('div');
+    newElement.id = id;
+    newElement.className = 'bes-status-display';
+    document.body.appendChild(newElement);
+    return newElement;
+  })();
   
   statusElement.innerHTML = content;
   statusElement.style.display = show ? 'block' : 'none';

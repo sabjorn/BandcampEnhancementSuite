@@ -21,25 +21,31 @@ interface CreateButtonOptions {
   buttonClicked?: () => void;
 }
 
-const creatInput = (prefix: string, suffix: string, placeholder: number, inputClass: string, wrapperClass: string): InputReturnType => {
-  const wrapper = document.createElement("div");
+const creatInput = (
+  prefix: string,
+  suffix: string,
+  placeholder: number,
+  inputClass: string,
+  wrapperClass: string
+): InputReturnType => {
+  const wrapper = document.createElement('div');
   wrapper.className = wrapperClass;
 
-  const input = document.createElement("input");
-  input.type = "number";
+  const input = document.createElement('input');
+  input.type = 'number';
   input.min = placeholder.toString();
   input.className = inputClass;
   input.placeholder = (Math.ceil(parseFloat(placeholder.toString()) * 100) / 100).toString();
 
-  input.addEventListener("focus", function() {
+  input.addEventListener('focus', function () {
     if (this.value === this.placeholder) {
-      this.value = "";
+      this.value = '';
     }
   });
 
-  input.addEventListener("blur", function() {
+  input.addEventListener('blur', function () {
     if (this.value < this.min) {
-      this.value = "";
+      this.value = '';
     }
   });
 
@@ -58,26 +64,20 @@ const creatInput = (prefix: string, suffix: string, placeholder: number, inputCl
 
 export function createInputButtonPair(options: CreateInputButtonPairOptions = {}): HTMLDivElement {
   const {
-    inputPrefix = "$",
-    inputSuffix = "",
+    inputPrefix = '$',
+    inputSuffix = '',
     inputPlaceholder = 0.0,
-    inputClass = "currency-input",
-    inputWrapperClass = "currency-input-wrapper",
-    buttonText = "",
+    inputClass = 'currency-input',
+    inputWrapperClass = 'currency-input-wrapper',
+    buttonText = '',
     buttonChildElement,
-    buttonClass = "one-click-button",
+    buttonClass = 'one-click-button',
     onButtonClick = () => {}
   } = options;
 
-  const { wrapper, input } = creatInput(
-    inputPrefix,
-    inputSuffix,
-    inputPlaceholder,
-    inputClass,
-    inputWrapperClass
-  );
+  const { wrapper, input } = creatInput(inputPrefix, inputSuffix, inputPlaceholder, inputClass, inputWrapperClass);
 
-  const button = document.createElement("button");
+  const button = document.createElement('button');
   button.className = buttonClass;
   if (buttonChildElement) {
     button.append(buttonChildElement);
@@ -85,13 +85,13 @@ export function createInputButtonPair(options: CreateInputButtonPairOptions = {}
     button.textContent = buttonText;
   }
   button.onclick = () => {
-    if (typeof onButtonClick === "function") {
+    if (typeof onButtonClick === 'function') {
       const value = input.value || input.placeholder;
       onButtonClick(value);
     }
   };
 
-  const container = document.createElement("div");
+  const container = document.createElement('div');
 
   container.appendChild(wrapper);
   container.appendChild(button);
@@ -102,10 +102,10 @@ export function createInputButtonPair(options: CreateInputButtonPairOptions = {}
 export function createButton(options: CreateButtonOptions = {}): HTMLAnchorElement {
   const { className, innerText, buttonClicked } = options;
 
-  const button = document.createElement("a");
+  const button = document.createElement('a');
   button.className = className;
   button.innerText = innerText;
-  button.addEventListener("click", buttonClicked);
+  button.addEventListener('click', buttonClicked);
 
   return button;
 }

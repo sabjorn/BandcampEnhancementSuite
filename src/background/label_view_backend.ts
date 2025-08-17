@@ -1,5 +1,5 @@
-import { getDB } from "../utilities";
-import Logger from "../logger";
+import { getDB } from '../utilities';
+import Logger from '../logger';
 
 export async function query(storeName: string, key: string, port: chrome.runtime.Port): Promise<void> {
   const db = await getDB();
@@ -31,24 +31,20 @@ export async function setTrue(storeName: string, key: string, port: chrome.runti
 
 export async function initLabelViewBackend(): Promise<void> {
   const log = new Logger();
-  
-  log.info("initializing LabelViewBackend");
-  
-  chrome.runtime.onConnect.addListener(function(port) {
-    if (port.name !== "bandcamplabelview") {
-      log.error(
-        `Unexpected chrome.runtime.onConnect port name: ${port.name}`
-      );
+
+  log.info('initializing LabelViewBackend');
+
+  chrome.runtime.onConnect.addListener(function (port) {
+    if (port.name !== 'bandcamplabelview') {
+      log.error(`Unexpected chrome.runtime.onConnect port name: ${port.name}`);
     }
 
-    port.onMessage.addListener(function(msg) {
-      if (msg.query) query("previews", msg.query, port);
-      if (msg.toggle) toggle("previews", msg.toggle, port);
-      if (msg.setTrue) setTrue("previews", msg.setTrue, port);
+    port.onMessage.addListener(function (msg) {
+      if (msg.query) query('previews', msg.query, port);
+      if (msg.toggle) toggle('previews', msg.toggle, port);
+      if (msg.setTrue) setTrue('previews', msg.setTrue, port);
     });
   });
 
-  chrome.runtime.onInstalled.addListener(function() {
-  });
+  chrome.runtime.onInstalled.addListener(function () {});
 }
-

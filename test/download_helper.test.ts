@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { createDomNodes, cleanupTestNodes } from './utils'
-import { initDownloadHelper } from '../src/download_helper'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createDomNodes, cleanupTestNodes } from './utils';
+import { initDownloadHelper } from '../src/download_helper';
 
 describe('DownloadHelper', () => {
   afterEach(() => {
-    cleanupTestNodes()
-    vi.restoreAllMocks()
-  })
+    cleanupTestNodes();
+    vi.restoreAllMocks();
+  });
 
   describe('init()', () => {
     beforeEach(() => {
@@ -17,20 +17,20 @@ describe('DownloadHelper', () => {
           </div>
         </div>
         <div class="download-item" data-encoding="mp3-320"></div>
-      `)
-    })
+      `);
+    });
 
     it('should initialize download helper functionality', async () => {
-      await expect(initDownloadHelper()).resolves.not.toThrow()
-    })
+      await expect(initDownloadHelper()).resolves.not.toThrow();
+    });
 
     it('should create download button', async () => {
-      await initDownloadHelper()
-      const button = document.querySelector('.bes-downloadall')
-      expect(button).toBeTruthy()
-      expect(button?.textContent).toContain('Download')
-    })
-  })
+      await initDownloadHelper();
+      const button = document.querySelector('.bes-downloadall');
+      expect(button).toBeTruthy();
+      expect(button?.textContent).toContain('Download');
+    });
+  });
 
   describe('download operations', () => {
     beforeEach(() => {
@@ -40,20 +40,20 @@ describe('DownloadHelper', () => {
             <a href="/download/track/123">Track Download</a>
           </div>
         </div>
-      `)
-    })
+      `);
+    });
 
     it('should handle download links', () => {
-      const downloadContainer = document.querySelector('.download-container')
-      expect(downloadContainer).toBeTruthy()
-      
-      const downloadLink = downloadContainer?.querySelector('a[href*="/download/"]')
-      expect(downloadLink).toBeTruthy()
-    })
+      const downloadContainer = document.querySelector('.download-container');
+      expect(downloadContainer).toBeTruthy();
+
+      const downloadLink = downloadContainer?.querySelector('a[href*="/download/"]');
+      expect(downloadLink).toBeTruthy();
+    });
 
     it('should process download helpers', () => {
-      const downloadItems = document.querySelectorAll('.download-item')
-      expect(downloadItems.length).toBeGreaterThan(0)
-    })
-  })
-})
+      const downloadItems = document.querySelectorAll('.download-item');
+      expect(downloadItems.length).toBeGreaterThan(0);
+    });
+  });
+});

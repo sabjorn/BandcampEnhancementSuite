@@ -1,9 +1,13 @@
-import Logger from "../logger";
+import Logger from '../logger';
 
-export function processRequest(request: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void): boolean {
-  if (request.contentScriptQuery !== "renderBuffer") return false;
+export function processRequest(
+  request: any,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: any) => void
+): boolean {
+  if (request.contentScriptQuery !== 'renderBuffer') return false;
 
-  const url = "https://t4.bcbits.com/stream/" + request.url;
+  const url = 'https://t4.bcbits.com/stream/' + request.url;
 
   fetch(url)
     .then(response => response.arrayBuffer())
@@ -25,8 +29,7 @@ export function processRequest(request: any, sender: chrome.runtime.MessageSende
 
 export async function initWaveformBackend(): Promise<void> {
   const log = new Logger();
-  
-  log.info("starting waveform backend.");
+
+  log.info('starting waveform backend.');
   chrome.runtime.onMessage.addListener(processRequest);
 }
-

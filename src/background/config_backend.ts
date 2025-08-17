@@ -1,5 +1,5 @@
-import Logger from "../logger.js";
-import { getDB } from "../utilities.js";
+import Logger from '../logger.js';
+import { getDB } from '../utilities.js';
 
 interface Config {
   displayWaveform: boolean;
@@ -18,31 +18,27 @@ const defaultConfig: Config = {
 };
 
 export function connectionListenerCallback(
-  port: chrome.runtime.Port, 
+  port: chrome.runtime.Port,
   log: Logger,
   portState: { port?: chrome.runtime.Port }
 ): void {
-  log.info("connection listener callback");
-  
-  if (port.name !== "bandcamplabelview") {
-    log.error(
-      `Unexpected chrome.runtime.onConnect port name: ${port.name}`
-    );
+  log.info('connection listener callback');
+
+  if (port.name !== 'bandcamplabelview') {
+    log.error(`Unexpected chrome.runtime.onConnect port name: ${port.name}`);
     return;
   }
 
   portState.port = port;
-  portState.port.onMessage.addListener((msg: any) => 
-    portListenerCallback(msg, log, portState)
-  );
+  portState.port.onMessage.addListener((msg: any) => portListenerCallback(msg, log, portState));
 }
 
 export async function portListenerCallback(
-  msg: any, 
+  msg: any,
   log: Logger,
   portState: { port?: chrome.runtime.Port }
 ): Promise<void> {
-  log.info("port listener callback");
+  log.info('port listener callback');
 
   const db = await getDB();
 
@@ -58,45 +54,44 @@ export async function portListenerCallback(
 export async function initConfigBackend(): Promise<void> {
   const log = new Logger();
   const portState: { port?: chrome.runtime.Port } = {};
-  
-  log.info("initializing ConfigBackend");
 
-  chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) => 
+  log.info('initializing ConfigBackend');
+
+  chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) =>
     connectionListenerCallback(port, log, portState)
   );
 }
 
 export async function synchronizeConfig(db: any, config: Partial<Config>, port?: chrome.runtime.Port): Promise<void> {
-  const db_config = await db.get("config", "config");
+  const db_config = await db.get('config', 'config');
   const merged_config = mergeData(db_config, config);
 
-  await db.put("config", merged_config, "config");
+  await db.put('config', merged_config, 'config');
   port?.postMessage({ config: merged_config });
 }
 
 export async function toggleWaveformDisplay(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
-  log.info("toggleing waveform display");
+  log.info('toggleing waveform display');
 
-  let db_config = await db.get("config", "config");
-  db_config["displayWaveform"] = !db_config["displayWaveform"];
-  await db.put("config", db_config, "config");
+  let db_config = await db.get('config', 'config');
+  db_config['displayWaveform'] = !db_config['displayWaveform'];
+  await db.put('config', db_config, 'config');
   port?.postMessage({ config: db_config });
 }
 
 export async function broadcastConfig(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
-  log.info("broadcasting config data");
+  log.info('broadcasting config data');
 
-  const config = await db.get("config", "config");
+  const config = await db.get('config', 'config');
   port?.postMessage({ config: config });
 }
 
 export async function setupDB(db: any): Promise<void> {
-  const dbConfig = await db.get("config", "config");
+  const dbConfig = await db.get('config', 'config');
   const mergedConfig = mergeData(defaultConfig, dbConfig);
-  await db.put("config", mergedConfig, "config");
+  await db.put('config', mergedConfig, 'config');
 }
 
 export function mergeData(reference_config: Config, new_config: Partial<Config>): Config {
   return Object.assign({}, reference_config, new_config);
 }
-

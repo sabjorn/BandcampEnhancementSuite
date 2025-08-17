@@ -16,24 +16,15 @@
     "default_title": "Bandcamp Enhancement Suite",
     "default_popup": "html/browser_action.html"
   },
-  "host_permissions": [
-    "http://*.bandcamp.com/*",
-    "https://*.bandcamp.com/*",
-    "https://t4.bcbits.com/stream/*"
-  ],
+  "host_permissions": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*", "https://t4.bcbits.com/stream/*"],
   "minimum_chrome_version": "93",
   "background": {
     "service_worker": "dist/background.js"
   },
   "content_scripts": [
     {
-      "matches": [
-        "http://*.bandcamp.com/*",
-        "https://*.bandcamp.com/*"
-      ],
-      "js": [
-        "dist/main.js"
-      ],
+      "matches": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*"],
+      "js": ["dist/main.js"],
       "css": ["css/style.css"]
     }
   ],
@@ -42,4 +33,5 @@
       "id": "{3ca9d5aa-ad9f-4f7f-861b-999fe5c87273}",
       "strict_min_version": "109.0"
     }
-  }}
+  }
+}

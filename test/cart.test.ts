@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { createPagedata, createDomNodes, cleanupTestNodes } from './utils'
-import { initCart } from '../src/pages/cart'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createPagedata, createDomNodes, cleanupTestNodes } from './utils';
+import { initCart } from '../src/pages/cart';
 
 describe('Cart', () => {
   afterEach(() => {
-    cleanupTestNodes()
-    vi.restoreAllMocks()
-  })
+    cleanupTestNodes();
+    vi.restoreAllMocks();
+  });
 
   describe('init()', () => {
     beforeEach(() => {
@@ -14,28 +14,28 @@ describe('Cart', () => {
         <div id="sidecartReveal">
           <div class="cart-controls"></div>
         </div>
-      `)
-    })
+      `);
+    });
 
     it('should initialize cart functionality', async () => {
-      await expect(initCart()).resolves.not.toThrow()
-    })
-  })
+      await expect(initCart()).resolves.not.toThrow();
+    });
+  });
 
   describe('cart operations', () => {
     beforeEach(() => {
-      createPagedata()
+      createPagedata();
       createDomNodes(`
         <div id="cart-container">
           <div class="cart-item">Test Item</div>
         </div>
-      `)
-    })
+      `);
+    });
 
     it('should handle cart items', () => {
-      const cartContainer = document.querySelector('#cart-container')
-      expect(cartContainer).toBeTruthy()
-      expect(cartContainer?.querySelector('.cart-item')).toBeTruthy()
-    })
-  })
-})
+      const cartContainer = document.querySelector('#cart-container');
+      expect(cartContainer).toBeTruthy();
+      expect(cartContainer?.querySelector('.cart-item')).toBeTruthy();
+    });
+  });
+});

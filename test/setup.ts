@@ -1,4 +1,4 @@
-import { beforeEach, afterEach } from 'vitest'
+import { beforeEach, afterEach } from 'vitest';
 
 const mockChrome = {
   runtime: {
@@ -17,28 +17,28 @@ const mockChrome = {
   storage: {
     local: {
       get: () => Promise.resolve({}),
-      set: () => Promise.resolve(),
+      set: () => Promise.resolve()
     }
   }
-}
+};
 
 Object.defineProperty(globalThis, 'chrome', {
   value: mockChrome,
   writable: true
-})
+});
 
 beforeEach(() => {
-  document.body.innerHTML = ''
-})
+  document.body.innerHTML = '';
+});
 
 afterEach(() => {
-  const testNodes = document.getElementById('test-nodes')
+  const testNodes = document.getElementById('test-nodes');
   if (testNodes) {
-    testNodes.remove()
+    testNodes.remove();
   }
-  
-  const pageData = document.getElementById('pagedata')
+
+  const pageData = document.getElementById('pagedata');
   if (pageData) {
-    pageData.remove()
+    pageData.remove();
   }
-})
+});

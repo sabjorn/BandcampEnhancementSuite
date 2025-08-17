@@ -1,4 +1,3 @@
-
 type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
 interface LevelColors {
@@ -24,14 +23,14 @@ interface LoggerConfig {
 
 function createLoggerConfig(level?: LogLevel): LoggerConfig {
   return {
-    level: level || (process.env.NODE_ENV === "production" ? "error" : "debug"),
+    level: level || (process.env.NODE_ENV === 'production' ? 'error' : 'debug'),
     levelColors: {
-      info: "darkturquoise",
-      debug: "khaki", 
-      error: "tomato",
-      warn: "orange"
+      info: 'darkturquoise',
+      debug: 'khaki',
+      error: 'tomato',
+      warn: 'orange'
     },
-    defaultColor: "color: inherit",
+    defaultColor: 'color: inherit',
     levels: {
       error: 0,
       warn: 1,
@@ -57,37 +56,37 @@ function formatMessage(config: LoggerConfig, level: LogLevel, message: any): (st
 
 export function createLogger(level?: LogLevel) {
   const config = createLoggerConfig(level);
-  
+
   const logger = {
-    debug: shouldLog(config, 'debug') 
+    debug: shouldLog(config, 'debug')
       ? (message: any) => {
           // eslint-disable-next-line no-console
           console.log(...formatMessage(config, 'debug', message));
         }
       : () => {},
-    
-    info: shouldLog(config, 'info') 
+
+    info: shouldLog(config, 'info')
       ? (message: any) => {
           // eslint-disable-next-line no-console
           console.log(...formatMessage(config, 'info', message));
         }
       : () => {},
-    
-    warn: shouldLog(config, 'warn') 
+
+    warn: shouldLog(config, 'warn')
       ? (message: any) => {
           // eslint-disable-next-line no-console
           console.warn(...formatMessage(config, 'warn', message));
         }
       : () => {},
-    
-    error: shouldLog(config, 'error') 
+
+    error: shouldLog(config, 'error')
       ? (message: any) => {
           // eslint-disable-next-line no-console
           console.error(...formatMessage(config, 'error', message));
         }
       : () => {}
   };
-  
+
   return logger;
 }
 
@@ -97,36 +96,36 @@ export default class Logger {
   constructor(level?: LogLevel) {
     this.config = createLoggerConfig(level);
   }
-  
+
   private shouldLog(level: LogLevel): boolean {
     return shouldLog(this.config, level);
   }
-  
+
   private formatMessage(level: LogLevel, message: any): (string | any)[] {
     return formatMessage(this.config, level, message);
   }
-  
+
   debug(message: any): void {
     if (this.shouldLog('debug')) {
       // eslint-disable-next-line no-console
       console.log(...this.formatMessage('debug', message));
     }
   }
-  
+
   info(message: any): void {
     if (this.shouldLog('info')) {
       // eslint-disable-next-line no-console
       console.log(...this.formatMessage('info', message));
     }
   }
-  
+
   warn(message: any): void {
     if (this.shouldLog('warn')) {
       // eslint-disable-next-line no-console
       console.warn(...this.formatMessage('warn', message));
     }
   }
-  
+
   error(message: any): void {
     if (this.shouldLog('error')) {
       // eslint-disable-next-line no-console

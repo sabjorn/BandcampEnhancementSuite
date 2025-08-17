@@ -4,7 +4,7 @@ import { initDownloadHelper } from "./download_helper";
 import { initPlayer } from "./player";
 import { initAudioFeatures } from "./audioFeatures";
 import { initCart } from "./pages/cart";
-import { initHideUnhide } from "./pages/hideUnhide";
+import { initHideUnhide } from "./pages/hide_unhide_collection";
 
 const main = async (): Promise<void> => {
   const log = createLogger();

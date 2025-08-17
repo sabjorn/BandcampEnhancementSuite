@@ -371,7 +371,7 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
   }
 }
 
-export async function initUnhideBackend(): Promise<void> {
+export async function initHideUnhideCollectionBackend(): Promise<void> {
   const portState: { port?: chrome.runtime.Port } = {};
   
   log.info("initializing UnhideBackend");

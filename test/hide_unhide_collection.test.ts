@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createDomNodes, cleanupTestNodes } from './utils'
-import { initHideUnhide } from '../src/pages/hideUnhide'
+import { initHideUnhide } from '../src/pages/hide_unhide_collection'
 
 const mockPort = {
   postMessage: vi.fn(),

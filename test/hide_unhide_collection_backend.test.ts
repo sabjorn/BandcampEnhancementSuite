@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { connectionListenerCallback, portListenerCallback } from '../src/background/unhide_backend'
+import { connectionListenerCallback, portListenerCallback } from '../src/background/hide_unhide_collection_backend'
 
 // Mock the bclient module
 vi.mock('../src/bclient', () => ({

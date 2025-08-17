@@ -198,26 +198,28 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
       batchCount++;
       log.info(`Fetching hidden items batch ${batchCount} with token: "${older_than_token}"`);
       
-      let hiddenItemsResponse: GetHiddenItemsResponse;
-      try {
-        hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
-        log.info(`Hidden items batch ${batchCount} fetched successfully. Response: ${JSON.stringify(hiddenItemsResponse)}`);
-        
-        // Validate response structure
-        if (!hiddenItemsResponse || typeof hiddenItemsResponse !== 'object') {
-          throw new Error(`Invalid response structure: ${JSON.stringify(hiddenItemsResponse)}`);
-        }
-        
-        if (!Array.isArray(hiddenItemsResponse.items)) {
-          log.error(`hiddenItemsResponse.items is not an array: ${JSON.stringify(hiddenItemsResponse.items)}`);
-          throw new Error(`Response items field is not an array: ${typeof hiddenItemsResponse.items}`);
-        }
-        
-        log.info(`Found ${hiddenItemsResponse.items.length} items in batch ${batchCount}`);
-      } catch (error) {
-        log.error(`Failed to fetch hidden items batch ${batchCount}: ${error}`);
-        throw new Error(`Failed to fetch hidden items: ${error}`);
-      }
+      const hiddenItemsResponse: GetHiddenItemsResponse = await (async () => {
+          try {
+            let hiddenItemsResponse =  await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
+            log.info(`Hidden items batch ${batchCount} fetched successfully. Response: ${JSON.stringify(hiddenItemsResponse)}`);
+            
+            // Validate response structure
+            if (!hiddenItemsResponse || typeof hiddenItemsResponse !== 'object') {
+              throw new Error(`Invalid response structure: ${JSON.stringify(hiddenItemsResponse)}`);
+            }
+            
+            if (!Array.isArray(hiddenItemsResponse.items)) {
+              log.error(`hiddenItemsResponse.items is not an array: ${JSON.stringify(hiddenItemsResponse.items)}`);
+              throw new Error(`Response items field is not an array: ${typeof hiddenItemsResponse.items}`);
+            }
+            
+            log.info(`Found ${hiddenItemsResponse.items.length} items in batch ${batchCount}`);
+            return hiddenItemsResponse;
+          } catch (error) {
+            log.error(`Failed to fetch hidden items batch ${batchCount}: ${error}`);
+            throw new Error(`Failed to fetch hidden items: ${error}`);
+          }
+      })();
       
       // Convert hidden items to queue items
       const queueItems: HideUnhideItem[] = hiddenItemsResponse.items.map((item: HiddenItem) => ({

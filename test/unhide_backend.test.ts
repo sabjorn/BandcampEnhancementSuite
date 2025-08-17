@@ -5,6 +5,7 @@ import { connectionListenerCallback, portListenerCallback } from '../src/backgro
 vi.mock('../src/bclient', () => ({
   getCollectionSummary: vi.fn(),
   getHiddenItems: vi.fn(),
+  getCollectionItems: vi.fn(),
   hideUnhide: vi.fn()
 }))
 
@@ -18,7 +19,7 @@ vi.mock('../src/logger', () => ({
   }))
 }))
 
-import { getCollectionSummary, getHiddenItems, hideUnhide } from '../src/bclient'
+import { getCollectionSummary, getHiddenItems, getCollectionItems, hideUnhide } from '../src/bclient'
 
 describe('unhide_backend', () => {
   let mockPort: any
@@ -197,7 +198,8 @@ describe('unhide_backend', () => {
           queue: expect.any(Array),
           processedCount: expect.any(Number),
           totalCount: expect.any(Number),
-          errors: expect.any(Array)
+          errors: expect.any(Array),
+          action: expect.any(String)
         })
       })
     })
@@ -251,6 +253,537 @@ describe('unhide_backend', () => {
 
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
         unhideError: { message: "Failed to get collection summary: Error: API Error" } 
+      })
+    })
+
+    it('should handle hide message', async () => {
+      const mockCollectionSummary = {
+        fan_id: 123456,
+        username: 'testuser',
+        url: 'https://bandcamp.com/testuser',
+        tralbum_lookup: {},
+        follows: { following: {} }
+      }
+
+      const mockCollectionItemsResponse = {
+        items: [
+          {
+            fan_id: 123456,
+            item_id: 789,
+            item_type: 'track',
+            band_id: 1,
+            added: '2025-01-01',
+            updated: '2025-01-01',
+            purchased: '2025-01-01',
+            sale_item_id: 1,
+            sale_item_type: 'p',
+            tralbum_id: 789,
+            tralbum_type: 't',
+            featured_track: 789,
+            why: null,
+            hidden: null, // This item is visible
+            index: null,
+            also_collected_count: 100,
+            url_hints: {
+              subdomain: 'test',
+              custom_domain: null,
+              custom_domain_verified: null,
+              slug: 'test-track',
+              item_type: 't'
+            },
+            item_title: 'Test Track',
+            item_url: 'https://test.bandcamp.com/track/test-track',
+            item_art_id: 1,
+            item_art_url: 'https://test.com/art.jpg',
+            item_art: {
+              url: 'https://test.com/art.jpg',
+              thumb_url: 'https://test.com/art_thumb.jpg',
+              art_id: 1
+            },
+            band_name: 'Test Band',
+            band_url: 'https://test.bandcamp.com',
+            genre_id: 1,
+            featured_track_title: 'Test Track',
+            featured_track_number: 1,
+            featured_track_is_custom: false,
+            featured_track_duration: 180,
+            featured_track_url: null,
+            featured_track_encodings_id: 1,
+            package_details: null,
+            num_streamable_tracks: 1,
+            is_purchasable: true,
+            is_private: false,
+            is_preorder: false,
+            is_giftable: true,
+            is_subscriber_only: false,
+            is_subscription_item: false,
+            service_name: null,
+            service_url_fragment: null,
+            gift_sender_name: null,
+            gift_sender_note: null,
+            gift_id: null,
+            gift_recipient_name: null,
+            album_id: 100,
+            album_title: 'Test Album',
+            listen_in_app_url: 'https://test.com/app',
+            band_location: null,
+            band_image_id: null,
+            release_count: null,
+            message_count: null,
+            is_set_price: false,
+            price: 1.0,
+            has_digital_download: true,
+            merch_ids: [],
+            merch_sold_out: false,
+            currency: 'USD',
+            label: null,
+            label_id: null,
+            require_email: null,
+            item_art_ids: null,
+            releases: null,
+            discount: null,
+            token: 'test-token',
+            variant_id: null,
+            merch_snapshot: null,
+            featured_track_license_id: null,
+            licensed_item: null,
+            download_available: true
+          },
+          {
+            fan_id: 123456,
+            item_id: 790,
+            item_type: 'album',
+            band_id: 2,
+            added: '2025-01-02',
+            updated: '2025-01-02',
+            purchased: '2025-01-02',
+            sale_item_id: 2,
+            sale_item_type: 'p',
+            tralbum_id: 790,
+            tralbum_type: 'a',
+            featured_track: 790,
+            why: null,
+            hidden: 1, // This item is already hidden, should be filtered out
+            index: null,
+            also_collected_count: 50,
+            url_hints: {
+              subdomain: 'test2',
+              custom_domain: null,
+              custom_domain_verified: null,
+              slug: 'test-album',
+              item_type: 'a'
+            },
+            item_title: 'Test Album',
+            item_url: 'https://test2.bandcamp.com/album/test-album',
+            item_art_id: 2,
+            item_art_url: 'https://test2.com/art.jpg',
+            item_art: {
+              url: 'https://test2.com/art.jpg',
+              thumb_url: 'https://test2.com/art_thumb.jpg',
+              art_id: 2
+            },
+            band_name: 'Test Band 2',
+            band_url: 'https://test2.bandcamp.com',
+            genre_id: 2,
+            featured_track_title: 'Test Album',
+            featured_track_number: 1,
+            featured_track_is_custom: false,
+            featured_track_duration: 200,
+            featured_track_url: null,
+            featured_track_encodings_id: 2,
+            package_details: null,
+            num_streamable_tracks: 5,
+            is_purchasable: true,
+            is_private: false,
+            is_preorder: false,
+            is_giftable: true,
+            is_subscriber_only: false,
+            is_subscription_item: false,
+            service_name: null,
+            service_url_fragment: null,
+            gift_sender_name: null,
+            gift_sender_note: null,
+            gift_id: null,
+            gift_recipient_name: null,
+            album_id: 200,
+            album_title: 'Test Album',
+            listen_in_app_url: 'https://test2.com/app',
+            band_location: null,
+            band_image_id: null,
+            release_count: null,
+            message_count: null,
+            is_set_price: false,
+            price: 5.0,
+            has_digital_download: true,
+            merch_ids: [],
+            merch_sold_out: false,
+            currency: 'USD',
+            label: null,
+            label_id: null,
+            require_email: null,
+            item_art_ids: null,
+            releases: null,
+            discount: null,
+            token: 'test-token-2',
+            variant_id: null,
+            merch_snapshot: null,
+            featured_track_license_id: null,
+            licensed_item: null,
+            download_available: true
+          }
+        ],
+        more_available: false,
+        tracklists: {},
+        redownload_urls: {},
+        item_lookup: {},
+        last_token: 'final-token',
+        purchase_infos: {},
+        collectors: {}
+      }
+
+      vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
+      vi.mocked(getCollectionItems).mockResolvedValue(mockCollectionItemsResponse)
+      vi.mocked(hideUnhide).mockResolvedValue(true)
+
+      const message = {
+        hide: {
+          crumb: 'test-crumb'
+        }
+      }
+
+      await portListenerCallback(message, portState)
+
+      expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
+      expect(getCollectionItems).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      
+      // Wait for queue processing to complete
+      await new Promise(resolve => setTimeout(resolve, 0))
+      
+      // Should only hide the visible item (hidden: null), not the already hidden one (hidden: 1)
+      expect(hideUnhide).toHaveBeenCalledWith('hide', 123456, 'track', 789, 'test-crumb', 'https://bandcamp.com')
+      expect(hideUnhide).not.toHaveBeenCalledWith('hide', 123456, 'album', 790, expect.anything(), expect.anything())
+      
+      // Should send completion message after processing
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        hideComplete: { message: 'Successfully hidden 1 items' }
+      })
+    })
+
+    it('should handle hide message with no visible items', async () => {
+      const mockCollectionSummary = {
+        fan_id: 123456,
+        username: 'testuser',
+        url: 'https://bandcamp.com/testuser',
+        tralbum_lookup: {},
+        follows: { following: {} }
+      }
+
+      const mockCollectionItemsResponse = {
+        items: [],
+        more_available: false,
+        tracklists: {},
+        redownload_urls: {},
+        item_lookup: {},
+        last_token: 'final-token',
+        purchase_infos: {},
+        collectors: {}
+      }
+
+      vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
+      vi.mocked(getCollectionItems).mockResolvedValue(mockCollectionItemsResponse)
+
+      const message = {
+        hide: {
+          crumb: 'test-crumb'
+        }
+      }
+
+      await portListenerCallback(message, portState)
+
+      expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
+      expect(getCollectionItems).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
+        hideComplete: { message: "No visible items found" } 
+      })
+    })
+
+    it('should handle hide API errors gracefully', async () => {
+      vi.mocked(getCollectionSummary).mockRejectedValue(new Error('Collection API Error'))
+
+      const message = {
+        hide: {
+          crumb: 'test-crumb'
+        }
+      }
+
+      await portListenerCallback(message, portState)
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
+        hideError: { message: "Failed to get collection summary: Error: Collection API Error" } 
+      })
+    })
+
+    it('should handle getUnhideState message for hide operation', async () => {
+      // First, start a hide operation to set the action to "hide"
+      const mockCollectionSummary = {
+        fan_id: 123456,
+        username: 'testuser',
+        url: 'https://bandcamp.com/testuser',
+        tralbum_lookup: {},
+        follows: { following: {} }
+      }
+
+      const mockCollectionItemsResponse = {
+        items: [
+          {
+            fan_id: 123456,
+            item_id: 789,
+            item_type: 'track',
+            hidden: null,
+            band_id: 1,
+            added: '2025-01-01',
+            updated: '2025-01-01',
+            purchased: '2025-01-01',
+            sale_item_id: 1,
+            sale_item_type: 'p',
+            tralbum_id: 789,
+            tralbum_type: 't',
+            featured_track: 789,
+            why: null,
+            index: null,
+            also_collected_count: 100,
+            url_hints: {
+              subdomain: 'test',
+              custom_domain: null,
+              custom_domain_verified: null,
+              slug: 'test-track',
+              item_type: 't'
+            },
+            item_title: 'Test Track',
+            item_url: 'https://test.bandcamp.com/track/test-track',
+            item_art_id: 1,
+            item_art_url: 'https://test.com/art.jpg',
+            item_art: {
+              url: 'https://test.com/art.jpg',
+              thumb_url: 'https://test.com/art_thumb.jpg',
+              art_id: 1
+            },
+            band_name: 'Test Band',
+            band_url: 'https://test.bandcamp.com',
+            genre_id: 1,
+            featured_track_title: 'Test Track',
+            featured_track_number: 1,
+            featured_track_is_custom: false,
+            featured_track_duration: 180,
+            featured_track_url: null,
+            featured_track_encodings_id: 1,
+            package_details: null,
+            num_streamable_tracks: 1,
+            is_purchasable: true,
+            is_private: false,
+            is_preorder: false,
+            is_giftable: true,
+            is_subscriber_only: false,
+            is_subscription_item: false,
+            service_name: null,
+            service_url_fragment: null,
+            gift_sender_name: null,
+            gift_sender_note: null,
+            gift_id: null,
+            gift_recipient_name: null,
+            album_id: 100,
+            album_title: 'Test Album',
+            listen_in_app_url: 'https://test.com/app',
+            band_location: null,
+            band_image_id: null,
+            release_count: null,
+            message_count: null,
+            is_set_price: false,
+            price: 1.0,
+            has_digital_download: true,
+            merch_ids: [],
+            merch_sold_out: false,
+            currency: 'USD',
+            label: null,
+            label_id: null,
+            require_email: null,
+            item_art_ids: null,
+            releases: null,
+            discount: null,
+            token: 'test-token',
+            variant_id: null,
+            merch_snapshot: null,
+            featured_track_license_id: null,
+            licensed_item: null,
+            download_available: true
+          }
+        ],
+        more_available: false,
+        tracklists: {},
+        redownload_urls: {},
+        item_lookup: {},
+        last_token: 'final-token',
+        purchase_infos: {},
+        collectors: {}
+      }
+
+      vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
+      vi.mocked(getCollectionItems).mockResolvedValue(mockCollectionItemsResponse)
+      vi.mocked(hideUnhide).mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(true), 100)))
+
+      // Start hide operation
+      const hideMessage = {
+        hide: {
+          crumb: 'test-crumb'
+        }
+      }
+
+      const hidePromise = portListenerCallback(hideMessage, portState)
+
+      // While hide is processing, check state
+      await new Promise(resolve => setTimeout(resolve, 10)) // Small delay to let queue start
+      
+      const stateMessage = { getUnhideState: true }
+      await portListenerCallback(stateMessage, portState)
+
+      // The state should indicate a hide operation
+      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
+        hideState: expect.objectContaining({
+          isProcessing: expect.any(Boolean),
+          queue: expect.any(Array),
+          processedCount: expect.any(Number),
+          totalCount: expect.any(Number),
+          errors: expect.any(Array),
+          action: 'hide'
+        })
+      })
+
+      await hidePromise
+    })
+
+    it('should filter out already hidden items from hide operation', async () => {
+      const mockCollectionSummary = {
+        fan_id: 123456,
+        username: 'testuser',
+        url: 'https://bandcamp.com/testuser',
+        tralbum_lookup: {},
+        follows: { following: {} }
+      }
+
+      const mockCollectionItemsResponse = {
+        items: [
+          {
+            fan_id: 123456,
+            item_id: 789,
+            item_type: 'track',
+            hidden: 1, // Already hidden
+            band_id: 1,
+            added: '2025-01-01',
+            updated: '2025-01-01',
+            purchased: '2025-01-01',
+            sale_item_id: 1,
+            sale_item_type: 'p',
+            tralbum_id: 789,
+            tralbum_type: 't',
+            featured_track: 789,
+            why: null,
+            index: null,
+            also_collected_count: 100,
+            url_hints: {
+              subdomain: 'test',
+              custom_domain: null,
+              custom_domain_verified: null,
+              slug: 'test-track',
+              item_type: 't'
+            },
+            item_title: 'Test Track',
+            item_url: 'https://test.bandcamp.com/track/test-track',
+            item_art_id: 1,
+            item_art_url: 'https://test.com/art.jpg',
+            item_art: {
+              url: 'https://test.com/art.jpg',
+              thumb_url: 'https://test.com/art_thumb.jpg',
+              art_id: 1
+            },
+            band_name: 'Test Band',
+            band_url: 'https://test.bandcamp.com',
+            genre_id: 1,
+            featured_track_title: 'Test Track',
+            featured_track_number: 1,
+            featured_track_is_custom: false,
+            featured_track_duration: 180,
+            featured_track_url: null,
+            featured_track_encodings_id: 1,
+            package_details: null,
+            num_streamable_tracks: 1,
+            is_purchasable: true,
+            is_private: false,
+            is_preorder: false,
+            is_giftable: true,
+            is_subscriber_only: false,
+            is_subscription_item: false,
+            service_name: null,
+            service_url_fragment: null,
+            gift_sender_name: null,
+            gift_sender_note: null,
+            gift_id: null,
+            gift_recipient_name: null,
+            album_id: 100,
+            album_title: 'Test Album',
+            listen_in_app_url: 'https://test.com/app',
+            band_location: null,
+            band_image_id: null,
+            release_count: null,
+            message_count: null,
+            is_set_price: false,
+            price: 1.0,
+            has_digital_download: true,
+            merch_ids: [],
+            merch_sold_out: false,
+            currency: 'USD',
+            label: null,
+            label_id: null,
+            require_email: null,
+            item_art_ids: null,
+            releases: null,
+            discount: null,
+            token: 'test-token',
+            variant_id: null,
+            merch_snapshot: null,
+            featured_track_license_id: null,
+            licensed_item: null,
+            download_available: true
+          }
+        ],
+        more_available: false,
+        tracklists: {},
+        redownload_urls: {},
+        item_lookup: {},
+        last_token: 'final-token',
+        purchase_infos: {},
+        collectors: {}
+      }
+
+      vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
+      vi.mocked(getCollectionItems).mockResolvedValue(mockCollectionItemsResponse)
+
+      const message = {
+        hide: {
+          crumb: 'test-crumb'
+        }
+      }
+
+      await portListenerCallback(message, portState)
+
+      expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
+      expect(getCollectionItems).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      
+      // Should not call hideUnhide because the item is already hidden
+      expect(hideUnhide).not.toHaveBeenCalled()
+      
+      // Should send completion message indicating no visible items
+      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
+        hideComplete: { message: "No visible items found" } 
       })
     })
   })

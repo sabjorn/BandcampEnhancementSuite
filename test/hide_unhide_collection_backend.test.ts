@@ -4,8 +4,8 @@ import { connectionListenerCallback, portListenerCallback } from '../src/backgro
 // Mock the bclient module
 vi.mock('../src/bclient', () => ({
   getCollectionSummary: vi.fn(),
-  getHiddenItems: vi.fn(),
-  getCollectionItems: vi.fn(),
+  getHiddenItemsRateLimited: vi.fn(),
+  getCollectionItemsRateLimited: vi.fn(),
   hideUnhide: vi.fn()
 }))
 
@@ -19,7 +19,7 @@ vi.mock('../src/logger', () => ({
   }))
 }))
 
-import { getCollectionSummary, getHiddenItems, getCollectionItems, hideUnhide } from '../src/bclient'
+import { getCollectionSummary, getHiddenItemsRateLimited, getCollectionItemsRateLimited, hideUnhide } from '../src/bclient'
 
 describe('unhide_backend', () => {
   let mockPort: any
@@ -163,7 +163,7 @@ describe('unhide_backend', () => {
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
-      vi.mocked(getHiddenItems).mockResolvedValue(mockHiddenItemsResponse)
+      vi.mocked(getHiddenItemsRateLimited).mockResolvedValue(mockHiddenItemsResponse)
       vi.mocked(hideUnhide).mockResolvedValue(true)
 
       const message = {
@@ -175,7 +175,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getHiddenItems).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
       
       // Wait for queue processing to complete
       await new Promise(resolve => setTimeout(resolve, 0))
@@ -223,7 +223,7 @@ describe('unhide_backend', () => {
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
-      vi.mocked(getHiddenItems).mockResolvedValue(mockHiddenItemsResponse)
+      vi.mocked(getHiddenItemsRateLimited).mockResolvedValue(mockHiddenItemsResponse)
 
       const message = {
         unhide: {
@@ -234,7 +234,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getHiddenItems).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
         unhideComplete: { message: "No hidden items found" } 
       })
@@ -442,7 +442,7 @@ describe('unhide_backend', () => {
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
-      vi.mocked(getCollectionItems).mockResolvedValue(mockCollectionItemsResponse)
+      vi.mocked(getCollectionItemsRateLimited).mockResolvedValue(mockCollectionItemsResponse)
       vi.mocked(hideUnhide).mockResolvedValue(true)
 
       const message = {
@@ -454,7 +454,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getCollectionItems).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
       
       // Wait for queue processing to complete
       await new Promise(resolve => setTimeout(resolve, 0))
@@ -490,7 +490,7 @@ describe('unhide_backend', () => {
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
-      vi.mocked(getCollectionItems).mockResolvedValue(mockCollectionItemsResponse)
+      vi.mocked(getCollectionItemsRateLimited).mockResolvedValue(mockCollectionItemsResponse)
 
       const message = {
         hide: {
@@ -501,7 +501,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getCollectionItems).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
         hideComplete: { message: "No visible items found" } 
       })
@@ -628,7 +628,7 @@ describe('unhide_backend', () => {
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
-      vi.mocked(getCollectionItems).mockResolvedValue(mockCollectionItemsResponse)
+      vi.mocked(getCollectionItemsRateLimited).mockResolvedValue(mockCollectionItemsResponse)
       vi.mocked(hideUnhide).mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(true), 100)))
 
       // Start hide operation
@@ -765,7 +765,7 @@ describe('unhide_backend', () => {
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
-      vi.mocked(getCollectionItems).mockResolvedValue(mockCollectionItemsResponse)
+      vi.mocked(getCollectionItemsRateLimited).mockResolvedValue(mockCollectionItemsResponse)
 
       const message = {
         hide: {
@@ -776,7 +776,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getCollectionItems).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
+      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 20, 'https://bandcamp.com')
       
       // Should not call hideUnhide because the item is already hidden
       expect(hideUnhide).not.toHaveBeenCalled()

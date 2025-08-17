@@ -1,5 +1,5 @@
 import Logger from "../logger.js";
-import { getCollectionSummary, getHiddenItems, getCollectionItems, hideUnhide, type GetHiddenItemsResponse, type HiddenItem, type GetCollectionItemsResponse, type CollectionItem } from "../bclient.js";
+import { getCollectionSummary, getHiddenItemsRateLimited, getCollectionItemsRateLimited, hideUnhide, type GetHiddenItemsResponse, type HiddenItem, type GetCollectionItemsResponse, type CollectionItem } from "../bclient.js";
 
 const log = new Logger();
 
@@ -215,7 +215,7 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
       
       let hiddenItemsResponse: GetHiddenItemsResponse;
       try {
-        hiddenItemsResponse = await getHiddenItems(fan_id, older_than_token, 20, baseUrl);
+        hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 20, baseUrl);
         log.info(`Hidden items batch ${batchCount} fetched successfully. Response: ${JSON.stringify(hiddenItemsResponse)}`);
         
         // Validate response structure
@@ -310,7 +310,7 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
       
       let collectionItemsResponse: GetCollectionItemsResponse;
       try {
-        collectionItemsResponse = await getCollectionItems(fan_id, older_than_token, 20, baseUrl);
+        collectionItemsResponse = await getCollectionItemsRateLimited(fan_id, older_than_token, 20, baseUrl);
         log.info(`Collection items batch ${batchCount} fetched successfully. Found ${collectionItemsResponse.items.length} items`);
         
         // Validate response structure

@@ -55,6 +55,23 @@ export async function initHideUnhide(): Promise<void> {
   });
   unhideButton.id = "bes-unhide-button";
 
+  const pageDataElement = document.getElementById('pagedata');
+  if (pageDataElement && pageDataElement.getAttribute('data-blob')) {
+    const { hidden_data: { item_count }, collection_count } = JSON.parse(pageDataElement.getAttribute('data-blob'));
+    
+    if (item_count === collection_count) {
+      hideButton.style.opacity = '0.5';
+      hideButton.style.pointerEvents = 'none';
+      hideButton.setAttribute('disabled', 'true');
+    }
+    
+    if (item_count === 0) {
+      unhideButton.style.opacity = '0.5';
+      unhideButton.style.pointerEvents = 'none';
+      unhideButton.setAttribute('disabled', 'true');
+    }
+  }
+
   const collectionItemsDiv = document.querySelector("div.collection-items");
   if (!collectionItemsDiv) {
         return;

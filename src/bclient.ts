@@ -299,3 +299,144 @@ export async function getHiddenItems(fan_id: number, older_than_token: string, c
   const data = await response.json();
   return data;
 }
+
+interface GetCollectionItemsBody {
+  fan_id: number;
+  older_than_token: string;
+  count: number;
+}
+
+interface TrackFile {
+  "mp3-v0": string;
+}
+
+interface TracklistItem {
+  id: number;
+  title: string;
+  artist: string;
+  track_number: number;
+  duration: number;
+  file: TrackFile;
+}
+
+export interface CollectionItem {
+  fan_id: number;
+  item_id: number;
+  item_type: string;
+  band_id: number;
+  added: string;
+  updated: string;
+  purchased: string;
+  sale_item_id: number;
+  sale_item_type: string;
+  tralbum_id: number;
+  tralbum_type: string;
+  featured_track: number;
+  why: string | null;
+  hidden: number | null;
+  index: number | null;
+  also_collected_count: number;
+  url_hints: HiddenItemUrlHints;
+  item_title: string;
+  item_url: string;
+  item_art_id: number;
+  item_art_url: string;
+  item_art: HiddenItemArt;
+  band_name: string;
+  band_url: string;
+  genre_id: number | null;
+  featured_track_title: string;
+  featured_track_number: number;
+  featured_track_is_custom: boolean;
+  featured_track_duration: number;
+  featured_track_url: string | null;
+  featured_track_encodings_id: number;
+  package_details: any | null;
+  num_streamable_tracks: number;
+  is_purchasable: boolean;
+  is_private: boolean;
+  is_preorder: boolean;
+  is_giftable: boolean;
+  is_subscriber_only: boolean;
+  is_subscription_item: boolean;
+  service_name: string | null;
+  service_url_fragment: string | null;
+  gift_sender_name: string | null;
+  gift_sender_note: string | null;
+  gift_id: string | null;
+  gift_recipient_name: string | null;
+  album_id: number;
+  album_title: string;
+  listen_in_app_url: string;
+  band_location: string | null;
+  band_image_id: number | null;
+  release_count: number | null;
+  message_count: number | null;
+  is_set_price: boolean;
+  price: number;
+  has_digital_download: boolean | null;
+  merch_ids: number[];
+  merch_sold_out: boolean;
+  currency: string;
+  label: string | null;
+  label_id: number | null;
+  require_email: boolean | null;
+  item_art_ids: any[] | null;
+  releases: any | null;
+  discount: any | null;
+  token: string;
+  variant_id: any | null;
+  merch_snapshot: any | null;
+  featured_track_license_id: number | null;
+  licensed_item: any | null;
+  download_available: boolean;
+}
+
+export interface GetCollectionItemsResponse {
+  items: CollectionItem[];
+  more_available: boolean;
+  tracklists: Record<string, TracklistItem[]>;
+  redownload_urls: Record<string, string>;
+  item_lookup: Record<string, { item_type: string; purchased: boolean }>;
+  last_token: string;
+  purchase_infos: Record<string, any>;
+  collectors: Record<string, any>;
+}
+
+export async function getCollectionItems(fan_id: number, older_than_token: string, count: number = 20, baseUrl: string | null = null): Promise<GetCollectionItemsResponse> {
+  const bodyData: GetCollectionItemsBody = {
+    fan_id,
+    older_than_token,
+    count
+  };
+
+  const url = baseUrl ? `${baseUrl}/api/fancollection/1/collection_items` : `https://bandcamp.com/api/fancollection/1/collection_items`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      accept: "*/*",
+      "accept-language": "en-US,en;q=0.9,ar;q=0.8",
+      "content-type": "application/json",
+      priority: "u=1, i",
+      "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Google Chrome\";v=\"138\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"macOS\"",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin",
+      "x-requested-with": "XMLHttpRequest"
+    },
+    referrer: "https://bandcamp.com/dataist",
+    body: JSON.stringify(bodyData),
+    mode: "cors",
+    credentials: "include"
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data;
+}

@@ -49,8 +49,8 @@ class ProgressTracker {
     log.info(`Starting to process ${this.currentAction} operation with ${items.length} items`);
     this.broadcastState();
 
-    // Process all items concurrently - rate limiting handled by hideUnhideRateLimited
-    const promises = items.map(async (item) => {
+    // Process all items sequentially to ensure proper rate limiting
+    for (const item of items) {
       try {
         log.info(`${item.action}ing item ${item.item_id} (${item.item_type})`);
         
@@ -73,10 +73,7 @@ class ProgressTracker {
 
       // Broadcast progress after each completion
       this.broadcastState();
-    });
-
-    // Wait for all operations to complete
-    await Promise.all(promises);
+    }
 
     this.isProcessing = false;
     log.info(`Finished processing ${this.currentAction} operation. Processed: ${this.processedCount}, Errors: ${this.errors.length}`);

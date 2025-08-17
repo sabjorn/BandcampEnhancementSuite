@@ -35,7 +35,7 @@ export async function initLabelViewBackend(): Promise<void> {
   log.info("initializing LabelViewBackend");
   
   chrome.runtime.onConnect.addListener(function(port) {
-    if (port.name !== "bandcamplabelview") {
+    if (port.name !== "bes") {
       log.error(
         `Unexpected chrome.runtime.onConnect port name: ${port.name}`
       );

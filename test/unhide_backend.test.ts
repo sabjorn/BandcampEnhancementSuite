@@ -29,7 +29,7 @@ describe('unhide_backend', () => {
     vi.clearAllMocks()
     
     mockPort = {
-      name: 'bandcampenhancementsuite',
+      name: 'bes',
       postMessage: vi.fn(),
       onMessage: {
         addListener: vi.fn()
@@ -180,7 +180,7 @@ describe('unhide_backend', () => {
       // Wait for queue processing to complete
       await new Promise(resolve => setTimeout(resolve, 0))
       
-      // Should send completion message after processing
+      // Should send completion message after processing (check all calls for the completion message)
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         unhideComplete: { message: 'Successfully unhidden 1 items' }
       })
@@ -463,7 +463,7 @@ describe('unhide_backend', () => {
       expect(hideUnhide).toHaveBeenCalledWith('hide', 123456, 'track', 789, 'test-crumb', 'https://bandcamp.com')
       expect(hideUnhide).not.toHaveBeenCalledWith('hide', 123456, 'album', 790, expect.anything(), expect.anything())
       
-      // Should send completion message after processing
+      // Should send completion message after processing (check all calls for the completion message)
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         hideComplete: { message: 'Successfully hidden 1 items' }
       })

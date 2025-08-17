@@ -4,15 +4,10 @@ import { showSuccessMessage, showErrorMessage, showPersistentNotification, updat
 
 const log = new Logger();
 
-export async function initHideUnhide(): Promise<void> {
+export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
   log.info("hideUnhide init");
 
-  let port: chrome.runtime.Port;
-
-  try {
-    port = chrome.runtime.connect(null, { name: "bandcampenhancementsuite" });
-
-    port.onMessage.addListener(msg => {
+  port.onMessage.addListener(msg => {
       if (msg.unhideState) {
         log.info(`Unhide state update: ${JSON.stringify(msg.unhideState)}`);
         updateUnhideButtonState(msg.unhideState);
@@ -42,10 +37,6 @@ export async function initHideUnhide(): Promise<void> {
         showErrorMessage(`Hide error: ${msg.hideError.message}`);
       }
     });
-  } catch (e: any) {
-    log.error(`Failed to connect to background script: ${e}`);
-    return;
-  }
 
   const hideButton = createButton({
     className: "follow-unfollow bes-hideUnhide",

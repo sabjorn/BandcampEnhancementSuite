@@ -24,7 +24,7 @@ export function connectionListenerCallback(
 ): void {
   log.info("connection listener callback");
   
-  if (port.name !== "bandcamplabelview") {
+  if (port.name !== "bes") {
     log.error(
       `Unexpected chrome.runtime.onConnect port name: ${port.name}`
     );

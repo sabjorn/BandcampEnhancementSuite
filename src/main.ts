@@ -9,12 +9,27 @@ import { initHideUnhide } from "./pages/hideUnhide";
 const main = async (): Promise<void> => {
   const log = createLogger();
 
-  initLabelView();
-
   const checkIsDownloadPage: Element | null = document.querySelector(".download-item-container");
   if (checkIsDownloadPage) {
     initDownloadHelper();
   }
+
+  const config_port: chrome.runtime.Port = (() => {
+    try {
+      return chrome.runtime.connect(null, { name: "bes" });
+    } catch (e: any) {
+      if (
+        e.message?.includes("Error in invocation of runtime.connect in main.js")
+      ) {
+        log.error(e);
+        throw e;
+      } else {
+        throw e;
+      }
+    }
+  })();
+
+  initLabelView(config_port);
 
   const checkIsPageWithPlayer: Element | null = document.querySelector("div.inline_player");
   if (
@@ -22,21 +37,6 @@ const main = async (): Promise<void> => {
     window.location.href !== "https://bandcamp.com/"
   ) {
     await initPlayer();
-
-    let config_port: chrome.runtime.Port;
-    try {
-      config_port = chrome.runtime.connect(null, { name: "bandcamplabelview" });
-    } catch (e: any) {
-      if (
-        e.message?.includes("Error in invocation of runtime.connect in main.js")
-      ) {
-        log.error(e);
-        return;
-      } else {
-        throw e;
-      }
-    }
-
     initAudioFeatures(config_port);
   }
 
@@ -53,7 +53,7 @@ const main = async (): Promise<void> => {
 
   const checkIsCollectionPage: Element | null = document.querySelector('ol.collection-grid.editable.ui-sortable');
   if (checkIsCollectionPage) {
-    await initHideUnhide();
+    await initHideUnhide(config_port);
   }
 };
 

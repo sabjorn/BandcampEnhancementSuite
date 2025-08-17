@@ -98,9 +98,10 @@ class RateLimitedQueue {
     this.broadcastState();
     
     // Send completion message
+    const actionPastTense = this.currentAction === "hide" ? "hidden" : "unhidden";
     const completionMessage = this.errors.length > 0 
-      ? `${this.processedCount} items ${this.currentAction}n with ${this.errors.length} errors`
-      : `Successfully ${this.currentAction}n ${this.processedCount} items`;
+      ? `${this.processedCount} items ${actionPastTense} with ${this.errors.length} errors`
+      : `Successfully ${actionPastTense} ${this.processedCount} items`;
     
     const messageKey = this.currentAction === "hide" ? "hideComplete" : "unhideComplete";
     this.port?.postMessage({ [messageKey]: { message: completionMessage } });
@@ -140,7 +141,7 @@ export function connectionListenerCallback(
 ): void {
   log.info("unhide backend connection listener callback");
   
-  if (port.name !== "bandcampenhancementsuite") {
+  if (port.name !== "bes") {
     log.error(
       `Unexpected chrome.runtime.onConnect port name: ${port.name}`
     );

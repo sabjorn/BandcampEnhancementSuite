@@ -1,3 +1,6 @@
+// Rate limiting configuration
+const API_RATE_LIMIT_DELAY_MS = 2000;
+
 // Rate limiting utility for API calls
 function createRateLimitedFunction<T extends (...args: any[]) => Promise<any>>(fn: T, delayMs: number): T {
   let lastCallTime = 0;
@@ -459,7 +462,6 @@ export async function getCollectionItems(fan_id: number, older_than_token: strin
 }
 
 // Rate-limited versions of API functions to prevent rate limiting
-// 2 second delay to be conservative with Bandcamp's rate limits
-export const getHiddenItemsRateLimited = createRateLimitedFunction(getHiddenItems, 2000);
-export const getCollectionItemsRateLimited = createRateLimitedFunction(getCollectionItems, 2000);
-export const hideUnhideRateLimited = createRateLimitedFunction(hideUnhide, 2000);
+export const getHiddenItemsRateLimited = createRateLimitedFunction(getHiddenItems, API_RATE_LIMIT_DELAY_MS);
+export const getCollectionItemsRateLimited = createRateLimitedFunction(getCollectionItems, API_RATE_LIMIT_DELAY_MS);
+export const hideUnhideRateLimited = createRateLimitedFunction(hideUnhide, API_RATE_LIMIT_DELAY_MS);

@@ -1,4 +1,4 @@
-const API_RATE_LIMIT_DELAY_MS = 500;
+const API_RATE_LIMIT_DELAY_MS = 1000;
 
 // Rate limiting utility for API calls
 function createRateLimitedFunction<T extends (...args: any[]) => Promise<any>>(fn: T, delayMs: number): T {

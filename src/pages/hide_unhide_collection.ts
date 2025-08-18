@@ -97,9 +97,42 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     }
   }
 
-  const collectionSearchDiv = document.getElementById("collection-search");
+  let collectionSearchDiv = document.getElementById("collection-search");
+  
   if (!collectionSearchDiv) {
-        return;
+    // Create the owner-controls structure if it doesn't exist
+    const ownerControls = document.createElement("div");
+    ownerControls.id = "owner-controls";
+    ownerControls.className = "owner-controls collection-controls has-search";
+    
+    // Create collection-search div (without search elements)
+    collectionSearchDiv = document.createElement("div");
+    collectionSearchDiv.id = "collection-search";
+    collectionSearchDiv.className = "search";
+    
+    // Create hidden-links div
+    const hiddenLinksDiv = document.createElement("div");
+    hiddenLinksDiv.className = "hidden-links";
+    
+    const showHiddenLink = document.createElement("a");
+    showHiddenLink.className = "show-hidden";
+    
+    const linkTitle = document.createElement("span");
+    linkTitle.className = "link-title";
+    linkTitle.textContent = "hidden items";
+    
+    showHiddenLink.appendChild(linkTitle);
+    hiddenLinksDiv.appendChild(showHiddenLink);
+    
+    // Assemble the structure
+    ownerControls.appendChild(collectionSearchDiv);
+    ownerControls.appendChild(hiddenLinksDiv);
+    
+    // Insert before collection-grid
+    const collectionGrid = document.getElementById("collection-grid");
+    if (collectionGrid) {
+      collectionGrid.parentNode?.insertBefore(ownerControls, collectionGrid);
+    }
   }
 
   // Insert buttons inside the collection-search div (which is a flexbox)

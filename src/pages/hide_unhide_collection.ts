@@ -44,8 +44,10 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     buttonClicked: () => {
       log.info("hide all button clicked");
       
-      // Immediately disable button and show initial notification
+      // Immediately disable both buttons and show initial notification
       hideButton.disable();
+      const unhideButton = document.getElementById("bes-unhide-button") as HTMLAnchorElement & { disable: () => void; enable: () => void };
+      if (unhideButton) unhideButton.disable();
       showPersistentNotification({
         id: HIDE_UNHIDE_STATUS_ID,
         message: '<div style="font-weight: bold;">🔄 Hide process is beginning...</div>',
@@ -65,8 +67,10 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     buttonClicked: () => {
       log.info("unhide all button clicked");
       
-      // Immediately disable button and show initial notification
+      // Immediately disable both buttons and show initial notification
       unhideButton.disable();
+      const hideButton = document.getElementById("bes-hide-button") as HTMLAnchorElement & { disable: () => void; enable: () => void };
+      if (hideButton) hideButton.disable();
       showPersistentNotification({
         id: HIDE_UNHIDE_STATUS_ID,
         message: '<div style="font-weight: bold;">🔄 Unhide process is beginning...</div>',
@@ -107,17 +111,19 @@ const HIDE_UNHIDE_STATUS_ID = 'bes-hide-unhide-status-notification';
 
 function updateUnhideButtonState(state: any): void {
   const unhideButton = document.getElementById("bes-unhide-button") as HTMLAnchorElement & { disable: () => void; enable: () => void };
+  const hideButton = document.getElementById("bes-hide-button") as HTMLAnchorElement & { disable: () => void; enable: () => void };
   
   if (!unhideButton) return;
 
   if (!state.isProcessing) {
-    unhideButton.enable();
+    // When unhide completes, enable only the hide button (opposite action)
+    if (hideButton) hideButton.enable();
     removePersistentNotification(HIDE_UNHIDE_STATUS_ID);
         return;
   }
+  // During processing, keep both buttons disabled
   unhideButton.disable();
-  
-  const remaining = state.totalCount - state.processedCount;
+  if (hideButton) hideButton.disable();
   const statusContent = `
     <div style="font-weight: bold; margin-bottom: 8px;">🔄 Unhiding your collection items...</div>
     <div>Progress: ${state.processedCount}/${state.totalCount}</div>
@@ -139,15 +145,19 @@ function updateUnhideButtonState(state: any): void {
 
 function updateHideButtonState(state: any): void {
   const hideButton = document.getElementById("bes-hide-button") as HTMLAnchorElement & { disable: () => void; enable: () => void };
+  const unhideButton = document.getElementById("bes-unhide-button") as HTMLAnchorElement & { disable: () => void; enable: () => void };
   
   if (!hideButton) return;
 
   if (!state.isProcessing) {
-    hideButton.enable();
+    // When hide completes, enable only the unhide button (opposite action)
+    if (unhideButton) unhideButton.enable();
     removePersistentNotification(HIDE_UNHIDE_STATUS_ID);
         return;
   }
+  // During processing, keep both buttons disabled
   hideButton.disable();
+  if (unhideButton) unhideButton.disable();
   
   const statusContent = `
     <div style="font-weight: bold; margin-bottom: 8px;">🔄 Hiding your collection items...</div>

@@ -176,9 +176,13 @@ describe('HideUnhide', () => {
       })
       
       expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull()
-      expect(unhideButton.getAttribute('disabled')).toBeNull()
-      expect(unhideButton.style.opacity).toBe('')
-      expect(unhideButton.style.pointerEvents).toBe('')
+      // After unhide completes, unhide button stays disabled, hide button becomes enabled
+      expect(unhideButton.getAttribute('disabled')).toBe('true')
+      
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
+      expect(hideButton.getAttribute('disabled')).toBeNull()
+      expect(hideButton.style.opacity).toBe('')
+      expect(hideButton.style.pointerEvents).toBe('')
       expect(unhideButton.textContent).toBe('unhide all')
       
       messageHandler({
@@ -340,9 +344,13 @@ describe('HideUnhide', () => {
       })
       
       expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull()
-      expect(hideButton.getAttribute('disabled')).toBeNull()
-      expect(hideButton.style.opacity).toBe('')
-      expect(hideButton.style.pointerEvents).toBe('')
+      // After hide completes, hide button stays disabled, unhide button becomes enabled
+      expect(hideButton.getAttribute('disabled')).toBe('true')
+      
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
+      expect(unhideButton.getAttribute('disabled')).toBeNull()
+      expect(unhideButton.style.opacity).toBe('')
+      expect(unhideButton.style.pointerEvents).toBe('')
       expect(hideButton.textContent).toBe('hide all')
       
       messageHandler({
@@ -376,6 +384,62 @@ describe('HideUnhide', () => {
       
       const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
       expect(statusNotification.innerHTML).toContain('3 errors occurred')
+    })
+
+    it('should disable both buttons during hide processing', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      }
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `)
+      
+      await initHideUnhide(mockPort as any)
+      
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
+      
+      messageHandler({
+        hideState: {
+          isProcessing: true,
+          processedCount: 2,
+          totalCount: 6,
+          errors: []
+        }
+      })
+      
+      // Both buttons should be disabled during processing
+      expect(hideButton.getAttribute('disabled')).toBe('true')
+      expect(unhideButton.getAttribute('disabled')).toBe('true')
+    })
+
+    it('should disable both buttons during unhide processing', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      }
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `)
+      
+      await initHideUnhide(mockPort as any)
+      
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
+      
+      messageHandler({
+        unhideState: {
+          isProcessing: true,
+          processedCount: 3,
+          totalCount: 8,
+          errors: []
+        }
+      })
+      
+      // Both buttons should be disabled during processing
+      expect(hideButton.getAttribute('disabled')).toBe('true')
+      expect(unhideButton.getAttribute('disabled')).toBe('true')
     })
 
     it('should handle hide completion message', async () => {

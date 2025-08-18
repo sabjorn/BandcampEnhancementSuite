@@ -1,4 +1,4 @@
-import { beforeEach, afterEach } from 'vitest'
+import { beforeEach, afterEach, vi } from 'vitest'
 
 const mockChrome = {
   runtime: {
@@ -26,6 +26,11 @@ Object.defineProperty(globalThis, 'chrome', {
   value: mockChrome,
   writable: true
 })
+
+// Global fetch mock to prevent real network requests
+globalThis.fetch = vi.fn().mockResolvedValue(
+  new Response('{"mock": true}', { status: 200 })
+)
 
 beforeEach(() => {
   document.body.innerHTML = ''

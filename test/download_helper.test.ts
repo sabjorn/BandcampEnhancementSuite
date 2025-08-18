@@ -57,7 +57,7 @@ describe('DownloadHelper', () => {
     it('should handle download links', () => {
       const downloadContainer = document.querySelector('.download-container')
       expect(downloadContainer).toBeTruthy()
-      
+
       const downloadLink = downloadContainer?.querySelector('a[href*="/download/"]')
       expect(downloadLink).toBeTruthy()
     })

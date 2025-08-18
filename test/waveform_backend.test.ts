@@ -26,8 +26,8 @@ describe('Waveform Backend', () => {
 
   it('should manage waveform rendering backend operations', () => {
     const mockMessage = { contentScriptQuery: 'renderBuffer', url: 'test.mp3' }
-    
-    vi.mocked(globalThis.chrome.runtime.onMessage.addListener).mockImplementation((callback) => {
+
+    vi.mocked(globalThis.chrome.runtime.onMessage.addListener).mockImplementation(callback => {
       callback(mockMessage, {}, vi.fn())
     })
 
@@ -36,7 +36,7 @@ describe('Waveform Backend', () => {
 
   it('should handle audio buffer processing', () => {
     const mockArrayBuffer = new ArrayBuffer(1024)
-    
+
     expect(mockArrayBuffer.byteLength).toBe(1024)
   })
 })

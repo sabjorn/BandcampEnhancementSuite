@@ -14,7 +14,9 @@ vi.mock('../src/logger', () => ({
 // Mock bclient to prevent real network requests
 vi.mock('../src/bclient', () => ({
   addAlbumToCart: vi.fn().mockResolvedValue(new Response('{"success": true}', { status: 200 })),
-  getTralbumDetails: vi.fn().mockResolvedValue(new Response('{"id": 123, "title": "Test Album", "price": 10}', { status: 200 }))
+  getTralbumDetails: vi
+    .fn()
+    .mockResolvedValue(new Response('{"id": 123, "title": "Test Album", "price": 10}', { status: 200 }))
 }))
 
 import { initCart } from '../src/pages/cart'

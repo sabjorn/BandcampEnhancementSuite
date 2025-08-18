@@ -17,7 +17,7 @@ const mockChrome = {
   storage: {
     local: {
       get: () => Promise.resolve({}),
-      set: () => Promise.resolve(),
+      set: () => Promise.resolve()
     }
   }
 }
@@ -28,9 +28,7 @@ Object.defineProperty(globalThis, 'chrome', {
 })
 
 // Global fetch mock to prevent real network requests
-globalThis.fetch = vi.fn().mockResolvedValue(
-  new Response('{"mock": true}', { status: 200 })
-)
+globalThis.fetch = vi.fn().mockResolvedValue(new Response('{"mock": true}', { status: 200 }))
 
 beforeEach(() => {
   document.body.innerHTML = ''
@@ -41,7 +39,7 @@ afterEach(() => {
   if (testNodes) {
     testNodes.remove()
   }
-  
+
   const pageData = document.getElementById('pagedata')
   if (pageData) {
     pageData.remove()

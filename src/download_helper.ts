@@ -1,108 +1,101 @@
-import Logger from "./logger";
-import { downloadFile, dateString } from "./utilities";
+import Logger from './logger'
+import { downloadFile, dateString } from './utilities'
 
-export function mutationCallback(
-  button: HTMLButtonElement | undefined, 
-  log: Logger
-): void {
-  const allDownloadLinks = document.querySelectorAll(
-    ".download-title .item-button"
-  );
+export function mutationCallback(button: HTMLButtonElement | undefined, log: Logger): void {
+  const allDownloadLinks = document.querySelectorAll('.download-title .item-button')
 
-  const linksReady = [...allDownloadLinks].every(
-    element => (element as HTMLElement).style.display !== "none"
-  );
+  const linksReady = [...allDownloadLinks].every(element => (element as HTMLElement).style.display !== 'none')
 
-  log.info(`linksReady: ${linksReady}`);
+  log.info(`linksReady: ${linksReady}`)
   if (linksReady) {
-    enableButton(button, log);
-    return;
+    enableButton(button, log)
+    return
   }
 
-  disableButton(button, log);
+  disableButton(button, log)
 }
 
 export function createButton(log: Logger): HTMLButtonElement | undefined {
-  const location = document.querySelector("div.download-titles");
+  const location = document.querySelector('div.download-titles')
   if (!location) {
-    log.warn("Cannot create download button: div.download-titles element not found");
-    return undefined;
+    log.warn('Cannot create download button: div.download-titles element not found')
+    return undefined
   }
 
-  const button = document.createElement("button");
-  button.title = "Generates a file for automating downloads using 'cURL'";
-  button.className = "bes-downloadall";
-  button.disabled = true;
-  button.textContent = "preparing download";
+  const button = document.createElement('button')
+  button.title = "Generates a file for automating downloads using 'cURL'"
+  button.className = 'bes-downloadall'
+  button.disabled = true
+  button.textContent = 'preparing download'
 
-  location.append(button);
-  return button;
+  location.append(button)
+  return button
 }
 
 export function enableButton(button: HTMLButtonElement | undefined, log: Logger): void {
-  if (!button) return;
-  
-  log.info("enableButton()");
+  if (!button) return
 
-  button.disabled = false;
-  button.textContent = "Download cURL File";
+  log.info('enableButton()')
 
-  button.addEventListener("click", function() {
-    const date = dateString();
-    const downloadList = generateDownloadList();
-    const preamble = getDownloadPreamble();
-    const postamble = getDownloadPostamble();
-    const downloadDocument = preamble + downloadList + postamble;
+  button.disabled = false
+  button.textContent = 'Download cURL File'
 
-    downloadFile(`bandcamp_${date}.txt`, downloadDocument);
-  });
+  button.addEventListener('click', function () {
+    const date = dateString()
+    const downloadList = generateDownloadList()
+    const preamble = getDownloadPreamble()
+    const postamble = getDownloadPostamble()
+    const downloadDocument = preamble + downloadList + postamble
+
+    downloadFile(`bandcamp_${date}.txt`, downloadDocument)
+  })
 }
 
 export function disableButton(button: HTMLButtonElement | undefined, log: Logger): void {
-  if (!button) return;
-  
-  log.info("disableButton()");
+  if (!button) return
 
-  button.disabled = true;
-  button.textContent = "preparing download";
+  log.info('disableButton()')
+
+  button.disabled = true
+  button.textContent = 'preparing download'
 }
 
 export async function initDownloadHelper(): Promise<void> {
-  const log = new Logger();
-  
-  log.info("Initiating BES Download Helper");
+  const log = new Logger()
 
-  const button = createButton(log);
+  log.info('Initiating BES Download Helper')
 
-  const callback = () => mutationCallback(button, log);
-  const observer = new MutationObserver(callback);
+  const button = createButton(log)
 
-  callback(); 
+  const callback = () => mutationCallback(button, log)
+  const observer = new MutationObserver(callback)
 
-  const config = { attributes: true, attributeFilter: ["href"] }; 
-  const targetNodes = document.querySelectorAll(".download-title .item-button");
+  callback()
+
+  const config = { attributes: true, attributeFilter: ['href'] }
+  const targetNodes = document.querySelectorAll('.download-title .item-button')
 
   for (let node of targetNodes) {
-    observer.observe(node, config);
+    observer.observe(node, config)
   }
 }
 
 export function generateDownloadList(): string {
   const urlSet = new Set(
-    [...document.querySelectorAll("a.item-button")].map(item => {
-      return item.getAttribute("href")!;
+    [...document.querySelectorAll('a.item-button')].map(item => {
+      return item.getAttribute('href')!
     })
-  );
+  )
 
-  if (urlSet.size === 0) return "URLS=()\n";
+  if (urlSet.size === 0) return 'URLS=()\n'
 
-  const fileList = [...urlSet].map(url => `\t"${url}"`).join("\n");
-  return "URLS=(\n" + fileList + "\n)\n";
+  const fileList = [...urlSet].map(url => `\t"${url}"`).join('\n')
+  return 'URLS=(\n' + fileList + '\n)\n'
 }
 
 const preamble = `#!/usr/bin/env bash
 
-`;
+`
 
 const postamble = `
 DEFAULT_BATCH_SIZE=5
@@ -157,12 +150,12 @@ echo "Press any key to exit..."
 read -n 1
 
 exit $FAILED
-`;
+`
 
 export function getDownloadPreamble(): string {
-  return preamble;
+  return preamble
 }
 
 export function getDownloadPostamble(): string {
-  return postamble;
+  return postamble
 }

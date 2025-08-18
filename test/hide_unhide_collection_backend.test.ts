@@ -26,7 +26,7 @@ describe('unhide_backend', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     mockPort = {
       name: 'bes',
       postMessage: vi.fn(),
@@ -34,7 +34,7 @@ describe('unhide_backend', () => {
         addListener: vi.fn()
       }
     }
-    
+
     portState = {}
   })
 
@@ -52,7 +52,7 @@ describe('unhide_backend', () => {
 
     it('should reject invalid port name', () => {
       const invalidPort = { ...mockPort, name: 'invalidport' }
-      
+
       connectionListenerCallback(invalidPort, portState)
 
       // With invalid port name, the function returns early so port is not set
@@ -174,11 +174,16 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
-      
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(
+        123456,
+        expect.stringMatching(/^\d+:999999999:t::$/),
+        100,
+        'https://bandcamp.com'
+      )
+
       // Wait for queue processing to complete
       await new Promise(resolve => setTimeout(resolve, 0))
-      
+
       // Should send completion message after processing (check all calls for the completion message)
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         unhideComplete: { message: 'Successfully unhidden 1 items' }
@@ -191,7 +196,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       // The state should have a default structure since queue gets created
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
         unhideState: expect.objectContaining({
           isProcessing: expect.any(Boolean),
           processedCount: expect.any(Number),
@@ -232,9 +237,14 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        unhideComplete: { message: "No hidden items found" } 
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(
+        123456,
+        expect.stringMatching(/^\d+:999999999:t::$/),
+        100,
+        'https://bandcamp.com'
+      )
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        unhideComplete: { message: 'No hidden items found' }
       })
     })
 
@@ -249,8 +259,8 @@ describe('unhide_backend', () => {
 
       await portListenerCallback(message, portState)
 
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        unhideError: { message: "Failed to get collection summary: Error: API Error" } 
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        unhideError: { message: 'Failed to get collection summary: Error: API Error' }
       })
     })
 
@@ -260,12 +270,12 @@ describe('unhide_backend', () => {
         username: 'testuser',
         url: 'https://bandcamp.com/testuser',
         tralbum_lookup: {
-          't789': {
+          t789: {
             item_id: 789,
             item_type: 'track',
             purchased: '2023-01-01'
           },
-          'a790': {
+          a790: {
             item_id: 790,
             item_type: 'album',
             purchased: '2023-01-01'
@@ -381,17 +391,36 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
-      
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(
+        123456,
+        expect.stringMatching(/^\d+:999999999:t::$/),
+        100,
+        'https://bandcamp.com'
+      )
+
       // Wait for queue processing to complete
       await new Promise(resolve => setTimeout(resolve, 0))
-      
+
       // Should hide the visible items (items in collection but not in hidden items)
       // Item 789 (track) is in collection but not in hidden items, so it should be hidden
       // Item 790 (album) is already hidden, so it should not be hidden again
-      expect(hideUnhideRateLimited).toHaveBeenCalledWith('hide', 123456, 'track', 789, 'test-crumb', 'https://bandcamp.com')
-      expect(hideUnhideRateLimited).not.toHaveBeenCalledWith('hide', 123456, 'album', 790, expect.anything(), expect.anything())
-      
+      expect(hideUnhideRateLimited).toHaveBeenCalledWith(
+        'hide',
+        123456,
+        'track',
+        789,
+        'test-crumb',
+        'https://bandcamp.com'
+      )
+      expect(hideUnhideRateLimited).not.toHaveBeenCalledWith(
+        'hide',
+        123456,
+        'album',
+        790,
+        expect.anything(),
+        expect.anything()
+      )
+
       // Should send completion message after processing (check all calls for the completion message)
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         hideComplete: { message: 'Successfully hidden 1 items' }
@@ -428,9 +457,14 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        hideComplete: { message: "No visible items found" } 
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(
+        123456,
+        expect.stringMatching(/^\d+:999999999:t::$/),
+        100,
+        'https://bandcamp.com'
+      )
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        hideComplete: { message: 'No visible items found' }
       })
     })
 
@@ -445,8 +479,8 @@ describe('unhide_backend', () => {
 
       await portListenerCallback(message, portState)
 
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        hideError: { message: "Failed to get collection summary: Error: Collection API Error" } 
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        hideError: { message: 'Failed to get collection summary: Error: Collection API Error' }
       })
     })
 
@@ -556,7 +590,9 @@ describe('unhide_backend', () => {
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
       vi.mocked(getHiddenItemsRateLimited).mockResolvedValue(mockHiddenItemsResponse)
-      vi.mocked(hideUnhideRateLimited).mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(true), 100)))
+      vi.mocked(hideUnhideRateLimited).mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve(true), 100))
+      )
 
       // Start hide operation
       const hideMessage = {
@@ -569,12 +605,12 @@ describe('unhide_backend', () => {
 
       // While hide is processing, check state
       await new Promise(resolve => setTimeout(resolve, 10)) // Small delay to let queue start
-      
+
       const stateMessage = { getUnhideState: true }
       await portListenerCallback(stateMessage, portState)
 
       // The state should indicate a hide operation
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
         hideState: expect.objectContaining({
           isProcessing: expect.any(Boolean),
           processedCount: expect.any(Number),
@@ -702,14 +738,19 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
-      
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(
+        123456,
+        expect.stringMatching(/^\d+:999999999:t::$/),
+        100,
+        'https://bandcamp.com'
+      )
+
       // Should not call hideUnhide because the item is already hidden
       expect(hideUnhideRateLimited).not.toHaveBeenCalled()
-      
+
       // Should send completion message indicating no visible items
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        hideComplete: { message: "No visible items found" } 
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        hideComplete: { message: 'No visible items found' }
       })
     })
   })

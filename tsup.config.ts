@@ -15,7 +15,7 @@ export default defineConfig({
   outDir: 'dist',
   outExtension() {
     return {
-      js: '.js',
+      js: '.js'
     }
   },
   loader: {
@@ -34,9 +34,9 @@ export default defineConfig({
   esbuildOptions(options) {
     options.define = {
       ...options.define,
-      global: 'globalThis',
+      global: 'globalThis'
     }
     options.inject = options.inject || []
   },
-  onSuccess: process.env.NODE_ENV === 'development' ? 'echo "Build completed"' : undefined,
+  onSuccess: process.env.NODE_ENV === 'development' ? 'echo "Build completed"' : undefined
 })

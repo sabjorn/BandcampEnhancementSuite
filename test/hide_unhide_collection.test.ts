@@ -9,8 +9,6 @@ const mockPort = {
   }
 }
 
-
-
 vi.mock('../src/logger', () => ({
   default: vi.fn().mockImplementation(() => ({
     info: vi.fn(),
@@ -36,7 +34,7 @@ describe('HideUnhide', () => {
       const collectionCount = 10
       const testCrumb = 'test-crumb'
       const apiEndpoint = 'api/collectionowner/1/hide_unhide_item'
-      
+
       createDomNodes(`
         <div id="collection-search">Search div</div>
         <div class="collection-items">
@@ -53,22 +51,22 @@ describe('HideUnhide', () => {
 
     it('should add hide and unhide buttons inside collection-search div', async () => {
       await initHideUnhide(mockPort as any)
-      
+
       const collectionSearchDiv = document.getElementById('collection-search')
       expect(collectionSearchDiv).toBeTruthy()
-      
+
       const hideButton = document.getElementById('bes-hide-button')
       const unhideButton = document.getElementById('bes-unhide-button')
-      
+
       expect(hideButton).toBeTruthy()
       expect(hideButton?.textContent).toBe('hide all')
       expect(unhideButton).toBeTruthy()
       expect(unhideButton?.textContent).toBe('unhide all')
-      
+
       // Check that buttons are children of collection-search
       expect(hideButton?.parentElement).toBe(collectionSearchDiv)
       expect(unhideButton?.parentElement).toBe(collectionSearchDiv)
-      
+
       // Check that buttons have the correct CSS class
       expect(hideButton?.className).toContain('bes-hide-unhide')
       expect(unhideButton?.className).toContain('bes-hide-unhide')
@@ -76,28 +74,28 @@ describe('HideUnhide', () => {
 
     it('should position buttons inside collection-search in correct order', async () => {
       await initHideUnhide(mockPort as any)
-      
+
       const collectionSearchDiv = document.getElementById('collection-search')
       const hideButton = document.getElementById('bes-hide-button')
       const unhideButton = document.getElementById('bes-unhide-button')
-      
+
       // Check that buttons are children of collection-search and in correct order
       expect(hideButton?.parentElement).toBe(collectionSearchDiv)
       expect(unhideButton?.parentElement).toBe(collectionSearchDiv)
-      
+
       // Check that hide button comes before unhide button
       const children = Array.from(collectionSearchDiv?.children || [])
       const hideIndex = children.indexOf(hideButton!)
       const unhideIndex = children.indexOf(unhideButton!)
       expect(hideIndex).toBeLessThan(unhideIndex)
-      
+
       expect(hideButton?.textContent).toBe('hide all')
       expect(unhideButton?.textContent).toBe('unhide all')
     })
 
     it('should set up message listener on provided port', async () => {
       await initHideUnhide(mockPort as any)
-      
+
       expect(mockPort.onMessage.addListener).toHaveBeenCalled()
     })
 
@@ -110,9 +108,9 @@ describe('HideUnhide', () => {
       createDomNodes(`
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
       messageHandler({
         unhideState: {
@@ -122,10 +120,10 @@ describe('HideUnhide', () => {
           errors: []
         }
       })
-      
+
       const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
-      
+
       expect(statusNotification).toBeTruthy()
       expect(statusNotification.classList.contains('bes-notification')).toBe(true)
       expect(statusNotification.classList.contains('bes-status')).toBe(true)
@@ -134,7 +132,7 @@ describe('HideUnhide', () => {
       expect(unhideButton.getAttribute('disabled')).toBe('true')
       expect(unhideButton.style.opacity).toBe('0.5')
       expect(unhideButton.style.pointerEvents).toBe('none')
-      expect(unhideButton.textContent).toBe('unhide all') 
+      expect(unhideButton.textContent).toBe('unhide all')
     })
 
     it('should hide status display when processing is complete', async () => {
@@ -144,12 +142,12 @@ describe('HideUnhide', () => {
       createDomNodes(`
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
-      
+
       messageHandler({
         unhideState: {
           isProcessing: true,
@@ -158,14 +156,14 @@ describe('HideUnhide', () => {
           errors: []
         }
       })
-      
+
       const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
       expect(statusNotification).toBeTruthy()
       expect(statusNotification.classList.contains('bes-status')).toBe(true)
       expect(unhideButton.getAttribute('disabled')).toBe('true')
       expect(unhideButton.style.opacity).toBe('0.5')
       expect(unhideButton.style.pointerEvents).toBe('none')
-      
+
       messageHandler({
         unhideState: {
           isProcessing: false,
@@ -174,23 +172,23 @@ describe('HideUnhide', () => {
           errors: []
         }
       })
-      
+
       expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull()
       // After unhide completes, unhide button stays disabled, hide button becomes enabled
       expect(unhideButton.getAttribute('disabled')).toBe('true')
-      
+
       const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
       expect(hideButton.getAttribute('disabled')).toBeNull()
       expect(hideButton.style.opacity).toBe('')
       expect(hideButton.style.pointerEvents).toBe('')
       expect(unhideButton.textContent).toBe('unhide all')
-      
+
       messageHandler({
         unhideComplete: {
           message: 'All items unhidden'
         }
       })
-      
+
       expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull()
     })
 
@@ -201,9 +199,9 @@ describe('HideUnhide', () => {
       createDomNodes(`
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
       messageHandler({
         unhideState: {
@@ -213,7 +211,7 @@ describe('HideUnhide', () => {
           errors: ['Error 1', 'Error 2']
         }
       })
-      
+
       const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
       expect(statusNotification.innerHTML).toContain('2 errors occurred')
     })
@@ -226,21 +224,21 @@ describe('HideUnhide', () => {
       const crumbsData = {
         [apiEndpoint]: testCrumb
       }
-      
+
       createDomNodes(`
         <div id="pagedata" data-blob='{"hidden_data":{"item_count":${hiddenItemCount}},"collection_count":${collectionCount}}'></div>
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement
-      
+
       expect(unhideButton).toBeTruthy()
       unhideButton.click()
-      
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        unhide: { crumb: testCrumb } 
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        unhide: { crumb: testCrumb }
       })
     })
 
@@ -252,21 +250,21 @@ describe('HideUnhide', () => {
       const crumbsData = {
         [apiEndpoint]: testCrumb
       }
-      
+
       createDomNodes(`
         <div id="pagedata" data-blob='{"hidden_data":{"item_count":${hiddenItemCount}},"collection_count":${collectionCount}}'></div>
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const hideButton = document.getElementById('bes-hide-button') as HTMLElement
-      
+
       expect(hideButton).toBeTruthy()
       hideButton.click()
-      
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        hide: { crumb: testCrumb } 
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        hide: { crumb: testCrumb }
       })
     })
 
@@ -277,9 +275,9 @@ describe('HideUnhide', () => {
       createDomNodes(`
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
       messageHandler({
         hideState: {
@@ -289,10 +287,10 @@ describe('HideUnhide', () => {
           errors: []
         }
       })
-      
+
       const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
       const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
-      
+
       expect(statusNotification).toBeTruthy()
       expect(statusNotification.classList.contains('bes-notification')).toBe(true)
       expect(statusNotification.classList.contains('bes-status')).toBe(true)
@@ -302,7 +300,7 @@ describe('HideUnhide', () => {
       expect(hideButton.getAttribute('disabled')).toBe('true')
       expect(hideButton.style.opacity).toBe('0.5')
       expect(hideButton.style.pointerEvents).toBe('none')
-      expect(hideButton.textContent).toBe('hide all') 
+      expect(hideButton.textContent).toBe('hide all')
     })
 
     it('should hide status display when hide processing is complete', async () => {
@@ -312,12 +310,12 @@ describe('HideUnhide', () => {
       createDomNodes(`
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
       const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
-      
+
       messageHandler({
         hideState: {
           isProcessing: true,
@@ -326,14 +324,14 @@ describe('HideUnhide', () => {
           errors: []
         }
       })
-      
+
       const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
       expect(statusNotification).toBeTruthy()
       expect(statusNotification.classList.contains('bes-status')).toBe(true)
       expect(hideButton.getAttribute('disabled')).toBe('true')
       expect(hideButton.style.opacity).toBe('0.5')
       expect(hideButton.style.pointerEvents).toBe('none')
-      
+
       messageHandler({
         hideState: {
           isProcessing: false,
@@ -342,23 +340,23 @@ describe('HideUnhide', () => {
           errors: []
         }
       })
-      
+
       expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull()
       // After hide completes, hide button stays disabled, unhide button becomes enabled
       expect(hideButton.getAttribute('disabled')).toBe('true')
-      
+
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
       expect(unhideButton.getAttribute('disabled')).toBeNull()
       expect(unhideButton.style.opacity).toBe('')
       expect(unhideButton.style.pointerEvents).toBe('')
       expect(hideButton.textContent).toBe('hide all')
-      
+
       messageHandler({
         hideComplete: {
           message: 'All items hidden'
         }
       })
-      
+
       expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull()
     })
 
@@ -369,9 +367,9 @@ describe('HideUnhide', () => {
       createDomNodes(`
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
       messageHandler({
         hideState: {
@@ -381,7 +379,7 @@ describe('HideUnhide', () => {
           errors: ['Error 1', 'Error 2', 'Error 3']
         }
       })
-      
+
       const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement
       expect(statusNotification.innerHTML).toContain('3 errors occurred')
     })
@@ -393,13 +391,13 @@ describe('HideUnhide', () => {
       createDomNodes(`
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
       const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
-      
+
       messageHandler({
         hideState: {
           isProcessing: true,
@@ -408,7 +406,7 @@ describe('HideUnhide', () => {
           errors: []
         }
       })
-      
+
       // Both buttons should be disabled during processing
       expect(hideButton.getAttribute('disabled')).toBe('true')
       expect(unhideButton.getAttribute('disabled')).toBe('true')
@@ -421,13 +419,13 @@ describe('HideUnhide', () => {
       createDomNodes(`
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
       const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
-      
+
       messageHandler({
         unhideState: {
           isProcessing: true,
@@ -436,7 +434,7 @@ describe('HideUnhide', () => {
           errors: []
         }
       })
-      
+
       // Both buttons should be disabled during processing
       expect(hideButton.getAttribute('disabled')).toBe('true')
       expect(unhideButton.getAttribute('disabled')).toBe('true')
@@ -444,38 +442,42 @@ describe('HideUnhide', () => {
 
     it('should handle hide completion message', async () => {
       await initHideUnhide(mockPort as any)
-      
+
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
-      
+
       // Mock showSuccessMessage to verify it's called
       const showSuccessMessage = vi.fn()
       global.showSuccessMessage = showSuccessMessage
-      
+
       messageHandler({
         hideComplete: {
           message: 'Successfully hidden 5 items'
         }
       })
-      
+
       // Since we can't easily mock the notifications module, we'll just verify the message handler doesn't throw
-      expect(() => messageHandler({
-        hideComplete: {
-          message: 'Successfully hidden 5 items'
-        }
-      })).not.toThrow()
+      expect(() =>
+        messageHandler({
+          hideComplete: {
+            message: 'Successfully hidden 5 items'
+          }
+        })
+      ).not.toThrow()
     })
 
     it('should handle hide error message', async () => {
       await initHideUnhide(mockPort as any)
-      
+
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0]
-      
+
       // Verify the message handler doesn't throw
-      expect(() => messageHandler({
-        hideError: {
-          message: 'Failed to hide items'
-        }
-      })).not.toThrow()
+      expect(() =>
+        messageHandler({
+          hideError: {
+            message: 'Failed to hide items'
+          }
+        })
+      ).not.toThrow()
     })
   })
 
@@ -493,15 +495,15 @@ describe('HideUnhide', () => {
         <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const hideButton = document.getElementById('bes-hide-button') as HTMLElement
-      
+
       hideButton.click()
-      
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        hide: { crumb: 'extracted-hide-crumb-456' } 
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        hide: { crumb: 'extracted-hide-crumb-456' }
       })
     })
 
@@ -513,11 +515,11 @@ describe('HideUnhide', () => {
         </div>
         <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const hideButton = document.getElementById('bes-hide-button') as HTMLElement
-      
+
       expect(() => hideButton.click()).toThrow()
     })
 
@@ -533,15 +535,15 @@ describe('HideUnhide', () => {
         <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const hideButton = document.getElementById('bes-hide-button') as HTMLElement
-      
+
       hideButton.click()
-      
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        hide: { crumb: undefined } 
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        hide: { crumb: undefined }
       })
     })
   })
@@ -560,15 +562,15 @@ describe('HideUnhide', () => {
         <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement
-      
+
       unhideButton.click()
-      
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        unhide: { crumb: 'extracted-crumb-123' } 
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        unhide: { crumb: 'extracted-crumb-123' }
       })
     })
 
@@ -580,11 +582,11 @@ describe('HideUnhide', () => {
         </div>
         <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement
-      
+
       expect(() => unhideButton.click()).toThrow()
     })
 
@@ -597,11 +599,11 @@ describe('HideUnhide', () => {
         <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
         <div id="js-crumbs-data" data-crumbs="invalid-json{"></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement
-      
+
       expect(() => unhideButton.click()).toThrow()
     })
 
@@ -617,15 +619,15 @@ describe('HideUnhide', () => {
         <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
-      
+
       await initHideUnhide(mockPort as any)
-      
+
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement
-      
+
       unhideButton.click()
-      
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        unhide: { crumb: undefined } 
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        unhide: { crumb: undefined }
       })
     })
   })
@@ -643,7 +645,7 @@ describe('HideUnhide', () => {
 
     it('should return early when collection-search div is not found', async () => {
       await initHideUnhide(mockPort as any)
-      
+
       const buttons = document.querySelectorAll('a.follow-unfollow.bes-hide-unhide')
       expect(buttons).toHaveLength(0)
     })
@@ -659,7 +661,7 @@ describe('HideUnhide', () => {
       const collectionCount = 0
       const testCrumb = 'test-crumb'
       const apiEndpoint = 'api/collectionowner/1/hide_unhide_item'
-      
+
       createDomNodes(`
         <div id="collection-search">Search div</div>
         <div class="collection-items">
@@ -670,14 +672,14 @@ describe('HideUnhide', () => {
       `)
 
       await initHideUnhide(mockPort as any)
-      
+
       const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
-      
+
       expect(hideButton.getAttribute('disabled')).toBe('true')
       expect(hideButton.style.opacity).toBe('0.5')
       expect(hideButton.style.pointerEvents).toBe('none')
-      expect(unhideButton.getAttribute('disabled')).toBeNull() 
+      expect(unhideButton.getAttribute('disabled')).toBeNull()
     })
 
     it('should disable unhide button when no items are hidden (item_count === 0)', async () => {
@@ -691,11 +693,11 @@ describe('HideUnhide', () => {
       `)
 
       await initHideUnhide(mockPort as any)
-      
+
       const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
-      
-      expect(hideButton.getAttribute('disabled')).toBeNull() 
+
+      expect(hideButton.getAttribute('disabled')).toBeNull()
       expect(unhideButton.getAttribute('disabled')).toBe('true')
       expect(unhideButton.style.opacity).toBe('0.5')
       expect(unhideButton.style.pointerEvents).toBe('none')
@@ -712,10 +714,10 @@ describe('HideUnhide', () => {
       `)
 
       await initHideUnhide(mockPort as any)
-      
+
       const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement
-      
+
       expect(hideButton.getAttribute('disabled')).toBeNull()
       expect(hideButton.style.opacity).toBe('')
       expect(unhideButton.getAttribute('disabled')).toBeNull()

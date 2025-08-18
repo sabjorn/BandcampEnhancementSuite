@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createDomNodes, cleanupTestNodes } from './utils'
-import { 
-  createCanvas, 
-  createCanvasDisplayToggle, 
+import {
+  createCanvas,
+  createCanvasDisplayToggle,
   createBpmDisplay,
   invertColour,
   toggleWaveformCanvas,
@@ -52,19 +52,17 @@ describe('AudioFeatures', () => {
 
     const expectedMessage = { toggleWaveformDisplay: {} }
     toggleWaveformCanvas(mockPort)
-    expect(mockPort.postMessage).toHaveBeenCalledWith(
-      expect.objectContaining(expectedMessage)
-    )
+    expect(mockPort.postMessage).toHaveBeenCalledWith(expect.objectContaining(expectedMessage))
 
     const canvasFake = { style: { display: 'inherit' } }
     const displayToggle = { checked: false }
-    const mockLog = { info: vi.fn() } 
+    const mockLog = { info: vi.fn() }
 
     applyAudioConfig({ config: { displayWaveform: false } }, canvasFake as any, displayToggle as any, mockLog as any)
     expect(canvasFake.style.display).toBe('none')
 
     expect(() => createCanvas()).not.toThrow()
-    expect(() => createCanvasDisplayToggle()).not.toThrow()  
+    expect(() => createCanvasDisplayToggle()).not.toThrow()
     expect(() => createBpmDisplay()).not.toThrow()
   })
 })

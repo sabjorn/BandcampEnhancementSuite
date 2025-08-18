@@ -1,5 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { showNotification, showSuccessMessage, showErrorMessage, showInfoMessage, showWarningMessage, showStatusMessage, updateStatusDisplay, hideStatusDisplay, removeStatusDisplay, showPersistentNotification, updatePersistentNotification, removePersistentNotification } from '../src/components/notifications'
+import {
+  showNotification,
+  showSuccessMessage,
+  showErrorMessage,
+  showInfoMessage,
+  showWarningMessage,
+  showStatusMessage,
+  updateStatusDisplay,
+  hideStatusDisplay,
+  removeStatusDisplay,
+  showPersistentNotification,
+  updatePersistentNotification,
+  removePersistentNotification
+} from '../src/components/notifications'
 
 describe('notifications', () => {
   beforeEach(() => {
@@ -312,9 +325,9 @@ describe('notifications', () => {
         })
 
         expect(document.getElementById(testId)).toBeTruthy()
-        
+
         removeStatusDisplay(testId)
-        
+
         expect(document.getElementById(testId)).toBeNull()
       })
 
@@ -396,9 +409,9 @@ describe('notifications', () => {
         })
 
         expect(document.getElementById(testId)).toBeTruthy()
-        
+
         removePersistentNotification(testId)
-        
+
         expect(document.getElementById(testId)).toBeNull()
       })
 

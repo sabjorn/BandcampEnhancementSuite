@@ -1,92 +1,110 @@
-import Logger from "../logger.js";
-import { getCollectionSummary, getHiddenItemsRateLimited, hideUnhideRateLimited, type GetHiddenItemsResponse, type HiddenItem } from "../bclient.js";
+import Logger from '../logger.js'
+import {
+  getCollectionSummary,
+  getHiddenItemsRateLimited,
+  hideUnhideRateLimited,
+  type GetHiddenItemsResponse,
+  type HiddenItem
+} from '../bclient.js'
 
-const log = new Logger();
+const log = new Logger()
 
 interface HideUnhideItem {
-  fan_id: number;
-  item_id: number;
-  item_type: "track" | "album";
-  action: "hide" | "unhide";
-  crumb: string | null;
-  baseUrl: string | null;
+  fan_id: number
+  item_id: number
+  item_type: 'track' | 'album'
+  action: 'hide' | 'unhide'
+  crumb: string | null
+  baseUrl: string | null
 }
 
 interface HideUnhideState {
-  isProcessing: boolean;
-  processedCount: number;
-  totalCount: number;
-  errors: string[];
-  action: "hide" | "unhide";
+  isProcessing: boolean
+  processedCount: number
+  totalCount: number
+  errors: string[]
+  action: 'hide' | 'unhide'
 }
 
 class ProgressTracker {
-  private isProcessing = false;
-  private processedCount = 0;
-  private totalCount = 0;
-  private errors: string[] = [];
-  private currentAction: "hide" | "unhide" = "unhide";
-  private port?: chrome.runtime.Port;
+  private isProcessing = false
+  private processedCount = 0
+  private totalCount = 0
+  private errors: string[] = []
+  private currentAction: 'hide' | 'unhide' = 'unhide'
+  private port?: chrome.runtime.Port
 
   constructor(port?: chrome.runtime.Port) {
-    this.port = port;
+    this.port = port
   }
 
-  async processItems(items: HideUnhideItem[], action: "hide" | "unhide"): Promise<void> {
-    this.currentAction = action;
-    
+  async processItems(items: HideUnhideItem[], action: 'hide' | 'unhide'): Promise<void> {
+    this.currentAction = action
+
     if (items.length === 0) {
-      const messageKey = this.currentAction === "hide" ? "hideComplete" : "unhideComplete";
-      this.port?.postMessage({ [messageKey]: { message: `No ${this.currentAction === "hide" ? "visible" : "hidden"} items found` } });
-      return;
+      const messageKey = this.currentAction === 'hide' ? 'hideComplete' : 'unhideComplete'
+      this.port?.postMessage({
+        [messageKey]: { message: `No ${this.currentAction === 'hide' ? 'visible' : 'hidden'} items found` }
+      })
+      return
     }
 
-    this.isProcessing = true;
-    this.processedCount = 0;
-    this.totalCount = items.length;
-    this.errors = [];
+    this.isProcessing = true
+    this.processedCount = 0
+    this.totalCount = items.length
+    this.errors = []
 
-    log.info(`Starting to process ${this.currentAction} operation with ${items.length} items`);
-    this.broadcastState();
+    log.info(`Starting to process ${this.currentAction} operation with ${items.length} items`)
+    this.broadcastState()
 
     // Process all items sequentially to ensure proper rate limiting
     for (const item of items) {
       try {
-        log.info(`${item.action}ing item ${item.item_id} (${item.item_type})`);
-        
-        const result = await hideUnhideRateLimited(item.action, item.fan_id, item.item_type, item.item_id, item.crumb, item.baseUrl);
-        
+        log.info(`${item.action}ing item ${item.item_id} (${item.item_type})`)
+
+        const result = await hideUnhideRateLimited(
+          item.action,
+          item.fan_id,
+          item.item_type,
+          item.item_id,
+          item.crumb,
+          item.baseUrl
+        )
+
         if (result) {
-          this.processedCount++;
-          log.info(`Successfully ${item.action}d item ${item.item_id}`);
+          this.processedCount++
+          log.info(`Successfully ${item.action}d item ${item.item_id}`)
         } else {
-          const errorMsg = `Failed to ${item.action} item ${item.item_id} - API returned false`;
-          this.errors.push(errorMsg);
-          log.error(errorMsg);
+          const errorMsg = `Failed to ${item.action} item ${item.item_id} - API returned false`
+          this.errors.push(errorMsg)
+          log.error(errorMsg)
         }
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        const fullErrorMsg = `Error ${item.action}ing item ${item.item_id}: ${errorMsg}`;
-        this.errors.push(fullErrorMsg);
-        log.error(`Error ${item.action}ing item ${item.item_id}: ${error}`);
+        const errorMsg = error instanceof Error ? error.message : String(error)
+        const fullErrorMsg = `Error ${item.action}ing item ${item.item_id}: ${errorMsg}`
+        this.errors.push(fullErrorMsg)
+        log.error(`Error ${item.action}ing item ${item.item_id}: ${error}`)
       }
 
       // Broadcast progress after each completion
-      this.broadcastState();
+      this.broadcastState()
     }
 
-    this.isProcessing = false;
-    log.info(`Finished processing ${this.currentAction} operation. Processed: ${this.processedCount}, Errors: ${this.errors.length}`);
-    this.broadcastState();
-    
+    this.isProcessing = false
+    log.info(
+      `Finished processing ${this.currentAction} operation. Processed: ${this.processedCount}, Errors: ${this.errors.length}`
+    )
+    this.broadcastState()
+
     // Send completion message
-    const actionPastTense = this.currentAction === "hide" ? "hidden" : "unhidden";
-    const completionMessage = this.errors.length > 0 
-      ? `${this.processedCount} items ${actionPastTense} with ${this.errors.length} errors`
-      : `Successfully ${actionPastTense} ${this.processedCount} items`;
-    
-    const messageKey = this.currentAction === "hide" ? "hideComplete" : "unhideComplete";
-    this.port?.postMessage({ [messageKey]: { message: completionMessage } });
+    const actionPastTense = this.currentAction === 'hide' ? 'hidden' : 'unhidden'
+    const completionMessage =
+      this.errors.length > 0
+        ? `${this.processedCount} items ${actionPastTense} with ${this.errors.length} errors`
+        : `Successfully ${actionPastTense} ${this.processedCount} items`
+
+    const messageKey = this.currentAction === 'hide' ? 'hideComplete' : 'unhideComplete'
+    this.port?.postMessage({ [messageKey]: { message: completionMessage } })
   }
 
   private broadcastState(): void {
@@ -96,10 +114,10 @@ class ProgressTracker {
       totalCount: this.totalCount,
       errors: [...this.errors],
       action: this.currentAction
-    };
+    }
 
-    const messageKey = this.currentAction === "hide" ? "hideState" : "unhideState";
-    this.port?.postMessage({ [messageKey]: state });
+    const messageKey = this.currentAction === 'hide' ? 'hideState' : 'unhideState'
+    this.port?.postMessage({ [messageKey]: state })
   }
 
   getState(): HideUnhideState {
@@ -109,227 +127,226 @@ class ProgressTracker {
       totalCount: this.totalCount,
       errors: [...this.errors],
       action: this.currentAction
-    };
+    }
   }
 }
 
-let progressTracker: ProgressTracker;
+let progressTracker: ProgressTracker
 
 export function connectionListenerCallback(
-  port: chrome.runtime.Port, 
+  port: chrome.runtime.Port,
   portState: { port?: chrome.runtime.Port }
 ): void {
-  log.info("unhide backend connection listener callback");
-  
-  if (port.name !== "bes") {
-    log.error(
-      `Unexpected chrome.runtime.onConnect port name: ${port.name}`
-    );
-    return;
+  log.info('unhide backend connection listener callback')
+
+  if (port.name !== 'bes') {
+    log.error(`Unexpected chrome.runtime.onConnect port name: ${port.name}`)
+    return
   }
 
-  portState.port = port;
-  progressTracker = new ProgressTracker(port);
-  
-  portState.port.onMessage.addListener((msg: any) => 
-    portListenerCallback(msg, portState)
-  );
+  portState.port = port
+  progressTracker = new ProgressTracker(port)
+
+  portState.port.onMessage.addListener((msg: any) => portListenerCallback(msg, portState))
 }
 
-export async function portListenerCallback(
-  msg: any, 
-  portState: { port?: chrome.runtime.Port }
-): Promise<void> {
-  log.info("hide/unhide backend port listener callback");
+export async function portListenerCallback(msg: any, portState: { port?: chrome.runtime.Port }): Promise<void> {
+  log.info('hide/unhide backend port listener callback')
 
   if (msg.unhide) {
-    await handleUnhideRequest(msg.unhide.crumb, portState.port);
+    await handleUnhideRequest(msg.unhide.crumb, portState.port)
   }
 
   if (msg.hide) {
-    await handleHideRequest(msg.hide.crumb, portState.port);
+    await handleHideRequest(msg.hide.crumb, portState.port)
   }
 
   if (msg.getUnhideState) {
-    const state = progressTracker?.getState();
-    const messageKey = state?.action === "hide" ? "hideState" : "unhideState";
-    portState.port?.postMessage({ [messageKey]: state });
+    const state = progressTracker?.getState()
+    const messageKey = state?.action === 'hide' ? 'hideState' : 'unhideState'
+    portState.port?.postMessage({ [messageKey]: state })
   }
 }
 
 async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.Port): Promise<void> {
   try {
-    log.info("Starting unhide all process");
-    
-    const baseUrl = "https://bandcamp.com";
-    log.info(`Using baseUrl: ${baseUrl}`);
+    log.info('Starting unhide all process')
+
+    const baseUrl = 'https://bandcamp.com'
+    log.info(`Using baseUrl: ${baseUrl}`)
 
     // Get collection summary to get fan_id
-    log.info("Fetching collection summary...");
+    log.info('Fetching collection summary...')
     const collectionSummary = await (async () => {
       try {
-        const result = await getCollectionSummary(baseUrl);
-        log.info(`Collection summary fetched successfully: ${JSON.stringify(result)}`);
-        return result;
+        const result = await getCollectionSummary(baseUrl)
+        log.info(`Collection summary fetched successfully: ${JSON.stringify(result)}`)
+        return result
       } catch (error) {
-        log.error(`Failed to fetch collection summary: ${error}`);
-        throw new Error(`Failed to get collection summary: ${error}`);
+        log.error(`Failed to fetch collection summary: ${error}`)
+        throw new Error(`Failed to get collection summary: ${error}`)
       }
-    })();
+    })()
 
-    const fan_id = collectionSummary.fan_id;
-    log.info(`Got fan_id: ${fan_id}`);
+    const fan_id = collectionSummary.fan_id
+    log.info(`Got fan_id: ${fan_id}`)
 
     // Start with current unix timestamp token to get first batch
     // Token format: "unix_timestamp:item_id:type::"
     // For initial call, we use current timestamp with placeholder values
-    const currentUnixTime = Math.floor(Date.now() / 1000);
-    let older_than_token = `${currentUnixTime}:999999999:t::`;
-    let hasMore = true;
-    let batchCount = 0;
-    const allHiddenItems: HideUnhideItem[] = [];
+    const currentUnixTime = Math.floor(Date.now() / 1000)
+    let older_than_token = `${currentUnixTime}:999999999:t::`
+    let hasMore = true
+    let batchCount = 0
+    const allHiddenItems: HideUnhideItem[] = []
 
-    log.info(`Starting to fetch hidden items for fan_id: ${fan_id} with initial token: ${older_than_token}`);
+    log.info(`Starting to fetch hidden items for fan_id: ${fan_id} with initial token: ${older_than_token}`)
 
     while (hasMore) {
-      batchCount++;
-      log.info(`Fetching hidden items batch ${batchCount} with token: "${older_than_token}"`);
-      
+      batchCount++
+      log.info(`Fetching hidden items batch ${batchCount} with token: "${older_than_token}"`)
+
       const hiddenItemsResponse: GetHiddenItemsResponse = await (async () => {
-          try {
-            let hiddenItemsResponse =  await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
-            log.info(`Hidden items batch ${batchCount} fetched successfully. Response: ${JSON.stringify(hiddenItemsResponse)}`);
-            
-            // Validate response structure
-            if (!hiddenItemsResponse || typeof hiddenItemsResponse !== 'object') {
-              throw new Error(`Invalid response structure: ${JSON.stringify(hiddenItemsResponse)}`);
-            }
-            
-            if (!Array.isArray(hiddenItemsResponse.items)) {
-              log.error(`hiddenItemsResponse.items is not an array: ${JSON.stringify(hiddenItemsResponse.items)}`);
-              throw new Error(`Response items field is not an array: ${typeof hiddenItemsResponse.items}`);
-            }
-            
-            log.info(`Found ${hiddenItemsResponse.items.length} items in batch ${batchCount}`);
-            return hiddenItemsResponse;
-          } catch (error) {
-            log.error(`Failed to fetch hidden items batch ${batchCount}: ${error}`);
-            throw new Error(`Failed to fetch hidden items: ${error}`);
+        try {
+          let hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl)
+          log.info(
+            `Hidden items batch ${batchCount} fetched successfully. Response: ${JSON.stringify(hiddenItemsResponse)}`
+          )
+
+          // Validate response structure
+          if (!hiddenItemsResponse || typeof hiddenItemsResponse !== 'object') {
+            throw new Error(`Invalid response structure: ${JSON.stringify(hiddenItemsResponse)}`)
           }
-      })();
-      
+
+          if (!Array.isArray(hiddenItemsResponse.items)) {
+            log.error(`hiddenItemsResponse.items is not an array: ${JSON.stringify(hiddenItemsResponse.items)}`)
+            throw new Error(`Response items field is not an array: ${typeof hiddenItemsResponse.items}`)
+          }
+
+          log.info(`Found ${hiddenItemsResponse.items.length} items in batch ${batchCount}`)
+          return hiddenItemsResponse
+        } catch (error) {
+          log.error(`Failed to fetch hidden items batch ${batchCount}: ${error}`)
+          throw new Error(`Failed to fetch hidden items: ${error}`)
+        }
+      })()
+
       // Convert hidden items to queue items
       const queueItems: HideUnhideItem[] = hiddenItemsResponse.items.map((item: HiddenItem) => ({
         fan_id: fan_id,
         item_id: item.item_id,
-        item_type: item.item_type as "track" | "album",
-        action: "unhide",
+        item_type: item.item_type as 'track' | 'album',
+        action: 'unhide',
         crumb: crumb,
         baseUrl: baseUrl
-      }));
+      }))
 
-      allHiddenItems.push(...queueItems);
-      
-      log.info(`Found ${queueItems.length} hidden items in batch ${batchCount}. Total so far: ${allHiddenItems.length}`);
+      allHiddenItems.push(...queueItems)
+
+      log.info(
+        `Found ${queueItems.length} hidden items in batch ${batchCount}. Total so far: ${allHiddenItems.length}`
+      )
 
       // Check if there are more items
       if (hiddenItemsResponse.items.length < 100 || !hiddenItemsResponse.last_token) {
-        hasMore = false;
-        log.info(`No more items to fetch. Completed ${batchCount} batches.`);
+        hasMore = false
+        log.info(`No more items to fetch. Completed ${batchCount} batches.`)
       } else {
-        older_than_token = hiddenItemsResponse.last_token;
-        log.info(`Will fetch next batch with token: "${older_than_token}"`);
+        older_than_token = hiddenItemsResponse.last_token
+        log.info(`Will fetch next batch with token: "${older_than_token}"`)
       }
     }
 
-    log.info(`Found total of ${allHiddenItems.length} hidden items to unhide`);
+    log.info(`Found total of ${allHiddenItems.length} hidden items to unhide`)
 
     // Process all items using the progress tracker
-    await progressTracker.processItems(allHiddenItems, "unhide");
-
+    await progressTracker.processItems(allHiddenItems, 'unhide')
   } catch (error) {
-    log.error(`Error in unhide process: ${error}`);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    port?.postMessage({ unhideError: { message: errorMessage } });
+    log.error(`Error in unhide process: ${error}`)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    port?.postMessage({ unhideError: { message: errorMessage } })
   }
 }
 
 async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Port): Promise<void> {
   try {
-    log.info("Starting hide all process");
-    
-    const baseUrl = "https://bandcamp.com";
-    log.info(`Using baseUrl: ${baseUrl}`);
+    log.info('Starting hide all process')
+
+    const baseUrl = 'https://bandcamp.com'
+    log.info(`Using baseUrl: ${baseUrl}`)
 
     // Get collection summary to get fan_id
-    log.info("Fetching collection summary...");
+    log.info('Fetching collection summary...')
     const collectionSummary = await (async () => {
       try {
-        const result = await getCollectionSummary(baseUrl);
-        log.info(`Collection summary fetched successfully: ${JSON.stringify(result)}`);
-        return result;
+        const result = await getCollectionSummary(baseUrl)
+        log.info(`Collection summary fetched successfully: ${JSON.stringify(result)}`)
+        return result
       } catch (error) {
-        log.error(`Failed to fetch collection summary: ${error}`);
-        throw new Error(`Failed to get collection summary: ${error}`);
+        log.error(`Failed to fetch collection summary: ${error}`)
+        throw new Error(`Failed to get collection summary: ${error}`)
       }
-    })();
+    })()
 
-    const fan_id = collectionSummary.fan_id;
-    log.info(`Got fan_id: ${fan_id}`);
+    const fan_id = collectionSummary.fan_id
+    log.info(`Got fan_id: ${fan_id}`)
 
     // Get all items from collection summary (only purchased items)
-    log.info("Getting all items from collection summary...");
-    const allItems = Object.values(collectionSummary.tralbum_lookup)
-      .filter(item => item.purchased !== null);
-    log.info(`Found ${allItems.length} total purchased items in collection`);
+    log.info('Getting all items from collection summary...')
+    const allItems = Object.values(collectionSummary.tralbum_lookup).filter(item => item.purchased !== null)
+    log.info(`Found ${allItems.length} total purchased items in collection`)
 
     // Get all hidden items to subtract from the collection
-    log.info("Fetching hidden items...");
-    const currentUnixTime = Math.floor(Date.now() / 1000);
-    let older_than_token = `${currentUnixTime}:999999999:t::`;
-    let hasMore = true;
-    let batchCount = 0;
-    const allHiddenItems: Set<number> = new Set();
+    log.info('Fetching hidden items...')
+    const currentUnixTime = Math.floor(Date.now() / 1000)
+    let older_than_token = `${currentUnixTime}:999999999:t::`
+    let hasMore = true
+    let batchCount = 0
+    const allHiddenItems: Set<number> = new Set()
 
     while (hasMore) {
-      batchCount++;
-      log.info(`Fetching hidden items batch ${batchCount} with token: "${older_than_token}"`);
-      
+      batchCount++
+      log.info(`Fetching hidden items batch ${batchCount} with token: "${older_than_token}"`)
+
       const hiddenItemsResponse: GetHiddenItemsResponse = await (async () => {
         try {
-          let hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
-          log.info(`Hidden items batch ${batchCount} fetched successfully. Found ${hiddenItemsResponse.items.length} items`);
-          
+          let hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl)
+          log.info(
+            `Hidden items batch ${batchCount} fetched successfully. Found ${hiddenItemsResponse.items.length} items`
+          )
+
           if (!hiddenItemsResponse || typeof hiddenItemsResponse !== 'object') {
-            throw new Error(`Invalid response structure: ${JSON.stringify(hiddenItemsResponse)}`);
+            throw new Error(`Invalid response structure: ${JSON.stringify(hiddenItemsResponse)}`)
           }
-          
+
           if (!Array.isArray(hiddenItemsResponse.items)) {
-            log.error(`hiddenItemsResponse.items is not an array: ${JSON.stringify(hiddenItemsResponse.items)}`);
-            throw new Error(`Response items field is not an array: ${typeof hiddenItemsResponse.items}`);
+            log.error(`hiddenItemsResponse.items is not an array: ${JSON.stringify(hiddenItemsResponse.items)}`)
+            throw new Error(`Response items field is not an array: ${typeof hiddenItemsResponse.items}`)
           }
-          
-          return hiddenItemsResponse;
+
+          return hiddenItemsResponse
         } catch (error) {
-          log.error(`Failed to fetch hidden items batch ${batchCount}: ${error}`);
-          throw new Error(`Failed to fetch hidden items: ${error}`);
+          log.error(`Failed to fetch hidden items batch ${batchCount}: ${error}`)
+          throw new Error(`Failed to fetch hidden items: ${error}`)
         }
-      })();
-      
+      })()
+
       // Add hidden item IDs to the set
       hiddenItemsResponse.items.forEach((item: HiddenItem) => {
-        allHiddenItems.add(item.item_id);
-      });
-      
-      log.info(`Found ${hiddenItemsResponse.items.length} hidden items in batch ${batchCount}. Total hidden so far: ${allHiddenItems.size}`);
+        allHiddenItems.add(item.item_id)
+      })
+
+      log.info(
+        `Found ${hiddenItemsResponse.items.length} hidden items in batch ${batchCount}. Total hidden so far: ${allHiddenItems.size}`
+      )
 
       // Check if there are more items
       if (hiddenItemsResponse.items.length < 100 || !hiddenItemsResponse.last_token) {
-        hasMore = false;
-        log.info(`No more hidden items to fetch. Completed ${batchCount} batches.`);
+        hasMore = false
+        log.info(`No more hidden items to fetch. Completed ${batchCount} batches.`)
       } else {
-        older_than_token = hiddenItemsResponse.last_token;
-        log.info(`Will fetch next batch with token: "${older_than_token}"`);
+        older_than_token = hiddenItemsResponse.last_token
+        log.info(`Will fetch next batch with token: "${older_than_token}"`)
       }
     }
 
@@ -339,30 +356,29 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
       .map(item => ({
         fan_id: fan_id,
         item_id: item.item_id,
-        item_type: item.item_type as "track" | "album",
-        action: "hide",
+        item_type: item.item_type as 'track' | 'album',
+        action: 'hide',
         crumb: crumb,
         baseUrl: baseUrl
-      }));
+      }))
 
-    log.info(`Found total of ${visibleItems.length} visible items to hide (${allItems.length} total - ${allHiddenItems.size} hidden)`);
+    log.info(
+      `Found total of ${visibleItems.length} visible items to hide (${allItems.length} total - ${allHiddenItems.size} hidden)`
+    )
 
     // Process all items using the progress tracker
-    await progressTracker.processItems(visibleItems, "hide");
-
+    await progressTracker.processItems(visibleItems, 'hide')
   } catch (error) {
-    log.error(`Error in hide process: ${error}`);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    port?.postMessage({ hideError: { message: errorMessage } });
+    log.error(`Error in hide process: ${error}`)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    port?.postMessage({ hideError: { message: errorMessage } })
   }
 }
 
 export async function initHideUnhideCollectionBackend(): Promise<void> {
-  const portState: { port?: chrome.runtime.Port } = {};
-  
-  log.info("initializing UnhideBackend");
+  const portState: { port?: chrome.runtime.Port } = {}
 
-  chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) => 
-    connectionListenerCallback(port, portState)
-  );
+  log.info('initializing UnhideBackend')
+
+  chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) => connectionListenerCallback(port, portState))
 }

@@ -20,7 +20,7 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "moduleDetection": "force",
-    
+
     "strict": false,
     "noImplicitAny": false,
     "strictNullChecks": false,
@@ -30,7 +30,7 @@
     "noImplicitThis": false,
     "useUnknownInCatchVariables": false,
     "alwaysStrict": true,
-    
+
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "exactOptionalPropertyTypes": false,
@@ -39,20 +39,13 @@
     "noUncheckedIndexedAccess": false,
     "noImplicitOverride": false,
     "noPropertyAccessFromIndexSignature": false,
-    
+
     "verbatimModuleSyntax": false,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
-    
+
     "types": ["chrome", "node"]
   },
-  "include": [
-    "src/**/*",
-    "test/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build"
-  ]
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist", "build"]
 }

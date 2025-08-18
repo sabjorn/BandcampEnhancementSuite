@@ -10,6 +10,7 @@ const mockPort = {
 }
 
 
+
 vi.mock('../src/logger', () => ({
   default: vi.fn().mockImplementation(() => ({
     info: vi.fn(),
@@ -31,12 +32,17 @@ describe('HideUnhide', () => {
 
   describe('initHideUnhide(mockPort as any)', () => {
     beforeEach(() => {
+      const hiddenItemCount = 5
+      const collectionCount = 10
+      const testCrumb = 'test-crumb'
+      const apiEndpoint = 'api/collectionowner/1/hide_unhide_item'
+      
       createDomNodes(`
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
-        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
-        <div id="js-crumbs-data" data-crumbs='{"api/collectionowner/1/hide_unhide_item":"test-crumb"}'></div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":${hiddenItemCount}},"collection_count":${collectionCount}}'></div>
+        <div id="js-crumbs-data" data-crumbs='{"${apiEndpoint}":"${testCrumb}"}'></div>
       `)
     })
 
@@ -82,8 +88,10 @@ describe('HideUnhide', () => {
     })
 
     it('should create status display when unhide state is processing', async () => {
+      const apiEndpoint = 'api/collectionowner/1/hide_unhide_item'
+      const testCrumb = 'test-crumb'
       const crumbsData = {
-        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+        [apiEndpoint]: testCrumb
       }
       createDomNodes(`
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
@@ -193,11 +201,16 @@ describe('HideUnhide', () => {
     })
 
     it('should send unhide message with crumb when unhide button is clicked', async () => {
+      const hiddenItemCount = 5
+      const collectionCount = 10
+      const testCrumb = 'test-crumb'
+      const apiEndpoint = 'api/collectionowner/1/hide_unhide_item'
       const crumbsData = {
-        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+        [apiEndpoint]: testCrumb
       }
+      
       createDomNodes(`
-        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":${hiddenItemCount}},"collection_count":${collectionCount}}'></div>
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
       
@@ -209,16 +222,21 @@ describe('HideUnhide', () => {
       unhideButton.click()
       
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        unhide: { crumb: 'test-crumb' } 
+        unhide: { crumb: testCrumb } 
       })
     })
 
     it('should send hide message with crumb when hide button is clicked', async () => {
+      const hiddenItemCount = 5
+      const collectionCount = 10
+      const testCrumb = 'test-crumb'
+      const apiEndpoint = 'api/collectionowner/1/hide_unhide_item'
       const crumbsData = {
-        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+        [apiEndpoint]: testCrumb
       }
+      
       createDomNodes(`
-        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":${hiddenItemCount}},"collection_count":${collectionCount}}'></div>
         <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
       `)
       
@@ -230,7 +248,7 @@ describe('HideUnhide', () => {
       hideButton.click()
       
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
-        hide: { crumb: 'test-crumb' } 
+        hide: { crumb: testCrumb } 
       })
     })
 
@@ -552,12 +570,17 @@ describe('HideUnhide', () => {
 
   describe('button state management based on page data', () => {
     it('should disable hide button when all items are hidden (collection_count === 0)', async () => {
+      const hiddenItemCount = 10
+      const collectionCount = 0
+      const testCrumb = 'test-crumb'
+      const apiEndpoint = 'api/collectionowner/1/hide_unhide_item'
+      
       createDomNodes(`
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
-        <div id="pagedata" data-blob='{"hidden_data":{"item_count":10},"collection_count":0}'></div>
-        <div id="js-crumbs-data" data-crumbs='{"api/collectionowner/1/hide_unhide_item":"test-crumb"}'></div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":${hiddenItemCount}},"collection_count":${collectionCount}}'></div>
+        <div id="js-crumbs-data" data-crumbs='{"${apiEndpoint}":"${testCrumb}"}'></div>
       `)
 
       await initHideUnhide(mockPort as any)

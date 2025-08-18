@@ -551,12 +551,12 @@ describe('HideUnhide', () => {
   })
 
   describe('button state management based on page data', () => {
-    it('should disable hide button when all items are hidden (item_count === collection_count)', async () => {
+    it('should disable hide button when all items are hidden (collection_count === 0)', async () => {
       createDomNodes(`
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
-        <div id="pagedata" data-blob='{"hidden_data":{"item_count":10},"collection_count":10}'></div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":10},"collection_count":0}'></div>
         <div id="js-crumbs-data" data-crumbs='{"api/collectionowner/1/hide_unhide_item":"test-crumb"}'></div>
       `)
 

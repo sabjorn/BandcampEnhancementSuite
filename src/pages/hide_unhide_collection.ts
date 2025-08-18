@@ -84,7 +84,7 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
   if (pageDataElement && pageDataElement.getAttribute('data-blob')) {
     const { hidden_data: { item_count }, collection_count } = JSON.parse(pageDataElement.getAttribute('data-blob'));
     
-    if (item_count === collection_count) {
+    if (collection_count === 0) {
       hideButton.disable();
     }
     

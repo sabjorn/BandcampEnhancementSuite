@@ -5,7 +5,6 @@ import { connectionListenerCallback, portListenerCallback } from '../src/backgro
 vi.mock('../src/bclient', () => ({
   getCollectionSummary: vi.fn(),
   getHiddenItemsRateLimited: vi.fn(),
-  getCollectionItemsRateLimited: vi.fn(),
   hideUnhideRateLimited: vi.fn()
 }))
 
@@ -19,7 +18,7 @@ vi.mock('../src/logger', () => ({
   }))
 }))
 
-import { getCollectionSummary, getHiddenItemsRateLimited, getCollectionItemsRateLimited, hideUnhideRateLimited } from '../src/bclient'
+import { getCollectionSummary, getHiddenItemsRateLimited, hideUnhideRateLimited } from '../src/bclient'
 
 describe('unhide_backend', () => {
   let mockPort: any
@@ -260,94 +259,23 @@ describe('unhide_backend', () => {
         fan_id: 123456,
         username: 'testuser',
         url: 'https://bandcamp.com/testuser',
-        tralbum_lookup: {},
+        tralbum_lookup: {
+          't789': {
+            item_id: 789,
+            item_type: 'track',
+            purchased: '2023-01-01'
+          },
+          'a790': {
+            item_id: 790,
+            item_type: 'album',
+            purchased: '2023-01-01'
+          }
+        },
         follows: { following: {} }
       }
 
-      const mockCollectionItemsResponse = {
+      const mockHiddenItemsResponse = {
         items: [
-          {
-            fan_id: 123456,
-            item_id: 789,
-            item_type: 'track',
-            band_id: 1,
-            added: '2025-01-01',
-            updated: '2025-01-01',
-            purchased: '2025-01-01',
-            sale_item_id: 1,
-            sale_item_type: 'p',
-            tralbum_id: 789,
-            tralbum_type: 't',
-            featured_track: 789,
-            why: null,
-            hidden: null, // This item is visible
-            index: null,
-            also_collected_count: 100,
-            url_hints: {
-              subdomain: 'test',
-              custom_domain: null,
-              custom_domain_verified: null,
-              slug: 'test-track',
-              item_type: 't'
-            },
-            item_title: 'Test Track',
-            item_url: 'https://test.bandcamp.com/track/test-track',
-            item_art_id: 1,
-            item_art_url: 'https://test.com/art.jpg',
-            item_art: {
-              url: 'https://test.com/art.jpg',
-              thumb_url: 'https://test.com/art_thumb.jpg',
-              art_id: 1
-            },
-            band_name: 'Test Band',
-            band_url: 'https://test.bandcamp.com',
-            genre_id: 1,
-            featured_track_title: 'Test Track',
-            featured_track_number: 1,
-            featured_track_is_custom: false,
-            featured_track_duration: 180,
-            featured_track_url: null,
-            featured_track_encodings_id: 1,
-            package_details: null,
-            num_streamable_tracks: 1,
-            is_purchasable: true,
-            is_private: false,
-            is_preorder: false,
-            is_giftable: true,
-            is_subscriber_only: false,
-            is_subscription_item: false,
-            service_name: null,
-            service_url_fragment: null,
-            gift_sender_name: null,
-            gift_sender_note: null,
-            gift_id: null,
-            gift_recipient_name: null,
-            album_id: 100,
-            album_title: 'Test Album',
-            listen_in_app_url: 'https://test.com/app',
-            band_location: null,
-            band_image_id: null,
-            release_count: null,
-            message_count: null,
-            is_set_price: false,
-            price: 1.0,
-            has_digital_download: true,
-            merch_ids: [],
-            merch_sold_out: false,
-            currency: 'USD',
-            label: null,
-            label_id: null,
-            require_email: null,
-            item_art_ids: null,
-            releases: null,
-            discount: null,
-            token: 'test-token',
-            variant_id: null,
-            merch_snapshot: null,
-            featured_track_license_id: null,
-            licensed_item: null,
-            download_available: true
-          },
           {
             fan_id: 123456,
             item_id: 790,
@@ -441,7 +369,7 @@ describe('unhide_backend', () => {
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
-      vi.mocked(getCollectionItemsRateLimited).mockResolvedValue(mockCollectionItemsResponse)
+      vi.mocked(getHiddenItemsRateLimited).mockResolvedValue(mockHiddenItemsResponse)
       vi.mocked(hideUnhideRateLimited).mockResolvedValue(true)
 
       const message = {
@@ -453,12 +381,14 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
       
       // Wait for queue processing to complete
       await new Promise(resolve => setTimeout(resolve, 0))
       
-      // Should only hide the visible item (hidden: null), not the already hidden one (hidden: 1)
+      // Should hide the visible items (items in collection but not in hidden items)
+      // Item 789 (track) is in collection but not in hidden items, so it should be hidden
+      // Item 790 (album) is already hidden, so it should not be hidden again
       expect(hideUnhideRateLimited).toHaveBeenCalledWith('hide', 123456, 'track', 789, 'test-crumb', 'https://bandcamp.com')
       expect(hideUnhideRateLimited).not.toHaveBeenCalledWith('hide', 123456, 'album', 790, expect.anything(), expect.anything())
       
@@ -477,19 +407,17 @@ describe('unhide_backend', () => {
         follows: { following: {} }
       }
 
-      const mockCollectionItemsResponse = {
+      const mockHiddenItemsResponse = {
         items: [],
-        more_available: false,
-        tracklists: {},
         redownload_urls: {},
         item_lookup: {},
-        last_token: 'final-token',
-        purchase_infos: {},
-        collectors: {}
+        last_token: '',
+        similar_gift_ids: {},
+        last_token_is_gift: false
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
-      vi.mocked(getCollectionItemsRateLimited).mockResolvedValue(mockCollectionItemsResponse)
+      vi.mocked(getHiddenItemsRateLimited).mockResolvedValue(mockHiddenItemsResponse)
 
       const message = {
         hide: {
@@ -500,7 +428,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
       expect(mockPort.postMessage).toHaveBeenCalledWith({ 
         hideComplete: { message: "No visible items found" } 
       })
@@ -532,7 +460,7 @@ describe('unhide_backend', () => {
         follows: { following: {} }
       }
 
-      const mockCollectionItemsResponse = {
+      const mockHiddenItemsResponse = {
         items: [
           {
             fan_id: 123456,
@@ -627,7 +555,7 @@ describe('unhide_backend', () => {
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
-      vi.mocked(getCollectionItemsRateLimited).mockResolvedValue(mockCollectionItemsResponse)
+      vi.mocked(getHiddenItemsRateLimited).mockResolvedValue(mockHiddenItemsResponse)
       vi.mocked(hideUnhideRateLimited).mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(true), 100)))
 
       // Start hide operation
@@ -668,7 +596,7 @@ describe('unhide_backend', () => {
         follows: { following: {} }
       }
 
-      const mockCollectionItemsResponse = {
+      const mockHiddenItemsResponse = {
         items: [
           {
             fan_id: 123456,
@@ -763,7 +691,7 @@ describe('unhide_backend', () => {
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
-      vi.mocked(getCollectionItemsRateLimited).mockResolvedValue(mockCollectionItemsResponse)
+      vi.mocked(getHiddenItemsRateLimited).mockResolvedValue(mockHiddenItemsResponse)
 
       const message = {
         hide: {
@@ -774,7 +702,7 @@ describe('unhide_backend', () => {
       await portListenerCallback(message, portState)
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com')
-      expect(getCollectionItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
+      expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(123456, expect.stringMatching(/^\d+:999999999:t::$/), 100, 'https://bandcamp.com')
       
       // Should not call hideUnhide because the item is already hidden
       expect(hideUnhideRateLimited).not.toHaveBeenCalled()

@@ -1,5 +1,5 @@
 import Logger from "../logger.js";
-import { getCollectionSummary, getHiddenItemsRateLimited, getCollectionItemsRateLimited, hideUnhideRateLimited, type GetHiddenItemsResponse, type HiddenItem, type GetCollectionItemsResponse, type CollectionItem } from "../bclient.js";
+import { getCollectionSummary, getHiddenItemsRateLimited, hideUnhideRateLimited, type GetHiddenItemsResponse, type HiddenItem } from "../bclient.js";
 
 const log = new Logger();
 
@@ -277,70 +277,78 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
     const fan_id = collectionSummary.fan_id;
     log.info(`Got fan_id: ${fan_id}`);
 
-    // Start with current unix timestamp token to get first batch
+    // Get all items from collection summary (only purchased items)
+    log.info("Getting all items from collection summary...");
+    const allItems = Object.values(collectionSummary.tralbum_lookup)
+      .filter(item => item.purchased !== null);
+    log.info(`Found ${allItems.length} total purchased items in collection`);
+
+    // Get all hidden items to subtract from the collection
+    log.info("Fetching hidden items...");
     const currentUnixTime = Math.floor(Date.now() / 1000);
     let older_than_token = `${currentUnixTime}:999999999:t::`;
     let hasMore = true;
     let batchCount = 0;
-    const allCollectionItems: HideUnhideItem[] = [];
-
-    log.info(`Starting to fetch collection items for fan_id: ${fan_id} with initial token: ${older_than_token}`);
+    const allHiddenItems: Set<number> = new Set();
 
     while (hasMore) {
       batchCount++;
-      log.info(`Fetching collection items batch ${batchCount} with token: "${older_than_token}"`);
+      log.info(`Fetching hidden items batch ${batchCount} with token: "${older_than_token}"`);
       
-      let collectionItemsResponse: GetCollectionItemsResponse;
-      try {
-        collectionItemsResponse = await getCollectionItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
-        log.info(`Collection items batch ${batchCount} fetched successfully. Found ${collectionItemsResponse.items.length} items`);
-        
-        // Validate response structure
-        if (!collectionItemsResponse || typeof collectionItemsResponse !== 'object') {
-          throw new Error(`Invalid response structure: ${JSON.stringify(collectionItemsResponse)}`);
+      const hiddenItemsResponse: GetHiddenItemsResponse = await (async () => {
+        try {
+          let hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
+          log.info(`Hidden items batch ${batchCount} fetched successfully. Found ${hiddenItemsResponse.items.length} items`);
+          
+          if (!hiddenItemsResponse || typeof hiddenItemsResponse !== 'object') {
+            throw new Error(`Invalid response structure: ${JSON.stringify(hiddenItemsResponse)}`);
+          }
+          
+          if (!Array.isArray(hiddenItemsResponse.items)) {
+            log.error(`hiddenItemsResponse.items is not an array: ${JSON.stringify(hiddenItemsResponse.items)}`);
+            throw new Error(`Response items field is not an array: ${typeof hiddenItemsResponse.items}`);
+          }
+          
+          return hiddenItemsResponse;
+        } catch (error) {
+          log.error(`Failed to fetch hidden items batch ${batchCount}: ${error}`);
+          throw new Error(`Failed to fetch hidden items: ${error}`);
         }
-        
-        if (!Array.isArray(collectionItemsResponse.items)) {
-          log.error(`collectionItemsResponse.items is not an array: ${JSON.stringify(collectionItemsResponse.items)}`);
-          throw new Error(`Response items field is not an array: ${typeof collectionItemsResponse.items}`);
-        }
-        
-        log.info(`Found ${collectionItemsResponse.items.length} items in batch ${batchCount}`);
-      } catch (error) {
-        log.error(`Failed to fetch collection items batch ${batchCount}: ${error}`);
-        throw new Error(`Failed to fetch collection items: ${error}`);
-      }
+      })();
       
-      // Convert collection items to queue items (only non-hidden items)
-      const queueItems: HideUnhideItem[] = collectionItemsResponse.items
-        .filter((item: CollectionItem) => item.hidden === null) // Only include visible items
-        .map((item: CollectionItem) => ({
-          fan_id: fan_id,
-          item_id: item.item_id,
-          item_type: item.item_type as "track" | "album",
-          action: "hide",
-          crumb: crumb,
-          baseUrl: baseUrl
-        }));
-
-      allCollectionItems.push(...queueItems);
+      // Add hidden item IDs to the set
+      hiddenItemsResponse.items.forEach((item: HiddenItem) => {
+        allHiddenItems.add(item.item_id);
+      });
       
-      log.info(`Found ${queueItems.length} visible items in batch ${batchCount}. Total so far: ${allCollectionItems.length}`);
+      log.info(`Found ${hiddenItemsResponse.items.length} hidden items in batch ${batchCount}. Total hidden so far: ${allHiddenItems.size}`);
 
       // Check if there are more items
-      if (!collectionItemsResponse.more_available || !collectionItemsResponse.last_token) {
+      if (hiddenItemsResponse.items.length < 100 || !hiddenItemsResponse.last_token) {
         hasMore = false;
-        log.info(`No more items to fetch. Completed ${batchCount} batches.`);
+        log.info(`No more hidden items to fetch. Completed ${batchCount} batches.`);
       } else {
-        older_than_token = collectionItemsResponse.last_token;
+        older_than_token = hiddenItemsResponse.last_token;
         log.info(`Will fetch next batch with token: "${older_than_token}"`);
       }
     }
 
-    log.info(`Found total of ${allCollectionItems.length} visible items to hide`);
+    // Create list of visible items (all items minus hidden items)
+    const visibleItems: HideUnhideItem[] = allItems
+      .filter(item => !allHiddenItems.has(item.item_id))
+      .map(item => ({
+        fan_id: fan_id,
+        item_id: item.item_id,
+        item_type: item.item_type as "track" | "album",
+        action: "hide",
+        crumb: crumb,
+        baseUrl: baseUrl
+      }));
+
+    log.info(`Found total of ${visibleItems.length} visible items to hide (${allItems.length} total - ${allHiddenItems.size} hidden)`);
 
     // Process all items using the progress tracker
-    await progressTracker.processItems(allCollectionItems, "hide");
+    await progressTracker.processItems(visibleItems, "hide");
 
   } catch (error) {
     log.error(`Error in hide process: ${error}`);

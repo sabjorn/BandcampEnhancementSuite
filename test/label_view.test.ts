@@ -1,34 +1,34 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { createDomNodes, cleanupTestNodes } from './utils'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createDomNodes, cleanupTestNodes } from './utils';
 
 // Mock the logger
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
-    info = vi.fn()
-    error = vi.fn()
-    debug = vi.fn()
-    warn = vi.fn()
+    info = vi.fn();
+    error = vi.fn();
+    debug = vi.fn();
+    warn = vi.fn();
   }
-}))
+}));
 
-import { initLabelView } from '../src/label_view'
+import { initLabelView } from '../src/label_view';
 
 const mockPort = {
   postMessage: vi.fn(),
   onMessage: {
     addListener: vi.fn()
   }
-}
+};
 
 describe('LabelView', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   afterEach(() => {
-    cleanupTestNodes()
-    vi.restoreAllMocks()
-  })
+    cleanupTestNodes();
+    vi.restoreAllMocks();
+  });
 
   describe('init()', () => {
     beforeEach(() => {
@@ -37,13 +37,13 @@ describe('LabelView', () => {
         <div class="label-container">
           <div class="label-item">Test Label</div>
         </div>
-      `)
-    })
+      `);
+    });
 
     it('should initialize label view functionality', async () => {
-      await expect(initLabelView(mockPort as any)).resolves.not.toThrow()
-    })
-  })
+      await expect(initLabelView(mockPort as any)).resolves.not.toThrow();
+    });
+  });
 
   describe('label operations', () => {
     beforeEach(() => {
@@ -54,13 +54,13 @@ describe('LabelView', () => {
             <div class="itemurl">Album URL</div>
           </div>
         </div>
-      `)
-    })
+      `);
+    });
 
     it('should handle label view items', () => {
-      const musicGrid = document.querySelector('.music-grid')
-      expect(musicGrid).toBeTruthy()
-      expect(musicGrid?.querySelector('.music-grid-item')).toBeTruthy()
-    })
-  })
-})
+      const musicGrid = document.querySelector('.music-grid');
+      expect(musicGrid).toBeTruthy();
+      expect(musicGrid?.querySelector('.music-grid-item')).toBeTruthy();
+    });
+  });
+});

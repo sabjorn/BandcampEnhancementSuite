@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 describe('Label View Backend', () => {
   beforeEach(() => {
@@ -9,28 +9,28 @@ describe('Label View Backend', () => {
         },
         sendMessage: vi.fn()
       }
-    } as any
-  })
+    } as any;
+  });
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.restoreAllMocks();
     if ('chrome' in globalThis) {
-      ;(globalThis as any).chrome = undefined
+      (globalThis as any).chrome = undefined;
     }
-  })
+  });
 
   it('should handle chrome runtime messaging', () => {
-    expect(globalThis.chrome.runtime.onMessage.addListener).toBeDefined()
-    expect(globalThis.chrome.runtime.sendMessage).toBeDefined()
-  })
+    expect(globalThis.chrome.runtime.onMessage.addListener).toBeDefined();
+    expect(globalThis.chrome.runtime.sendMessage).toBeDefined();
+  });
 
   it('should manage label view backend operations', () => {
-    const mockMessage = { action: 'getLabelData' }
+    const mockMessage = { action: 'getLabelData' };
 
     vi.mocked(globalThis.chrome.runtime.onMessage.addListener).mockImplementation(callback => {
-      callback(mockMessage, {}, vi.fn())
-    })
+      callback(mockMessage, {}, vi.fn());
+    });
 
-    expect(globalThis.chrome.runtime.onMessage.addListener).toBeDefined()
-  })
-})
+    expect(globalThis.chrome.runtime.onMessage.addListener).toBeDefined();
+  });
+});

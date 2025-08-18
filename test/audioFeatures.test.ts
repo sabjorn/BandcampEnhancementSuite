@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { createDomNodes, cleanupTestNodes } from './utils'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createDomNodes, cleanupTestNodes } from './utils';
 import {
   createCanvas,
   createCanvasDisplayToggle,
@@ -8,13 +8,13 @@ import {
   toggleWaveformCanvas,
   applyAudioConfig,
   initAudioFeatures
-} from '../src/audioFeatures'
+} from '../src/audioFeatures';
 
 describe('AudioFeatures', () => {
   const mockPort = {
     onMessage: { addListener: vi.fn() },
     postMessage: vi.fn()
-  }
+  };
 
   beforeEach(() => {
     globalThis.AudioContext = vi.fn().mockImplementation(() => ({
@@ -22,47 +22,47 @@ describe('AudioFeatures', () => {
       createAnalyser: vi.fn(),
       createBufferSource: vi.fn(),
       close: vi.fn()
-    }))
+    }));
 
     createDomNodes(`
       <audio></audio>
       <div class="progbar"></div>
       <div class="controls"></div>
       <h2 class="trackTitle" style="color: rgb(255,255,255);">Test Title</h2>
-    `)
-  })
+    `);
+  });
 
   afterEach(() => {
-    cleanupTestNodes()
-    vi.restoreAllMocks()
-    delete (globalThis as any).AudioContext
-  })
+    cleanupTestNodes();
+    vi.restoreAllMocks();
+    delete (globalThis as any).AudioContext;
+  });
 
   it('should initialize AudioFeatures functionality', () => {
-    expect(() => initAudioFeatures(mockPort)).not.toThrow()
-    expect(mockPort.postMessage).toHaveBeenCalledWith({ requestConfig: {} })
-  })
+    expect(() => initAudioFeatures(mockPort)).not.toThrow();
+    expect(mockPort.postMessage).toHaveBeenCalledWith({ requestConfig: {} });
+  });
 
   it('should test utility functions', () => {
-    let inverted = invertColour('rgb(255,255,255)')
-    expect(inverted).toBe('rgb(0,0,0)')
+    let inverted = invertColour('rgb(255,255,255)');
+    expect(inverted).toBe('rgb(0,0,0)');
 
-    inverted = invertColour('rgb(0,0,0)')
-    expect(inverted).toBe('rgb(255,255,255)')
+    inverted = invertColour('rgb(0,0,0)');
+    expect(inverted).toBe('rgb(255,255,255)');
 
-    const expectedMessage = { toggleWaveformDisplay: {} }
-    toggleWaveformCanvas(mockPort)
-    expect(mockPort.postMessage).toHaveBeenCalledWith(expect.objectContaining(expectedMessage))
+    const expectedMessage = { toggleWaveformDisplay: {} };
+    toggleWaveformCanvas(mockPort);
+    expect(mockPort.postMessage).toHaveBeenCalledWith(expect.objectContaining(expectedMessage));
 
-    const canvasFake = { style: { display: 'inherit' } }
-    const displayToggle = { checked: false }
-    const mockLog = { info: vi.fn() }
+    const canvasFake = { style: { display: 'inherit' } };
+    const displayToggle = { checked: false };
+    const mockLog = { info: vi.fn() };
 
-    applyAudioConfig({ config: { displayWaveform: false } }, canvasFake as any, displayToggle as any, mockLog as any)
-    expect(canvasFake.style.display).toBe('none')
+    applyAudioConfig({ config: { displayWaveform: false } }, canvasFake as any, displayToggle as any, mockLog as any);
+    expect(canvasFake.style.display).toBe('none');
 
-    expect(() => createCanvas()).not.toThrow()
-    expect(() => createCanvasDisplayToggle()).not.toThrow()
-    expect(() => createBpmDisplay()).not.toThrow()
-  })
-})
+    expect(() => createCanvas()).not.toThrow();
+    expect(() => createCanvasDisplayToggle()).not.toThrow();
+    expect(() => createBpmDisplay()).not.toThrow();
+  });
+});

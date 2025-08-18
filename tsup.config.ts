@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup'
+import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: {
@@ -16,7 +16,7 @@ export default defineConfig({
   outExtension() {
     return {
       js: '.js'
-    }
+    };
   },
   loader: {
     '.html': 'text',
@@ -35,8 +35,8 @@ export default defineConfig({
     options.define = {
       ...options.define,
       global: 'globalThis'
-    }
-    options.inject = options.inject || []
+    };
+    options.inject = options.inject || [];
   },
   onSuccess: process.env.NODE_ENV === 'development' ? 'echo "Build completed"' : undefined
-})
+});

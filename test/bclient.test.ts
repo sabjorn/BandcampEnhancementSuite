@@ -1,20 +1,20 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { addAlbumToCart, getTralbumDetails, getCollectionSummary, hideUnhide, getHiddenItems } from '../src/bclient'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { addAlbumToCart, getTralbumDetails, getCollectionSummary, hideUnhide, getHiddenItems } from '../src/bclient';
 
 describe('bclient', () => {
   afterEach(() => {
-    vi.restoreAllMocks()
-  })
+    vi.restoreAllMocks();
+  });
 
   describe('addAlbumToCart', () => {
-    let fetchSpy: any
+    let fetchSpy: any;
 
     beforeEach(() => {
-      fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(new Response('{"success": true}', { status: 200 }))
-    })
+      fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(new Response('{"success": true}', { status: 200 }));
+    });
 
     it('should make POST request to cart endpoint with correct parameters', async () => {
-      await addAlbumToCart('123', '10.00', 'a')
+      await addAlbumToCart('123', '10.00', 'a');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/cart/cb',
@@ -28,60 +28,60 @@ describe('bclient', () => {
           body: 'req=add&item_type=a&item_id=123&unit_price=10.00&quantity=1&sync_num=1',
           mode: 'cors'
         })
-      )
-    })
+      );
+    });
 
     it('should default item_type to "a"', async () => {
-      await addAlbumToCart('789', '20.00')
+      await addAlbumToCart('789', '20.00');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/cart/cb',
         expect.objectContaining({
           body: 'req=add&item_type=a&item_id=789&unit_price=20.00&quantity=1&sync_num=1'
         })
-      )
-    })
+      );
+    });
 
     it('should return fetch response', async () => {
-      const response = await addAlbumToCart('123', '10.00')
-      expect(response).toBeInstanceOf(Response)
-      expect(response.status).toBe(200)
-    })
+      const response = await addAlbumToCart('123', '10.00');
+      expect(response).toBeInstanceOf(Response);
+      expect(response.status).toBe(200);
+    });
 
     it('should use relative URL when baseUrl is null', async () => {
-      await addAlbumToCart('123', '10.00', 'a', null)
+      await addAlbumToCart('123', '10.00', 'a', null);
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/cart/cb',
         expect.objectContaining({
           method: 'POST'
         })
-      )
-    })
+      );
+    });
 
     it('should use absolute URL when baseUrl is provided', async () => {
-      await addAlbumToCart('123', '10.00', 'a', 'https://bandcamp.com')
+      await addAlbumToCart('123', '10.00', 'a', 'https://bandcamp.com');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         'https://bandcamp.com/cart/cb',
         expect.objectContaining({
           method: 'POST'
         })
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe('getTralbumDetails', () => {
-    let fetchSpy: any
+    let fetchSpy: any;
 
     beforeEach(() => {
       fetchSpy = vi
         .spyOn(global, 'fetch')
-        .mockResolvedValue(new Response('{"id": 123, "title": "Test Album"}', { status: 200 }))
-    })
+        .mockResolvedValue(new Response('{"id": 123, "title": "Test Album"}', { status: 200 }));
+    });
 
     it('should make POST request to tralbum_details endpoint', async () => {
-      await getTralbumDetails('456', 't')
+      await getTralbumDetails('456', 't');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/mobile/25/tralbum_details',
@@ -98,11 +98,11 @@ describe('bclient', () => {
             tralbum_id: '456'
           })
         })
-      )
-    })
+      );
+    });
 
     it('should default item_type to "a"', async () => {
-      await getTralbumDetails('789')
+      await getTralbumDetails('789');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/mobile/25/tralbum_details',
@@ -113,17 +113,17 @@ describe('bclient', () => {
             tralbum_id: '789'
           })
         })
-      )
-    })
+      );
+    });
 
     it('should return fetch response', async () => {
-      const response = await getTralbumDetails('123')
-      expect(response).toBeInstanceOf(Response)
-      expect(response.status).toBe(200)
-    })
+      const response = await getTralbumDetails('123');
+      expect(response).toBeInstanceOf(Response);
+      expect(response.status).toBe(200);
+    });
 
     it('should handle numeric item_id', async () => {
-      await getTralbumDetails(999, 'a')
+      await getTralbumDetails(999, 'a');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/mobile/25/tralbum_details',
@@ -134,34 +134,34 @@ describe('bclient', () => {
             tralbum_id: 999
           })
         })
-      )
-    })
+      );
+    });
 
     it('should use relative URL when baseUrl is null', async () => {
-      await getTralbumDetails('123', 'a', null)
+      await getTralbumDetails('123', 'a', null);
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/mobile/25/tralbum_details',
         expect.objectContaining({
           method: 'POST'
         })
-      )
-    })
+      );
+    });
 
     it('should use absolute URL when baseUrl is provided', async () => {
-      await getTralbumDetails('123', 'a', 'https://bandcamp.com')
+      await getTralbumDetails('123', 'a', 'https://bandcamp.com');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         'https://bandcamp.com/api/mobile/25/tralbum_details',
         expect.objectContaining({
           method: 'POST'
         })
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe('getCollectionSummary', () => {
-    let fetchSpy: any
+    let fetchSpy: any;
 
     beforeEach(() => {
       const mockResponseData = {
@@ -184,15 +184,15 @@ describe('bclient', () => {
             }
           }
         }
-      }
+      };
 
       fetchSpy = vi
         .spyOn(global, 'fetch')
-        .mockResolvedValue(new Response(JSON.stringify(mockResponseData), { status: 200 }))
-    })
+        .mockResolvedValue(new Response(JSON.stringify(mockResponseData), { status: 200 }));
+    });
 
     it('should make GET request to collection_summary endpoint', async () => {
-      await getCollectionSummary()
+      await getCollectionSummary();
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/fan/2/collection_summary',
@@ -210,11 +210,11 @@ describe('bclient', () => {
           referrerPolicy: 'no-referrer-when-downgrade',
           mode: 'cors'
         })
-      )
-    })
+      );
+    });
 
     it('should return collection_summary object from response', async () => {
-      const result = await getCollectionSummary()
+      const result = await getCollectionSummary();
 
       expect(result).toEqual({
         fan_id: 896389,
@@ -233,51 +233,51 @@ describe('bclient', () => {
             '1430990': true
           }
         }
-      })
-    })
+      });
+    });
 
     it('should handle response data correctly', async () => {
-      const result = await getCollectionSummary()
-      expect(result.fan_id).toBe(896389)
-      expect(result.username).toBe('dataist')
-      expect(result.tralbum_lookup).toBeDefined()
-      expect(result.follows).toBeDefined()
-    })
+      const result = await getCollectionSummary();
+      expect(result.fan_id).toBe(896389);
+      expect(result.username).toBe('dataist');
+      expect(result.tralbum_lookup).toBeDefined();
+      expect(result.follows).toBeDefined();
+    });
 
     it('should use relative URL when baseUrl is null', async () => {
-      await getCollectionSummary(null)
+      await getCollectionSummary(null);
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/fan/2/collection_summary',
         expect.objectContaining({
           method: 'GET'
         })
-      )
-    })
+      );
+    });
 
     it('should use absolute URL when baseUrl is provided', async () => {
-      await getCollectionSummary('https://bandcamp.com')
+      await getCollectionSummary('https://bandcamp.com');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         'https://bandcamp.com/api/fan/2/collection_summary',
         expect.objectContaining({
           method: 'GET'
         })
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe('hideUnhide', () => {
-    let fetchSpy: any
+    let fetchSpy: any;
 
     beforeEach(() => {
-      fetchSpy = vi.spyOn(global, 'fetch')
-    })
+      fetchSpy = vi.spyOn(global, 'fetch');
+    });
 
     it('should make POST request to hide_unhide_item endpoint with correct parameters', async () => {
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
 
-      await hideUnhide('hide', 896389, 'track', 123456, 'valid_crumb')
+      await hideUnhide('hide', 896389, 'track', 123456, 'valid_crumb');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/collectionowner/1/hide_unhide_item',
@@ -298,27 +298,27 @@ describe('bclient', () => {
           }),
           mode: 'cors'
         })
-      )
-    })
+      );
+    });
 
     it('should return true when API returns ok: true', async () => {
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
 
-      const result = await hideUnhide('unhide', 896389, 'album', 789, 'valid_crumb')
-      expect(result).toBe(true)
-    })
+      const result = await hideUnhide('unhide', 896389, 'album', 789, 'valid_crumb');
+      expect(result).toBe(true);
+    });
 
     it('should return false when API returns ok: false', async () => {
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: false }), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: false }), { status: 200 }));
 
-      const result = await hideUnhide('hide', 896389, 'track', 123, 'valid_crumb')
-      expect(result).toBe(false)
-    })
+      const result = await hideUnhide('hide', 896389, 'track', 123, 'valid_crumb');
+      expect(result).toBe(false);
+    });
 
     it('should handle null crumb parameter', async () => {
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
 
-      await hideUnhide('hide', 896389, 'track', 123456)
+      await hideUnhide('hide', 896389, 'track', 123456);
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/collectionowner/1/hide_unhide_item',
@@ -332,23 +332,23 @@ describe('bclient', () => {
             collection_index: null
           })
         })
-      )
-    })
+      );
+    });
 
     it('should retry with new crumb when invalid_crumb error is returned', async () => {
       const invalidCrumbResponse = {
         error: 'invalid_crumb',
         crumb: '|api/collectionowner/1/hide_unhide_item|1755307667|z5GoHoaxgXuO2LNi30A625SNbmc='
-      }
-      const successResponse = { ok: true }
+      };
+      const successResponse = { ok: true };
 
       fetchSpy
         .mockResolvedValueOnce(new Response(JSON.stringify(invalidCrumbResponse), { status: 200 }))
-        .mockResolvedValueOnce(new Response(JSON.stringify(successResponse), { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(successResponse), { status: 200 }));
 
-      const result = await hideUnhide('hide', 896389, 'track', 123456, 'old_crumb')
+      const result = await hideUnhide('hide', 896389, 'track', 123456, 'old_crumb');
 
-      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
 
       // First call with old crumb
       expect(fetchSpy).toHaveBeenNthCalledWith(
@@ -364,7 +364,7 @@ describe('bclient', () => {
             collection_index: null
           })
         })
-      )
+      );
 
       // Second call with new crumb
       expect(fetchSpy).toHaveBeenNthCalledWith(
@@ -380,53 +380,53 @@ describe('bclient', () => {
             collection_index: null
           })
         })
-      )
+      );
 
-      expect(result).toBe(true)
-    })
+      expect(result).toBe(true);
+    });
 
     it('should not retry if invalid_crumb error has no crumb field', async () => {
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ error: 'invalid_crumb' }), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ error: 'invalid_crumb' }), { status: 200 }));
 
-      const result = await hideUnhide('hide', 896389, 'track', 123456, 'old_crumb')
+      const result = await hideUnhide('hide', 896389, 'track', 123456, 'old_crumb');
 
-      expect(fetchSpy).toHaveBeenCalledTimes(1)
-      expect(result).toBe(false)
-    })
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(result).toBe(false);
+    });
 
     it('should use relative URL when baseUrl is null', async () => {
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
 
-      await hideUnhide('hide', 896389, 'track', 123456, 'crumb', null)
+      await hideUnhide('hide', 896389, 'track', 123456, 'crumb', null);
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/collectionowner/1/hide_unhide_item',
         expect.objectContaining({
           method: 'POST'
         })
-      )
-    })
+      );
+    });
 
     it('should use absolute URL when baseUrl is provided', async () => {
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
 
-      await hideUnhide('hide', 896389, 'track', 123456, 'crumb', 'https://bandcamp.com')
+      await hideUnhide('hide', 896389, 'track', 123456, 'crumb', 'https://bandcamp.com');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         'https://bandcamp.com/api/collectionowner/1/hide_unhide_item',
         expect.objectContaining({
           method: 'POST'
         })
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe('getHiddenItems', () => {
-    let fetchSpy: any
+    let fetchSpy: any;
 
     beforeEach(() => {
-      fetchSpy = vi.spyOn(global, 'fetch')
-    })
+      fetchSpy = vi.spyOn(global, 'fetch');
+    });
 
     it('should make POST request to hidden_items endpoint with correct parameters', async () => {
       const mockResponse = {
@@ -515,11 +515,11 @@ describe('bclient', () => {
         last_token: '1751674430:2101898392:t::',
         similar_gift_ids: {},
         last_token_is_gift: false
-      }
+      };
 
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
-      await getHiddenItems(896389, '1751674431:3546888505:t::', 15)
+      await getHiddenItems(896389, '1751674431:3546888505:t::', 15);
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/fancollection/1/hidden_items',
@@ -538,8 +538,8 @@ describe('bclient', () => {
           }),
           mode: 'cors'
         })
-      )
-    })
+      );
+    });
 
     it('should use default count of 20 when not provided', async () => {
       const mockResponse = {
@@ -549,11 +549,11 @@ describe('bclient', () => {
         last_token: '1751674430:2101898392:t::',
         similar_gift_ids: {},
         last_token_is_gift: false
-      }
+      };
 
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
-      await getHiddenItems(896389, '1751674431:3546888505:t::')
+      await getHiddenItems(896389, '1751674431:3546888505:t::');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/fancollection/1/hidden_items',
@@ -565,8 +565,8 @@ describe('bclient', () => {
             count: 20
           })
         })
-      )
-    })
+      );
+    });
 
     it('should return parsed response data', async () => {
       const mockResponse = {
@@ -584,18 +584,18 @@ describe('bclient', () => {
         last_token: '1751674430:2101898392:t::',
         similar_gift_ids: {},
         last_token_is_gift: false
-      }
+      };
 
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
-      const result = await getHiddenItems(896389, '1751674431:3546888505:t::')
+      const result = await getHiddenItems(896389, '1751674431:3546888505:t::');
 
-      expect(result).toEqual(mockResponse)
-      expect(result.items).toHaveLength(1)
-      expect(result.items[0].item_title).toBe('Stay On Track')
-      expect(result.last_token).toBe('1751674430:2101898392:t::')
-      expect(result.last_token_is_gift).toBe(false)
-    })
+      expect(result).toEqual(mockResponse);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].item_title).toBe('Stay On Track');
+      expect(result.last_token).toBe('1751674430:2101898392:t::');
+      expect(result.last_token_is_gift).toBe(false);
+    });
 
     it('should use relative URL when baseUrl is null', async () => {
       const mockResponse = {
@@ -605,19 +605,19 @@ describe('bclient', () => {
         last_token: 'token',
         similar_gift_ids: {},
         last_token_is_gift: false
-      }
+      };
 
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
-      await getHiddenItems(896389, 'token', 20, null)
+      await getHiddenItems(896389, 'token', 20, null);
 
       expect(fetchSpy).toHaveBeenCalledWith(
         '/api/fancollection/1/hidden_items',
         expect.objectContaining({
           method: 'POST'
         })
-      )
-    })
+      );
+    });
 
     it('should use absolute URL when baseUrl is provided', async () => {
       const mockResponse = {
@@ -627,18 +627,18 @@ describe('bclient', () => {
         last_token: 'token',
         similar_gift_ids: {},
         last_token_is_gift: false
-      }
+      };
 
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200 }))
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
-      await getHiddenItems(896389, 'token', 20, 'https://bandcamp.com')
+      await getHiddenItems(896389, 'token', 20, 'https://bandcamp.com');
 
       expect(fetchSpy).toHaveBeenCalledWith(
         'https://bandcamp.com/api/fancollection/1/hidden_items',
         expect.objectContaining({
           method: 'POST'
         })
-      )
-    })
-  })
-})
+      );
+    });
+  });
+});

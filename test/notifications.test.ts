@@ -16,7 +16,6 @@ import {
 
 describe('notifications', () => {
   beforeEach(() => {
-    // Setup DOM environment
     document.body.innerHTML = '';
     vi.useFakeTimers();
   });
@@ -53,7 +52,6 @@ describe('notifications', () => {
       const notification = document.querySelector('.bes-notification');
       expect(notification).toBeTruthy();
 
-      // Fast forward default delay (8000ms)
       vi.advanceTimersByTime(8000);
 
       const notificationAfterDelay = document.querySelector('.bes-notification');
@@ -66,11 +64,9 @@ describe('notifications', () => {
       const notification = document.querySelector('.bes-notification');
       expect(notification).toBeTruthy();
 
-      // Fast forward less than custom delay
       vi.advanceTimersByTime(2999);
       expect(document.querySelector('.bes-notification')).toBeTruthy();
 
-      // Fast forward past custom delay
       vi.advanceTimersByTime(1);
       expect(document.querySelector('.bes-notification')).toBeNull();
     });
@@ -83,10 +79,8 @@ describe('notifications', () => {
       expect(notification.style.cursor).toBe('pointer');
       expect(notification.title).toBe('Click to dismiss');
 
-      // Click the notification
       notification.click();
 
-      // Should be removed immediately
       expect(document.querySelector('.bes-notification')).toBeNull();
     });
 
@@ -202,12 +196,10 @@ describe('notifications', () => {
 
       expect(document.querySelectorAll('.bes-notification').length).toBe(2);
 
-      // After 1 second, first notification should be removed
       vi.advanceTimersByTime(1000);
       expect(document.querySelectorAll('.bes-notification').length).toBe(1);
       expect(document.querySelector('.bes-error')).toBeTruthy();
 
-      // After 5 seconds total, second notification should be removed
       vi.advanceTimersByTime(4000);
       expect(document.querySelectorAll('.bes-notification').length).toBe(0);
     });
@@ -266,14 +258,12 @@ describe('notifications', () => {
       });
 
       it('should update existing status display', () => {
-        // Create initial status
         updateStatusDisplay({
           id: testId,
           content: 'Initial content',
           show: true
         });
 
-        // Update content
         updateStatusDisplay({
           id: testId,
           content: 'Updated content',
@@ -367,7 +357,6 @@ describe('notifications', () => {
           type: 'info'
         });
 
-        // Create another with same ID
         showPersistentNotification({
           id: testId,
           message: 'Updated content',

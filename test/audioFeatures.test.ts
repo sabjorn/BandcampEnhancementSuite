@@ -43,24 +43,30 @@ describe('AudioFeatures', () => {
     expect(mockPort.postMessage).toHaveBeenCalledWith({ requestConfig: {} });
   });
 
-  it('should test utility functions', () => {
+  it('should invert colors correctly', () => {
     let inverted = invertColour('rgb(255,255,255)');
     expect(inverted).toBe('rgb(0,0,0)');
 
     inverted = invertColour('rgb(0,0,0)');
     expect(inverted).toBe('rgb(255,255,255)');
+  });
 
+  it('should toggle waveform canvas display', () => {
     const expectedMessage = { toggleWaveformDisplay: {} };
     toggleWaveformCanvas(mockPort);
     expect(mockPort.postMessage).toHaveBeenCalledWith(expect.objectContaining(expectedMessage));
+  });
 
+  it('should apply audio configuration correctly', () => {
     const canvasFake = { style: { display: 'inherit' } };
     const displayToggle = { checked: false };
     const mockLog = { info: vi.fn() };
 
     applyAudioConfig({ config: { displayWaveform: false } }, canvasFake as any, displayToggle as any, mockLog as any);
     expect(canvasFake.style.display).toBe('none');
+  });
 
+  it('should create audio UI components without throwing', () => {
     expect(() => createCanvas()).not.toThrow();
     expect(() => createCanvasDisplayToggle()).not.toThrow();
     expect(() => createBpmDisplay()).not.toThrow();

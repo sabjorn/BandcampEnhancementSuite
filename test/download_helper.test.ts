@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 
-// Mock the logger
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
     info = vi.fn();

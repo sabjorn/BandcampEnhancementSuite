@@ -13,7 +13,7 @@ const defaultConfig: Config = {
   displayWaveform: false,
   albumPurchasedDuringCheckout: false,
   albumOnCheckoutDisabled: false,
-  albumPurchaseTimeDelaySeconds: 60 * 60 * 24 * 30, // 30 days
+  albumPurchaseTimeDelaySeconds: 60 * 60 * 24 * 30,
   installDateUnixSeconds: Math.floor(Date.now() / 1000)
 };
 

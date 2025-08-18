@@ -350,7 +350,6 @@ describe('bclient', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
 
-      // First call with old crumb
       expect(fetchSpy).toHaveBeenNthCalledWith(
         1,
         '/api/collectionowner/1/hide_unhide_item',
@@ -366,7 +365,6 @@ describe('bclient', () => {
         })
       );
 
-      // Second call with new crumb
       expect(fetchSpy).toHaveBeenNthCalledWith(
         2,
         '/api/collectionowner/1/hide_unhide_item',

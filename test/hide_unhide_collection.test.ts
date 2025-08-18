@@ -63,11 +63,9 @@ describe('HideUnhide', () => {
       expect(unhideButton).toBeTruthy();
       expect(unhideButton?.textContent).toBe('unhide all');
 
-      // Check that buttons are children of collection-search
       expect(hideButton?.parentElement).toBe(collectionSearchDiv);
       expect(unhideButton?.parentElement).toBe(collectionSearchDiv);
 
-      // Check that buttons have the correct CSS class
       expect(hideButton?.className).toContain('bes-hide-unhide');
       expect(unhideButton?.className).toContain('bes-hide-unhide');
     });
@@ -79,11 +77,9 @@ describe('HideUnhide', () => {
       const hideButton = document.getElementById('bes-hide-button');
       const unhideButton = document.getElementById('bes-unhide-button');
 
-      // Check that buttons are children of collection-search and in correct order
       expect(hideButton?.parentElement).toBe(collectionSearchDiv);
       expect(unhideButton?.parentElement).toBe(collectionSearchDiv);
 
-      // Check that hide button comes before unhide button
       const children = Array.from(collectionSearchDiv?.children || []);
       const hideIndex = children.indexOf(hideButton!);
       const unhideIndex = children.indexOf(unhideButton!);
@@ -174,7 +170,6 @@ describe('HideUnhide', () => {
       });
 
       expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull();
-      // After unhide completes, unhide button stays disabled, hide button becomes enabled
       expect(unhideButton.getAttribute('disabled')).toBe('true');
 
       const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement;
@@ -342,7 +337,6 @@ describe('HideUnhide', () => {
       });
 
       expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull();
-      // After hide completes, hide button stays disabled, unhide button becomes enabled
       expect(hideButton.getAttribute('disabled')).toBe('true');
 
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement;
@@ -407,7 +401,6 @@ describe('HideUnhide', () => {
         }
       });
 
-      // Both buttons should be disabled during processing
       expect(hideButton.getAttribute('disabled')).toBe('true');
       expect(unhideButton.getAttribute('disabled')).toBe('true');
     });
@@ -435,7 +428,6 @@ describe('HideUnhide', () => {
         }
       });
 
-      // Both buttons should be disabled during processing
       expect(hideButton.getAttribute('disabled')).toBe('true');
       expect(unhideButton.getAttribute('disabled')).toBe('true');
     });
@@ -445,7 +437,6 @@ describe('HideUnhide', () => {
 
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
 
-      // Mock showSuccessMessage to verify it's called
       const showSuccessMessage = vi.fn();
       global.showSuccessMessage = showSuccessMessage;
 
@@ -455,7 +446,6 @@ describe('HideUnhide', () => {
         }
       });
 
-      // Since we can't easily mock the notifications module, we'll just verify the message handler doesn't throw
       expect(() =>
         messageHandler({
           hideComplete: {
@@ -470,7 +460,6 @@ describe('HideUnhide', () => {
 
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
 
-      // Verify the message handler doesn't throw
       expect(() =>
         messageHandler({
           hideError: {

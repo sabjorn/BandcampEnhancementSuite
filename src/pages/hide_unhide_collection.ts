@@ -21,7 +21,6 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     if (msg.unhideComplete) {
       log.info(`Unhide completed: ${JSON.stringify(msg.unhideComplete)}`);
       showSuccessMessage(`✅ Unhide completed: ${msg.unhideComplete.message}`, 8000);
-      // Remove status notification when complete
       removePersistentNotification(HIDE_UNHIDE_STATUS_ID);
     }
     if (msg.unhideError) {
@@ -35,7 +34,6 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     if (msg.hideComplete) {
       log.info(`Hide completed: ${JSON.stringify(msg.hideComplete)}`);
       showSuccessMessage(`✅ Hide completed: ${msg.hideComplete.message}`, 8000);
-      // Remove status notification when complete
       removePersistentNotification(HIDE_UNHIDE_STATUS_ID);
     }
     if (msg.hideError) {
@@ -50,7 +48,6 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     buttonClicked: () => {
       log.info('hide all button clicked');
 
-      // Immediately disable both buttons and show initial notification
       hideButton.disable();
       const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement & {
         disable: () => void;
@@ -76,7 +73,6 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     buttonClicked: () => {
       log.info('unhide all button clicked');
 
-      // Immediately disable both buttons and show initial notification
       unhideButton.disable();
       const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement & {
         disable: () => void;
@@ -115,17 +111,14 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
   let collectionSearchDiv = document.getElementById('collection-search');
 
   if (!collectionSearchDiv) {
-    // Create the owner-controls structure if it doesn't exist
     const ownerControls = document.createElement('div');
     ownerControls.id = 'owner-controls';
     ownerControls.className = 'owner-controls collection-controls has-search';
 
-    // Create collection-search div (without search elements)
     collectionSearchDiv = document.createElement('div');
     collectionSearchDiv.id = 'collection-search';
     collectionSearchDiv.className = 'search';
 
-    // Create hidden-links div
     const hiddenLinksDiv = document.createElement('div');
     hiddenLinksDiv.className = 'hidden-links';
 
@@ -139,18 +132,15 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     showHiddenLink.appendChild(linkTitle);
     hiddenLinksDiv.appendChild(showHiddenLink);
 
-    // Assemble the structure
     ownerControls.appendChild(collectionSearchDiv);
     ownerControls.appendChild(hiddenLinksDiv);
 
-    // Insert before collection-grid
     const collectionGrid = document.getElementById('collection-grid');
     if (collectionGrid) {
       collectionGrid.parentNode?.insertBefore(ownerControls, collectionGrid);
     }
   }
 
-  // Insert buttons inside the collection-search div (which is a flexbox)
   collectionSearchDiv.appendChild(hideButton);
   collectionSearchDiv.appendChild(unhideButton);
 }
@@ -170,12 +160,10 @@ function updateUnhideButtonState(state: any): void {
   if (!unhideButton) return;
 
   if (!state.isProcessing) {
-    // When unhide completes, enable only the hide button (opposite action)
     if (hideButton) hideButton.enable();
     removePersistentNotification(HIDE_UNHIDE_STATUS_ID);
     return;
   }
-  // During processing, keep both buttons disabled
   unhideButton.disable();
   if (hideButton) hideButton.disable();
   const statusContent = `
@@ -210,12 +198,10 @@ function updateHideButtonState(state: any): void {
   if (!hideButton) return;
 
   if (!state.isProcessing) {
-    // When hide completes, enable only the unhide button (opposite action)
     if (unhideButton) unhideButton.enable();
     removePersistentNotification(HIDE_UNHIDE_STATUS_ID);
     return;
   }
-  // During processing, keep both buttons disabled
   hideButton.disable();
   if (unhideButton) unhideButton.disable();
 

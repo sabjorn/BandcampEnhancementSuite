@@ -109,7 +109,6 @@ export function createButton(
   button.innerText = innerText;
   button.addEventListener('click', buttonClicked);
 
-  // Add helper methods for disabling/enabling
   button.disable = () => {
     button.style.opacity = '0.5';
     button.style.pointerEvents = 'none';

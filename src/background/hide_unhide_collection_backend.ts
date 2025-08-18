@@ -57,7 +57,6 @@ class ProgressTracker {
     log.info(`Starting to process ${this.currentAction} operation with ${items.length} items`);
     this.broadcastState();
 
-    // Process all items sequentially to ensure proper rate limiting
     for (const item of items) {
       try {
         log.info(`${item.action}ing item ${item.item_id} (${item.item_type})`);
@@ -86,7 +85,6 @@ class ProgressTracker {
         log.error(`Error ${item.action}ing item ${item.item_id}: ${error}`);
       }
 
-      // Broadcast progress after each completion
       this.broadcastState();
     }
 
@@ -96,7 +94,6 @@ class ProgressTracker {
     );
     this.broadcastState();
 
-    // Send completion message
     const actionPastTense = this.currentAction === 'hide' ? 'hidden' : 'unhidden';
     const completionMessage =
       this.errors.length > 0
@@ -175,7 +172,6 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
     const baseUrl = 'https://bandcamp.com';
     log.info(`Using baseUrl: ${baseUrl}`);
 
-    // Get collection summary to get fan_id
     log.info('Fetching collection summary...');
     const collectionSummary = await (async () => {
       try {
@@ -191,9 +187,6 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
     const fan_id = collectionSummary.fan_id;
     log.info(`Got fan_id: ${fan_id}`);
 
-    // Start with current unix timestamp token to get first batch
-    // Token format: "unix_timestamp:item_id:type::"
-    // For initial call, we use current timestamp with placeholder values
     const currentUnixTime = Math.floor(Date.now() / 1000);
     let older_than_token = `${currentUnixTime}:999999999:t::`;
     let hasMore = true;
@@ -213,7 +206,6 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
             `Hidden items batch ${batchCount} fetched successfully. Response: ${JSON.stringify(hiddenItemsResponse)}`
           );
 
-          // Validate response structure
           if (!hiddenItemsResponse || typeof hiddenItemsResponse !== 'object') {
             throw new Error(`Invalid response structure: ${JSON.stringify(hiddenItemsResponse)}`);
           }
@@ -231,7 +223,6 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
         }
       })();
 
-      // Convert hidden items to queue items
       const queueItems: HideUnhideItem[] = hiddenItemsResponse.items.map((item: HiddenItem) => ({
         fan_id: fan_id,
         item_id: item.item_id,
@@ -247,7 +238,6 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
         `Found ${queueItems.length} hidden items in batch ${batchCount}. Total so far: ${allHiddenItems.length}`
       );
 
-      // Check if there are more items
       if (hiddenItemsResponse.items.length < 100 || !hiddenItemsResponse.last_token) {
         hasMore = false;
         log.info(`No more items to fetch. Completed ${batchCount} batches.`);
@@ -259,7 +249,6 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
 
     log.info(`Found total of ${allHiddenItems.length} hidden items to unhide`);
 
-    // Process all items using the progress tracker
     await progressTracker.processItems(allHiddenItems, 'unhide');
   } catch (error) {
     log.error(`Error in unhide process: ${error}`);
@@ -275,7 +264,6 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
     const baseUrl = 'https://bandcamp.com';
     log.info(`Using baseUrl: ${baseUrl}`);
 
-    // Get collection summary to get fan_id
     log.info('Fetching collection summary...');
     const collectionSummary = await (async () => {
       try {
@@ -291,12 +279,10 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
     const fan_id = collectionSummary.fan_id;
     log.info(`Got fan_id: ${fan_id}`);
 
-    // Get all items from collection summary (only purchased items)
     log.info('Getting all items from collection summary...');
     const allItems = Object.values(collectionSummary.tralbum_lookup).filter(item => item.purchased !== null);
     log.info(`Found ${allItems.length} total purchased items in collection`);
 
-    // Get all hidden items to subtract from the collection
     log.info('Fetching hidden items...');
     const currentUnixTime = Math.floor(Date.now() / 1000);
     let older_than_token = `${currentUnixTime}:999999999:t::`;
@@ -331,7 +317,6 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
         }
       })();
 
-      // Add hidden item IDs to the set
       hiddenItemsResponse.items.forEach((item: HiddenItem) => {
         allHiddenItems.add(item.item_id);
       });
@@ -340,7 +325,6 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
         `Found ${hiddenItemsResponse.items.length} hidden items in batch ${batchCount}. Total hidden so far: ${allHiddenItems.size}`
       );
 
-      // Check if there are more items
       if (hiddenItemsResponse.items.length < 100 || !hiddenItemsResponse.last_token) {
         hasMore = false;
         log.info(`No more hidden items to fetch. Completed ${batchCount} batches.`);
@@ -350,7 +334,6 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
       }
     }
 
-    // Create list of visible items (all items minus hidden items)
     const visibleItems: HideUnhideItem[] = allItems
       .filter(item => !allHiddenItems.has(item.item_id))
       .map(item => ({
@@ -366,7 +349,6 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
       `Found total of ${visibleItems.length} visible items to hide (${allItems.length} total - ${allHiddenItems.size} hidden)`
     );
 
-    // Process all items using the progress tracker
     await progressTracker.processItems(visibleItems, 'hide');
   } catch (error) {
     log.error(`Error in hide process: ${error}`);

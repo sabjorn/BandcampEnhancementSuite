@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 
-// Mock the logger
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
     info = vi.fn();
@@ -36,7 +35,7 @@ describe('Player', () => {
     expect(() => initPlayer()).not.toThrow();
   });
 
-  it('should test utility functions', () => {
+  it('should create volume slider with correct properties', () => {
     const volumeSlider = createVolumeSlider();
     expect(volumeSlider.type).toBe('range');
     expect(volumeSlider.min).toBe('0');
@@ -44,7 +43,9 @@ describe('Player', () => {
     expect(volumeSlider.step).toBe('0.01');
     expect(volumeSlider.title).toBe('volume control');
     expect(volumeSlider.classList.contains('volume')).toBe(true);
+  });
 
+  it('should handle volume slider changes', () => {
     const audioElement = document.querySelector('audio') as HTMLAudioElement;
     const mockVolumeEvent = {
       target: { value: '0.8' }
@@ -52,7 +53,9 @@ describe('Player', () => {
 
     expect(() => volumeSliderCallback(mockVolumeEvent)).not.toThrow();
     expect(audioElement.volume).toBe(0.8);
+  });
 
+  it('should handle keyboard events correctly', () => {
     const mockLogger = new Logger();
     const mockKeyHandlers = {
       p: vi.fn(),

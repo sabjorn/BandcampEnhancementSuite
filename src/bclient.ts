@@ -1,6 +1,5 @@
 const API_RATE_LIMIT_DELAY_MS = 1000;
 
-// Rate limiting utility for API calls
 function createRateLimitedFunction<T extends (...args: any[]) => Promise<any>>(fn: T, delayMs: number): T {
   let lastCallTime = 0;
 
@@ -337,6 +336,5 @@ export async function getHiddenItems(
   return data;
 }
 
-// Rate-limited versions of API functions to prevent rate limiting
 export const getHiddenItemsRateLimited = createRateLimitedFunction(getHiddenItems, API_RATE_LIMIT_DELAY_MS);
 export const hideUnhideRateLimited = createRateLimitedFunction(hideUnhide, API_RATE_LIMIT_DELAY_MS);

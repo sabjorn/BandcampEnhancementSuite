@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createPagedata, createDomNodes, cleanupTestNodes } from './utils';
 
-// Mock the logger
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
     info = vi.fn();
@@ -11,7 +10,6 @@ vi.mock('../src/logger', () => ({
   }
 }));
 
-// Mock bclient to prevent real network requests
 vi.mock('../src/bclient', () => ({
   addAlbumToCart: vi.fn().mockResolvedValue(new Response('{"success": true}', { status: 200 })),
   getTralbumDetails: vi

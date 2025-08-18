@@ -38,6 +38,7 @@ describe('HideUnhide', () => {
       const apiEndpoint = 'api/collectionowner/1/hide_unhide_item'
       
       createDomNodes(`
+        <div id="collection-search">Search div</div>
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
@@ -50,14 +51,11 @@ describe('HideUnhide', () => {
       await expect(initHideUnhide(mockPort as any)).resolves.not.toThrow()
     })
 
-    it('should add hide and unhide buttons to collection-items div', async () => {
+    it('should add hide and unhide buttons inside collection-search div', async () => {
       await initHideUnhide(mockPort as any)
       
-      const collectionItemsDiv = document.querySelector('div.collection-items')
-      expect(collectionItemsDiv).toBeTruthy()
-      
-      const buttons = collectionItemsDiv?.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
-      expect(buttons).toHaveLength(2)
+      const collectionSearchDiv = document.getElementById('collection-search')
+      expect(collectionSearchDiv).toBeTruthy()
       
       const hideButton = document.getElementById('bes-hide-button')
       const unhideButton = document.getElementById('bes-unhide-button')
@@ -66,19 +64,35 @@ describe('HideUnhide', () => {
       expect(hideButton?.textContent).toBe('hide all')
       expect(unhideButton).toBeTruthy()
       expect(unhideButton?.textContent).toBe('unhide all')
+      
+      // Check that buttons are children of collection-search
+      expect(hideButton?.parentElement).toBe(collectionSearchDiv)
+      expect(unhideButton?.parentElement).toBe(collectionSearchDiv)
+      
+      // Check that buttons have the correct CSS class
+      expect(hideButton?.className).toContain('bes-hide-unhide')
+      expect(unhideButton?.className).toContain('bes-hide-unhide')
     })
 
-    it('should insert buttons as first children', async () => {
+    it('should position buttons inside collection-search in correct order', async () => {
       await initHideUnhide(mockPort as any)
       
-      const collectionItemsDiv = document.querySelector('div.collection-items')
-      const firstChild = collectionItemsDiv?.firstChild as HTMLElement
-      const secondChild = firstChild?.nextSibling as HTMLElement
+      const collectionSearchDiv = document.getElementById('collection-search')
+      const hideButton = document.getElementById('bes-hide-button')
+      const unhideButton = document.getElementById('bes-unhide-button')
       
-      expect(firstChild.id).toBe('bes-hide-button')
-      expect(firstChild.textContent).toBe('hide all')
-      expect(secondChild.id).toBe('bes-unhide-button')
-      expect(secondChild.textContent).toBe('unhide all')
+      // Check that buttons are children of collection-search and in correct order
+      expect(hideButton?.parentElement).toBe(collectionSearchDiv)
+      expect(unhideButton?.parentElement).toBe(collectionSearchDiv)
+      
+      // Check that hide button comes before unhide button
+      const children = Array.from(collectionSearchDiv?.children || [])
+      const hideIndex = children.indexOf(hideButton!)
+      const unhideIndex = children.indexOf(unhideButton!)
+      expect(hideIndex).toBeLessThan(unhideIndex)
+      
+      expect(hideButton?.textContent).toBe('hide all')
+      expect(unhideButton?.textContent).toBe('unhide all')
     })
 
     it('should set up message listener on provided port', async () => {
@@ -408,6 +422,7 @@ describe('HideUnhide', () => {
         'other/endpoint': 'other-crumb'
       }
       createDomNodes(`
+        <div id="collection-search">Search div</div>
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
@@ -428,6 +443,7 @@ describe('HideUnhide', () => {
 
     it('should throw error when crumbs data element is missing for hide button', async () => {
       createDomNodes(`
+        <div id="collection-search">Search div</div>
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
@@ -446,6 +462,7 @@ describe('HideUnhide', () => {
         'other/endpoint': 'other-crumb'
       }
       createDomNodes(`
+        <div id="collection-search">Search div</div>
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
@@ -472,6 +489,7 @@ describe('HideUnhide', () => {
         'other/endpoint': 'other-crumb'
       }
       createDomNodes(`
+        <div id="collection-search">Search div</div>
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
@@ -492,6 +510,7 @@ describe('HideUnhide', () => {
 
     it('should throw error when crumbs data element is missing', async () => {
       createDomNodes(`
+        <div id="collection-search">Search div</div>
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
@@ -507,6 +526,7 @@ describe('HideUnhide', () => {
 
     it('should throw error when crumbs data contains invalid JSON', async () => {
       createDomNodes(`
+        <div id="collection-search">Search div</div>
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
@@ -526,6 +546,7 @@ describe('HideUnhide', () => {
         'other/endpoint': 'other-crumb'
       }
       createDomNodes(`
+        <div id="collection-search">Search div</div>
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
@@ -556,14 +577,14 @@ describe('HideUnhide', () => {
       `)
     })
 
-    it('should return early when collection-items div is not found', async () => {
+    it('should return early when collection-search div is not found', async () => {
       await initHideUnhide(mockPort as any)
       
-      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hideUnhide')
+      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hide-unhide')
       expect(buttons).toHaveLength(0)
     })
 
-    it('should not throw when collection-items div is not found', async () => {
+    it('should not throw when collection-search div is not found', async () => {
       await expect(initHideUnhide(mockPort as any)).resolves.not.toThrow()
     })
   })
@@ -576,6 +597,7 @@ describe('HideUnhide', () => {
       const apiEndpoint = 'api/collectionowner/1/hide_unhide_item'
       
       createDomNodes(`
+        <div id="collection-search">Search div</div>
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
@@ -596,6 +618,7 @@ describe('HideUnhide', () => {
 
     it('should disable unhide button when no items are hidden (item_count === 0)', async () => {
       createDomNodes(`
+        <div id="collection-search">Search div</div>
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>
@@ -616,6 +639,7 @@ describe('HideUnhide', () => {
 
     it('should enable both buttons when some items are hidden (0 < item_count < collection_count)', async () => {
       createDomNodes(`
+        <div id="collection-search">Search div</div>
         <div class="collection-items">
           <div class="existing-item">Existing Item</div>
         </div>

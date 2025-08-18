@@ -39,7 +39,7 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     });
 
   const hideButton = createButton({
-    className: "follow-unfollow bes-hideUnhide",
+    className: "follow-unfollow bes-hide-unhide",
     innerText: "hide all",
     buttonClicked: () => {
       log.info("hide all button clicked");
@@ -60,7 +60,7 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
   hideButton.id = "bes-hide-button";
 
   const unhideButton = createButton({
-    className: "follow-unfollow bes-hideUnhide",
+    className: "follow-unfollow bes-hide-unhide",
     innerText: "unhide all",
     buttonClicked: () => {
       log.info("unhide all button clicked");
@@ -93,13 +93,14 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
     }
   }
 
-  const collectionItemsDiv = document.querySelector("div.collection-items");
-  if (!collectionItemsDiv) {
+  const collectionSearchDiv = document.getElementById("collection-search");
+  if (!collectionSearchDiv) {
         return;
   }
 
-  collectionItemsDiv.insertBefore(unhideButton, collectionItemsDiv.firstChild);
-  collectionItemsDiv.insertBefore(hideButton, collectionItemsDiv.firstChild);
+  // Insert buttons inside the collection-search div (which is a flexbox)
+  collectionSearchDiv.appendChild(hideButton);
+  collectionSearchDiv.appendChild(unhideButton);
 }
 
 const HIDE_UNHIDE_STATUS_ID = 'bes-hide-unhide-status-notification';

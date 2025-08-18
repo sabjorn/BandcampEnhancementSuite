@@ -1,5 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createPagedata, createDomNodes, cleanupTestNodes } from './utils'
+
+// Mock the logger
+vi.mock('../src/logger', () => ({
+  default: class MockLogger {
+    info = vi.fn()
+    error = vi.fn()
+    debug = vi.fn()
+    warn = vi.fn()
+  }
+}))
+
 import { initCart } from '../src/pages/cart'
 
 describe('Cart', () => {

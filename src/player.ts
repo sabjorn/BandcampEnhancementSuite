@@ -25,25 +25,21 @@ const DEFAULT_KEY_HANDLERS: KeyHandlers = {
   ' ': () => {
     const playButton = document.querySelector('div.playbutton')
     if (!playButton) return
-
     ;(playButton as HTMLElement).click()
   },
   p: () => {
     const playButton = document.querySelector('div.playbutton')
     if (!playButton) return
-
     ;(playButton as HTMLElement).click()
   },
   ArrowUp: () => {
     const prevButton = document.querySelector('div.prevbutton')
     if (!prevButton) return
-
     ;(prevButton as HTMLElement).click()
   },
   ArrowDown: () => {
     const nextButton = document.querySelector('div.nextbutton')
     if (!nextButton) return
-
     ;(nextButton as HTMLElement).click()
   },
   ArrowRight: () => {

@@ -273,11 +273,13 @@ describe('unhide_backend', () => {
           t789: {
             item_id: 789,
             item_type: 'track',
+            band_id: 1,
             purchased: '2023-01-01'
           },
           a790: {
             item_id: 790,
             item_type: 'album',
+            band_id: 2,
             purchased: '2023-01-01'
           }
         },
@@ -375,7 +377,9 @@ describe('unhide_backend', () => {
         item_lookup: {},
         last_token: 'final-token',
         purchase_infos: {},
-        collectors: {}
+        collectors: {},
+        similar_gift_ids: {},
+        last_token_is_gift: false
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
@@ -585,7 +589,9 @@ describe('unhide_backend', () => {
         item_lookup: {},
         last_token: 'final-token',
         purchase_infos: {},
-        collectors: {}
+        collectors: {},
+        similar_gift_ids: {},
+        last_token_is_gift: false
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)
@@ -723,7 +729,9 @@ describe('unhide_backend', () => {
         item_lookup: {},
         last_token: 'final-token',
         purchase_infos: {},
-        collectors: {}
+        collectors: {},
+        similar_gift_ids: {},
+        last_token_is_gift: false
       }
 
       vi.mocked(getCollectionSummary).mockResolvedValue(mockCollectionSummary)

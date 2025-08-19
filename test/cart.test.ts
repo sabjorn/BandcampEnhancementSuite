@@ -1,5 +1,22 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createPagedata, createDomNodes, cleanupTestNodes } from './utils';
+
+vi.mock('../src/logger', () => ({
+  default: class MockLogger {
+    info = vi.fn();
+    error = vi.fn();
+    debug = vi.fn();
+    warn = vi.fn();
+  }
+}));
+
+vi.mock('../src/bclient', () => ({
+  addAlbumToCart: vi.fn().mockResolvedValue(new Response('{"success": true}', { status: 200 })),
+  getTralbumDetails: vi
+    .fn()
+    .mockResolvedValue(new Response('{"id": 123, "title": "Test Album", "price": 10}', { status: 200 }))
+}));
+
 import { initCart } from '../src/pages/cart';
 
 describe('Cart', () => {

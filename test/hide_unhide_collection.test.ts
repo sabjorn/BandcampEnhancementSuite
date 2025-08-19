@@ -1,0 +1,716 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createDomNodes, cleanupTestNodes } from './utils';
+import { initHideUnhide } from '../src/pages/hide_unhide_collection';
+
+const mockPort = {
+  postMessage: vi.fn(),
+  onMessage: {
+    addListener: vi.fn()
+  }
+};
+
+vi.mock('../src/logger', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn()
+  }))
+}));
+
+describe('HideUnhide', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.querySelectorAll('#js-crumbs-data').forEach(el => el.remove());
+  });
+
+  afterEach(() => {
+    cleanupTestNodes();
+  });
+
+  describe('initHideUnhide(mockPort as any)', () => {
+    beforeEach(() => {
+      const hiddenItemCount = 5;
+      const collectionCount = 10;
+      const testCrumb = 'test-crumb';
+      const apiEndpoint = 'api/collectionowner/1/hide_unhide_item';
+
+      createDomNodes(`
+        <div id="collection-search">Search div</div>
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":${hiddenItemCount}},"collection_count":${collectionCount}}'></div>
+        <div id="js-crumbs-data" data-crumbs='{"${apiEndpoint}":"${testCrumb}"}'></div>
+      `);
+    });
+
+    it('should initialize hideUnhide functionality', async () => {
+      await expect(initHideUnhide(mockPort as any)).resolves.not.toThrow();
+    });
+
+    it('should add hide and unhide buttons inside collection-search div', async () => {
+      await initHideUnhide(mockPort as any);
+
+      const collectionSearchDiv = document.getElementById('collection-search');
+      expect(collectionSearchDiv).toBeTruthy();
+
+      const hideButton = document.getElementById('bes-hide-button');
+      const unhideButton = document.getElementById('bes-unhide-button');
+
+      expect(hideButton).toBeTruthy();
+      expect(hideButton?.textContent).toBe('hide all');
+      expect(unhideButton).toBeTruthy();
+      expect(unhideButton?.textContent).toBe('unhide all');
+
+      expect(hideButton?.parentElement).toBe(collectionSearchDiv);
+      expect(unhideButton?.parentElement).toBe(collectionSearchDiv);
+
+      expect(hideButton?.className).toContain('bes-hide-unhide');
+      expect(unhideButton?.className).toContain('bes-hide-unhide');
+    });
+
+    it('should position buttons inside collection-search in correct order', async () => {
+      await initHideUnhide(mockPort as any);
+
+      const collectionSearchDiv = document.getElementById('collection-search');
+      const hideButton = document.getElementById('bes-hide-button');
+      const unhideButton = document.getElementById('bes-unhide-button');
+
+      expect(hideButton?.parentElement).toBe(collectionSearchDiv);
+      expect(unhideButton?.parentElement).toBe(collectionSearchDiv);
+
+      const children = Array.from(collectionSearchDiv?.children || []);
+      const hideIndex = children.indexOf(hideButton!);
+      const unhideIndex = children.indexOf(unhideButton!);
+      expect(hideIndex).toBeLessThan(unhideIndex);
+
+      expect(hideButton?.textContent).toBe('hide all');
+      expect(unhideButton?.textContent).toBe('unhide all');
+    });
+
+    it('should set up message listener on provided port', async () => {
+      await initHideUnhide(mockPort as any);
+
+      expect(mockPort.onMessage.addListener).toHaveBeenCalled();
+    });
+
+    it('should create status display when unhide state is processing', async () => {
+      const apiEndpoint = 'api/collectionowner/1/hide_unhide_item';
+      const testCrumb = 'test-crumb';
+      const crumbsData = {
+        [apiEndpoint]: testCrumb
+      };
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+      messageHandler({
+        unhideState: {
+          isProcessing: true,
+          processedCount: 5,
+          totalCount: 10,
+          errors: []
+        }
+      });
+
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement;
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement;
+
+      expect(statusNotification).toBeTruthy();
+      expect(statusNotification.classList.contains('bes-notification')).toBe(true);
+      expect(statusNotification.classList.contains('bes-status')).toBe(true);
+      expect(statusNotification.innerHTML).toContain('5/10');
+      expect(statusNotification.innerHTML).toContain('Do not refresh or navigate away');
+      expect(unhideButton.getAttribute('disabled')).toBe('true');
+      expect(unhideButton.style.opacity).toBe('0.5');
+      expect(unhideButton.style.pointerEvents).toBe('none');
+      expect(unhideButton.textContent).toBe('unhide all');
+    });
+
+    it('should hide status display when processing is complete', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      };
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement;
+
+      messageHandler({
+        unhideState: {
+          isProcessing: true,
+          processedCount: 5,
+          totalCount: 10,
+          errors: []
+        }
+      });
+
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement;
+      expect(statusNotification).toBeTruthy();
+      expect(statusNotification.classList.contains('bes-status')).toBe(true);
+      expect(unhideButton.getAttribute('disabled')).toBe('true');
+      expect(unhideButton.style.opacity).toBe('0.5');
+      expect(unhideButton.style.pointerEvents).toBe('none');
+
+      messageHandler({
+        unhideState: {
+          isProcessing: false,
+          processedCount: 10,
+          totalCount: 10,
+          errors: []
+        }
+      });
+
+      expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull();
+      expect(unhideButton.getAttribute('disabled')).toBe('true');
+
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement;
+      expect(hideButton.getAttribute('disabled')).toBeNull();
+      expect(hideButton.style.opacity).toBe('');
+      expect(hideButton.style.pointerEvents).toBe('');
+      expect(unhideButton.textContent).toBe('unhide all');
+
+      messageHandler({
+        unhideComplete: {
+          message: 'All items unhidden'
+        }
+      });
+
+      expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull();
+    });
+
+    it('should show error count in status display', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      };
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+      messageHandler({
+        unhideState: {
+          isProcessing: true,
+          processedCount: 3,
+          totalCount: 10,
+          errors: ['Error 1', 'Error 2']
+        }
+      });
+
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement;
+      expect(statusNotification.innerHTML).toContain('2 errors occurred');
+    });
+
+    it('should send unhide message with crumb when unhide button is clicked', async () => {
+      const hiddenItemCount = 5;
+      const collectionCount = 10;
+      const testCrumb = 'test-crumb';
+      const apiEndpoint = 'api/collectionowner/1/hide_unhide_item';
+      const crumbsData = {
+        [apiEndpoint]: testCrumb
+      };
+
+      createDomNodes(`
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":${hiddenItemCount}},"collection_count":${collectionCount}}'></div>
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement;
+
+      expect(unhideButton).toBeTruthy();
+      unhideButton.click();
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        unhide: { crumb: testCrumb }
+      });
+    });
+
+    it('should send hide message with crumb when hide button is clicked', async () => {
+      const hiddenItemCount = 5;
+      const collectionCount = 10;
+      const testCrumb = 'test-crumb';
+      const apiEndpoint = 'api/collectionowner/1/hide_unhide_item';
+      const crumbsData = {
+        [apiEndpoint]: testCrumb
+      };
+
+      createDomNodes(`
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":${hiddenItemCount}},"collection_count":${collectionCount}}'></div>
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const hideButton = document.getElementById('bes-hide-button') as HTMLElement;
+
+      expect(hideButton).toBeTruthy();
+      hideButton.click();
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        hide: { crumb: testCrumb }
+      });
+    });
+
+    it('should create hide status display when hide state is processing', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      };
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+      messageHandler({
+        hideState: {
+          isProcessing: true,
+          processedCount: 3,
+          totalCount: 8,
+          errors: []
+        }
+      });
+
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement;
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement;
+
+      expect(statusNotification).toBeTruthy();
+      expect(statusNotification.classList.contains('bes-notification')).toBe(true);
+      expect(statusNotification.classList.contains('bes-status')).toBe(true);
+      expect(statusNotification.innerHTML).toContain('Hiding your collection items');
+      expect(statusNotification.innerHTML).toContain('3/8');
+      expect(statusNotification.innerHTML).toContain('Do not refresh or navigate away');
+      expect(hideButton.getAttribute('disabled')).toBe('true');
+      expect(hideButton.style.opacity).toBe('0.5');
+      expect(hideButton.style.pointerEvents).toBe('none');
+      expect(hideButton.textContent).toBe('hide all');
+    });
+
+    it('should hide status display when hide processing is complete', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      };
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement;
+
+      messageHandler({
+        hideState: {
+          isProcessing: true,
+          processedCount: 3,
+          totalCount: 8,
+          errors: []
+        }
+      });
+
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement;
+      expect(statusNotification).toBeTruthy();
+      expect(statusNotification.classList.contains('bes-status')).toBe(true);
+      expect(hideButton.getAttribute('disabled')).toBe('true');
+      expect(hideButton.style.opacity).toBe('0.5');
+      expect(hideButton.style.pointerEvents).toBe('none');
+
+      messageHandler({
+        hideState: {
+          isProcessing: false,
+          processedCount: 8,
+          totalCount: 8,
+          errors: []
+        }
+      });
+
+      expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull();
+      expect(hideButton.getAttribute('disabled')).toBe('true');
+
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement;
+      expect(unhideButton.getAttribute('disabled')).toBeNull();
+      expect(unhideButton.style.opacity).toBe('');
+      expect(unhideButton.style.pointerEvents).toBe('');
+      expect(hideButton.textContent).toBe('hide all');
+
+      messageHandler({
+        hideComplete: {
+          message: 'All items hidden'
+        }
+      });
+
+      expect(document.getElementById('bes-hide-unhide-status-notification')).toBeNull();
+    });
+
+    it('should show error count in hide status display', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      };
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+      messageHandler({
+        hideState: {
+          isProcessing: true,
+          processedCount: 2,
+          totalCount: 6,
+          errors: ['Error 1', 'Error 2', 'Error 3']
+        }
+      });
+
+      const statusNotification = document.getElementById('bes-hide-unhide-status-notification') as HTMLDivElement;
+      expect(statusNotification.innerHTML).toContain('3 errors occurred');
+    });
+
+    it('should disable both buttons during hide processing', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      };
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement;
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement;
+
+      messageHandler({
+        hideState: {
+          isProcessing: true,
+          processedCount: 2,
+          totalCount: 6,
+          errors: []
+        }
+      });
+
+      expect(hideButton.getAttribute('disabled')).toBe('true');
+      expect(unhideButton.getAttribute('disabled')).toBe('true');
+    });
+
+    it('should disable both buttons during unhide processing', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'test-crumb'
+      };
+      createDomNodes(`
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement;
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement;
+
+      messageHandler({
+        unhideState: {
+          isProcessing: true,
+          processedCount: 3,
+          totalCount: 8,
+          errors: []
+        }
+      });
+
+      expect(hideButton.getAttribute('disabled')).toBe('true');
+      expect(unhideButton.getAttribute('disabled')).toBe('true');
+    });
+
+    it('should handle hide completion message', async () => {
+      await initHideUnhide(mockPort as any);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      const showSuccessMessage = vi.fn();
+      global.showSuccessMessage = showSuccessMessage;
+
+      messageHandler({
+        hideComplete: {
+          message: 'Successfully hidden 5 items'
+        }
+      });
+
+      expect(() =>
+        messageHandler({
+          hideComplete: {
+            message: 'Successfully hidden 5 items'
+          }
+        })
+      ).not.toThrow();
+    });
+
+    it('should handle hide error message', async () => {
+      await initHideUnhide(mockPort as any);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      expect(() =>
+        messageHandler({
+          hideError: {
+            message: 'Failed to hide items'
+          }
+        })
+      ).not.toThrow();
+    });
+  });
+
+  describe('hide button with crumb extraction', () => {
+    it('should extract crumb from page data and send hide message when button clicked', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'extracted-hide-crumb-456',
+        'other/endpoint': 'other-crumb'
+      };
+      createDomNodes(`
+        <div id="collection-search">Search div</div>
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const hideButton = document.getElementById('bes-hide-button') as HTMLElement;
+
+      hideButton.click();
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        hide: { crumb: 'extracted-hide-crumb-456' }
+      });
+    });
+
+    it('should throw error when crumbs data element is missing for hide button', async () => {
+      createDomNodes(`
+        <div id="collection-search">Search div</div>
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const hideButton = document.getElementById('bes-hide-button') as HTMLElement;
+
+      expect(() => hideButton.click()).toThrow();
+    });
+
+    it('should send undefined crumb when specific endpoint is missing for hide button', async () => {
+      const crumbsData = {
+        'other/endpoint': 'other-crumb'
+      };
+      createDomNodes(`
+        <div id="collection-search">Search div</div>
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const hideButton = document.getElementById('bes-hide-button') as HTMLElement;
+
+      hideButton.click();
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        hide: { crumb: undefined }
+      });
+    });
+  });
+
+  describe('unhide button with crumb extraction', () => {
+    it('should extract crumb from page data and send unhide message when button clicked', async () => {
+      const crumbsData = {
+        'api/collectionowner/1/hide_unhide_item': 'extracted-crumb-123',
+        'other/endpoint': 'other-crumb'
+      };
+      createDomNodes(`
+        <div id="collection-search">Search div</div>
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement;
+
+      unhideButton.click();
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        unhide: { crumb: 'extracted-crumb-123' }
+      });
+    });
+
+    it('should throw error when crumbs data element is missing', async () => {
+      createDomNodes(`
+        <div id="collection-search">Search div</div>
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement;
+
+      expect(() => unhideButton.click()).toThrow();
+    });
+
+    it('should throw error when crumbs data contains invalid JSON', async () => {
+      createDomNodes(`
+        <div id="collection-search">Search div</div>
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
+        <div id="js-crumbs-data" data-crumbs="invalid-json{"></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement;
+
+      expect(() => unhideButton.click()).toThrow();
+    });
+
+    it('should send undefined crumb when specific endpoint is missing', async () => {
+      const crumbsData = {
+        'other/endpoint': 'other-crumb'
+      };
+      createDomNodes(`
+        <div id="collection-search">Search div</div>
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
+        <div id="js-crumbs-data" data-crumbs='${JSON.stringify(crumbsData)}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLElement;
+
+      unhideButton.click();
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        unhide: { crumb: undefined }
+      });
+    });
+  });
+
+  describe('initHideUnhide(mockPort as any) without collection-items div', () => {
+    beforeEach(() => {
+      createDomNodes(`
+        <div class="some-other-div">
+          <div class="item">Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
+        <div id="js-crumbs-data" data-crumbs='{"api/collectionowner/1/hide_unhide_item":"test-crumb"}'></div>
+      `);
+    });
+
+    it('should return early when collection-search div is not found', async () => {
+      await initHideUnhide(mockPort as any);
+
+      const buttons = document.querySelectorAll('a.follow-unfollow.bes-hide-unhide');
+      expect(buttons).toHaveLength(0);
+    });
+
+    it('should not throw when collection-search div is not found', async () => {
+      await expect(initHideUnhide(mockPort as any)).resolves.not.toThrow();
+    });
+  });
+
+  describe('button state management based on page data', () => {
+    it('should disable hide button when all items are hidden (collection_count === 0)', async () => {
+      const hiddenItemCount = 10;
+      const collectionCount = 0;
+      const testCrumb = 'test-crumb';
+      const apiEndpoint = 'api/collectionowner/1/hide_unhide_item';
+
+      createDomNodes(`
+        <div id="collection-search">Search div</div>
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":${hiddenItemCount}},"collection_count":${collectionCount}}'></div>
+        <div id="js-crumbs-data" data-crumbs='{"${apiEndpoint}":"${testCrumb}"}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement;
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement;
+
+      expect(hideButton.getAttribute('disabled')).toBe('true');
+      expect(hideButton.style.opacity).toBe('0.5');
+      expect(hideButton.style.pointerEvents).toBe('none');
+      expect(unhideButton.getAttribute('disabled')).toBeNull();
+    });
+
+    it('should disable unhide button when no items are hidden (item_count === 0)', async () => {
+      createDomNodes(`
+        <div id="collection-search">Search div</div>
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":0},"collection_count":10}'></div>
+        <div id="js-crumbs-data" data-crumbs='{"api/collectionowner/1/hide_unhide_item":"test-crumb"}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement;
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement;
+
+      expect(hideButton.getAttribute('disabled')).toBeNull();
+      expect(unhideButton.getAttribute('disabled')).toBe('true');
+      expect(unhideButton.style.opacity).toBe('0.5');
+      expect(unhideButton.style.pointerEvents).toBe('none');
+    });
+
+    it('should enable both buttons when some items are hidden (0 < item_count < collection_count)', async () => {
+      createDomNodes(`
+        <div id="collection-search">Search div</div>
+        <div class="collection-items">
+          <div class="existing-item">Existing Item</div>
+        </div>
+        <div id="pagedata" data-blob='{"hidden_data":{"item_count":5},"collection_count":10}'></div>
+        <div id="js-crumbs-data" data-crumbs='{"api/collectionowner/1/hide_unhide_item":"test-crumb"}'></div>
+      `);
+
+      await initHideUnhide(mockPort as any);
+
+      const hideButton = document.getElementById('bes-hide-button') as HTMLAnchorElement;
+      const unhideButton = document.getElementById('bes-unhide-button') as HTMLAnchorElement;
+
+      expect(hideButton.getAttribute('disabled')).toBeNull();
+      expect(hideButton.style.opacity).toBe('');
+      expect(unhideButton.getAttribute('disabled')).toBeNull();
+      expect(unhideButton.style.opacity).toBe('');
+    });
+  });
+});

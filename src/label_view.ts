@@ -65,25 +65,13 @@ export function fillFrame(event: Event, previewState: { previewOpen: boolean; pr
   }
 }
 
-export async function initLabelView(): Promise<void> {
+export async function initLabelView(port: chrome.runtime.Port): Promise<void> {
   const log = new Logger();
   const previewState = { previewOpen: false, previewId: undefined };
-  let port: chrome.runtime.Port;
 
-  try {
-    port = chrome.runtime.connect(null, { name: 'bandcamplabelview' });
-
-    port.onMessage.addListener(msg => {
-      if (msg.id) setHistory(msg.id.key, msg.id.value);
-    });
-  } catch (e) {
-    if (e.message.includes('Error in invocation of runtime.connect')) {
-      log.error(e);
-      return;
-    }
-
-    throw e;
-  }
+  port.onMessage.addListener(msg => {
+    if (msg.id) setHistory(msg.id.key, msg.id.value);
+  });
 
   log.info('Rendering BES...');
   renderDom(port, previewState);

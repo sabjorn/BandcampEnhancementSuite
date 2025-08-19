@@ -1,5 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
+
+vi.mock('../src/logger', () => ({
+  default: class MockLogger {
+    info = vi.fn();
+    error = vi.fn();
+    debug = vi.fn();
+    warn = vi.fn();
+  }
+}));
+
 import { initDownloadHelper } from '../src/download_helper';
 
 describe('DownloadHelper', () => {

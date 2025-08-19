@@ -1,12 +1,6 @@
 import Logger from './logger';
-import {
-  mousedownCallback,
-  extractBandFollowInfo,
-  extractFanTralbumData,
-  getTralbumDetails,
-  addAlbumToCart,
-  CURRENCY_MINIMUMS
-} from './utilities.js';
+import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, CURRENCY_MINIMUMS } from './utilities.js';
+import { getTralbumDetails, addAlbumToCart } from './bclient';
 import { createInputButtonPair } from './components/buttons.js';
 import { createShoppingCartItem } from './components/shoppingCart.js';
 import { createPlusSvgIcon } from './components/svgIcons';

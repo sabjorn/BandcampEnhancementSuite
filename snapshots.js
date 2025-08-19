@@ -15,9 +15,7 @@ const snapOptions = {
     }
   });
   const page = await browser.newPage();
-  await page.goto('https://halfpastvibe.bandcamp.com/album/vielen-dank', {
-    waitUntil: 'networkidle2'
-  });
+  await page.goto('https://halfpastvibe.bandcamp.com/album/vielen-dank', { waitUntil: 'networkidle2' });
   await page.waitForSelector('#trackInfoInner .volume.thumb');
   await page.waitForTimeout(2000);
   await percySnapshot(page, 'Example Site', snapOptions);

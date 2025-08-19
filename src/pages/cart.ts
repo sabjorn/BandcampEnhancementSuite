@@ -1,14 +1,8 @@
 import Logger from '../logger';
 
 import { createButton, createInputButtonPair } from '../components/buttons.js';
-import {
-  downloadFile,
-  dateString,
-  loadJsonFile,
-  addAlbumToCart,
-  CURRENCY_MINIMUMS,
-  getTralbumDetails
-} from '../utilities';
+import { downloadFile, dateString, loadJsonFile, CURRENCY_MINIMUMS } from '../utilities';
+import { addAlbumToCart, getTralbumDetails } from '../bclient';
 import { createShoppingCartItem } from '../components/shoppingCart.js';
 import { createPlusSvgIcon } from '../components/svgIcons';
 

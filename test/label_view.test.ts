@@ -1,8 +1,29 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
+
+vi.mock('../src/logger', () => ({
+  default: class MockLogger {
+    info = vi.fn();
+    error = vi.fn();
+    debug = vi.fn();
+    warn = vi.fn();
+  }
+}));
+
 import { initLabelView } from '../src/label_view';
 
+const mockPort = {
+  postMessage: vi.fn(),
+  onMessage: {
+    addListener: vi.fn()
+  }
+};
+
 describe('LabelView', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   afterEach(() => {
     cleanupTestNodes();
     vi.restoreAllMocks();
@@ -19,7 +40,7 @@ describe('LabelView', () => {
     });
 
     it('should initialize label view functionality', async () => {
-      await expect(initLabelView()).resolves.not.toThrow();
+      await expect(initLabelView(mockPort as any)).resolves.not.toThrow();
     });
   });
 

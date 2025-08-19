@@ -99,13 +99,27 @@ export function createInputButtonPair(options: CreateInputButtonPairOptions = {}
   return container;
 }
 
-export function createButton(options: CreateButtonOptions = {}): HTMLAnchorElement {
+export function createButton(
+  options: CreateButtonOptions = {}
+): HTMLAnchorElement & { disable: () => void; enable: () => void } {
   const { className, innerText, buttonClicked } = options;
 
-  const button = document.createElement('a');
+  const button = document.createElement('a') as HTMLAnchorElement & { disable: () => void; enable: () => void };
   button.className = className;
   button.innerText = innerText;
   button.addEventListener('click', buttonClicked);
+
+  button.disable = () => {
+    button.style.opacity = '0.5';
+    button.style.pointerEvents = 'none';
+    button.setAttribute('disabled', 'true');
+  };
+
+  button.enable = () => {
+    button.style.opacity = '';
+    button.style.pointerEvents = '';
+    button.removeAttribute('disabled');
+  };
 
   return button;
 }

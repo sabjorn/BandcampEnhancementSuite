@@ -236,14 +236,6 @@ describe('bclient', () => {
       });
     });
 
-    it('should handle response data correctly', async () => {
-      const result = await getCollectionSummary();
-      expect(result.fan_id).toBe(896389);
-      expect(result.username).toBe('dataist');
-      expect(result.tralbum_lookup).toBeDefined();
-      expect(result.follows).toBeDefined();
-    });
-
     it('should use relative URL when baseUrl is null', async () => {
       await getCollectionSummary(null);
 

@@ -147,6 +147,86 @@ export function loadJsonFile(): Promise<any> {
   });
 }
 
+export function loadTextFile(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fileInput: HTMLInputElement = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.txt,.json';
+
+    fileInput.onchange = (event: Event) => {
+      const target = event.target as HTMLInputElement;
+      const file: File | null = target.files?.[0] || null;
+      if (!file) {
+        return;
+      }
+
+      const reader: FileReader = new FileReader();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const result = e.target?.result;
+        if (typeof result !== 'string') {
+          reject(new Error('Failed to read file as text'));
+          return;
+        } 
+
+        resolve(result);
+      };
+
+      reader.onerror = (error: ProgressEvent<FileReader>) => reject(error);
+      reader.readAsText(file);
+    };
+
+    fileInput.click();
+  });
+}
+
+export interface BandcampUrlInfo {
+  item_id: number;
+  item_type: 'a' | 't';
+  item_title: string;
+  band_name: string;
+  currency: string;
+  url: string;
+  unit_price: number;
+}
+
+export async function extractBandcampUrlInfo(url: string): Promise<BandcampUrlInfo> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch page: ${response.status}`);
+  }
+  
+  const tralbumData = await (async () => {
+    const html = await response.text();
+    
+    const tralbumMatch = html.match(/data-tralbum="([^"]+)"/);
+    if (!tralbumMatch) {
+      throw new Error('Could not find tralbum data in page');
+    }
+    
+    const decodedJson = tralbumMatch[1]
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&#39;/g, "'");
+  
+    return JSON.parse(decodedJson);
+  })();
+  
+  const currency = tralbumData.current.minimum_price_currency || 'USD';
+  const price = tralbumData.current.minimum_price > 0.0 ? tralbumData.current.minimum_price : CURRENCY_MINIMUMS[currency] || 0.5;
+
+  return {
+    item_id: tralbumData.current.id,
+    item_type: tralbumData.current.type === 'track' ? 't' : 'a',
+    item_title: tralbumData.current.title,
+    band_name: tralbumData.artist,
+    currency: currency,
+    url: url,
+    unit_price: price
+  };
+}
+
 export const CURRENCY_MINIMUMS: Record<string, number> = {
   USD: 0.5,
   AUD: 0.5,

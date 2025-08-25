@@ -3,6 +3,7 @@
   "version": "9.9.9",
   "description": "Chrome extension adding extra features to the Bandcamp experience.",
   "dependencies": {
+    "client-zip": "^2.5.0",
     "idb": "^8.0.0",
     "web-audio-beat-detector": "^8.2.14"
   },

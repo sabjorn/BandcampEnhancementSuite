@@ -16,7 +16,13 @@
     "default_title": "Bandcamp Enhancement Suite",
     "default_popup": "html/browser_action.html"
   },
-  "host_permissions": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*", "https://t4.bcbits.com/stream/*"],
+  "permissions": ["downloads"],
+  "host_permissions": [
+    "http://*.bandcamp.com/*",
+    "https://*.bandcamp.com/*",
+    "https://t4.bcbits.com/stream/*",
+    "https://*.bcbits.com/*"
+  ],
   "minimum_chrome_version": "93",
   "background": {
     "service_worker": "dist/background.js"

@@ -10,7 +10,7 @@ vi.mock('../src/logger', () => ({
   }
 }));
 
-import { initDownloadHelper } from '../src/download_helper';
+import { initDownload } from '../src/pages/download';
 
 describe('DownloadHelper', () => {
   afterEach(() => {
@@ -31,14 +31,17 @@ describe('DownloadHelper', () => {
     });
 
     it('should initialize download helper functionality', async () => {
-      await expect(initDownloadHelper()).resolves.not.toThrow();
+      await expect(initDownload()).resolves.not.toThrow();
     });
 
-    it('should create download button', async () => {
-      await initDownloadHelper();
-      const button = document.querySelector('.bes-downloadall');
-      expect(button).toBeTruthy();
-      expect(button?.textContent).toContain('Download');
+    it('should create download buttons', async () => {
+      await initDownload();
+      const curlButton = document.querySelector('.bes-downloadall');
+      const zipButton = document.querySelector('.bes-downloadzip');
+      expect(curlButton).toBeTruthy();
+      expect(zipButton).toBeTruthy();
+      expect(curlButton?.textContent).toContain('Download');
+      expect(zipButton?.textContent).toContain('Download');
     });
   });
 

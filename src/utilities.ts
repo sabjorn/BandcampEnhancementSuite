@@ -166,7 +166,7 @@ export function loadTextFile(): Promise<string> {
         if (typeof result !== 'string') {
           reject(new Error('Failed to read file as text'));
           return;
-        } 
+        }
 
         resolve(result);
       };
@@ -178,75 +178,6 @@ export function loadTextFile(): Promise<string> {
     fileInput.click();
   });
 }
-
-export interface BandcampUrlInfo {
-  item_id: number;
-  item_type: 'a' | 't';
-  item_title: string;
-  band_name: string;
-  currency: string;
-  url: string;
-  unit_price: number;
-}
-
-export async function extractBandcampUrlInfo(url: string): Promise<BandcampUrlInfo> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch page: ${response.status}`);
-  }
-  
-  const tralbumData = await (async () => {
-    const html = await response.text();
-    
-    const tralbumMatch = html.match(/data-tralbum="([^"]+)"/);
-    if (!tralbumMatch) {
-      throw new Error('Could not find tralbum data in page');
-    }
-    
-    const decodedJson = tralbumMatch[1]
-      .replace(/&quot;/g, '"')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&#39;/g, "'");
-  
-    return JSON.parse(decodedJson);
-  })();
-  
-  const currency = tralbumData.current.minimum_price_currency || 'USD';
-  const price = tralbumData.current.minimum_price > 0.0 ? tralbumData.current.minimum_price : CURRENCY_MINIMUMS[currency] || 0.5;
-
-  return {
-    item_id: tralbumData.current.id,
-    item_type: tralbumData.current.type === 'track' ? 't' : 'a',
-    item_title: tralbumData.current.title,
-    band_name: tralbumData.artist,
-    currency: currency,
-    url: url,
-    unit_price: price
-  };
-}
-
-export const CURRENCY_MINIMUMS: Record<string, number> = {
-  USD: 0.5,
-  AUD: 0.5,
-  GBP: 0.25,
-  CAD: 1.0,
-  EUR: 0.25,
-  JPY: 70,
-  CZK: 10,
-  DKK: 2.5,
-  HKD: 2.5,
-  HUF: 100,
-  ILS: 1.5,
-  MXN: 5,
-  NZD: 0.5,
-  NOK: 3,
-  PLN: 3,
-  SGD: 1,
-  SEK: 3,
-  CHF: 0.5
-};
 
 export function centreElement(element: HTMLElement): void {
   const windowWidth: number = window.innerWidth;

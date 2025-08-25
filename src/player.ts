@@ -1,6 +1,6 @@
 import Logger from './logger';
-import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, CURRENCY_MINIMUMS } from './utilities.js';
-import { getTralbumDetails, addAlbumToCart } from './bclient';
+import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData } from './utilities.js';
+import { CURRENCY_MINIMUMS, getTralbumDetails, addAlbumToCart } from './bclient';
 import { createInputButtonPair } from './components/buttons.js';
 import { createShoppingCartItem } from './components/shoppingCart.js';
 import { createPlusSvgIcon } from './components/svgIcons';
@@ -218,12 +218,7 @@ export async function initPlayer(): Promise<void> {
   const tralbumType = bandFollowInfo.tralbum_type;
 
   try {
-    const response = await getTralbumDetails(tralbumId, tralbumType);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const tralbumDetails = await response.json();
+    const tralbumDetails = await getTralbumDetails(tralbumId, tralbumType);
     document.querySelectorAll('tr.track_row_view').forEach((row, i) => {
       if (tralbumDetails.tracks[i] === undefined) return;
 
@@ -238,7 +233,7 @@ export async function initPlayer(): Promise<void> {
       const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
       if (!minimumPrice) return;
 
-      const oneClick = createOneClickBuyButton(minimumPrice, currency, trackId, itemTitle, type, log);
+      const oneClick = createOneClickBuyButton(minimumPrice, currency, String(trackId), itemTitle, type, log);
 
       const downloadCol = row.querySelector('.download-col');
       downloadCol.innerHTML = '';
@@ -251,7 +246,7 @@ export async function initPlayer(): Promise<void> {
     const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
     if (!minimumPrice) return;
 
-    const oneClick = createOneClickBuyButton(minimumPrice, currency, albumId, itemTitle, type, log);
+    const oneClick = createOneClickBuyButton(minimumPrice, currency, String(albumId), itemTitle, type, log);
 
     const buyItemElement = document.querySelector('ul.tralbumCommands .buyItem.digital h3.hd');
     if (buyItemElement) {

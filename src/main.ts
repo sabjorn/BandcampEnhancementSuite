@@ -41,7 +41,7 @@ const main = async (): Promise<void> => {
     if (dataBlobAttr) {
       const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
       if (has_cart) {
-        await initCart();
+        await initCart(config_port);
       }
     }
   }

@@ -48,7 +48,10 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
     message: `Starting download of ${urls.length} files...`
   } as DownloadProgress);
 
-  for (const url of urls) {
+  // Download files in parallel batches to avoid overwhelming the server
+  const batchSize = 5; // Process 5 files at a time
+
+  const downloadFile = async (url: string, index: number): Promise<void> => {
     try {
       // Use fetch in background script (no CORS restrictions)
       const response = await fetch(url);
@@ -56,17 +59,10 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
       if (!response.ok) {
         failed++;
         log.warn(`Failed to download ${url}: ${response.status}`);
-        port.postMessage({
-          type: 'downloadProgress',
-          completed,
-          failed,
-          total: urls.length,
-          message: `Downloaded ${completed} of ${urls.length} files (${failed} failed)`
-        } as DownloadProgress);
-        continue;
+        return;
       }
 
-      const filename = getFilenameFromResponse(response, url) || `file_${completed + 1}.flac`;
+      const filename = getFilenameFromResponse(response, url) || `file_${index + 1}.flac`;
 
       // Convert response to ArrayBuffer
       const arrayBuffer = await response.arrayBuffer();
@@ -95,6 +91,15 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
       total: urls.length,
       message: `Downloaded ${completed} of ${urls.length} files (${failed} failed)`
     } as DownloadProgress);
+  };
+
+  // Process URLs in parallel batches
+  for (let i = 0; i < urls.length; i += batchSize) {
+    const batch = urls.slice(i, i + batchSize);
+    const batchPromises = batch.map((url, batchIndex) => downloadFile(url, i + batchIndex));
+
+    // Wait for this batch to complete before starting the next
+    await Promise.all(batchPromises);
   }
 
   if (files.length === 0) {

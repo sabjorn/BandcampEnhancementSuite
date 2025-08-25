@@ -118,8 +118,7 @@ describe('bclient', () => {
 
     it('should return fetch response', async () => {
       const response = await getTralbumDetails('123');
-      expect(response).toBeInstanceOf(Response);
-      expect(response.status).toBe(200);
+      expect(response).toEqual({ id: 123, title: 'Test Album' });
     });
 
     it('should handle numeric item_id', async () => {

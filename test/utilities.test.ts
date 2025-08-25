@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 
-import DBUtils, { getDB, mousedownCallback, extractBandFollowInfo, loadTextFile, extractBandcampUrlInfo } from '../src/utilities';
+import DBUtils, { getDB, mousedownCallback, extractBandFollowInfo, loadTextFile } from '../src/utilities';
+import { getTralbumDetailsFromPage } from '../src/bclient';
+
+vi.mock('../src/bclient', () => ({
+  getTralbumDetailsFromPage: vi.fn(),
+  CURRENCY_MINIMUMS: { USD: 0.5, EUR: 0.25 }
+}));
 
 describe('mousedownCallback', () => {
   const spyElement = { click: vi.fn(), duration: 0, currentTime: 0 };
@@ -93,7 +99,7 @@ describe('loadTextFile', () => {
 
   it('should create file input with correct attributes', () => {
     loadTextFile();
-    
+
     expect(document.createElement).toHaveBeenCalledWith('input');
     expect(mockInput.type).toBe('file');
     expect(mockInput.accept).toBe('.txt,.json');
@@ -102,61 +108,51 @@ describe('loadTextFile', () => {
 
   it('should resolve with file content when file is loaded', async () => {
     const promise = loadTextFile();
-    
+
     mockInput.files = [mockFile] as any;
-    
+
     const changeEvent = { target: mockInput } as any;
     mockInput.onchange!(changeEvent);
-    
+
     expect(mockReader.readAsText).toHaveBeenCalledWith(mockFile);
-    
+
     const loadEvent = { target: { result: 'test file content' } } as any;
     mockReader.onload!(loadEvent);
-    
+
     const result = await promise;
     expect(result).toBe('test file content');
   });
 
   it('should reject when file read fails', async () => {
     const promise = loadTextFile();
-    
+
     mockInput.files = [mockFile] as any;
-    
+
     const changeEvent = { target: mockInput } as any;
     mockInput.onchange!(changeEvent);
-    
+
     const errorEvent = new Error('File read failed') as any;
     mockReader.onerror!(errorEvent);
-    
+
     await expect(promise).rejects.toEqual(errorEvent);
   });
 
   it('should reject when result is not string', async () => {
     const promise = loadTextFile();
-    
+
     mockInput.files = [mockFile] as any;
-    
+
     const changeEvent = { target: mockInput } as any;
     mockInput.onchange!(changeEvent);
-    
+
     const loadEvent = { target: { result: new ArrayBuffer(8) } } as any;
     mockReader.onload!(loadEvent);
-    
+
     await expect(promise).rejects.toThrow('Failed to read file as text');
   });
 });
 
-describe('extractBandcampUrlInfo', () => {
-  const mockTralbumData = {
-    current: {
-      id: 12345,
-      type: 'album',
-      title: 'Test Album',
-      minimum_price_currency: 'USD'
-    },
-    artist: 'Test Artist'
-  };
-
+describe('getTralbumDetailsFromPage', () => {
   beforeEach(() => {
     global.fetch = vi.fn();
   });
@@ -166,99 +162,77 @@ describe('extractBandcampUrlInfo', () => {
   });
 
   it('should extract album info from bandcamp URL', async () => {
-    const htmlWithData = `<html><div data-tralbum="${JSON.stringify(mockTralbumData).replace(/"/g, '&quot;')}"></div></html>`;
-    const mockResponse = {
-      ok: true,
-      text: vi.fn().mockResolvedValue(htmlWithData)
-    };
-    
-    (global.fetch as any).mockResolvedValue(mockResponse);
-
-    const result = await extractBandcampUrlInfo('https://test.bandcamp.com/album/test-album');
-
-    expect(fetch).toHaveBeenCalledWith('https://test.bandcamp.com/album/test-album');
-    expect(result).toEqual({
-      item_id: 12345,
-      item_type: 'a',
-      item_title: 'Test Album',
-      band_name: 'Test Artist',
+    const mockResult = {
+      id: 12345,
+      type: 'a',
+      title: 'Test Album',
+      tralbum_artist: 'Test Artist',
       currency: 'USD',
-      url: 'https://test.bandcamp.com/album/test-album',
-      unit_price: 0.5
-    });
+      bandcamp_url: 'https://test.bandcamp.com/album/test-album',
+      price: 0.5,
+      is_purchasable: true
+    };
+
+    (getTralbumDetailsFromPage as any).mockResolvedValue(mockResult);
+
+    const result = await getTralbumDetailsFromPage('https://test.bandcamp.com/album/test-album');
+
+    expect(getTralbumDetailsFromPage).toHaveBeenCalledWith('https://test.bandcamp.com/album/test-album');
+    expect(result).toEqual(mockResult);
   });
 
   it('should extract track info from bandcamp URL', async () => {
-    const trackData = {
-      ...mockTralbumData,
-      current: {
-        ...mockTralbumData.current,
-        type: 'track',
-        title: 'Test Track'
-      }
-    };
-
-    const htmlWithData = `<html><div data-tralbum="${JSON.stringify(trackData).replace(/"/g, '&quot;')}"></div></html>`;
-    const mockResponse = {
-      ok: true,
-      text: vi.fn().mockResolvedValue(htmlWithData)
-    };
-    
-    (global.fetch as any).mockResolvedValue(mockResponse);
-
-    const result = await extractBandcampUrlInfo('https://test.bandcamp.com/track/test-track');
-
-    expect(result).toEqual({
-      item_id: 12345,
-      item_type: 't',
-      item_title: 'Test Track',
-      band_name: 'Test Artist',
+    const mockResult = {
+      id: 12345,
+      type: 't',
+      title: 'Test Track',
+      tralbum_artist: 'Test Artist',
       currency: 'USD',
-      url: 'https://test.bandcamp.com/track/test-track',
-      unit_price: 0.5
-    });
+      bandcamp_url: 'https://test.bandcamp.com/track/test-track',
+      price: 0.5,
+      is_purchasable: true
+    };
+
+    (getTralbumDetailsFromPage as any).mockResolvedValue(mockResult);
+
+    const result = await getTralbumDetailsFromPage('https://test.bandcamp.com/track/test-track');
+
+    expect(result).toEqual(mockResult);
   });
 
   it('should default to USD currency when not provided', async () => {
-    const dataWithoutCurrency = {
-      ...mockTralbumData,
-      current: {
-        ...mockTralbumData.current,
-        minimum_price_currency: undefined
-      }
+    const mockResult = {
+      id: 12345,
+      type: 'a',
+      title: 'Test Album',
+      tralbum_artist: 'Test Artist',
+      currency: 'USD',
+      bandcamp_url: 'https://test.bandcamp.com/album/test-album',
+      price: 0.5,
+      is_purchasable: true
     };
 
-    const htmlWithData = `<html><div data-tralbum="${JSON.stringify(dataWithoutCurrency).replace(/"/g, '&quot;')}"></div></html>`;
-    const mockResponse = {
-      ok: true,
-      text: vi.fn().mockResolvedValue(htmlWithData)
-    };
-    
-    (global.fetch as any).mockResolvedValue(mockResponse);
+    (getTralbumDetailsFromPage as any).mockResolvedValue(mockResult);
 
-    const result = await extractBandcampUrlInfo('https://test.bandcamp.com/album/test-album');
+    const result = await getTralbumDetailsFromPage('https://test.bandcamp.com/album/test-album');
 
     expect(result.currency).toBe('USD');
-    expect(result.unit_price).toBe(0.5);
+    expect(result.price).toBe(0.5);
   });
 
   it('should throw error when fetch fails', async () => {
-    const mockResponse = { ok: false, status: 404 };
-    (global.fetch as any).mockResolvedValue(mockResponse);
+    (getTralbumDetailsFromPage as any).mockRejectedValue(new Error('Failed to fetch page: 404'));
 
-    await expect(extractBandcampUrlInfo('https://test.bandcamp.com/album/not-found'))
-      .rejects.toThrow('Failed to fetch page: 404');
+    await expect(getTralbumDetailsFromPage('https://test.bandcamp.com/album/not-found')).rejects.toThrow(
+      'Failed to fetch page: 404'
+    );
   });
 
   it('should throw error when tralbum data not found', async () => {
-    const mockResponse = {
-      ok: true,
-      text: vi.fn().mockResolvedValue('<html><div></div></html>')
-    };
-    
-    (global.fetch as any).mockResolvedValue(mockResponse);
+    (getTralbumDetailsFromPage as any).mockRejectedValue(new Error('Could not find tralbum data in page'));
 
-    await expect(extractBandcampUrlInfo('https://test.bandcamp.com/album/no-data'))
-      .rejects.toThrow('Could not find tralbum data in page');
+    await expect(getTralbumDetailsFromPage('https://test.bandcamp.com/album/no-data')).rejects.toThrow(
+      'Could not find tralbum data in page'
+    );
   });
 });

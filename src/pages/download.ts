@@ -253,16 +253,16 @@ export async function downloadAsZip(log: Logger): Promise<void> {
           zipFilename = message.filename;
           log.info(`Receiving zip in ${expectedChunks} chunks`);
 
-          updatePersistentNotification('bes-download-progress', `Receiving zip file... (chunk 1/${expectedChunks})`);
+          updatePersistentNotification('bes-download-progress', 'Downloading... 0%');
         }
 
         zipChunks[message.chunkIndex] = message.data;
         log.info(`Received chunk ${message.chunkIndex + 1}/${expectedChunks}`);
 
-        updatePersistentNotification(
-          'bes-download-progress',
-          `Receiving zip file... (chunk ${message.chunkIndex + 1}/${expectedChunks})`
-        );
+        // Calculate download percentage
+        const receivedSoFar = message.chunkIndex + 1;
+        const percentage = Math.round((receivedSoFar / expectedChunks) * 100);
+        updatePersistentNotification('bes-download-progress', `Downloading... ${percentage}%`);
 
         // Check if all chunks received
         const receivedChunks = zipChunks.filter(chunk => chunk !== undefined).length;

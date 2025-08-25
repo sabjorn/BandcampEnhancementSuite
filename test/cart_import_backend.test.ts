@@ -82,10 +82,13 @@ describe('cart_import_backend', () => {
         }
       ];
 
-      it('should process cart import with existing prices', async () => {
+      it('should process cart import with existing prices and skip API call (optimization)', async () => {
         (getTralbumDetails as any).mockResolvedValue({ is_purchasable: true });
 
         await portListenerCallback({ cartImport: { items: [mockCartItems[0]] } }, portState);
+
+        // Should NOT call getTralbumDetails when price is already provided
+        expect(getTralbumDetails).not.toHaveBeenCalled();
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartAddRequest: {
@@ -149,13 +152,31 @@ describe('cart_import_backend', () => {
             })
           })
         );
+
+        // Should also send individual error notification
+        expect(mockPort.postMessage).toHaveBeenCalledWith({
+          cartItemError: {
+            message: 'Failed to add "Test Track" to cart'
+          }
+        });
+      });
+
+      it('should send completion message with mixed success/failure counts', async () => {
+        const mixedItems = [mockCartItems[0], mockCartItems[1]]; // First has price, second needs API call
+        (getTralbumDetails as any).mockRejectedValue(new Error('HTTP 404: Not Found'));
+
+        await portListenerCallback({ cartImport: { items: mixedItems } }, portState);
+
+        expect(mockPort.postMessage).toHaveBeenCalledWith({
+          cartImportComplete: { message: 'Successfully added 1 items to cart. 1 items could not be added' }
+        });
       });
 
       it('should send completion message immediately', async () => {
         await portListenerCallback({ cartImport: { items: [mockCartItems[0]] } }, portState);
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
-          cartImportComplete: { message: 'Successfully queued 1 items for import' }
+          cartImportComplete: { message: 'Successfully added 1 items to cart' }
         });
       });
 
@@ -258,11 +279,13 @@ describe('cart_import_backend', () => {
           bandcamp_url: mockUrls[0],
           price: 10.0
         });
+        // URL imports still need getTralbumDetails for is_purchasable check since they don't have unit_price
+        (getTralbumDetails as any).mockResolvedValue({ price: 10.0, is_purchasable: true });
 
         await portListenerCallback({ cartUrlImport: { urls: [mockUrls[0]] } }, portState);
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
-          cartImportComplete: { message: 'Successfully queued 1 items for import' }
+          cartImportComplete: { message: 'Successfully added 1 items to cart' }
         });
       });
 

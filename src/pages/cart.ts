@@ -41,16 +41,26 @@ interface CartExportData {
 export async function initCart(port: chrome.runtime.Port): Promise<void> {
   log.info('cart init');
 
+  let lastImportState: any = null; // Track the last import state for error reporting
+
   port.onMessage.addListener(async (msg: any) => {
     if (msg.cartImportState) {
       const state = msg.cartImportState;
+      lastImportState = state;
+
       if (state.isProcessing) {
         const progress = `${state.processedCount}/${state.totalCount}`;
         const operation = state.operation === 'url_import' ? 'URLs' : 'cart items';
-        updatePersistentNotification(
-          'cart-import-progress',
-          `Importing ${operation}... ${progress}${state.errors.length > 0 ? ` (${state.errors.length} errors)` : ''}`
-        );
+        const statusContent = `
+          <div style="font-weight: bold; margin-bottom: 8px;">🛒 Importing ${operation}...</div>
+          <div>Progress: ${progress}</div>
+          ${
+            state.errors.length > 0
+              ? `<div style="color: #d32f2f; margin-top: 4px;">${state.errors.length} errors occurred</div>`
+              : ''
+          }
+        `;
+        updatePersistentNotification('cart-import-progress', statusContent);
       }
     }
 
@@ -68,11 +78,26 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
         if (result.ok) {
           log.info(`Successfully added ${msg.cartAddRequest.item_title} to cart`);
+
+          // Create and add the cart item to the DOM (like other cart additions)
+          const cartItem = createShoppingCartItem({
+            itemId: String(msg.cartAddRequest.item_id),
+            itemName: msg.cartAddRequest.item_title,
+            itemPrice: msg.cartAddRequest.unit_price,
+            itemCurrency: msg.cartAddRequest.currency
+          });
+
+          const itemList = document.querySelector('#item_list');
+          if (itemList) {
+            itemList.append(cartItem);
+          }
         } else {
           log.error(`Failed to add ${msg.cartAddRequest.item_title} to cart: HTTP ${result.status}`);
+          showErrorMessage(`Failed to add "${msg.cartAddRequest.item_title}" to cart`);
         }
       } catch (error) {
         log.error(`Exception during cart add for ${msg.cartAddRequest.item_title}: ${error}`);
+        showErrorMessage(`Failed to add "${msg.cartAddRequest.item_title}" to cart`);
       }
     }
 
@@ -81,6 +106,11 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       showSuccessMessage(msg.cartImportComplete.message);
       // TODO: Wait for all cart operations to complete before reloading
       // setTimeout(() => location.reload(), 1000);
+    }
+
+    if (msg.cartItemError) {
+      // Show individual item error notification
+      showErrorMessage(msg.cartItemError.message);
     }
 
     if (msg.cartImportError) {

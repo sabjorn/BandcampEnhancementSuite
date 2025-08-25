@@ -58,6 +58,28 @@ class CartImportTracker {
 
     for (const originalItem of items) {
       try {
+        if (typeof originalItem !== 'string' && originalItem.unit_price !== undefined) {
+          log.info(
+            `Using existing price ${originalItem.unit_price} for item ${originalItem.item_id} (${originalItem.item_type})`
+          );
+          this.processedCount += 1;
+
+          this.port?.postMessage({
+            cartAddRequest: {
+              item_id: originalItem.item_id,
+              item_type: originalItem.item_type,
+              item_title: originalItem.item_title,
+              band_name: originalItem.band_name,
+              unit_price: originalItem.unit_price,
+              currency: originalItem.currency,
+              url: originalItem.url
+            }
+          });
+
+          this.broadcastState();
+          continue;
+        }
+
         const item = await (async (): Promise<CartImportItem> => {
           if (typeof originalItem === 'string') {
             log.info(`Extracting info from URL: ${originalItem}`);
@@ -74,31 +96,24 @@ class CartImportTracker {
           return originalItem;
         })();
 
-        const tralbumInfo = await (async () => {
-          log.info(`Fetching full details for item ${item.item_id} (${item.item_type})`);
-          const apiDetails = await getTralbumDetails(item.item_id, item.item_type, BASE_URL);
+        log.info(`Fetching full details for item ${item.item_id} (${item.item_type})`);
+        const apiDetails = await getTralbumDetails(item.item_id, item.item_type, BASE_URL);
 
-          if (!apiDetails.is_purchasable) {
-            throw new Error(`Item "${item.item_title}" is not purchasable`);
-          }
+        if (!apiDetails.is_purchasable) {
+          throw new Error(`Item "${item.item_title}" is not purchasable`);
+        }
 
-          const finalPrice =
-            item.unit_price !== undefined
-              ? item.unit_price
-              : apiDetails.price > 0.0
-                ? apiDetails.price
-                : CURRENCY_MINIMUMS[item.currency];
+        const finalPrice = apiDetails.price > 0.0 ? apiDetails.price : CURRENCY_MINIMUMS[item.currency];
 
-          return {
-            id: item.item_id,
-            type: item.item_type,
-            title: item.item_title,
-            tralbum_artist: item.band_name,
-            currency: item.currency,
-            price: finalPrice,
-            bandcamp_url: item.url
-          };
-        })();
+        const tralbumInfo = {
+          id: item.item_id,
+          type: item.item_type,
+          title: item.item_title,
+          tralbum_artist: item.band_name,
+          currency: item.currency,
+          price: finalPrice,
+          bandcamp_url: item.url
+        };
         this.processedCount += 1;
 
         log.info(`Sending cart add request for item ${tralbumInfo.id} with price ${tralbumInfo.price}`);
@@ -113,17 +128,22 @@ class CartImportTracker {
             url: tralbumInfo.bandcamp_url
           }
         });
-
-        // Add a small delay between cart operations to prevent race conditions
-        await new Promise(resolve => setTimeout(resolve, 250));
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         const itemId = typeof originalItem === 'string' ? originalItem : originalItem.item_id;
+        const itemTitle = typeof originalItem === 'string' ? originalItem : originalItem.item_title;
         const fullErrorMsg = `Error processing ${
           typeof originalItem === 'string' ? 'URL' : 'item'
         } ${itemId}: ${errorMsg}`;
         this.errors.push(fullErrorMsg);
         log.error(fullErrorMsg);
+
+        // Send individual error notification to frontend
+        this.port?.postMessage({
+          cartItemError: {
+            message: `Failed to add "${itemTitle}" to cart`
+          }
+        });
       }
 
       this.broadcastState();
@@ -135,7 +155,18 @@ class CartImportTracker {
     log.info(`Completed ${operation} operation. Sent ${items.length} items to frontend.`);
     this.broadcastState();
 
-    const completionMessage = `Successfully queued ${items.length} items for import`;
+    const successCount = items.length - this.errors.length;
+    const failureCount = this.errors.length;
+
+    let completionMessage: string;
+    if (failureCount === 0) {
+      completionMessage = `Successfully added ${successCount} items to cart`;
+    } else if (successCount === 0) {
+      completionMessage = `${failureCount} items could not be added`;
+    } else {
+      completionMessage = `Successfully added ${successCount} items to cart. ${failureCount} items could not be added`;
+    }
+
     this.port?.postMessage({ cartImportComplete: { message: completionMessage } });
   }
 

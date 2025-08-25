@@ -46,6 +46,9 @@ export function applyAudioConfig(
   canvasDisplayToggle: HTMLInputElement,
   log: Logger
 ): void {
+  if (!msg.config) {
+    return;
+  }
   log.info('config recieved from backend' + JSON.stringify(msg.config));
   canvas.style.display = msg.config.displayWaveform ? 'inherit' : 'none';
   canvasDisplayToggle.checked = msg.config.displayWaveform;

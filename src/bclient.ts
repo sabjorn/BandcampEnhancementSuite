@@ -1,5 +1,26 @@
 const API_RATE_LIMIT_DELAY_MS = 1000;
 
+export const CURRENCY_MINIMUMS: Record<string, number> = {
+  USD: 0.5,
+  AUD: 0.5,
+  GBP: 0.25,
+  CAD: 1.0,
+  EUR: 0.25,
+  JPY: 70,
+  CZK: 10,
+  DKK: 2.5,
+  HKD: 2.5,
+  HUF: 100,
+  ILS: 1.5,
+  MXN: 5,
+  NZD: 0.5,
+  NOK: 3,
+  PLN: 3,
+  SGD: 1,
+  SEK: 3,
+  CHF: 0.5
+};
+
 function createRateLimitedFunction<T extends (...args: any[]) => Promise<any>>(fn: T, delayMs: number): T {
   let lastCallTime = 0;
 
@@ -14,6 +35,24 @@ function createRateLimitedFunction<T extends (...args: any[]) => Promise<any>>(f
     lastCallTime = Date.now();
     return fn(...args);
   }) as T;
+}
+
+export interface TralbumDetailsResponse {
+  id: number;
+  type: 'a' | 't';
+  title: string;
+  tralbum_artist: string;
+  currency: string;
+  price: number;
+  is_purchasable: boolean;
+  bandcamp_url?: string;
+  tracks?: Array<{
+    track_id: number;
+    title: string;
+    price: number;
+    currency: string;
+    is_purchasable: boolean;
+  }>;
 }
 
 interface AddAlbumToCartBody {
@@ -67,11 +106,11 @@ interface TralbumDetailsBody {
   tralbum_id: string | number;
 }
 
-export function getTralbumDetails(
+export async function getTralbumDetails(
   item_id: string | number,
   item_type: string = 'a',
   baseUrl: string | null = null
-): Promise<Response> {
+): Promise<TralbumDetailsResponse> {
   const bodyData: TralbumDetailsBody = {
     tralbum_type: item_type,
     band_id: 12345,
@@ -80,7 +119,7 @@ export function getTralbumDetails(
 
   const url = baseUrl ? `${baseUrl}/api/mobile/25/tralbum_details` : `/api/mobile/25/tralbum_details`;
 
-  return fetch(url, {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       accept: 'application/json',
@@ -94,6 +133,12 @@ export function getTralbumDetails(
     },
     body: JSON.stringify(bodyData)
   });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 }
 
 interface TrackItem {
@@ -334,6 +379,47 @@ export async function getHiddenItems(
 
   const data = await response.json();
   return data;
+}
+
+export async function getTralbumDetailsFromPage(url: string): Promise<TralbumDetailsResponse> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch page: ${response.status}`);
+  }
+
+  const tralbumData = await (async () => {
+    const html = await response.text();
+
+    const tralbumMatch = html.match(/data-tralbum="([^"]+)"/);
+    if (!tralbumMatch) {
+      throw new Error('Could not find tralbum data in page');
+    }
+
+    const decodedJson = tralbumMatch[1]
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&#39;/g, "'");
+
+    return JSON.parse(decodedJson);
+  })();
+
+  const currency = tralbumData.current.minimum_price_currency || 'USD';
+  const price =
+    tralbumData.current.minimum_price > 0.0 ? tralbumData.current.minimum_price : CURRENCY_MINIMUMS[currency] || 0.5;
+
+  // Return structure matching getTralbumDetails API response
+  return {
+    id: tralbumData.current.id,
+    type: tralbumData.current.type === 'track' ? 't' : 'a',
+    title: tralbumData.current.title,
+    tralbum_artist: tralbumData.artist,
+    currency: currency,
+    price: price,
+    is_purchasable: true,
+    bandcamp_url: url
+  };
 }
 
 export const getHiddenItemsRateLimited = createRateLimitedFunction(getHiddenItems, API_RATE_LIMIT_DELAY_MS);

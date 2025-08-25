@@ -127,14 +127,14 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
         try {
           importData = JSON.parse(fileContent);
-          if (importData.tracks_export) {
-            importType = 'json';
-            if (importData.tracks_export.length === 0) {
-              showErrorMessage('No items found in import file');
-              return;
-            }
-          } else {
+          if (!importData.tracks_export) {
             showErrorMessage('Invalid JSON format - missing tracks_export');
+            return;
+          }
+
+          importType = 'json';
+          if (importData.tracks_export.length === 0) {
+            showErrorMessage('No items found in import file');
             return;
           }
         } catch {
@@ -163,9 +163,10 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
         if (importType === 'json') {
           port.postMessage({ cartImport: { items: importData.tracks_export } });
-        } else {
-          port.postMessage({ cartUrlImport: { urls: importData } });
+          return;
         }
+
+        port.postMessage({ cartUrlImport: { urls: importData } });
       } catch (error) {
         showErrorMessage('Error loading file: ' + String(error));
         log.error('Error importing: ' + String(error));

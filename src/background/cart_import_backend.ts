@@ -138,7 +138,6 @@ class CartImportTracker {
         this.errors.push(fullErrorMsg);
         log.error(fullErrorMsg);
 
-        // Send individual error notification to frontend
         this.port?.postMessage({
           cartItemError: {
             message: `Failed to add "${itemTitle}" to cart`

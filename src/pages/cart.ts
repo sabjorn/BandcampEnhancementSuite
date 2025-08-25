@@ -41,7 +41,7 @@ interface CartExportData {
 export async function initCart(port: chrome.runtime.Port): Promise<void> {
   log.info('cart init');
 
-  let lastImportState: any = null; // Track the last import state for error reporting
+  let lastImportState: any = null;
 
   port.onMessage.addListener(async (msg: any) => {
     if (msg.cartImportState) {
@@ -79,7 +79,6 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
         if (result.ok) {
           log.info(`Successfully added ${msg.cartAddRequest.item_title} to cart`);
 
-          // Create and add the cart item to the DOM (like other cart additions)
           const cartItem = createShoppingCartItem({
             itemId: String(msg.cartAddRequest.item_id),
             itemName: msg.cartAddRequest.item_title,
@@ -104,12 +103,9 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     if (msg.cartImportComplete) {
       removePersistentNotification('cart-import-progress');
       showSuccessMessage(msg.cartImportComplete.message);
-      // TODO: Wait for all cart operations to complete before reloading
-      // setTimeout(() => location.reload(), 1000);
     }
 
     if (msg.cartItemError) {
-      // Show individual item error notification
       showErrorMessage(msg.cartItemError.message);
     }
 
@@ -129,7 +125,6 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
         let importData: any;
         let importType: 'json' | 'urls';
 
-        // Try to parse as JSON first
         try {
           importData = JSON.parse(fileContent);
           if (importData.tracks_export) {
@@ -143,7 +138,6 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
             return;
           }
         } catch {
-          // Not JSON, try as URLs
           const urls = fileContent
             .split('\n')
             .map(line => line.trim())

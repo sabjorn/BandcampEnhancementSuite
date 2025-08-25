@@ -16,7 +16,6 @@
     "default_title": "Bandcamp Enhancement Suite",
     "default_popup": "html/browser_action.html"
   },
-  "permissions": ["downloads"],
   "host_permissions": [
     "http://*.bandcamp.com/*",
     "https://*.bandcamp.com/*",

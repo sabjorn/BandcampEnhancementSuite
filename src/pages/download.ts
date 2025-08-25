@@ -248,7 +248,7 @@ export async function downloadAsZip(log: Logger): Promise<void> {
         // Handle chunked zip data
         if (message.chunkIndex === 0) {
           // First chunk - initialize
-          zipChunks = new Array(message.totalChunks);
+          zipChunks = Array.from({ length: message.totalChunks });
           expectedChunks = message.totalChunks;
           zipFilename = message.filename;
           log.info(`Receiving zip in ${expectedChunks} chunks`);
@@ -328,13 +328,7 @@ export async function downloadAsZip(log: Logger): Promise<void> {
             removePersistentNotification('bes-download-progress');
             showSuccessMessage(`Successfully downloaded ${zipFilename}`);
           } catch (error) {
-            console.error('Error assembling zip file:', error);
-            if (error instanceof Error) {
-              console.error('Error name:', error.name);
-              console.error('Error message:', error.message);
-              console.error('Error stack:', error.stack);
-            }
-            log.error('Assembly failed - check console for details');
+            log.error(`Error assembling zip file: ${error}`);
             removePersistentNotification('bes-download-progress');
             showErrorMessage('Failed to assemble zip file');
           }
@@ -355,7 +349,7 @@ export async function downloadAsZip(log: Logger): Promise<void> {
       urls: urls
     });
   } catch (error) {
-    log.error('Error connecting to background script:', error);
+    log.error(`Error connecting to background script: ${error}`);
     showErrorMessage('Failed to connect to background script for downloading');
   }
 }

@@ -82,24 +82,19 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
       });
 
       completed++;
-      port.postMessage({
-        type: 'downloadProgress',
-        completed,
-        failed,
-        total: urls.length,
-        message: `Downloaded ${completed} of ${urls.length} files (${failed} failed)`
-      } as DownloadProgress);
     } catch (error) {
       failed++;
-      log.error(`Error downloading ${url}:`, error);
-      port.postMessage({
-        type: 'downloadProgress',
-        completed,
-        failed,
-        total: urls.length,
-        message: `Downloaded ${completed} of ${urls.length} files (${failed} failed)`
-      } as DownloadProgress);
+      log.error(`Error downloading ${url}: ${error}`);
     }
+
+    // Send progress update after each file (success or failure)
+    port.postMessage({
+      type: 'downloadProgress',
+      completed,
+      failed,
+      total: urls.length,
+      message: `Downloaded ${completed} of ${urls.length} files (${failed} failed)`
+    } as DownloadProgress);
   }
 
   if (files.length === 0) {
@@ -175,15 +170,7 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
           : `Downloaded ${completed} files as ${filename}. ${failed} files failed to download.`
     } as DownloadComplete);
   } catch (error) {
-    console.error('Error creating or downloading zip file:', error);
-    if (error instanceof Error) {
-      console.error('Error name:', error.name);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    } else {
-      console.error('Non-Error thrown:', String(error));
-    }
-    log.error('Zip creation/download failed - see console for details');
+    log.error(`Error creating or downloading zip file: ${error}`);
     port.postMessage({
       type: 'downloadComplete',
       success: false,
@@ -196,38 +183,40 @@ function getFilenameFromResponse(response: Response, url: string): string | null
   try {
     // First, check Content-Disposition header (like curl -J)
     const contentDisposition = response.headers.get('content-disposition');
+
     if (contentDisposition) {
       // Look for filename= or filename*= patterns
       const filenameMatch = contentDisposition.match(/filename\*?=['"]?([^'";]+)['"]?/i);
+
       if (filenameMatch && filenameMatch[1]) {
         let filename = filenameMatch[1];
-        
+
         // Handle RFC 5987 encoding (filename*=UTF-8''example.flac)
         if (filename.includes("UTF-8''")) {
           filename = decodeURIComponent(filename.split("UTF-8''")[1]);
         }
-        
+
         // Ensure it has an extension
         if (!filename.includes('.')) {
           filename += '.flac';
         }
-        
+
         return filename;
       }
     }
-    
+
     // Fallback: try to get filename from URL (like curl -O)
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
     const filename = pathname.split('/').pop();
-    
-    if (filename && filename.includes('.')) {
-      return filename;
-    }
-    
+
+    if (!filename) return null;
+
+    // If it already has an extension, return as-is
+    if (filename.includes('.')) return filename;
+
     // If no extension, add .flac
-    return filename ? `${filename}.flac` : null;
-    
+    return `${filename}.flac`;
   } catch {
     return null;
   }

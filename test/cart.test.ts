@@ -88,7 +88,12 @@ vi.mock('../src/components/svgIcons', () => ({
 import { initCart } from '../src/pages/cart';
 import { loadTextFile, downloadFile } from '../src/utilities';
 import { getTralbumDetails } from '../src/bclient';
-import { showErrorMessage, showPersistentNotification } from '../src/components/notifications';
+import {
+  showErrorMessage,
+  showSuccessMessage,
+  showPersistentNotification,
+  updatePersistentNotification
+} from '../src/components/notifications';
 
 // Get the mocked utilities
 const mockLoadTextFile = loadTextFile as any;
@@ -393,6 +398,129 @@ invalid line`;
       await exportButton.click();
 
       expect(mockDownloadFile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cart import message handling', () => {
+    beforeEach(async () => {
+      createDomNodes(`
+        <div id="sidecartReveal"></div>
+        <div id="sidecartSummary"></div>
+        <div id="item_list"></div>
+        <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
+      `);
+      await initCart(mockPort);
+    });
+
+    it('should add successful cart items to DOM', async () => {
+      const mockCartRequest = {
+        item_id: 12345,
+        item_type: 'a',
+        item_title: 'Test Album',
+        band_name: 'Test Band',
+        unit_price: 10.5,
+        currency: 'USD',
+        url: 'https://test.bandcamp.com/album/test'
+      };
+
+      // Get the message listener that was set up
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      // Simulate a successful cart add request
+      await messageHandler({ cartAddRequest: mockCartRequest });
+
+      // Verify that the cart item was added to the DOM
+      const itemList = document.querySelector('#item_list');
+      expect(itemList?.children.length).toBe(1);
+
+      // The createShoppingCartItem mock should have been called with correct params
+      const { createShoppingCartItem } = await import('../src/components/shoppingCart');
+      expect(createShoppingCartItem).toHaveBeenCalledWith({
+        itemId: '12345',
+        itemName: 'Test Album',
+        itemPrice: 10.5,
+        itemCurrency: 'USD'
+      });
+    });
+
+    it('should show individual error notifications for failed cart additions', async () => {
+      const mockCartRequest = {
+        item_id: 12345,
+        item_type: 'a',
+        item_title: 'Test Album',
+        band_name: 'Test Band',
+        unit_price: 10.5,
+        currency: 'USD',
+        url: 'https://test.bandcamp.com/album/test'
+      };
+
+      // Mock addAlbumToCart to fail
+      const { addAlbumToCart } = await import('../src/bclient');
+      (addAlbumToCart as any).mockResolvedValue(new Response('{}', { status: 400 }));
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      // Simulate a failed cart add request
+      await messageHandler({ cartAddRequest: mockCartRequest });
+
+      // Should show individual error notification
+      expect(showErrorMessage).toHaveBeenCalledWith('Failed to add "Test Album" to cart');
+
+      // Should NOT add to DOM when failed
+      const itemList = document.querySelector('#item_list');
+      expect(itemList?.children.length).toBe(0);
+    });
+
+    it('should show simple completion message', async () => {
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      // Simulate completion
+      await messageHandler({ cartImportComplete: { message: 'Successfully added 2 items to cart' } });
+
+      // Should show simple success message
+      expect(showSuccessMessage).toHaveBeenCalledWith('Successfully added 2 items to cart');
+    });
+
+    it('should show individual item error notifications from backend', async () => {
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      // Simulate individual item error from backend
+      await messageHandler({
+        cartItemError: {
+          message: 'Failed to add "Test Album" to cart'
+        }
+      });
+
+      // Should show the error message
+      expect(showErrorMessage).toHaveBeenCalledWith('Failed to add "Test Album" to cart');
+    });
+
+    it('should handle cart import state updates with rich HTML', async () => {
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      const importState = {
+        isProcessing: true,
+        processedCount: 2,
+        totalCount: 5,
+        errors: ['Error processing item 123'],
+        operation: 'url_import'
+      };
+
+      await messageHandler({ cartImportState: importState });
+
+      // Should update notification with rich HTML content
+      expect(updatePersistentNotification).toHaveBeenCalledWith(
+        'cart-import-progress',
+        expect.stringContaining('🛒 Importing URLs...')
+      );
+      expect(updatePersistentNotification).toHaveBeenCalledWith(
+        'cart-import-progress',
+        expect.stringContaining('Progress: 2/5')
+      );
+      expect(updatePersistentNotification).toHaveBeenCalledWith(
+        'cart-import-progress',
+        expect.stringContaining('1 errors occurred')
+      );
     });
   });
 

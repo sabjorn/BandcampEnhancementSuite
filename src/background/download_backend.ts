@@ -66,7 +66,7 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
         continue;
       }
 
-      const filename = getFilenameFromUrl(url) || `file_${completed + 1}`;
+      const filename = getFilenameFromResponse(response, url) || `file_${completed + 1}.flac`;
 
       // Convert response to ArrayBuffer
       const arrayBuffer = await response.arrayBuffer();
@@ -192,12 +192,42 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
   }
 }
 
-function getFilenameFromUrl(url: string): string | null {
+function getFilenameFromResponse(response: Response, url: string): string | null {
   try {
+    // First, check Content-Disposition header (like curl -J)
+    const contentDisposition = response.headers.get('content-disposition');
+    if (contentDisposition) {
+      // Look for filename= or filename*= patterns
+      const filenameMatch = contentDisposition.match(/filename\*?=['"]?([^'";]+)['"]?/i);
+      if (filenameMatch && filenameMatch[1]) {
+        let filename = filenameMatch[1];
+        
+        // Handle RFC 5987 encoding (filename*=UTF-8''example.flac)
+        if (filename.includes("UTF-8''")) {
+          filename = decodeURIComponent(filename.split("UTF-8''")[1]);
+        }
+        
+        // Ensure it has an extension
+        if (!filename.includes('.')) {
+          filename += '.flac';
+        }
+        
+        return filename;
+      }
+    }
+    
+    // Fallback: try to get filename from URL (like curl -O)
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
     const filename = pathname.split('/').pop();
-    return filename || null;
+    
+    if (filename && filename.includes('.')) {
+      return filename;
+    }
+    
+    // If no extension, add .flac
+    return filename ? `${filename}.flac` : null;
+    
   } catch {
     return null;
   }

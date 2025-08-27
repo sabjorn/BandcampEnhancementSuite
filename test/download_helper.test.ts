@@ -10,63 +10,344 @@ vi.mock('../src/logger', () => ({
   }
 }));
 
-import { initDownload } from '../src/pages/download';
+vi.mock('../src/utilities', () => ({
+  downloadFile: vi.fn(),
+  dateString: vi.fn(() => '2023-01-01')
+}));
+
+vi.mock('../src/components/notifications', () => ({
+  showErrorMessage: vi.fn(),
+  showSuccessMessage: vi.fn(),
+  showPersistentNotification: vi.fn(),
+  updatePersistentNotification: vi.fn(),
+  removePersistentNotification: vi.fn()
+}));
+
+// Mock Chrome runtime API
+Object.assign(global, {
+  chrome: {
+    runtime: {
+      connect: vi.fn(() => ({
+        onMessage: {
+          addListener: vi.fn()
+        },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
+      }))
+    }
+  }
+});
+
+import {
+  initDownload,
+  createButton,
+  createZipButton,
+  enableButton,
+  disableButton,
+  enableZipButton,
+  disableZipButton,
+  mutationCallback,
+  generateDownloadList,
+  getDownloadPreamble,
+  getDownloadPostamble,
+  downloadAsZip
+} from '../src/pages/download';
+import Logger from '../src/logger';
 
 describe('DownloadHelper', () => {
+  let log: Logger;
+
+  beforeEach(() => {
+    log = new Logger();
+  });
+
   afterEach(() => {
     cleanupTestNodes();
     vi.restoreAllMocks();
   });
 
-  describe('init()', () => {
+  describe('createButton()', () => {
+    it('should create curl download button when div.download-titles exists', () => {
+      createDomNodes('<div class="download-titles"></div>');
+      const button = createButton(log);
+
+      expect(button).toBeTruthy();
+      expect(button?.className).toBe('bes-downloadall');
+      expect(button?.textContent).toBe('preparing download');
+      expect(button?.disabled).toBe(true);
+      expect(document.querySelector('.bes-downloadall')).toBe(button);
+    });
+
+    it('should return undefined when div.download-titles does not exist', () => {
+      createDomNodes('<div></div>');
+      const button = createButton(log);
+
+      expect(button).toBeUndefined();
+      expect(log.warn).toHaveBeenCalledWith('Cannot create download button: div.download-titles element not found');
+    });
+  });
+
+  describe('createZipButton()', () => {
+    it('should create zip download button when div.download-titles exists', () => {
+      createDomNodes('<div class="download-titles"></div>');
+      const button = createZipButton(log);
+
+      expect(button).toBeTruthy();
+      expect(button?.className).toBe('bes-downloadzip');
+      expect(button?.textContent).toBe('preparing download');
+      expect(button?.disabled).toBe(true);
+      expect(button?.style.marginLeft).toBe('10px');
+      expect(document.querySelector('.bes-downloadzip')).toBe(button);
+    });
+
+    it('should return undefined when div.download-titles does not exist', () => {
+      createDomNodes('<div></div>');
+      const button = createZipButton(log);
+
+      expect(button).toBeUndefined();
+      expect(log.warn).toHaveBeenCalledWith(
+        'Cannot create zip download button: div.download-titles element not found'
+      );
+    });
+  });
+
+  describe('enableButton()', () => {
+    it('should enable curl button and add click handler', () => {
+      createDomNodes(`
+        <div class="download-titles"></div>
+        <a class="item-button" href="http://example.com/file1.flac"></a>
+        <a class="item-button" href="http://example.com/file2.flac"></a>
+      `);
+
+      const button = createButton(log);
+      enableButton(button, log);
+
+      expect(button?.disabled).toBe(false);
+      expect(button?.textContent).toBe('Download cURL File');
+      expect(log.info).toHaveBeenCalledWith('enableButton()');
+    });
+
+    it('should handle undefined button gracefully', () => {
+      enableButton(undefined, log);
+      expect(log.info).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('disableButton()', () => {
+    it('should disable curl button', () => {
+      createDomNodes('<div class="download-titles"></div>');
+      const button = createButton(log);
+
+      // Enable first
+      enableButton(button, log);
+      expect(button?.disabled).toBe(false);
+
+      // Then disable
+      disableButton(button, log);
+      expect(button?.disabled).toBe(true);
+      expect(button?.textContent).toBe('preparing download');
+      expect(log.info).toHaveBeenCalledWith('disableButton()');
+    });
+
+    it('should handle undefined button gracefully', () => {
+      disableButton(undefined, log);
+      expect(log.info).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('enableZipButton()', () => {
+    it('should enable zip button and add click handler', () => {
+      createDomNodes('<div class="download-titles"></div>');
+      const button = createZipButton(log);
+
+      enableZipButton(button, log);
+
+      expect(button?.disabled).toBe(false);
+      expect(button?.textContent).toBe('Download ZIP');
+      expect(log.info).toHaveBeenCalledWith('enableZipButton()');
+    });
+
+    it('should handle undefined button gracefully', () => {
+      enableZipButton(undefined, log);
+      expect(log.info).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('disableZipButton()', () => {
+    it('should disable zip button', () => {
+      createDomNodes('<div class="download-titles"></div>');
+      const button = createZipButton(log);
+
+      // Enable first
+      enableZipButton(button, log);
+      expect(button?.disabled).toBe(false);
+
+      // Then disable
+      disableZipButton(button, log);
+      expect(button?.disabled).toBe(true);
+      expect(button?.textContent).toBe('preparing download');
+      expect(log.info).toHaveBeenCalledWith('disableZipButton()');
+    });
+
+    it('should handle undefined button gracefully', () => {
+      disableZipButton(undefined, log);
+      expect(log.info).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('mutationCallback()', () => {
+    let curlButton: HTMLButtonElement;
+    let zipButton: HTMLButtonElement;
+
     beforeEach(() => {
       createDomNodes(`
-        <div class="download-titles">
-          <div class="download-title">
-            <a class="item-button" href="/download/123">Download</a>
-          </div>
+        <div class="download-titles"></div>
+        <div class="download-title">
+          <a class="item-button" style="display: none">Link 1</a>
         </div>
-        <div class="download-item" data-encoding="mp3-320"></div>
+        <div class="download-title">
+          <a class="item-button" style="display: block">Link 2</a>
+        </div>
+      `);
+
+      curlButton = createButton(log)!;
+      zipButton = createZipButton(log)!;
+    });
+
+    it('should disable buttons when links are not ready', () => {
+      mutationCallback({ curl: curlButton, zip: zipButton }, log);
+
+      expect(curlButton.disabled).toBe(true);
+      expect(zipButton.disabled).toBe(true);
+      expect(log.info).toHaveBeenCalledWith('linksReady: false');
+    });
+
+    it('should enable buttons when all links are ready', () => {
+      // Make all links visible
+      const links = document.querySelectorAll('.item-button');
+      links.forEach(link => {
+        (link as HTMLElement).style.display = 'block';
+      });
+
+      mutationCallback({ curl: curlButton, zip: zipButton }, log);
+
+      expect(curlButton.disabled).toBe(false);
+      expect(zipButton.disabled).toBe(false);
+      expect(log.info).toHaveBeenCalledWith('linksReady: true');
+    });
+  });
+
+  describe('generateDownloadList()', () => {
+    it('should generate bash array with download URLs', () => {
+      createDomNodes(`
+        <a class="item-button" href="http://example.com/file1.flac"></a>
+        <a class="item-button" href="http://example.com/file2.flac"></a>
+        <a class="item-button" href="http://example.com/file1.flac"></a>
+      `);
+
+      const result = generateDownloadList();
+
+      expect(result).toContain('URLS=(');
+      expect(result).toContain('"http://example.com/file1.flac"');
+      expect(result).toContain('"http://example.com/file2.flac"');
+      // Should deduplicate URLs
+      expect(result.split('file1.flac').length).toBe(2); // Original + 1 occurrence
+    });
+
+    it('should return empty array when no links found', () => {
+      createDomNodes('<div></div>');
+
+      const result = generateDownloadList();
+
+      expect(result).toBe('URLS=()\n');
+    });
+  });
+
+  describe('getDownloadPreamble() and getDownloadPostamble()', () => {
+    it('should return bash script components', () => {
+      const preamble = getDownloadPreamble();
+      const postamble = getDownloadPostamble();
+
+      expect(preamble).toContain('#!/usr/bin/env bash');
+      expect(postamble).toContain('download_file()');
+      expect(postamble).toContain('curl -L --fail -OJ');
+      expect(postamble).toContain('BATCH_SIZE');
+    });
+  });
+
+  describe('downloadAsZip()', () => {
+    beforeEach(() => {
+      createDomNodes(`
+        <div id="test-area">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+          <a class="item-button" href="http://example.com/file2.flac"></a>
+        </div>
+      `);
+    });
+
+    it('should start zip download process with valid links', async () => {
+      const mockPort = {
+        onMessage: { addListener: vi.fn() },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
+      };
+
+      vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
+
+      await downloadAsZip(log);
+
+      expect(global.chrome.runtime.connect).toHaveBeenCalledWith({ name: 'bes' });
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        type: 'downloadZip',
+        urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac']
+      });
+      expect(log.info).toHaveBeenCalledWith('Starting zip download for 2 files via background script');
+    });
+
+    it('should extract URLs from item buttons', () => {
+      // Clean up first, then create fresh DOM
+      createDomNodes(`
+        <div id="test-urls">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+          <a class="item-button" href="http://example.com/file2.flac"></a>
+          <a class="item-button" href="">Empty href</a>
+          <a class="item-button">No href</a>
+        </div>
+      `);
+
+      const urls = [...document.querySelectorAll('#test-urls a.item-button')]
+        .map(item => item.getAttribute('href'))
+        .filter((url): url is string => url !== null && url !== '');
+
+      expect(urls).toEqual(['http://example.com/file1.flac', 'http://example.com/file2.flac']);
+    });
+  });
+
+  describe('initDownload()', () => {
+    beforeEach(() => {
+      createDomNodes(`
+        <div class="download-titles"></div>
+        <div class="download-title">
+          <a class="item-button" href="/download/123">Download</a>
+        </div>
       `);
     });
 
     it('should initialize download helper functionality', async () => {
       await expect(initDownload()).resolves.not.toThrow();
-    });
 
-    it('should create download buttons', async () => {
-      await initDownload();
       const curlButton = document.querySelector('.bes-downloadall');
       const zipButton = document.querySelector('.bes-downloadzip');
       expect(curlButton).toBeTruthy();
       expect(zipButton).toBeTruthy();
-      expect(curlButton?.textContent).toContain('Download');
-      expect(zipButton?.textContent).toContain('Download');
-    });
-  });
-
-  describe('download operations', () => {
-    beforeEach(() => {
-      createDomNodes(`
-        <div class="download-container">
-          <div class="download-item">
-            <a href="/download/track/123">Track Download</a>
-          </div>
-        </div>
-      `);
     });
 
-    it('should handle download links', () => {
-      const downloadContainer = document.querySelector('.download-container');
-      expect(downloadContainer).toBeTruthy();
+    it('should set up mutation observers for download links', async () => {
+      const observeSpy = vi.spyOn(MutationObserver.prototype, 'observe');
 
-      const downloadLink = downloadContainer?.querySelector('a[href*="/download/"]');
-      expect(downloadLink).toBeTruthy();
-    });
+      await initDownload();
 
-    it('should process download helpers', () => {
-      const downloadItems = document.querySelectorAll('.download-item');
-      expect(downloadItems.length).toBeGreaterThan(0);
+      expect(observeSpy).toHaveBeenCalled();
     });
   });
 });

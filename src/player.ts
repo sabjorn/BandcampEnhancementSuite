@@ -4,7 +4,6 @@ import { getTralbumDetails, addAlbumToCart } from './bclient';
 import { createInputButtonPair } from './components/buttons.js';
 import { createShoppingCartItem } from './components/shoppingCart.js';
 import { createPlusSvgIcon } from './components/svgIcons';
-import { BandFollowInfo, FanTralbumData } from './utilities';
 
 interface KeyCombo {
   key: string;

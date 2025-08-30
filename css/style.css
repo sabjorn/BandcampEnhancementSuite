@@ -302,6 +302,14 @@ button.bes-downloadall[disabled]::after {
   text-align: left;
 }
 
+.bes-download-status[disabled]::after {
+  content: '';
+  display: inline-block;
+  animation: loadingDots 1.5s infinite;
+  width: 1.1em;
+  text-align: left;
+}
+
 #collection-search a.bes-hide-unhide {
   margin: 0;
   margin-right: 8px;

@@ -1,14 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 
-vi.mock('../src/logger', () => ({
-  default: class MockLogger {
-    info = vi.fn();
-    error = vi.fn();
-    debug = vi.fn();
-    warn = vi.fn();
-  }
-}));
+vi.mock('../src/logger', () => {
+  const mockLogMethods = {
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn()
+  };
+
+  return {
+    default: vi.fn(() => mockLogMethods),
+    mockLogMethods
+  };
+});
 
 vi.mock('../src/utilities', () => ({
   downloadFile: vi.fn(),
@@ -55,6 +60,7 @@ import {
   initDownload,
   createCurlButton,
   createZipDownloadButton,
+  createStatusElement,
   mutationCallback,
   generateDownloadList,
   getDownloadPreamble,
@@ -65,10 +71,10 @@ import Logger from '../src/logger';
 import { createButton } from '../src/components/buttons';
 
 describe('DownloadHelper', () => {
-  let log: Logger;
+  let mockLog: any;
 
   beforeEach(() => {
-    log = new Logger();
+    mockLog = vi.mocked(new Logger());
   });
 
   afterEach(() => {
@@ -79,12 +85,12 @@ describe('DownloadHelper', () => {
   describe('createCurlButton()', () => {
     it('should create curl download button when div.download-titles exists', () => {
       createDomNodes('<div class="download-titles"></div>');
-      const button = createCurlButton(log);
+      const button = createCurlButton();
 
       expect(button).toBeTruthy();
       expect(createButton).toHaveBeenCalledWith({
         className: 'bes-downloadall',
-        innerText: 'preparing download',
+        innerText: 'Download cURL File',
         buttonClicked: expect.any(Function)
       });
       expect(document.querySelector('.download-titles')).toBeTruthy();
@@ -92,40 +98,63 @@ describe('DownloadHelper', () => {
 
     it('should return undefined when div.download-titles does not exist', () => {
       createDomNodes('<div></div>');
-      const button = createCurlButton(log);
+      const button = createCurlButton();
 
       expect(button).toBeUndefined();
-      expect(log.warn).toHaveBeenCalledWith('Cannot create download button: div.download-titles element not found');
+      expect(mockLog.warn).toHaveBeenCalledWith(
+        'Cannot create download button: div.download-titles element not found'
+      );
     });
   });
 
   describe('createZipDownloadButton()', () => {
     it('should create zip download button when div.download-titles exists', () => {
       createDomNodes('<div class="download-titles"></div>');
-      const button = createZipDownloadButton(log);
+      const button = createZipDownloadButton();
 
       expect(button).toBeTruthy();
       expect(createButton).toHaveBeenCalledWith({
         className: 'bes-downloadzip',
-        innerText: 'preparing download',
+        innerText: 'Download ZIP',
         buttonClicked: expect.any(Function)
       });
     });
 
     it('should return undefined when div.download-titles does not exist', () => {
       createDomNodes('<div></div>');
-      const button = createZipDownloadButton(log);
+      const button = createZipDownloadButton();
 
       expect(button).toBeUndefined();
-      expect(log.warn).toHaveBeenCalledWith(
+      expect(mockLog.warn).toHaveBeenCalledWith(
         'Cannot create zip download button: div.download-titles element not found'
       );
+    });
+  });
+
+  describe('createStatusElement()', () => {
+    it('should create status element when div.download-titles exists', () => {
+      createDomNodes('<div class="download-titles"></div>');
+      const statusElement = createStatusElement();
+
+      expect(statusElement).toBeTruthy();
+      expect(statusElement?.className).toBe('bes-download-status');
+      expect(statusElement?.textContent).toBe('preparing download');
+      expect(statusElement?.getAttribute('disabled')).toBe('true');
+    });
+
+    it('should return undefined when div.download-titles does not exist', () => {
+      createDomNodes('<div></div>');
+      const statusElement = createStatusElement();
+
+      expect(statusElement).toBeUndefined();
+      expect(mockLog.warn).toHaveBeenCalledWith('Cannot create status element: div.download-titles element not found');
     });
   });
 
   describe('mutationCallback()', () => {
     let curlButton: any;
     let zipButton: any;
+    let statusElement: any;
 
     beforeEach(() => {
       createDomNodes(`
@@ -138,34 +167,36 @@ describe('DownloadHelper', () => {
         </div>
       `);
 
-      curlButton = { enable: vi.fn(), disable: vi.fn(), innerText: '' };
-      zipButton = { enable: vi.fn(), disable: vi.fn(), innerText: '' };
+      curlButton = { enable: vi.fn(), disable: vi.fn() };
+      zipButton = { enable: vi.fn(), disable: vi.fn() };
+      statusElement = { style: { display: '' } };
     });
 
-    it('should disable buttons when links are not ready', () => {
-      mutationCallback({ curl: curlButton, zip: zipButton }, log);
+    it('should disable buttons and show status when links are not ready', () => {
+      // Start with statusElement hidden
+      statusElement.style.display = 'none';
+
+      mutationCallback({ curl: curlButton, zip: zipButton }, statusElement);
 
       expect(curlButton.disable).toHaveBeenCalled();
       expect(zipButton.disable).toHaveBeenCalled();
-      expect(curlButton.innerText).toBe('preparing download');
-      expect(zipButton.innerText).toBe('preparing download');
-      expect(log.info).toHaveBeenCalledWith('linksReady: false');
+      expect(statusElement.style.display).toBe('block');
+      expect(mockLog.info).toHaveBeenCalledWith('linksReady: false');
     });
 
-    it('should enable buttons when all links are ready', () => {
+    it('should enable buttons and hide status when all links are ready', () => {
       // Make all links visible
       const links = document.querySelectorAll('.item-button');
       links.forEach(link => {
         (link as HTMLElement).style.display = 'block';
       });
 
-      mutationCallback({ curl: curlButton, zip: zipButton }, log);
+      mutationCallback({ curl: curlButton, zip: zipButton }, statusElement);
 
       expect(curlButton.enable).toHaveBeenCalled();
       expect(zipButton.enable).toHaveBeenCalled();
-      expect(curlButton.innerText).toBe('Download cURL File');
-      expect(zipButton.innerText).toBe('Download ZIP');
-      expect(log.info).toHaveBeenCalledWith('linksReady: true');
+      expect(statusElement.style.display).toBe('none');
+      expect(mockLog.info).toHaveBeenCalledWith('linksReady: true');
     });
   });
 
@@ -226,14 +257,14 @@ describe('DownloadHelper', () => {
 
       vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
 
-      await downloadAsZip(log);
+      await downloadAsZip();
 
       expect(global.chrome.runtime.connect).toHaveBeenCalledWith({ name: 'bes' });
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadZip',
         urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac']
       });
-      expect(log.info).toHaveBeenCalledWith('Starting zip download for 2 files via background script');
+      expect(mockLog.info).toHaveBeenCalledWith('Starting zip download for 2 files via background script');
     });
 
     it('should extract URLs from item buttons', () => {

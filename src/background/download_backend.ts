@@ -186,42 +186,41 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
 
 function getFilenameFromResponse(response: Response, url: string): string | null {
   try {
-    // First, check Content-Disposition header (like curl -J)
     const contentDisposition = response.headers.get('content-disposition');
 
-    if (contentDisposition) {
-      // Look for filename= or filename*= patterns
-      const filenameMatch = contentDisposition.match(/filename\*?=['"]?([^'";]+)['"]?/i);
+    if (!contentDisposition) {
+      const urlObj = new URL(url);
+      const urlPathname = urlObj.pathname;
+      const filenameFromUrl = urlPathname.split('/').pop();
 
-      if (filenameMatch && filenameMatch[1]) {
-        let filename = filenameMatch[1];
+      if (!filenameFromUrl) return null;
 
-        // Handle RFC 5987 encoding (filename*=UTF-8''example.flac)
-        if (filename.includes("UTF-8''")) {
-          filename = decodeURIComponent(filename.split("UTF-8''")[1]);
-        }
+      if (filenameFromUrl.includes('.')) return filenameFromUrl;
 
-        // Ensure it has an extension
-        if (!filename.includes('.')) {
-          filename += '.flac';
-        }
-
-        return filename;
-      }
+      return `${filenameFromUrl}.flac`;
     }
 
-    // Fallback: try to get filename from URL (like curl -O)
-    const urlObj = new URL(url);
-    const pathname = urlObj.pathname;
-    const filename = pathname.split('/').pop();
+    return (() => {
+      const headerFilenamePattern = /filename\*?=['"]?([^'";]+)['"]?/i;
+      const filenameMatch = contentDisposition.match(headerFilenamePattern);
 
-    if (!filename) return null;
+      if (!filenameMatch || !filenameMatch[1]) return null;
 
-    // If it already has an extension, return as-is
-    if (filename.includes('.')) return filename;
+      let extractedFilename = filenameMatch[1];
 
-    // If no extension, add .flac
-    return `${filename}.flac`;
+      const isRfc5987Encoded = extractedFilename.includes("UTF-8''");
+      if (isRfc5987Encoded) {
+        const encodedPart = extractedFilename.split("UTF-8''")[1];
+        extractedFilename = decodeURIComponent(encodedPart);
+      }
+
+      const hasFileExtension = extractedFilename.includes('.');
+      if (!hasFileExtension) {
+        extractedFilename += '.flac';
+      }
+
+      return extractedFilename;
+    })();
   } catch {
     return null;
   }

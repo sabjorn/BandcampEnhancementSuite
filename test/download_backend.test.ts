@@ -80,22 +80,245 @@ describe('Download Backend', () => {
     });
   });
 
-  describe('Message Handling', () => {
-    it('should set up message listener for correct port', () => {
-      const mockPort = {
-        name: 'bes', // This is required for the backend to set up the listener
+  describe('Download Process and Message Handling', () => {
+    let mockPort: any;
+    let onMessageListener: any;
+
+    beforeEach(() => {
+      mockPort = {
+        name: 'bes',
         postMessage: vi.fn(),
         onMessage: { addListener: vi.fn() }
       };
 
       initDownloadBackend();
       const onConnectListener = mockOnConnect.mock.calls[0][0];
-
-      // Simulate port connection with correct name
       onConnectListener(mockPort);
+      onMessageListener = mockPort.onMessage.addListener.mock.calls[0][0];
+    });
 
-      // Should have set up message listener
-      expect(mockPort.onMessage.addListener).toHaveBeenCalledWith(expect.any(Function));
+    it('should handle successful downloads and send progress messages', async () => {
+      const downloadRequest = {
+        type: 'downloadZip',
+        urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac']
+      };
+
+      await onMessageListener(downloadRequest);
+
+      // Should send initial progress
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        type: 'downloadProgress',
+        completed: 0,
+        failed: 0,
+        total: 2,
+        message: 'Starting download of 2 files...'
+      });
+
+      // Should send zip creation progress
+      expect(mockPort.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'downloadProgress',
+          message: 'Creating zip file...'
+        })
+      );
+
+      // Should send zip chunks
+      expect(mockPort.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'zipChunk',
+          chunkIndex: 0,
+          totalChunks: expect.any(Number),
+          data: expect.any(String),
+          filename: 'bandcamp_2023-01-01.zip'
+        })
+      );
+
+      // Should send completion message
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        type: 'downloadComplete',
+        success: true,
+        filename: 'bandcamp_2023-01-01.zip',
+        message: 'Successfully downloaded 2 files as bandcamp_2023-01-01.zip'
+      });
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle fetch failures and send error messages', async () => {
+      // Mock fetch to fail
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: false,
+        status: 404
+      } as any);
+
+      const downloadRequest = {
+        type: 'downloadZip',
+        urls: ['http://example.com/file404.flac']
+      };
+
+      await onMessageListener(downloadRequest);
+
+      // Should send failure completion message
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        type: 'downloadComplete',
+        success: false,
+        message: 'No files could be downloaded'
+      });
+    });
+
+    it('should handle partial failures and report mixed results', async () => {
+      // Mock one success and one failure
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          headers: { get: vi.fn().mockReturnValue('attachment; filename="success.flac"') },
+          arrayBuffer: () => Promise.resolve(new ArrayBuffer(1024))
+        } as any)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404
+        } as any);
+
+      const downloadRequest = {
+        type: 'downloadZip',
+        urls: ['http://example.com/success.flac', 'http://example.com/fail.flac']
+      };
+
+      await onMessageListener(downloadRequest);
+
+      // Should send completion with mixed results
+      expect(mockPort.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'downloadComplete',
+          success: true,
+          message: expect.stringContaining('1 files failed to download')
+        })
+      );
+    });
+
+    it('should handle fetch exceptions and continue processing', async () => {
+      // Mock fetch to throw an error
+      vi.mocked(global.fetch)
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          headers: { get: vi.fn().mockReturnValue('attachment; filename="success.flac"') },
+          arrayBuffer: () => Promise.resolve(new ArrayBuffer(1024))
+        } as any);
+
+      const downloadRequest = {
+        type: 'downloadZip',
+        urls: ['http://example.com/error.flac', 'http://example.com/success.flac']
+      };
+
+      await onMessageListener(downloadRequest);
+
+      // Should still create zip with successful file
+      expect(mockPort.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'downloadComplete',
+          success: true,
+          message: expect.stringContaining('1 files failed to download')
+        })
+      );
+    });
+
+    it('should handle zip creation failures', async () => {
+      const { downloadZip } = await import('client-zip');
+
+      // Mock downloadZip to throw error
+      vi.mocked(downloadZip).mockImplementationOnce(() => {
+        throw new Error('Zip creation failed');
+      });
+
+      const downloadRequest = {
+        type: 'downloadZip',
+        urls: ['http://example.com/file1.flac']
+      };
+
+      await onMessageListener(downloadRequest);
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        type: 'downloadComplete',
+        success: false,
+        message: 'Failed to create or download zip file'
+      });
+    });
+
+    it('should send progress updates after each file download', async () => {
+      const downloadRequest = {
+        type: 'downloadZip',
+        urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac']
+      };
+
+      await onMessageListener(downloadRequest);
+
+      // Should send progress after each file
+      expect(mockPort.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'downloadProgress',
+          completed: 1,
+          failed: 0,
+          total: 2,
+          message: 'Downloaded 1 of 2 files (0 failed)'
+        })
+      );
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'downloadProgress',
+          completed: 2,
+          failed: 0,
+          total: 2,
+          message: 'Downloaded 2 of 2 files (0 failed)'
+        })
+      );
+    });
+
+    it('should ignore non-downloadZip message types', async () => {
+      const invalidRequest = {
+        type: 'invalidType',
+        data: 'test'
+      };
+
+      await onMessageListener(invalidRequest);
+
+      // Should not call fetch or send messages
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockPort.postMessage).not.toHaveBeenCalled();
+    });
+
+    it('should handle chunked zip transfer correctly', async () => {
+      // Create a larger mock blob to ensure chunking
+      const largeBlobData = 'a'.repeat(2 * 1024 * 1024); // 2MB of data
+      const { downloadZip } = await import('client-zip');
+
+      vi.mocked(downloadZip).mockReturnValueOnce({
+        blob: vi.fn(() => Promise.resolve(new Blob([largeBlobData], { type: 'application/zip' })))
+      } as any);
+
+      const downloadRequest = {
+        type: 'downloadZip',
+        urls: ['http://example.com/file1.flac']
+      };
+
+      await onMessageListener(downloadRequest);
+
+      // Should send multiple zip chunks for large files
+      const zipChunkCalls = mockPort.postMessage.mock.calls.filter(call => call[0].type === 'zipChunk');
+
+      expect(zipChunkCalls.length).toBeGreaterThan(1);
+
+      // First chunk should have chunkIndex 0
+      expect(zipChunkCalls[0][0]).toMatchObject({
+        type: 'zipChunk',
+        chunkIndex: 0,
+        totalChunks: expect.any(Number),
+        data: expect.any(String),
+        filename: 'bandcamp_2023-01-01.zip'
+      });
     });
   });
 

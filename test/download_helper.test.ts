@@ -23,6 +23,19 @@ vi.mock('../src/components/notifications', () => ({
   removePersistentNotification: vi.fn()
 }));
 
+vi.mock('../src/components/buttons', () => ({
+  createButton: vi.fn(() => ({
+    className: '',
+    innerText: '',
+    title: '',
+    style: { marginLeft: '' },
+    getAttribute: vi.fn(),
+    enable: vi.fn(),
+    disable: vi.fn(),
+    addEventListener: vi.fn()
+  }))
+}));
+
 // Mock Chrome runtime API
 Object.assign(global, {
   chrome: {
@@ -40,12 +53,8 @@ Object.assign(global, {
 
 import {
   initDownload,
-  createButton,
-  createZipButton,
-  enableButton,
-  disableButton,
-  enableZipButton,
-  disableZipButton,
+  createCurlButton,
+  createZipDownloadButton,
   mutationCallback,
   generateDownloadList,
   getDownloadPreamble,
@@ -53,6 +62,7 @@ import {
   downloadAsZip
 } from '../src/pages/download';
 import Logger from '../src/logger';
+import { createButton } from '../src/components/buttons';
 
 describe('DownloadHelper', () => {
   let log: Logger;
@@ -66,43 +76,45 @@ describe('DownloadHelper', () => {
     vi.restoreAllMocks();
   });
 
-  describe('createButton()', () => {
+  describe('createCurlButton()', () => {
     it('should create curl download button when div.download-titles exists', () => {
       createDomNodes('<div class="download-titles"></div>');
-      const button = createButton(log);
+      const button = createCurlButton(log);
 
       expect(button).toBeTruthy();
-      expect(button?.className).toBe('bes-downloadall');
-      expect(button?.textContent).toBe('preparing download');
-      expect(button?.disabled).toBe(true);
-      expect(document.querySelector('.bes-downloadall')).toBe(button);
+      expect(createButton).toHaveBeenCalledWith({
+        className: 'bes-downloadall',
+        innerText: 'preparing download',
+        buttonClicked: expect.any(Function)
+      });
+      expect(document.querySelector('.download-titles')).toBeTruthy();
     });
 
     it('should return undefined when div.download-titles does not exist', () => {
       createDomNodes('<div></div>');
-      const button = createButton(log);
+      const button = createCurlButton(log);
 
       expect(button).toBeUndefined();
       expect(log.warn).toHaveBeenCalledWith('Cannot create download button: div.download-titles element not found');
     });
   });
 
-  describe('createZipButton()', () => {
+  describe('createZipDownloadButton()', () => {
     it('should create zip download button when div.download-titles exists', () => {
       createDomNodes('<div class="download-titles"></div>');
-      const button = createZipButton(log);
+      const button = createZipDownloadButton(log);
 
       expect(button).toBeTruthy();
-      expect(button?.className).toBe('bes-downloadzip');
-      expect(button?.textContent).toBe('preparing download');
-      expect(button?.disabled).toBe(true);
-      expect(button?.style.marginLeft).toBe('10px');
-      expect(document.querySelector('.bes-downloadzip')).toBe(button);
+      expect(createButton).toHaveBeenCalledWith({
+        className: 'bes-downloadzip',
+        innerText: 'preparing download',
+        buttonClicked: expect.any(Function)
+      });
     });
 
     it('should return undefined when div.download-titles does not exist', () => {
       createDomNodes('<div></div>');
-      const button = createZipButton(log);
+      const button = createZipDownloadButton(log);
 
       expect(button).toBeUndefined();
       expect(log.warn).toHaveBeenCalledWith(
@@ -111,93 +123,9 @@ describe('DownloadHelper', () => {
     });
   });
 
-  describe('enableButton()', () => {
-    it('should enable curl button and add click handler', () => {
-      createDomNodes(`
-        <div class="download-titles"></div>
-        <a class="item-button" href="http://example.com/file1.flac"></a>
-        <a class="item-button" href="http://example.com/file2.flac"></a>
-      `);
-
-      const button = createButton(log);
-      enableButton(button, log);
-
-      expect(button?.disabled).toBe(false);
-      expect(button?.textContent).toBe('Download cURL File');
-      expect(log.info).toHaveBeenCalledWith('enableButton()');
-    });
-
-    it('should handle undefined button gracefully', () => {
-      enableButton(undefined, log);
-      expect(log.info).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('disableButton()', () => {
-    it('should disable curl button', () => {
-      createDomNodes('<div class="download-titles"></div>');
-      const button = createButton(log);
-
-      // Enable first
-      enableButton(button, log);
-      expect(button?.disabled).toBe(false);
-
-      // Then disable
-      disableButton(button, log);
-      expect(button?.disabled).toBe(true);
-      expect(button?.textContent).toBe('preparing download');
-      expect(log.info).toHaveBeenCalledWith('disableButton()');
-    });
-
-    it('should handle undefined button gracefully', () => {
-      disableButton(undefined, log);
-      expect(log.info).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('enableZipButton()', () => {
-    it('should enable zip button and add click handler', () => {
-      createDomNodes('<div class="download-titles"></div>');
-      const button = createZipButton(log);
-
-      enableZipButton(button, log);
-
-      expect(button?.disabled).toBe(false);
-      expect(button?.textContent).toBe('Download ZIP');
-      expect(log.info).toHaveBeenCalledWith('enableZipButton()');
-    });
-
-    it('should handle undefined button gracefully', () => {
-      enableZipButton(undefined, log);
-      expect(log.info).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('disableZipButton()', () => {
-    it('should disable zip button', () => {
-      createDomNodes('<div class="download-titles"></div>');
-      const button = createZipButton(log);
-
-      // Enable first
-      enableZipButton(button, log);
-      expect(button?.disabled).toBe(false);
-
-      // Then disable
-      disableZipButton(button, log);
-      expect(button?.disabled).toBe(true);
-      expect(button?.textContent).toBe('preparing download');
-      expect(log.info).toHaveBeenCalledWith('disableZipButton()');
-    });
-
-    it('should handle undefined button gracefully', () => {
-      disableZipButton(undefined, log);
-      expect(log.info).not.toHaveBeenCalled();
-    });
-  });
-
   describe('mutationCallback()', () => {
-    let curlButton: HTMLButtonElement;
-    let zipButton: HTMLButtonElement;
+    let curlButton: any;
+    let zipButton: any;
 
     beforeEach(() => {
       createDomNodes(`
@@ -210,15 +138,17 @@ describe('DownloadHelper', () => {
         </div>
       `);
 
-      curlButton = createButton(log)!;
-      zipButton = createZipButton(log)!;
+      curlButton = { enable: vi.fn(), disable: vi.fn(), innerText: '' };
+      zipButton = { enable: vi.fn(), disable: vi.fn(), innerText: '' };
     });
 
     it('should disable buttons when links are not ready', () => {
       mutationCallback({ curl: curlButton, zip: zipButton }, log);
 
-      expect(curlButton.disabled).toBe(true);
-      expect(zipButton.disabled).toBe(true);
+      expect(curlButton.disable).toHaveBeenCalled();
+      expect(zipButton.disable).toHaveBeenCalled();
+      expect(curlButton.innerText).toBe('preparing download');
+      expect(zipButton.innerText).toBe('preparing download');
       expect(log.info).toHaveBeenCalledWith('linksReady: false');
     });
 
@@ -231,8 +161,10 @@ describe('DownloadHelper', () => {
 
       mutationCallback({ curl: curlButton, zip: zipButton }, log);
 
-      expect(curlButton.disabled).toBe(false);
-      expect(zipButton.disabled).toBe(false);
+      expect(curlButton.enable).toHaveBeenCalled();
+      expect(zipButton.enable).toHaveBeenCalled();
+      expect(curlButton.innerText).toBe('Download cURL File');
+      expect(zipButton.innerText).toBe('Download ZIP');
       expect(log.info).toHaveBeenCalledWith('linksReady: true');
     });
   });
@@ -336,10 +268,7 @@ describe('DownloadHelper', () => {
     it('should initialize download helper functionality', async () => {
       await expect(initDownload()).resolves.not.toThrow();
 
-      const curlButton = document.querySelector('.bes-downloadall');
-      const zipButton = document.querySelector('.bes-downloadzip');
-      expect(curlButton).toBeTruthy();
-      expect(zipButton).toBeTruthy();
+      expect(createButton).toHaveBeenCalledTimes(2); // curl and zip buttons
     });
 
     it('should set up mutation observers for download links', async () => {

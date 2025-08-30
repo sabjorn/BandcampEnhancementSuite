@@ -7,106 +7,89 @@ import {
   updatePersistentNotification,
   removePersistentNotification
 } from '../components/notifications';
+import { createButton } from '../components/buttons';
 
-export function mutationCallback(buttons: { curl?: HTMLButtonElement; zip?: HTMLButtonElement }, log: Logger): void {
+export function mutationCallback(
+  buttons: {
+    curl?: HTMLAnchorElement & { disable: () => void; enable: () => void };
+    zip?: HTMLAnchorElement & { disable: () => void; enable: () => void };
+  },
+  log: Logger
+): void {
   const allDownloadLinks = document.querySelectorAll('.download-title .item-button');
 
   const linksReady = [...allDownloadLinks].every(element => (element as HTMLElement).style.display !== 'none');
 
   log.info(`linksReady: ${linksReady}`);
   if (linksReady) {
-    enableButton(buttons.curl, log);
-    enableZipButton(buttons.zip, log);
+    buttons.curl?.enable();
+    if (buttons.curl) buttons.curl.innerText = 'Download cURL File';
+
+    buttons.zip?.enable();
+    if (buttons.zip) buttons.zip.innerText = 'Download ZIP';
     return;
   }
 
-  disableButton(buttons.curl, log);
-  disableZipButton(buttons.zip, log);
+  buttons.curl?.disable();
+  if (buttons.curl) buttons.curl.innerText = 'preparing download';
+
+  buttons.zip?.disable();
+  if (buttons.zip) buttons.zip.innerText = 'preparing download';
 }
 
-export function createButton(log: Logger): HTMLButtonElement | undefined {
-  const location = document.querySelector('div.download-titles');
-  if (!location) {
+export function createCurlButton(
+  log: Logger
+): (HTMLAnchorElement & { disable: () => void; enable: () => void }) | undefined {
+  const downloadTitlesLocation = document.querySelector('div.download-titles');
+  if (!downloadTitlesLocation) {
     log.warn('Cannot create download button: div.download-titles element not found');
     return undefined;
   }
 
-  const button = document.createElement('button');
-  button.title = "Generates a file for automating downloads using 'cURL'";
-  button.className = 'bes-downloadall';
-  button.disabled = true;
-  button.textContent = 'preparing download';
+  const curlDownloadButton = createButton({
+    className: 'bes-downloadall',
+    innerText: 'preparing download',
+    buttonClicked: () => {
+      const downloadDate = dateString();
+      const downloadList = generateDownloadList();
+      const preamble = getDownloadPreamble();
+      const postamble = getDownloadPostamble();
+      const downloadDocument = preamble + downloadList + postamble;
 
-  location.append(button);
-  return button;
+      downloadFile(`bandcamp_${downloadDate}.txt`, downloadDocument);
+    }
+  });
+
+  curlDownloadButton.title = "Generates a file for automating downloads using 'cURL'";
+  curlDownloadButton.disable();
+
+  downloadTitlesLocation.append(curlDownloadButton);
+  return curlDownloadButton;
 }
 
-export function createZipButton(log: Logger): HTMLButtonElement | undefined {
-  const location = document.querySelector('div.download-titles');
-  if (!location) {
+export function createZipDownloadButton(
+  log: Logger
+): (HTMLAnchorElement & { disable: () => void; enable: () => void }) | undefined {
+  const downloadTitlesLocation = document.querySelector('div.download-titles');
+  if (!downloadTitlesLocation) {
     log.warn('Cannot create zip download button: div.download-titles element not found');
     return undefined;
   }
 
-  const button = document.createElement('button');
-  button.title = 'Downloads all files directly to a zip archive';
-  button.className = 'bes-downloadzip';
-  button.disabled = true;
-  button.textContent = 'preparing download';
-  button.style.marginLeft = '10px';
-
-  location.append(button);
-  return button;
-}
-
-export function enableButton(button: HTMLButtonElement | undefined, log: Logger): void {
-  if (!button) return;
-
-  log.info('enableButton()');
-
-  button.disabled = false;
-  button.textContent = 'Download cURL File';
-
-  button.addEventListener('click', function () {
-    const date = dateString();
-    const downloadList = generateDownloadList();
-    const preamble = getDownloadPreamble();
-    const postamble = getDownloadPostamble();
-    const downloadDocument = preamble + downloadList + postamble;
-
-    downloadFile(`bandcamp_${date}.txt`, downloadDocument);
+  const zipDownloadButton = createButton({
+    className: 'bes-downloadzip',
+    innerText: 'preparing download',
+    buttonClicked: async () => {
+      await downloadAsZip(log);
+    }
   });
-}
 
-export function disableButton(button: HTMLButtonElement | undefined, log: Logger): void {
-  if (!button) return;
+  zipDownloadButton.title = 'Downloads all files directly to a zip archive';
+  zipDownloadButton.style.marginLeft = '10px';
+  zipDownloadButton.disable();
 
-  log.info('disableButton()');
-
-  button.disabled = true;
-  button.textContent = 'preparing download';
-}
-
-export function enableZipButton(button: HTMLButtonElement | undefined, log: Logger): void {
-  if (!button) return;
-
-  log.info('enableZipButton()');
-
-  button.disabled = false;
-  button.textContent = 'Download ZIP';
-
-  button.addEventListener('click', async function () {
-    await downloadAsZip(log);
-  });
-}
-
-export function disableZipButton(button: HTMLButtonElement | undefined, log: Logger): void {
-  if (!button) return;
-
-  log.info('disableZipButton()');
-
-  button.disabled = true;
-  button.textContent = 'preparing download';
+  downloadTitlesLocation.append(zipDownloadButton);
+  return zipDownloadButton;
 }
 
 export async function initDownload(): Promise<void> {
@@ -114,8 +97,8 @@ export async function initDownload(): Promise<void> {
 
   log.info('Initiating BES Download Helper');
 
-  const curlButton = createButton(log);
-  const zipButton = createZipButton(log);
+  const curlButton = createCurlButton(log);
+  const zipButton = createZipDownloadButton(log);
   const buttons = { curl: curlButton, zip: zipButton };
 
   const callback = () => mutationCallback(buttons, log);

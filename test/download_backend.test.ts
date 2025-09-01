@@ -311,7 +311,7 @@ describe('Download Backend', () => {
 
       const contentDisposition = mockResponse.headers.get('content-disposition');
       const filenameMatch = contentDisposition?.match(/filename\*?=['""]?([^'"";]+)['""]?/i);
-      const filename = filenameMatch?.[1] || 'default.flac';
+      const filename = filenameMatch[1];
 
       expect(filename).toBe('test-track.flac');
     });
@@ -325,7 +325,7 @@ describe('Download Backend', () => {
 
       const contentDisposition = mockResponse.headers.get('content-disposition');
       const filenameMatch = contentDisposition?.match(/filename\*?=([^;]+)/i);
-      let filename = filenameMatch?.[1] || 'default.flac';
+      let filename = filenameMatch[1];
 
       if (filename.includes("UTF-8''")) {
         filename = decodeURIComponent(filename.split("UTF-8''")[1]);

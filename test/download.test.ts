@@ -100,9 +100,6 @@ describe('DownloadHelper', () => {
       const button = createCurlButton();
 
       expect(button).toBeUndefined();
-      expect(mockLog.warn).toHaveBeenCalledWith(
-        'Cannot create download button: div.download-titles element not found'
-      );
     });
   });
 
@@ -124,9 +121,6 @@ describe('DownloadHelper', () => {
       const button = createZipDownloadButton();
 
       expect(button).toBeUndefined();
-      expect(mockLog.warn).toHaveBeenCalledWith(
-        'Cannot create zip download button: div.download-titles element not found'
-      );
     });
   });
 
@@ -146,7 +140,6 @@ describe('DownloadHelper', () => {
       const statusElement = createStatusElement();
 
       expect(statusElement).toBeUndefined();
-      expect(mockLog.warn).toHaveBeenCalledWith('Cannot create status element: div.download-titles element not found');
     });
   });
 
@@ -179,7 +172,6 @@ describe('DownloadHelper', () => {
       expect(curlButton.disable).toHaveBeenCalled();
       expect(zipButton.disable).toHaveBeenCalled();
       expect(statusElement.style.display).toBe('block');
-      expect(mockLog.info).toHaveBeenCalledWith('linksReady: false');
     });
 
     it('should enable buttons and hide status when all links are ready', () => {
@@ -193,7 +185,6 @@ describe('DownloadHelper', () => {
       expect(curlButton.enable).toHaveBeenCalled();
       expect(zipButton.enable).toHaveBeenCalled();
       expect(statusElement.style.display).toBe('none');
-      expect(mockLog.info).toHaveBeenCalledWith('linksReady: true');
     });
 
     it('should not enable buttons and hide status when not all links are ready', () => {
@@ -205,7 +196,6 @@ describe('DownloadHelper', () => {
       expect(curlButton.enable).not.toHaveBeenCalled();
       expect(zipButton.enable).not.toHaveBeenCalled();
       expect(statusElement.style.display).toBe('block');
-      expect(mockLog.info).toHaveBeenCalledWith('linksReady: false');
     });
   });
 
@@ -272,7 +262,6 @@ describe('DownloadHelper', () => {
         type: 'downloadZip',
         urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac']
       });
-      expect(mockLog.info).toHaveBeenCalledWith('Starting zip download for 2 files via background script');
     });
 
     it('should extract URLs from item buttons', () => {

@@ -273,7 +273,8 @@ describe('Download Backend', () => {
     });
 
     it('should handle chunked zip transfer correctly', async () => {
-      const largeBlobData = 'a'.repeat(2 * 1024 * 1024); // 2MB of data
+      const testPattern = 'TestData123';
+      const largeBlobData = testPattern.repeat(200000);
       const { downloadZip } = await import('client-zip');
 
       vi.mocked(downloadZip).mockReturnValueOnce({
@@ -289,7 +290,7 @@ describe('Download Backend', () => {
 
       const zipChunkCalls = mockPort.postMessage.mock.calls.filter(call => call[0].type === 'zipChunk');
 
-      expect(zipChunkCalls.length).toBeGreaterThan(1);
+      expect(zipChunkCalls.length, 'Large data should be split into multiple chunks').toBeGreaterThan(1);
 
       expect(zipChunkCalls[0][0]).toMatchObject({
         type: 'zipChunk',
@@ -298,6 +299,14 @@ describe('Download Backend', () => {
         data: expect.any(String),
         filename: 'bandcamp_2023-01-01.zip'
       });
+
+      const allChunks = zipChunkCalls.map(call => call[0].data);
+      const decodedChunks = allChunks.map(chunk => atob(chunk));
+      const reconstructedData = decodedChunks.join('');
+
+      expect(reconstructedData, 'Reconstructed data should match original test pattern').toBe(largeBlobData);
+      expect(reconstructedData.startsWith(testPattern), 'Data should start with test pattern').toBe(true);
+      expect(reconstructedData.endsWith(testPattern), 'Data should end with test pattern').toBe(true);
     });
   });
 

@@ -19,7 +19,6 @@ vi.mock('client-zip', () => ({
   }))
 }));
 
-// Mock Chrome runtime API
 const mockOnConnect = vi.fn();
 
 Object.assign(global, {
@@ -32,7 +31,6 @@ Object.assign(global, {
   }
 });
 
-// Mock fetch globally
 global.fetch = vi.fn();
 
 import { initDownloadBackend } from '../src/background/download_backend';
@@ -41,7 +39,6 @@ describe('Download Backend', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Mock successful fetch response by default
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       status: 200,
@@ -63,17 +60,15 @@ describe('Download Backend', () => {
       expect(mockOnConnect).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    it('should handle port connections with correct name', () => {
+    it('should handle port messages with correct name', () => {
       initDownloadBackend();
 
       const onConnectListener = mockOnConnect.mock.calls[0][0];
 
-      // Test with correct port name
       const correctPort = { name: 'bes', onMessage: { addListener: vi.fn() } };
       onConnectListener(correctPort);
       expect(correctPort.onMessage.addListener).toHaveBeenCalledWith(expect.any(Function));
 
-      // Test with incorrect port name
       const incorrectPort = { name: 'wrong', onMessage: { addListener: vi.fn() } };
       onConnectListener(incorrectPort);
       expect(incorrectPort.onMessage.addListener).not.toHaveBeenCalled();

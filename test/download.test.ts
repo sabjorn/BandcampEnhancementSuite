@@ -263,24 +263,6 @@ describe('DownloadHelper', () => {
         urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac']
       });
     });
-
-    it('should extract URLs from item buttons', () => {
-      // Clean up first, then create fresh DOM
-      createDomNodes(`
-        <div id="test-urls">
-          <a class="item-button" href="http://example.com/file1.flac"></a>
-          <a class="item-button" href="http://example.com/file2.flac"></a>
-          <a class="item-button" href="">Empty href</a>
-          <a class="item-button">No href</a>
-        </div>
-      `);
-
-      const urls = [...document.querySelectorAll('#test-urls a.item-button')]
-        .map(item => item.getAttribute('href'))
-        .filter((url): url is string => url !== null && url !== '');
-
-      expect(urls).toEqual(['http://example.com/file1.flac', 'http://example.com/file2.flac']);
-    });
   });
 
   describe('initDownload()', () => {

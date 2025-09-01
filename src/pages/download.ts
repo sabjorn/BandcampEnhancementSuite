@@ -293,7 +293,10 @@ function createZipMessageHandler(): {
   const handleMessage = async (message: any) => {
     if (message.type === 'downloadProgress') {
       handleProgressMessage(message);
-    } else if (message.type === 'zipChunk') {
+      return;
+    }
+
+    if (message.type === 'zipChunk') {
       if (message.chunkIndex === 0) {
         zipChunks = Array.from({ length: message.totalChunks });
         expectedChunks = message.totalChunks;
@@ -310,23 +313,24 @@ function createZipMessageHandler(): {
       updatePersistentNotification('bes-download-progress', `Downloading... ${percentage}%`);
 
       const receivedChunks = zipChunks.filter(chunk => chunk !== undefined).length;
-      if (receivedChunks === expectedChunks) {
-        log.info('All chunks received, assembling zip file...');
+      if (receivedChunks !== expectedChunks) return;
 
-        try {
-          const bytes = convertBase64ChunksToBinary(zipChunks);
-          triggerZipDownload(bytes, zipFilename);
-        } catch (error) {
-          log.error(`Error assembling zip file: ${error}`);
-          removePersistentNotification('bes-download-progress');
-          showErrorMessage('Failed to assemble zip file');
-        }
-      }
-    } else if (message.type === 'downloadComplete') {
-      if (!message.success) {
+      log.info('All chunks received, assembling zip file...');
+
+      try {
+        const bytes = convertBase64ChunksToBinary(zipChunks);
+        triggerZipDownload(bytes, zipFilename);
+      } catch (error) {
+        log.error(`Error assembling zip file: ${error}`);
         removePersistentNotification('bes-download-progress');
-        showErrorMessage(message.message);
+        showErrorMessage('Failed to assemble zip file');
       }
+      return;
+    }
+
+    if (message.type === 'downloadComplete' && !message.success) {
+      removePersistentNotification('bes-download-progress');
+      showErrorMessage(message.message);
     }
   };
 

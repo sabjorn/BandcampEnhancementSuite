@@ -81,6 +81,7 @@ import {
   showErrorMessage,
   showSuccessMessage
 } from '../src/components/notifications';
+import { downloadFile, dateString } from '../src/utilities';
 
 describe('DownloadHelper', () => {
   let mockLog: any;
@@ -108,6 +109,48 @@ describe('DownloadHelper', () => {
       expect(document.querySelector('.download-titles')).toBeTruthy();
     });
 
+    it('should execute curl download when button is clicked', () => {
+      createDomNodes('<div class="download-titles"></div>');
+      createCurlButton();
+
+      const createButtonCall = vi.mocked(createButton).mock.calls[0][0];
+      const buttonClickedCallback = createButtonCall.buttonClicked;
+
+      expect(buttonClickedCallback).toBeDefined();
+      buttonClickedCallback!();
+
+      expect(vi.mocked(dateString)).toHaveBeenCalled();
+      expect(vi.mocked(downloadFile)).toHaveBeenCalledWith(
+        'bandcamp_2023-01-01.txt',
+        expect.stringContaining('#!/usr/bin/env bash')
+      );
+      expect(vi.mocked(downloadFile)).toHaveBeenCalledWith(
+        'bandcamp_2023-01-01.txt',
+        expect.stringContaining('URLS=(')
+      );
+    });
+
+    it('should create complete curl script when button is clicked with DOM elements', () => {
+      createDomNodes(`
+        <div class="download-titles"></div>
+        <a class="item-button" href="http://example.com/track1.flac"></a>
+        <a class="item-button" href="http://example.com/track2.flac"></a>
+      `);
+
+      createCurlButton();
+
+      const createButtonCall = vi.mocked(createButton).mock.calls[0][0];
+      const buttonClickedCallback = createButtonCall.buttonClicked;
+
+      buttonClickedCallback!();
+
+      expect(vi.mocked(downloadFile)).toHaveBeenCalledWith('bandcamp_2023-01-01.txt', expect.stringMatching(/^#!/));
+      expect(vi.mocked(downloadFile)).toHaveBeenCalledWith(
+        'bandcamp_2023-01-01.txt',
+        expect.stringContaining('download_file()')
+      );
+    });
+
     it('should return undefined when div.download-titles does not exist', () => {
       createDomNodes('<div></div>');
       const button = createCurlButton();
@@ -127,6 +170,50 @@ describe('DownloadHelper', () => {
         innerText: 'Download ZIP',
         buttonClicked: expect.any(Function)
       });
+    });
+
+    it('should execute zip download when button is clicked', async () => {
+      createDomNodes(`
+        <div class="download-titles"></div>
+        <div id="test-area">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+        </div>
+      `);
+
+      const mockPort = {
+        onMessage: { addListener: vi.fn() },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
+      };
+      vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
+
+      createZipDownloadButton();
+
+      const createButtonCall = vi.mocked(createButton).mock.calls[0][0];
+      const buttonClickedCallback = createButtonCall.buttonClicked;
+
+      expect(buttonClickedCallback).toBeDefined();
+      await buttonClickedCallback!();
+
+      expect(global.chrome.runtime.connect).toHaveBeenCalledWith({ name: 'bes' });
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        type: 'downloadZip',
+        urls: ['http://example.com/file1.flac']
+      });
+    });
+
+    it('should show error when zip button is clicked with no download links', async () => {
+      createDomNodes('<div class="download-titles"></div>');
+
+      createZipDownloadButton();
+
+      const createButtonCall = vi.mocked(createButton).mock.calls[0][0];
+      const buttonClickedCallback = createButtonCall.buttonClicked;
+
+      await buttonClickedCallback!();
+
+      expect(vi.mocked(showErrorMessage)).toHaveBeenCalledWith('No download links found');
+      expect(global.chrome.runtime.connect).not.toHaveBeenCalled();
     });
 
     it('should return undefined when div.download-titles does not exist', () => {

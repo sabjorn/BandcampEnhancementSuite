@@ -222,8 +222,7 @@ describe('DownloadHelper', () => {
       expect(result).toContain('URLS=(');
       expect(result).toContain('"http://example.com/file1.flac"');
       expect(result).toContain('"http://example.com/file2.flac"');
-      // Should deduplicate URLs
-      expect(result.split('file1.flac').length).toBe(2); // Original + 1 occurrence
+      expect(result.split('file1.flac').length, 'Should deduplicate URLs -- Original + 1 occurrence').toBe(2);
     });
 
     it('should return empty array when no links found', () => {

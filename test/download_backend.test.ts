@@ -100,7 +100,6 @@ describe('Download Backend', () => {
 
       await onMessageListener(downloadRequest);
 
-      // Should send initial progress
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadProgress',
         completed: 0,
@@ -109,7 +108,6 @@ describe('Download Backend', () => {
         message: 'Starting download of 2 files...'
       });
 
-      // Should send zip creation progress
       expect(mockPort.postMessage).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'downloadProgress',
@@ -117,7 +115,6 @@ describe('Download Backend', () => {
         })
       );
 
-      // Should send zip chunks
       expect(mockPort.postMessage).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'zipChunk',
@@ -128,7 +125,6 @@ describe('Download Backend', () => {
         })
       );
 
-      // Should send completion message
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadComplete',
         success: true,
@@ -140,7 +136,6 @@ describe('Download Backend', () => {
     });
 
     it('should handle fetch failures and send error messages', async () => {
-      // Mock fetch to fail
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
         status: 404
@@ -153,7 +148,6 @@ describe('Download Backend', () => {
 
       await onMessageListener(downloadRequest);
 
-      // Should send failure completion message
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadComplete',
         success: false,
@@ -162,7 +156,6 @@ describe('Download Backend', () => {
     });
 
     it('should handle partial failures and report mixed results', async () => {
-      // Mock one success and one failure
       vi.mocked(global.fetch)
         .mockResolvedValueOnce({
           ok: true,
@@ -182,7 +175,6 @@ describe('Download Backend', () => {
 
       await onMessageListener(downloadRequest);
 
-      // Should send completion with mixed results
       expect(mockPort.postMessage).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'downloadComplete',
@@ -193,7 +185,6 @@ describe('Download Backend', () => {
     });
 
     it('should handle fetch exceptions and continue processing', async () => {
-      // Mock fetch to throw an error
       vi.mocked(global.fetch)
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce({
@@ -210,7 +201,6 @@ describe('Download Backend', () => {
 
       await onMessageListener(downloadRequest);
 
-      // Should still create zip with successful file
       expect(mockPort.postMessage).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'downloadComplete',
@@ -223,7 +213,6 @@ describe('Download Backend', () => {
     it('should handle zip creation failures', async () => {
       const { downloadZip } = await import('client-zip');
 
-      // Mock downloadZip to throw error
       vi.mocked(downloadZip).mockImplementationOnce(() => {
         throw new Error('Zip creation failed');
       });
@@ -250,7 +239,6 @@ describe('Download Backend', () => {
 
       await onMessageListener(downloadRequest);
 
-      // Should send progress after each file
       expect(mockPort.postMessage).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'downloadProgress',
@@ -280,13 +268,11 @@ describe('Download Backend', () => {
 
       await onMessageListener(invalidRequest);
 
-      // Should not call fetch or send messages
       expect(global.fetch).not.toHaveBeenCalled();
       expect(mockPort.postMessage).not.toHaveBeenCalled();
     });
 
     it('should handle chunked zip transfer correctly', async () => {
-      // Create a larger mock blob to ensure chunking
       const largeBlobData = 'a'.repeat(2 * 1024 * 1024); // 2MB of data
       const { downloadZip } = await import('client-zip');
 
@@ -301,12 +287,10 @@ describe('Download Backend', () => {
 
       await onMessageListener(downloadRequest);
 
-      // Should send multiple zip chunks for large files
       const zipChunkCalls = mockPort.postMessage.mock.calls.filter(call => call[0].type === 'zipChunk');
 
       expect(zipChunkCalls.length).toBeGreaterThan(1);
 
-      // First chunk should have chunkIndex 0
       expect(zipChunkCalls[0][0]).toMatchObject({
         type: 'zipChunk',
         chunkIndex: 0,
@@ -319,14 +303,12 @@ describe('Download Backend', () => {
 
   describe('Filename Extraction', () => {
     it('should extract filename from Content-Disposition header', () => {
-      // This tests the core logic without complex async integration
       const mockResponse = {
         headers: {
           get: vi.fn().mockReturnValue('attachment; filename="test-track.flac"')
         }
       };
 
-      // Simulate what getFilenameFromResponse does
       const contentDisposition = mockResponse.headers.get('content-disposition');
       const filenameMatch = contentDisposition?.match(/filename\*?=['""]?([^'"";]+)['""]?/i);
       const filename = filenameMatch?.[1] || 'default.flac';
@@ -345,7 +327,6 @@ describe('Download Backend', () => {
       const filenameMatch = contentDisposition?.match(/filename\*?=([^;]+)/i);
       let filename = filenameMatch?.[1] || 'default.flac';
 
-      // Handle RFC 5987 encoding
       if (filename.includes("UTF-8''")) {
         filename = decodeURIComponent(filename.split("UTF-8''")[1]);
       }

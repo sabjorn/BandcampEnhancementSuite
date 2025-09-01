@@ -75,9 +75,7 @@ export function createZipDownloadButton():
   const zipDownloadButton = createButton({
     className: 'bes-downloadzip',
     innerText: 'Download ZIP',
-    buttonClicked: async () => {
-      await downloadAsZip();
-    }
+    buttonClicked: downloadAsZip
   });
 
   zipDownloadButton.title = 'Downloads all files directly to a zip archive';

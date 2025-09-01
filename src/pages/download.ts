@@ -208,6 +208,131 @@ export function getDownloadPostamble(): string {
   return postamble;
 }
 
+function handleProgressMessage(message: any): void {
+  if (!document.getElementById('bes-download-progress')) {
+    showPersistentNotification({
+      id: 'bes-download-progress',
+      message: message.message,
+      type: 'info'
+    });
+  } else {
+    updatePersistentNotification('bes-download-progress', message.message);
+  }
+}
+
+function convertBase64ChunksToBinary(zipChunks: string[]): Uint8Array {
+  log.info('Converting base64 chunks to binary...');
+  const binaryChunks: Uint8Array[] = [];
+  let totalLength = 0;
+
+  for (let i = 0; i < zipChunks.length; i++) {
+    const chunk = zipChunks[i];
+    if (!chunk) {
+      throw new Error(`Missing chunk at index ${i}`);
+    }
+
+    const binaryString = atob(chunk);
+    const chunkBytes = new Uint8Array(binaryString.length);
+    for (let j = 0; j < binaryString.length; j++) {
+      chunkBytes[j] = binaryString.charCodeAt(j);
+    }
+
+    binaryChunks.push(chunkBytes);
+    totalLength += chunkBytes.length;
+
+    if ((i + 1) % 10 === 0) {
+      log.info(`Processed chunk ${i + 1}/${zipChunks.length}`);
+    }
+  }
+
+  log.info(`Converting ${binaryChunks.length} chunks to single array (${totalLength} bytes)...`);
+
+  const bytes = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of binaryChunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  log.info(`Assembled zip file: ${bytes.length} bytes`);
+  return bytes;
+}
+
+function triggerZipDownload(bytes: Uint8Array, filename: string): void {
+  log.info('Creating blob...');
+  const blob = new Blob([bytes], { type: 'application/zip' });
+  log.info(`Blob created, size: ${blob.size} bytes`);
+
+  log.info('Creating download URL...');
+  const downloadUrl = URL.createObjectURL(blob);
+
+  log.info('Triggering download...');
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(downloadUrl);
+
+  removePersistentNotification('bes-download-progress');
+  showSuccessMessage(`Successfully downloaded ${filename}`);
+}
+
+function createZipMessageHandler(): {
+  zipChunks: string[];
+  expectedChunks: number;
+  zipFilename: string;
+  handleMessage: (message: any) => Promise<void>;
+} {
+  let zipChunks: string[] = [];
+  let expectedChunks = 0;
+  let zipFilename = '';
+
+  const handleMessage = async (message: any) => {
+    if (message.type === 'downloadProgress') {
+      handleProgressMessage(message);
+    } else if (message.type === 'zipChunk') {
+      if (message.chunkIndex === 0) {
+        zipChunks = Array.from({ length: message.totalChunks });
+        expectedChunks = message.totalChunks;
+        zipFilename = message.filename;
+        log.info(`Receiving zip in ${expectedChunks} chunks`);
+        updatePersistentNotification('bes-download-progress', 'Downloading... 0%');
+      }
+
+      zipChunks[message.chunkIndex] = message.data;
+      log.info(`Received chunk ${message.chunkIndex + 1}/${expectedChunks}`);
+
+      const receivedSoFar = message.chunkIndex + 1;
+      const percentage = Math.round((receivedSoFar / expectedChunks) * 100);
+      updatePersistentNotification('bes-download-progress', `Downloading... ${percentage}%`);
+
+      const receivedChunks = zipChunks.filter(chunk => chunk !== undefined).length;
+      if (receivedChunks === expectedChunks) {
+        log.info('All chunks received, assembling zip file...');
+
+        try {
+          const bytes = convertBase64ChunksToBinary(zipChunks);
+          triggerZipDownload(bytes, zipFilename);
+        } catch (error) {
+          log.error(`Error assembling zip file: ${error}`);
+          removePersistentNotification('bes-download-progress');
+          showErrorMessage('Failed to assemble zip file');
+        }
+      }
+    } else if (message.type === 'downloadComplete') {
+      if (!message.success) {
+        removePersistentNotification('bes-download-progress');
+        showErrorMessage(message.message);
+      }
+    }
+  };
+
+  return { zipChunks, expectedChunks, zipFilename, handleMessage };
+}
+
 export async function downloadAsZip(): Promise<void> {
   const urls = [...document.querySelectorAll('a.item-button')]
     .map(item => item.getAttribute('href'))
@@ -221,126 +346,16 @@ export async function downloadAsZip(): Promise<void> {
   log.info(`Starting zip download for ${urls.length} files via background script`);
 
   try {
-    // Connect to background script
     const port = chrome.runtime.connect({ name: 'bes' });
+    const { handleMessage } = createZipMessageHandler();
 
-    // Variables for chunked zip data
-    let zipChunks: string[] = [];
-    let expectedChunks = 0;
-    let zipFilename = '';
-
-    // Set up message listener for progress updates
     port.onMessage.addListener(async message => {
-      if (message.type === 'downloadProgress') {
-        if (!document.getElementById('bes-download-progress')) {
-          showPersistentNotification({
-            id: 'bes-download-progress',
-            message: message.message,
-            type: 'info'
-          });
-        } else {
-          updatePersistentNotification('bes-download-progress', message.message);
-        }
-      } else if (message.type === 'zipChunk') {
-        // Handle chunked zip data
-        if (message.chunkIndex === 0) {
-          // First chunk - initialize
-          zipChunks = Array.from({ length: message.totalChunks });
-          expectedChunks = message.totalChunks;
-          zipFilename = message.filename;
-          log.info(`Receiving zip in ${expectedChunks} chunks`);
-
-          updatePersistentNotification('bes-download-progress', 'Downloading... 0%');
-        }
-
-        zipChunks[message.chunkIndex] = message.data;
-        log.info(`Received chunk ${message.chunkIndex + 1}/${expectedChunks}`);
-
-        // Calculate download percentage
-        const receivedSoFar = message.chunkIndex + 1;
-        const percentage = Math.round((receivedSoFar / expectedChunks) * 100);
-        updatePersistentNotification('bes-download-progress', `Downloading... ${percentage}%`);
-
-        // Check if all chunks received
-        const receivedChunks = zipChunks.filter(chunk => chunk !== undefined).length;
-        if (receivedChunks === expectedChunks) {
-          log.info('All chunks received, assembling zip file...');
-
-          try {
-            // Convert base64 chunks back to binary one by one (avoid memory issues)
-            log.info('Converting base64 chunks to binary...');
-            const binaryChunks: Uint8Array[] = [];
-            let totalLength = 0;
-
-            for (let i = 0; i < zipChunks.length; i++) {
-              const chunk = zipChunks[i];
-              if (!chunk) {
-                throw new Error(`Missing chunk at index ${i}`);
-              }
-
-              const binaryString = atob(chunk);
-              const chunkBytes = new Uint8Array(binaryString.length);
-              for (let j = 0; j < binaryString.length; j++) {
-                chunkBytes[j] = binaryString.charCodeAt(j);
-              }
-
-              binaryChunks.push(chunkBytes);
-              totalLength += chunkBytes.length;
-
-              if ((i + 1) % 10 === 0) {
-                log.info(`Processed chunk ${i + 1}/${zipChunks.length}`);
-              }
-            }
-
-            log.info(`Converting ${binaryChunks.length} chunks to single array (${totalLength} bytes)...`);
-
-            // Combine all binary chunks into one array
-            const bytes = new Uint8Array(totalLength);
-            let offset = 0;
-            for (const chunk of binaryChunks) {
-              bytes.set(chunk, offset);
-              offset += chunk.length;
-            }
-
-            log.info(`Assembled zip file: ${bytes.length} bytes`);
-
-            // Create blob and trigger download
-            log.info('Creating blob...');
-            const blob = new Blob([bytes], { type: 'application/zip' });
-            log.info(`Blob created, size: ${blob.size} bytes`);
-
-            log.info('Creating download URL...');
-            const downloadUrl = URL.createObjectURL(blob);
-
-            log.info('Triggering download...');
-            const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = zipFilename;
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(downloadUrl);
-
-            removePersistentNotification('bes-download-progress');
-            showSuccessMessage(`Successfully downloaded ${zipFilename}`);
-          } catch (error) {
-            log.error(`Error assembling zip file: ${error}`);
-            removePersistentNotification('bes-download-progress');
-            showErrorMessage('Failed to assemble zip file');
-          }
-        }
-      } else if (message.type === 'downloadComplete') {
-        if (!message.success) {
-          removePersistentNotification('bes-download-progress');
-          showErrorMessage(message.message);
-        }
-        // Success case is handled after all chunks are received
+      await handleMessage(message);
+      if (message.type === 'downloadComplete') {
         port.disconnect();
       }
     });
 
-    // Send download request to background script
     port.postMessage({
       type: 'downloadZip',
       urls: urls

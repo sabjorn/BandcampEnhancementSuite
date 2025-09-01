@@ -41,7 +41,6 @@ vi.mock('../src/components/buttons', () => ({
   }))
 }));
 
-// Mock Chrome runtime API
 Object.assign(global, {
   chrome: {
     runtime: {
@@ -163,7 +162,7 @@ describe('DownloadHelper', () => {
           <a class="item-button" style="display: none">Link 1</a>
         </div>
         <div class="download-title">
-          <a class="item-button" style="display: block">Link 2</a>
+          <a class="item-button" style="display: none">Link 2</a>
         </div>
       `);
 
@@ -173,7 +172,6 @@ describe('DownloadHelper', () => {
     });
 
     it('should disable buttons and show status when links are not ready', () => {
-      // Start with statusElement hidden
       statusElement.style.display = 'none';
 
       mutationCallback({ curl: curlButton, zip: zipButton }, statusElement);
@@ -185,7 +183,6 @@ describe('DownloadHelper', () => {
     });
 
     it('should enable buttons and hide status when all links are ready', () => {
-      // Make all links visible
       const links = document.querySelectorAll('.item-button');
       links.forEach(link => {
         (link as HTMLElement).style.display = 'block';
@@ -197,6 +194,18 @@ describe('DownloadHelper', () => {
       expect(zipButton.enable).toHaveBeenCalled();
       expect(statusElement.style.display).toBe('none');
       expect(mockLog.info).toHaveBeenCalledWith('linksReady: true');
+    });
+
+    it('should not enable buttons and hide status when not all links are ready', () => {
+      const link = document.querySelectorAll('.item-button')[0];
+      (link as HTMLElement).style.display = 'block';
+
+      mutationCallback({ curl: curlButton, zip: zipButton }, statusElement);
+
+      expect(curlButton.enable).not.toHaveBeenCalled();
+      expect(zipButton.enable).not.toHaveBeenCalled();
+      expect(statusElement.style.display).toBe('block');
+      expect(mockLog.info).toHaveBeenCalledWith('linksReady: false');
     });
   });
 

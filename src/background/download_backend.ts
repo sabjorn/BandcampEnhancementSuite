@@ -4,6 +4,8 @@ import { dateString } from '../utilities';
 
 const log = new Logger();
 
+const BATCH_SIZE = 5;
+
 interface DownloadRequest {
   type: 'downloadZip';
   urls: string[];
@@ -39,7 +41,6 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
   let completed = 0;
   let failed = 0;
 
-  // Send initial progress
   port.postMessage({
     type: 'downloadProgress',
     completed,
@@ -48,12 +49,8 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
     message: `Starting download of ${urls.length} files...`
   } as DownloadProgress);
 
-  // Download files in parallel batches to avoid overwhelming the server
-  const batchSize = 5; // Process 5 files at a time
-
   const downloadFile = async (url: string, index: number): Promise<void> => {
     try {
-      // Use fetch in background script (no CORS restrictions)
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -64,7 +61,6 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
 
       const filename = getFilenameFromResponse(response, url) || `file_${index + 1}.flac`;
 
-      // Convert response to ArrayBuffer
       const arrayBuffer = await response.arrayBuffer();
       log.info(`Downloaded ${filename}: ${arrayBuffer.byteLength} bytes`);
 
@@ -83,7 +79,6 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
       log.error(`Error downloading ${url}: ${error}`);
     }
 
-    // Send progress update after each file (success or failure)
     port.postMessage({
       type: 'downloadProgress',
       completed,
@@ -93,12 +88,10 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
     } as DownloadProgress);
   };
 
-  // Process URLs in parallel batches
-  for (let i = 0; i < urls.length; i += batchSize) {
-    const batch = urls.slice(i, i + batchSize);
+  for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+    const batch = urls.slice(i, i + BATCH_SIZE);
     const batchPromises = batch.map((url, batchIndex) => downloadFile(url, i + batchIndex));
 
-    // Wait for this batch to complete before starting the next
     await Promise.all(batchPromises);
   }
 
@@ -112,7 +105,6 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
   }
 
   try {
-    // Show zip creation progress
     port.postMessage({
       type: 'downloadProgress',
       completed,
@@ -128,14 +120,13 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
     const date = dateString();
     const filename = `bandcamp_${date}.zip`;
 
-    // Send zip data to frontend in chunks (service worker can't use URL.createObjectURL)
     log.info('Preparing to send zip data to frontend in chunks...');
 
     const arrayBuffer = await blob.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    // Convert to base64 in chunks to avoid memory issues
-    const chunkSize = 1024 * 1024; // 1MB chunks
+    const oneMBChunk = 1024 * 1024;
+    const chunkSize = oneMBChunk;
     const totalChunks = Math.ceil(uint8Array.length / chunkSize);
 
     log.info(`Sending ${blob.size} bytes in ${totalChunks} chunks`);
@@ -145,7 +136,6 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
       const end = Math.min(start + chunkSize, uint8Array.length);
       const chunk = uint8Array.slice(start, end);
 
-      // Convert chunk to base64
       let binaryString = '';
       for (let j = 0; j < chunk.length; j++) {
         binaryString += String.fromCharCode(chunk[j]);
@@ -200,27 +190,25 @@ function getFilenameFromResponse(response: Response, url: string): string | null
       return `${filenameFromUrl}.flac`;
     }
 
-    return (() => {
-      const headerFilenamePattern = /filename\*?=['"]?([^'";]+)['"]?/i;
-      const filenameMatch = contentDisposition.match(headerFilenamePattern);
+    const headerFilenamePattern = /filename\*?=['"]?([^'";]+)['"]?/i;
+    const filenameMatch = contentDisposition.match(headerFilenamePattern);
 
-      if (!filenameMatch || !filenameMatch[1]) return null;
+    if (!filenameMatch || !filenameMatch[1]) return null;
 
-      let extractedFilename = filenameMatch[1];
+    let extractedFilename = filenameMatch[1];
 
-      const isRfc5987Encoded = extractedFilename.includes("UTF-8''");
-      if (isRfc5987Encoded) {
-        const encodedPart = extractedFilename.split("UTF-8''")[1];
-        extractedFilename = decodeURIComponent(encodedPart);
-      }
+    const isRfc5987Encoded = extractedFilename.includes("UTF-8''");
+    if (isRfc5987Encoded) {
+      const encodedPart = extractedFilename.split("UTF-8''")[1];
+      extractedFilename = decodeURIComponent(encodedPart);
+    }
 
-      const hasFileExtension = extractedFilename.includes('.');
-      if (!hasFileExtension) {
-        extractedFilename += '.flac';
-      }
+    const hasFileExtension = extractedFilename.includes('.');
+    if (!hasFileExtension) {
+      extractedFilename += '.flac';
+    }
 
-      return extractedFilename;
-    })();
+    return extractedFilename;
   } catch {
     return null;
   }

@@ -87,8 +87,10 @@ describe('cart_import_backend', () => {
 
         await portListenerCallback({ cartImport: { items: [mockCartItems[0]] } }, portState);
 
-        // Should NOT call getTralbumDetails when price is already provided
-        expect(getTralbumDetails).not.toHaveBeenCalled();
+        expect(
+          getTralbumDetails,
+          'should not call getTralbumDetails when price is already provided'
+        ).not.toHaveBeenCalled();
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartAddRequest: {
@@ -100,6 +102,14 @@ describe('cart_import_backend', () => {
             currency: 'USD',
             url: 'https://test.bandcamp.com/album/test'
           }
+        });
+      });
+
+      it('should send successful completion message', async () => {
+        await portListenerCallback({ cartImport: { items: [mockCartItems[0]] } }, portState);
+
+        expect(mockPort.postMessage).toHaveBeenCalledWith({
+          cartImportComplete: { message: 'Successfully added 1 items to cart' }
         });
       });
 
@@ -153,7 +163,6 @@ describe('cart_import_backend', () => {
           })
         );
 
-        // Should also send individual error notification
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartItemError: {
             message: 'Failed to add "Test Track" to cart'
@@ -162,7 +171,7 @@ describe('cart_import_backend', () => {
       });
 
       it('should send completion message with mixed success/failure counts', async () => {
-        const mixedItems = [mockCartItems[0], mockCartItems[1]]; // First has price, second needs API call
+        const mixedItems = [mockCartItems[0], mockCartItems[1]];
         (getTralbumDetails as any).mockRejectedValue(new Error('HTTP 404: Not Found'));
 
         await portListenerCallback({ cartImport: { items: mixedItems } }, portState);
@@ -172,38 +181,27 @@ describe('cart_import_backend', () => {
         });
       });
 
-      it('should send completion message immediately', async () => {
-        await portListenerCallback({ cartImport: { items: [mockCartItems[0]] } }, portState);
-
-        expect(mockPort.postMessage).toHaveBeenCalledWith({
-          cartImportComplete: { message: 'Successfully added 1 items to cart' }
-        });
-      });
-
       it('should track progress correctly during processing', async () => {
         const multipleItems = [mockCartItems[0], mockCartItems[1]];
         (getTralbumDetails as any).mockResolvedValue({ price: 5.0, is_purchasable: true });
 
         await portListenerCallback({ cartImport: { items: multipleItems } }, portState);
 
-        // Should have multiple state broadcasts during processing
         const stateCalls = (mockPort.postMessage as any).mock.calls.filter(
           (call: any) => call[0].cartImportState !== undefined
         );
 
         expect(stateCalls.length).toBeGreaterThan(0);
 
-        // Check that we have state updates showing progress
         const stateUpdates = stateCalls.map((call: any) => call[0].cartImportState);
 
-        // Should have at least one state update with isProcessing: true
         expect(stateUpdates.some((state: any) => state.isProcessing === true)).toBe(true);
 
-        // Final state should show completion
         const finalState = stateUpdates[stateUpdates.length - 1];
         expect(finalState.isProcessing).toBe(false);
         expect(finalState.processedCount).toBe(2);
         expect(finalState.totalCount).toBe(2);
+        expect(finalState.errors.length).toBe(0);
       });
 
       it('should handle empty items array', async () => {
@@ -279,7 +277,6 @@ describe('cart_import_backend', () => {
           bandcamp_url: mockUrls[0],
           price: 10.0
         });
-        // URL imports still need getTralbumDetails for is_purchasable check since they don't have unit_price
         (getTralbumDetails as any).mockResolvedValue({ price: 10.0, is_purchasable: true });
 
         await portListenerCallback({ cartUrlImport: { urls: [mockUrls[0]] } }, portState);
@@ -313,20 +310,16 @@ describe('cart_import_backend', () => {
 
         await portListenerCallback({ cartUrlImport: { urls: mockUrls } }, portState);
 
-        // Should have multiple state broadcasts during processing
         const stateCalls = (mockPort.postMessage as any).mock.calls.filter(
           (call: any) => call[0].cartImportState !== undefined
         );
 
         expect(stateCalls.length).toBeGreaterThan(0);
 
-        // Check that we have state updates showing progress
         const stateUpdates = stateCalls.map((call: any) => call[0].cartImportState);
 
-        // Should have at least one state update with isProcessing: true
         expect(stateUpdates.some((state: any) => state.isProcessing === true)).toBe(true);
 
-        // Final state should show completion
         const finalState = stateUpdates[stateUpdates.length - 1];
         expect(finalState.isProcessing).toBe(false);
         expect(finalState.processedCount).toBe(2);

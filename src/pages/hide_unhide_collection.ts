@@ -170,7 +170,11 @@ function updateUnhideButtonState(state: any): void {
     <div style="font-weight: bold; margin-bottom: 8px;">🔄 Unhiding your collection items...</div>
     <div>Progress: ${state.processedCount}/${state.totalCount}</div>
     <div style="color: #d32f2f; font-weight: bold; margin-top: 8px;">⚠️ Do not refresh or navigate away from this page</div>
-    ${state.errors.length > 0 ? `<div style="color: #d32f2f; margin-top: 4px;">${state.errors.length} errors occurred</div>` : ''}
+    ${
+      state.errors.length > 0
+        ? `<div style="color: #d32f2f; margin-top: 4px;">${state.errors.length} errors occurred</div>`
+        : ''
+    }
   `;
 
   if (document.getElementById(HIDE_UNHIDE_STATUS_ID)) {
@@ -209,7 +213,11 @@ function updateHideButtonState(state: any): void {
     <div style="font-weight: bold; margin-bottom: 8px;">🔄 Hiding your collection items...</div>
     <div>Progress: ${state.processedCount}/${state.totalCount}</div>
     <div style="color: #d32f2f; font-weight: bold; margin-top: 8px;">⚠️ Do not refresh or navigate away from this page</div>
-    ${state.errors.length > 0 ? `<div style="color: #d32f2f; margin-top: 4px;">${state.errors.length} errors occurred</div>` : ''}
+    ${
+      state.errors.length > 0
+        ? `<div style="color: #d32f2f; margin-top: 4px;">${state.errors.length} errors occurred</div>`
+        : ''
+    }
   `;
 
   if (document.getElementById(HIDE_UNHIDE_STATUS_ID)) {

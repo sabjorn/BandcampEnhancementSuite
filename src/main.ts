@@ -1,6 +1,6 @@
 import { createLogger } from './logger';
 import { initLabelView } from './label_view';
-import { initDownloadHelper } from './download_helper';
+import { initDownload } from './pages/download';
 import { initPlayer } from './player';
 import { initAudioFeatures } from './audioFeatures';
 import { initCart } from './pages/cart';
@@ -11,7 +11,7 @@ const main = async (): Promise<void> => {
 
   const checkIsDownloadPage: Element | null = document.querySelector('.download-item-container');
   if (checkIsDownloadPage) {
-    initDownloadHelper();
+    initDownload();
   }
 
   const config_port: chrome.runtime.Port = (() => {

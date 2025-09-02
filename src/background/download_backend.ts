@@ -65,7 +65,7 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
       log.info(`Downloaded ${filename}: ${arrayBuffer.byteLength} bytes`);
 
       if (arrayBuffer.byteLength === 0) {
-        log.warn(`Warning: ${filename} has 0 bytes`);
+        throw new Error(`File ${filename} has 0 bytes and cannot be included in zip`);
       }
 
       files.push({

@@ -81,19 +81,20 @@ class CartImportTracker {
         }
 
         const item = await (async (): Promise<CartImportItem> => {
-          if (typeof originalItem === 'string') {
-            log.info(`Extracting info from URL: ${originalItem}`);
-            const pageInfo = await getTralbumDetailsFromPage(originalItem);
-            return {
-              item_id: pageInfo.id,
-              item_type: pageInfo.type as 'a' | 't',
-              item_title: pageInfo.title,
-              band_name: pageInfo.tralbum_artist,
-              currency: pageInfo.currency,
-              url: pageInfo.bandcamp_url
-            };
+          if (typeof originalItem !== 'string') {
+            return originalItem;
           }
-          return originalItem;
+
+          log.info(`Extracting info from URL: ${originalItem}`);
+          const pageInfo = await getTralbumDetailsFromPage(originalItem);
+          return {
+            item_id: pageInfo.id,
+            item_type: pageInfo.type as 'a' | 't',
+            item_title: pageInfo.title,
+            band_name: pageInfo.tralbum_artist,
+            currency: pageInfo.currency,
+            url: pageInfo.bandcamp_url
+          };
         })();
 
         log.info(`Fetching full details for item ${item.item_id} (${item.item_type})`);

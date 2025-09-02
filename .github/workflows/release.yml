@@ -9,67 +9,63 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        container:
-          [
-            'chrome',
-            'firefox',
-          ]
+        container: ['chrome', 'firefox']
     env:
       BROWSER: ${{ matrix.container }}
       VERSION: ${{ github.event.release.tag_name }}
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 9.14.4
-    
-    - name: Use Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22.x'
-        cache: 'pnpm'
-    
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
-    
-    - name: TypeScript type check
-      run: pnpm run typecheck
-    
-    - name: Set version number in manifest
-      run: | 
-        VERSION_NUMBER=$(echo ${VERSION} | sed 's/^v//')
-        sed -i 's/"version": *"[0-9.]*"/"version": "'$VERSION_NUMBER'"/' manifest.json
-    
-    - name: Build Chrome
-      if: ${{ matrix.container == 'chrome' }}
-      run: pnpm run build
-    
-    - name: Build Firefox 
-      if: ${{ matrix.container == 'firefox' }}
-      run: |
-        sed -i 's,"service_worker": "dist/background.js","scripts": ["dist/background.js"],g' ./manifest.json
-        pnpm run build
-    
-    - name: Package extension
-      run: |
-        PACKAGE_NAME="BandcampEnhancementSuite_${BROWSER}-$VERSION.zip"
-        zip $PACKAGE_NAME LICENSE _locales/**/* icons/* css/* dist/* svg/* manifest.json html/browser_action.html
-    
-    - name: Attach packages to GitHub Release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        GH_RELEASE_ID=${{ github.event.release.id }}
-        GH_REPO="https://uploads.github.com/repos/${{ github.repository }}/releases/$GH_RELEASE_ID/assets"
-        PACKAGE_NAME="BandcampEnhancementSuite_${BROWSER}-$VERSION.zip"
-        
-        curl -L \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer $GITHUB_TOKEN" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          -H "Content-Type: application/octet-stream" \
-          "$GH_REPO?name=$PACKAGE_NAME" \
-          --data-binary "@$PACKAGE_NAME"
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.14.4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript type check
+        run: pnpm run typecheck
+
+      - name: Set version number in manifest
+        run: |
+          VERSION_NUMBER=$(echo ${VERSION} | sed 's/^v//')
+          sed -i 's/"version": *"[0-9.]*"/"version": "'$VERSION_NUMBER'"/' manifest.json
+
+      - name: Build Chrome
+        if: ${{ matrix.container == 'chrome' }}
+        run: pnpm run build
+
+      - name: Build Firefox
+        if: ${{ matrix.container == 'firefox' }}
+        run: |
+          sed -i 's,"service_worker": "dist/background.js","scripts": ["dist/background.js"],g' ./manifest.json
+          pnpm run build
+
+      - name: Package extension
+        run: |
+          PACKAGE_NAME="BandcampEnhancementSuite_${BROWSER}-$VERSION.zip"
+          zip $PACKAGE_NAME LICENSE _locales/**/* icons/* css/* dist/* svg/* manifest.json html/browser_action.html
+
+      - name: Attach packages to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          GH_RELEASE_ID=${{ github.event.release.id }}
+          GH_REPO="https://uploads.github.com/repos/${{ github.repository }}/releases/$GH_RELEASE_ID/assets"
+          PACKAGE_NAME="BandcampEnhancementSuite_${BROWSER}-$VERSION.zip"
+
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/octet-stream" \
+            "$GH_REPO?name=$PACKAGE_NAME" \
+            --data-binary "@$PACKAGE_NAME"

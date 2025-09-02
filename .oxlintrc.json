@@ -17,11 +17,7 @@
     "beforeAll": "readonly",
     "afterAll": "readonly"
   },
-  "plugins": [
-    "typescript",
-    "import",
-    "unicorn"
-  ],
+  "plugins": ["typescript", "import", "unicorn"],
   "rules": {
     "no-console": "error",
     "no-unused-vars": "warn",
@@ -40,9 +36,5 @@
       }
     }
   ],
-  "ignorePatterns": [
-    "dist/**",
-    "node_modules/**",
-    "*.min.js"
-  ]
+  "ignorePatterns": ["dist/**", "node_modules/**", "*.min.js"]
 }

@@ -48,20 +48,21 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       const state = msg.cartImportState;
       lastImportState = state;
 
-      if (state.isProcessing) {
-        const progress = `${state.processedCount}/${state.totalCount}`;
-        const operation = state.operation === 'url_import' ? 'URLs' : 'cart items';
-        const statusContent = `
-          <div style="font-weight: bold; margin-bottom: 8px;">🛒 Importing ${operation}...</div>
-          <div>Progress: ${progress}</div>
-          ${
-            state.errors.length > 0
-              ? `<div style="color: #d32f2f; margin-top: 4px;">${state.errors.length} errors occurred</div>`
-              : ''
-          }
-        `;
-        updatePersistentNotification('cart-import-progress', statusContent);
-      }
+      if (!state.isProcessing) return;
+
+      const progress = `${state.processedCount}/${state.totalCount}`;
+      const operation = state.operation === 'url_import' ? 'URLs' : 'cart items';
+      const statusContent = `
+        <div style="font-weight: bold; margin-bottom: 8px;">🛒 Importing ${operation}...</div>
+        <div>Progress: ${progress}</div>
+        ${
+          state.errors.length > 0
+            ? `<div style="color: #d32f2f; margin-top: 4px;">${state.errors.length} errors occurred</div>`
+            : ''
+        }
+      `;
+      updatePersistentNotification('cart-import-progress', statusContent);
+      return;
     }
 
     if (msg.cartAddRequest) {
@@ -76,42 +77,47 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
           `Cart add completed for ${msg.cartAddRequest.item_title}, status: ${result.status}, ok: ${result.ok}`
         );
 
-        if (result.ok) {
-          log.info(`Successfully added ${msg.cartAddRequest.item_title} to cart`);
-
-          const cartItem = createShoppingCartItem({
-            itemId: String(msg.cartAddRequest.item_id),
-            itemName: msg.cartAddRequest.item_title,
-            itemPrice: msg.cartAddRequest.unit_price,
-            itemCurrency: msg.cartAddRequest.currency
-          });
-
-          const itemList = document.querySelector('#item_list');
-          if (itemList) {
-            itemList.append(cartItem);
-          }
-        } else {
+        if (!result.ok) {
           log.error(`Failed to add ${msg.cartAddRequest.item_title} to cart: HTTP ${result.status}`);
           showErrorMessage(`Failed to add "${msg.cartAddRequest.item_title}" to cart`);
+          return;
+        }
+
+        log.info(`Successfully added ${msg.cartAddRequest.item_title} to cart`);
+
+        const cartItem = createShoppingCartItem({
+          itemId: String(msg.cartAddRequest.item_id),
+          itemName: msg.cartAddRequest.item_title,
+          itemPrice: msg.cartAddRequest.unit_price,
+          itemCurrency: msg.cartAddRequest.currency
+        });
+
+        const itemList = document.querySelector('#item_list');
+        if (itemList) {
+          itemList.append(cartItem);
         }
       } catch (error) {
         log.error(`Exception during cart add for ${msg.cartAddRequest.item_title}: ${error}`);
         showErrorMessage(`Failed to add "${msg.cartAddRequest.item_title}" to cart`);
       }
+      return;
     }
 
     if (msg.cartImportComplete) {
       removePersistentNotification('cart-import-progress');
       showSuccessMessage(msg.cartImportComplete.message);
+      return;
     }
 
     if (msg.cartItemError) {
       showErrorMessage(msg.cartItemError.message);
+      return;
     }
 
     if (msg.cartImportError) {
       removePersistentNotification('cart-import-progress');
       showErrorMessage(`Import failed: ${msg.cartImportError.message}`);
+      return;
     }
   });
 
@@ -261,9 +267,8 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     const item_list = document.querySelectorAll('#item_list .item');
     const cartDataElement = document.querySelector('[data-cart]');
 
-    if (!cartDataElement) {
-      return;
-    }
+    if (!cartDataElement) return;
+
     const actual_cart = JSON.parse(cartDataElement.getAttribute('data-cart')!).items;
 
     cartRefreshButton.style.display = item_list.length === actual_cart.length ? 'none' : 'block';
@@ -343,9 +348,8 @@ export function createBesSupportButton(
         });
 
         const itemList = document.querySelector('#item_list');
-        if (itemList) {
-          itemList.append(cartItem);
-        }
+        if (!itemList) return;
+        itemList.append(cartItem);
       });
     }
   });

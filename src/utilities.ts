@@ -147,26 +147,37 @@ export function loadJsonFile(): Promise<any> {
   });
 }
 
-export const CURRENCY_MINIMUMS: Record<string, number> = {
-  USD: 0.5,
-  AUD: 0.5,
-  GBP: 0.25,
-  CAD: 1.0,
-  EUR: 0.25,
-  JPY: 70,
-  CZK: 10,
-  DKK: 2.5,
-  HKD: 2.5,
-  HUF: 100,
-  ILS: 1.5,
-  MXN: 5,
-  NZD: 0.5,
-  NOK: 3,
-  PLN: 3,
-  SGD: 1,
-  SEK: 3,
-  CHF: 0.5
-};
+export function loadTextFile(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fileInput: HTMLInputElement = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.txt,.json';
+
+    fileInput.onchange = (event: Event) => {
+      const target = event.target as HTMLInputElement;
+      const file: File | null = target.files?.[0] || null;
+      if (!file) {
+        return;
+      }
+
+      const reader: FileReader = new FileReader();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const result = e.target?.result;
+        if (typeof result !== 'string') {
+          reject(new Error('Failed to read file as text'));
+          return;
+        }
+
+        resolve(result);
+      };
+
+      reader.onerror = (error: ProgressEvent<FileReader>) => reject(error);
+      reader.readAsText(file);
+    };
+
+    fileInput.click();
+  });
+}
 
 export function centreElement(element: HTMLElement): void {
   const windowWidth: number = window.innerWidth;

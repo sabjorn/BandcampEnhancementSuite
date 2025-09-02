@@ -45,7 +45,6 @@ vi.mock('../src/components/buttons', () => ({
     });
     mockButtons.push(button);
 
-    // Automatically append buttons to the DOM for easier testing
     const sidecartReveal = document.querySelector('#sidecartReveal');
     if (sidecartReveal) {
       sidecartReveal.appendChild(button);
@@ -67,7 +66,6 @@ vi.mock('../src/components/buttons', () => ({
       div.appendChild(button);
     }
 
-    // Automatically append to the DOM for easier testing
     const sidecartSummary = document.querySelector('#sidecartSummary');
     if (sidecartSummary) {
       sidecartSummary.appendChild(div);
@@ -95,7 +93,6 @@ import {
   updatePersistentNotification
 } from '../src/components/notifications';
 
-// Get the mocked utilities
 const mockLoadTextFile = loadTextFile as any;
 const mockDownloadFile = downloadFile as any;
 
@@ -128,7 +125,7 @@ describe('Cart', () => {
 
   afterEach(() => {
     cleanupTestNodes();
-    mockButtons.length = 0; // Clear the mock buttons array
+    mockButtons.length = 0;
     vi.clearAllMocks();
   });
 
@@ -161,7 +158,6 @@ describe('Cart', () => {
 
       await initCart(mockPort);
 
-      // Get the import button from our mock array
       importButton = mockButtons.find(btn => btn.textContent === 'import') as HTMLButtonElement;
     });
 
@@ -255,7 +251,6 @@ describe('Cart', () => {
       `);
 
       await initCart(mockPort);
-      // Get the unified import button from our mock array
       importButton = mockButtons.find(btn => btn.textContent === 'import') as HTMLButtonElement;
     });
 
@@ -334,9 +329,8 @@ invalid line`;
 
       const exportButton = mockButtons.find(btn => btn.textContent === 'export') as HTMLButtonElement;
 
-      // Click button and wait for async operations to complete
       const exportPromise = exportButton.click();
-      await new Promise(resolve => setTimeout(resolve, 0)); // Wait for next tick
+      await new Promise(resolve => setTimeout(resolve, 0));
       await exportPromise;
 
       expect(getTralbumDetails).toHaveBeenCalled();
@@ -382,7 +376,7 @@ invalid line`;
     });
 
     it('should not export when cart is empty', async () => {
-      cleanupTestNodes(); // Ensure clean state
+      cleanupTestNodes();
       createDomNodes(`
         <div id="sidecartReveal"></div>
         <div id="sidecartSummary"></div>
@@ -423,17 +417,13 @@ invalid line`;
         url: 'https://test.bandcamp.com/album/test'
       };
 
-      // Get the message listener that was set up
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
 
-      // Simulate a successful cart add request
       await messageHandler({ cartAddRequest: mockCartRequest });
 
-      // Verify that the cart item was added to the DOM
       const itemList = document.querySelector('#item_list');
       expect(itemList?.children.length).toBe(1);
 
-      // The createShoppingCartItem mock should have been called with correct params
       const { createShoppingCartItem } = await import('../src/components/shoppingCart');
       expect(createShoppingCartItem).toHaveBeenCalledWith({
         itemId: '12345',
@@ -454,19 +444,15 @@ invalid line`;
         url: 'https://test.bandcamp.com/album/test'
       };
 
-      // Mock addAlbumToCart to fail
       const { addAlbumToCart } = await import('../src/bclient');
       (addAlbumToCart as any).mockResolvedValue(new Response('{}', { status: 400 }));
 
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
 
-      // Simulate a failed cart add request
       await messageHandler({ cartAddRequest: mockCartRequest });
 
-      // Should show individual error notification
       expect(showErrorMessage).toHaveBeenCalledWith('Failed to add "Test Album" to cart');
 
-      // Should NOT add to DOM when failed
       const itemList = document.querySelector('#item_list');
       expect(itemList?.children.length).toBe(0);
     });
@@ -474,24 +460,20 @@ invalid line`;
     it('should show simple completion message', async () => {
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
 
-      // Simulate completion
       await messageHandler({ cartImportComplete: { message: 'Successfully added 2 items to cart' } });
 
-      // Should show simple success message
       expect(showSuccessMessage).toHaveBeenCalledWith('Successfully added 2 items to cart');
     });
 
     it('should show individual item error notifications from backend', async () => {
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
 
-      // Simulate individual item error from backend
       await messageHandler({
         cartItemError: {
           message: 'Failed to add "Test Album" to cart'
         }
       });
 
-      // Should show the error message
       expect(showErrorMessage).toHaveBeenCalledWith('Failed to add "Test Album" to cart');
     });
 
@@ -508,7 +490,6 @@ invalid line`;
 
       await messageHandler({ cartImportState: importState });
 
-      // Should update notification with rich HTML content
       expect(updatePersistentNotification).toHaveBeenCalledWith(
         'cart-import-progress',
         expect.stringContaining('🛒 Importing URLs...')

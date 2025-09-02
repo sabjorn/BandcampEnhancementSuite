@@ -59,7 +59,10 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
         return;
       }
 
-      const filename = getFilenameFromResponse(response, url) || `file_${index + 1}.flac`;
+      const filename = getFilenameFromResponse(response, url);
+      if (!filename) {
+        throw new Error(`Unable to determine filename for ${url}`);
+      }
 
       const arrayBuffer = await response.arrayBuffer();
       log.info(`Downloaded ${filename}: ${arrayBuffer.byteLength} bytes`);

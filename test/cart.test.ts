@@ -329,9 +329,7 @@ invalid line`;
 
       const exportButton = mockButtons.find(btn => btn.textContent === 'export') as HTMLButtonElement;
 
-      const exportPromise = exportButton.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
-      await exportPromise;
+      await exportButton.click();
 
       expect(getTralbumDetails).toHaveBeenCalled();
       expect(mockDownloadFile).toHaveBeenCalledWith(

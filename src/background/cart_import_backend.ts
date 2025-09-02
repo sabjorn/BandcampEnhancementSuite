@@ -158,14 +158,15 @@ class CartImportTracker {
     const successCount = items.length - this.errors.length;
     const failureCount = this.errors.length;
 
-    let completionMessage: string;
-    if (failureCount === 0) {
-      completionMessage = `Successfully added ${successCount} items to cart`;
-    } else if (successCount === 0) {
-      completionMessage = `${failureCount} items could not be added`;
-    } else {
-      completionMessage = `Successfully added ${successCount} items to cart. ${failureCount} items could not be added`;
-    }
+    const completionMessage = (() => {
+      if (failureCount === 0) {
+        return `Successfully added ${successCount} items to cart`;
+      }
+      if (successCount === 0) {
+        return `${failureCount} items could not be added`;
+      }
+      return `Successfully added ${successCount} items to cart. ${failureCount} items could not be added`;
+    })();
 
     this.port?.postMessage({ cartImportComplete: { message: completionMessage } });
   }

@@ -409,7 +409,6 @@ export async function getTralbumDetailsFromPage(url: string): Promise<TralbumDet
   const price =
     tralbumData.current.minimum_price > 0.0 ? tralbumData.current.minimum_price : CURRENCY_MINIMUMS[currency] || 0.5;
 
-  // Return structure matching getTralbumDetails API response
   return {
     id: tralbumData.current.id,
     type: tralbumData.current.type === 'track' ? 't' : 'a',

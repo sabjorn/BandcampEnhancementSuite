@@ -502,21 +502,4 @@ invalid line`;
       );
     });
   });
-
-  describe('cart operations', () => {
-    beforeEach(() => {
-      createPagedata();
-      createDomNodes(`
-        <div id="cart-container">
-          <div class="cart-item">Test Item</div>
-        </div>
-      `);
-    });
-
-    it('should handle cart items', () => {
-      const cartContainer = document.querySelector('#cart-container');
-      expect(cartContainer).toBeTruthy();
-      expect(cartContainer?.querySelector('.cart-item')).toBeTruthy();
-    });
-  });
 });

@@ -272,6 +272,54 @@ describe('Download Backend', () => {
       expect(mockPort.postMessage).not.toHaveBeenCalled();
     });
 
+    it('should handle zero-byte file downloads as failures', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: {
+          get: vi.fn().mockReturnValue('attachment; filename="empty.flac"')
+        },
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(0))
+      } as any);
+
+      const downloadRequest = {
+        type: 'downloadZip',
+        urls: ['http://example.com/empty.flac']
+      };
+
+      await onMessageListener(downloadRequest);
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        type: 'downloadComplete',
+        success: false,
+        message: 'No files could be downloaded'
+      });
+    });
+
+    it('should handle missing filename as download failure', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: {
+          get: vi.fn().mockReturnValue(null)
+        },
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(1024))
+      } as any);
+
+      const downloadRequest = {
+        type: 'downloadZip',
+        urls: ['http://no-extension-no-header']
+      };
+
+      await onMessageListener(downloadRequest);
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        type: 'downloadComplete',
+        success: false,
+        message: 'No files could be downloaded'
+      });
+    });
+
     it('should handle chunked zip transfer correctly', async () => {
       const testPattern = 'TestData123';
       const largeBlobData = testPattern.repeat(200000);

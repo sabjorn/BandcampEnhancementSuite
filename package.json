@@ -12,7 +12,7 @@
     "@percy/puppeteer": "^2.0.2",
     "@types/chrome": "^0.0.277",
     "@types/node": "^22.10.2",
-    "happy-dom": "^15.11.7",
+    "happy-dom": "^20.0.0",
     "oxlint": "^1.6.0",
     "prettier": "^3.4.2",
     "puppeteer": "^23.9.0",

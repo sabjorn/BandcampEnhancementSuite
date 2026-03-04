@@ -60,8 +60,7 @@ describe('FindMusic Client', () => {
         await exchangeBandcampToken();
 
         expect(mockPermissionsContains).toHaveBeenCalledWith({
-          permissions: ['cookies'],
-          origins: ['https://bandcamp.com/*', 'https://*.bandcamp.com/*']
+          permissions: ['cookies']
         });
         expect(mockPermissionsRequest).not.toHaveBeenCalled();
         expect(mockNotificationsCreate).not.toHaveBeenCalled();
@@ -94,11 +93,11 @@ describe('FindMusic Client', () => {
         // Fast-forward the 1.5 second delay
         await vi.advanceTimersByTimeAsync(1500);
 
-        // Then request permissions
+        // Then request permissions (cookies + findmusic.club only, bandcamp.com is already required)
         await vi.waitFor(() => {
           expect(mockPermissionsRequest).toHaveBeenCalledWith({
             permissions: ['cookies'],
-            origins: ['https://bandcamp.com/*', 'https://*.bandcamp.com/*', 'https://*.findmusic.club/*']
+            origins: ['https://*.findmusic.club/*']
           });
         });
 

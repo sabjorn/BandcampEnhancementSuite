@@ -21,14 +21,14 @@ interface BcTokenRequest {
 async function requestBandcampPermissions(): Promise<boolean> {
   log.info('Checking for Bandcamp permissions');
 
-  // Check if we already have the permissions
+  // Check if we already have the cookies permission
+  // Note: bandcamp.com host permissions are already required, so we only need to check cookies
   const hasPermissions = await chrome.permissions.contains({
-    permissions: ['cookies'],
-    origins: ['https://bandcamp.com/*', 'https://*.bandcamp.com/*']
+    permissions: ['cookies']
   });
 
   if (hasPermissions) {
-    log.info('Already have required permissions');
+    log.info('Already have cookies permission');
     return true;
   }
 
@@ -50,9 +50,12 @@ async function requestBandcampPermissions(): Promise<boolean> {
   await new Promise(resolve => setTimeout(resolve, 1500));
 
   // Request permission - browser shows its own dialog
+  // Note: bandcamp.com is already a required host_permission, so we only need to request:
+  // 1. cookies permission (to read cookies from bandcamp.com)
+  // 2. findmusic.club origin (optional host permission for API calls)
   const granted = await chrome.permissions.request({
     permissions: ['cookies'],
-    origins: ['https://bandcamp.com/*', 'https://*.bandcamp.com/*', 'https://*.findmusic.club/*']
+    origins: ['https://*.findmusic.club/*']
   });
 
   if (granted) {

@@ -80,7 +80,6 @@ describe('FindMusic Client', () => {
 
         const promise = exchangeBandcampToken();
 
-        // Should show notification before requesting permission
         await vi.waitFor(() => {
           expect(mockNotificationsCreate).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -90,10 +89,8 @@ describe('FindMusic Client', () => {
           );
         });
 
-        // Fast-forward the 1.5 second delay
         await vi.advanceTimersByTimeAsync(1500);
 
-        // Then request permissions (cookies + findmusic.club only, bandcamp.com is already required)
         await vi.waitFor(() => {
           expect(mockPermissionsRequest).toHaveBeenCalledWith({
             permissions: ['cookies'],
@@ -134,10 +131,8 @@ describe('FindMusic Client', () => {
 
         const promise = exchangeBandcampToken();
 
-        // Attach empty catch handler to prevent unhandled rejection warning
         promise.catch(() => {});
 
-        // Wait for initial notification
         await vi.waitFor(() => {
           expect(mockNotificationsCreate).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -146,15 +141,12 @@ describe('FindMusic Client', () => {
           );
         });
 
-        // Advance timers
         await vi.advanceTimersByTimeAsync(1500);
 
-        // Expect rejection
         await expect(promise).rejects.toThrow(
           'Permission denied. To use FindMusic.club, please allow access to Bandcamp cookies when prompted.'
         );
 
-        // Verify denial notification was shown
         expect(mockNotificationsCreate).toHaveBeenCalledWith(
           expect.objectContaining({
             title: 'FindMusic.club Access Denied',
@@ -300,7 +292,6 @@ describe('FindMusic Client', () => {
 
         const promise = exchangeBandcampToken();
 
-        // Wait for permission request notification
         await vi.waitFor(() => {
           expect(mockNotificationsCreate).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -309,27 +300,22 @@ describe('FindMusic Client', () => {
           );
         });
 
-        // Advance through delay
         await vi.advanceTimersByTimeAsync(1500);
 
-        // Wait for permission request
         await vi.waitFor(() => {
           expect(mockPermissionsRequest).toHaveBeenCalled();
         });
 
         const result = await promise;
 
-        // Verify success notification
         expect(mockNotificationsCreate).toHaveBeenCalledWith(
           expect.objectContaining({
             title: 'FindMusic.club Connected'
           })
         );
 
-        // Verify cookie was retrieved
         expect(mockCookiesGet).toHaveBeenCalled();
 
-        // Verify API was called
         expect(global.fetch).toHaveBeenCalledWith(
           'https://findmusic.club/api/bctoken',
           expect.objectContaining({
@@ -337,7 +323,6 @@ describe('FindMusic Client', () => {
           })
         );
 
-        // Verify token was returned
         expect(result).toBe(mockJwtToken);
       });
     });

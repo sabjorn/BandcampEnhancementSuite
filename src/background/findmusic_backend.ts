@@ -22,7 +22,6 @@ export function processRequest(
     .catch(error => {
       log.error(`Failed to open FindMusic.club: ${error.message}`);
 
-      // Show notification to user
       chrome.notifications.create({
         type: 'basic',
         iconUrl: 'icons/icon48.png',

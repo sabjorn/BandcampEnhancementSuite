@@ -1,52 +1,181 @@
 <!doctype html>
 <html>
   <head>
-    <title>FindMusic.club Permission Request</title>
+    <title>FindMusic.club Authorization</title>
     <style>
       body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        max-width: 500px;
-        margin: 40px auto;
-        padding: 20px;
+        margin: 0;
+        padding: 0;
         line-height: 1.6;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
       }
-      h1 {
-        color: #1da0c3;
-        font-size: 24px;
-      }
-      .message {
-        background: #f5f5f5;
-        border-left: 4px solid #1da0c3;
-        padding: 15px;
-        margin: 20px 0;
-      }
-      button {
+      .header {
         background: #1da0c3;
         color: white;
-        border: none;
-        padding: 12px 24px;
+        padding: 20px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 500;
+      }
+      .content {
+        flex: 1;
+        padding: 30px 40px;
+        overflow-y: auto;
+      }
+      .partnership {
+        background: #f8f9fa;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 24px;
+        border: 1px solid #e0e0e0;
+      }
+      .partnership p {
+        margin: 0;
+        font-size: 14px;
+        color: #555;
+      }
+      .section {
+        margin-bottom: 24px;
+      }
+      .section h2 {
         font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 12px 0;
+        color: #1da0c3;
+      }
+      .section ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      .section li {
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+      .privacy-note {
+        background: #e8f5f9;
+        border-radius: 4px;
+        padding: 12px;
+        font-size: 13px;
+        color: #0277bd;
+      }
+      .privacy-note strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .privacy-link {
+        color: #1da0c3;
+        text-decoration: none;
+      }
+      .privacy-link:hover {
+        text-decoration: underline;
+      }
+      .button-container {
+        display: flex;
+        gap: 12px;
+        padding: 20px 40px;
+        border-top: 1px solid #e0e0e0;
+        background: #fafafa;
+      }
+      button {
+        flex: 1;
+        padding: 12px 24px;
+        font-size: 15px;
         border-radius: 4px;
         cursor: pointer;
+        border: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
       }
-      button:hover {
+      #grant-permission {
+        background: #1da0c3;
+        color: white;
+      }
+      #grant-permission:hover {
         background: #158ba8;
       }
+      #grant-permission:disabled {
+        background: #9e9e9e;
+        cursor: not-allowed;
+      }
+      #cancel-button {
+        background: white;
+        color: #666;
+        border: 1px solid #ddd;
+      }
+      #cancel-button:hover {
+        background: #f5f5f5;
+        border-color: #ccc;
+      }
       #status {
-        margin-top: 20px;
+        padding: 12px 40px;
         font-style: italic;
         color: #666;
+        font-size: 14px;
+        background: #fff3cd;
+        border-top: 1px solid #ffc107;
+        display: none;
+      }
+      #status.show {
+        display: block;
       }
     </style>
   </head>
   <body>
-    <h1>FindMusic.club Permission</h1>
-    <div class="message">
-      <p>To log in to FindMusic.club, we need permission to read your Bandcamp cookie.</p>
-      <p>Your Bandcamp credentials are only used to create a secure login token and are never stored.</p>
+    <div class="header">
+      <h1>🎵 Authorize FindMusic.club</h1>
     </div>
-    <button id="grant-permission">Grant Permission</button>
+
+    <div class="content">
+      <div class="partnership">
+        <p>
+          <strong>Bandcamp Enhancement Suite</strong> is partnering with <strong>FindMusic.club</strong> to provide
+          music discovery features based on your collection.
+        </p>
+      </div>
+
+      <div class="section">
+        <h2>What We Access</h2>
+        <ul>
+          <li>Your Bandcamp cookie for authentication only</li>
+          <li>Your public collection data to provide recommendations</li>
+          <li><strong>No passwords or payment information</strong></li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>Privacy & Security</h2>
+        <div class="privacy-note">
+          <strong>Your credentials are never stored</strong>
+          <p>
+            We only use your Bandcamp cookie to create a secure login token. Your authentication details are used once
+            and discarded.
+          </p>
+        </div>
+      </div>
+
+      <div class="section">
+        <p style="font-size: 13px; color: #666">
+          By authorizing, you agree to FindMusic.club's
+          <a id="privacy-link" href="#" target="_blank" class="privacy-link">Privacy Policy</a> and
+          <a id="terms-link" href="#" target="_blank" class="privacy-link">Terms of Service</a>.
+        </p>
+      </div>
+    </div>
+
+    <div class="button-container">
+      <button id="cancel-button">Cancel</button>
+      <button id="grant-permission">Authorize</button>
+    </div>
+
     <div id="status"></div>
+
     <script src="../dist/findmusic_permission.js"></script>
   </body>
 </html>

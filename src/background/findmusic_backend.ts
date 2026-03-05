@@ -18,8 +18,14 @@ export async function processRequest(
   });
 
   if (!hasPermissions) {
-    log.info('Missing cookies permission, opening permission page');
-    chrome.tabs.create({ url: chrome.runtime.getURL('html/findmusic_permission.html') });
+    log.info('Missing cookies permission, opening permission popup');
+    chrome.windows.create({
+      url: chrome.runtime.getURL('html/findmusic_permission.html'),
+      type: 'popup',
+      width: 500,
+      height: 650,
+      focused: true
+    });
     sendResponse({ success: true, needsPermission: true });
     return true;
   }

@@ -9,40 +9,39 @@ import { initHideUnhide } from './pages/hide_unhide_collection';
 const initFindMusicButton = (): void => {
   const log = createLogger();
 
-  const gridTabs = document.querySelector('ol#grid-tabs');
-  if (!gridTabs) {
-    log.debug('Collection tabs not found, skipping FindMusic button');
+  if (document.querySelector('.findmusic-floating-button')) {
+    log.debug('FindMusic button already exists');
     return;
   }
 
-  if (document.querySelector('.findmusic-tab')) {
-    log.debug('FindMusic tab already exists');
-    return;
-  }
+  // Create floating button container
+  const button = document.createElement('button');
+  button.className = 'findmusic-floating-button';
+  button.title = 'Log in to FindMusic.club';
+  button.setAttribute('aria-label', 'Log in to FindMusic.club');
 
-  const listItem = document.createElement('li');
-  listItem.className = 'findmusic-tab';
-  listItem.style.cssText = 'cursor: pointer;';
+  // Create button content with icon
+  const buttonContent = document.createElement('div');
+  buttonContent.className = 'findmusic-button-content';
 
-  const tabTitle = document.createElement('span');
-  tabTitle.className = 'tab-title';
-  tabTitle.textContent = 'FindMusic';
+  // Music note icon (using Unicode musical note)
+  const icon = document.createElement('span');
+  icon.className = 'findmusic-button-icon';
+  icon.textContent = '♪';
 
-  listItem.appendChild(tabTitle);
+  buttonContent.appendChild(icon);
+  button.appendChild(buttonContent);
 
-  listItem.addEventListener('click', () => {
-    log.info('FindMusic tab clicked');
+  // Add click handler
+  button.addEventListener('click', () => {
+    log.info('FindMusic floating button clicked');
     chrome.runtime.sendMessage({ contentScriptQuery: 'openFindMusic' });
   });
 
-  gridTabs.appendChild(listItem);
+  // Add to page
+  document.body.appendChild(button);
 
-  const missingPurchasesWrapper = document.querySelector('.missing-purchases-wrapper');
-  if (missingPurchasesWrapper) {
-    (missingPurchasesWrapper as HTMLElement).style.transform = 'translateY(-30px)';
-  }
-
-  log.info('FindMusic tab added to collection tabs');
+  log.info('FindMusic floating button added to page');
 };
 
 const main = async (): Promise<void> => {

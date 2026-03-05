@@ -1,6 +1,9 @@
 import Logger from '../logger';
 import { exchangeBandcampToken } from '../clients/findmusic';
 
+const log = new Logger();
+const FINDMUSIC_BASE_URL = 'http://localhost:3001';
+
 export function processRequest(
   request: any,
   _sender: chrome.runtime.MessageSender,
@@ -8,12 +11,11 @@ export function processRequest(
 ): boolean {
   if (request.contentScriptQuery !== 'openFindMusic') return false;
 
-  const log = new Logger();
   log.info('Processing openFindMusic request');
 
   exchangeBandcampToken()
     .then(token => {
-      const url = `https://findmusic.club/bes-login?bes_token=${encodeURIComponent(token)}`;
+      const url = `${FINDMUSIC_BASE_URL}/bes-login?bes_token=${encodeURIComponent(token)}`;
       log.info(`Opening FindMusic.club with token`);
 
       chrome.tabs.create({ url });
@@ -24,7 +26,7 @@ export function processRequest(
 
       chrome.notifications.create({
         type: 'basic',
-        iconUrl: 'icons/icon48.png',
+        iconUrl: chrome.runtime.getURL('icons/icon48.png'),
         title: 'FindMusic.club Login Failed',
         message: error.message || 'Could not log in to FindMusic.club. Please make sure you are logged in to Bandcamp.'
       });
@@ -36,8 +38,6 @@ export function processRequest(
 }
 
 export async function initFindMusicBackend(): Promise<void> {
-  const log = new Logger();
-
   log.info('starting FindMusic backend.');
   chrome.runtime.onMessage.addListener(processRequest);
 }

@@ -10,55 +10,63 @@ import { createFindMusicSvgIcon } from './components/svgIcons';
 const initFindMusicButton = (): void => {
   const log = createLogger();
 
-  const menuItems = document.querySelector('ul.page-wrapper.menu-items');
-  if (!menuItems) {
-    log.debug('Bandcamp navigation not found, skipping FindMusic button');
-    return;
-  }
+  const addButton = (): void => {
+    const menuItems = document.querySelector('ul.page-wrapper.menu-items');
+    if (!menuItems) {
+      log.debug('Bandcamp navigation not found, skipping FindMusic button');
+      return;
+    }
 
-  if (document.querySelector('.findmusic-item')) {
-    log.debug('FindMusic button already exists');
-    return;
-  }
+    if (document.querySelector('.findmusic-item')) {
+      log.debug('FindMusic button already exists');
+      return;
+    }
 
-  const listItem = document.createElement('li');
-  listItem.className = 'findmusic-item';
-  listItem.setAttribute('role', 'none');
-  listItem.setAttribute('data-v-0265009c', '');
+    const listItem = document.createElement('li');
+    listItem.className = 'findmusic-item';
+    listItem.setAttribute('role', 'none');
+    listItem.setAttribute('data-v-0265009c', '');
 
-  const button = document.createElement('button');
-  button.className = 'g-button no-outline icon-left popover popover-bottom';
-  button.setAttribute('role', 'menuitem');
-  button.setAttribute('aria-label', 'FindMusic.club');
-  button.setAttribute('data-v-4ebd4eaa', '');
-  button.setAttribute('data-v-0265009c', '');
+    const button = document.createElement('button');
+    button.className = 'g-button no-outline icon-left popover popover-bottom';
+    button.setAttribute('role', 'menuitem');
+    button.setAttribute('aria-label', 'FindMusic.club');
+    button.setAttribute('data-v-4ebd4eaa', '');
+    button.setAttribute('data-v-0265009c', '');
 
-  const icon = createFindMusicSvgIcon();
-  (icon as SVGElement).setAttribute('width', '24');
-  (icon as SVGElement).setAttribute('height', '24');
-  (icon as SVGElement).setAttribute('role', 'img');
-  (icon as SVGElement).setAttribute('aria-hidden', 'true');
-  (icon as SVGElement).setAttribute('class', 'icon');
-  button.appendChild(icon);
+    const icon = createFindMusicSvgIcon();
+    (icon as SVGElement).setAttribute('width', '24');
+    (icon as SVGElement).setAttribute('height', '24');
+    (icon as SVGElement).setAttribute('role', 'img');
+    (icon as SVGElement).setAttribute('aria-hidden', 'true');
+    (icon as SVGElement).setAttribute('class', 'icon');
+    button.appendChild(icon);
 
-  const label = document.createElement('span');
-  label.textContent = 'FindMusic';
-  button.appendChild(label);
+    const label = document.createElement('span');
+    label.textContent = 'FindMusic';
+    button.appendChild(label);
 
-  button.addEventListener('click', () => {
-    log.info('FindMusic button clicked');
-    chrome.runtime.sendMessage({ contentScriptQuery: 'openFindMusic' });
-  });
+    button.addEventListener('click', () => {
+      log.info('FindMusic button clicked');
+      chrome.runtime.sendMessage({ contentScriptQuery: 'openFindMusic' });
+    });
 
-  listItem.appendChild(button);
+    listItem.appendChild(button);
 
-  const cartItem = menuItems.querySelector('li.cart');
-  if (cartItem) {
-    menuItems.insertBefore(listItem, cartItem);
-    log.info('FindMusic button added to navigation');
+    const cartItem = menuItems.querySelector('li.cart');
+    if (cartItem) {
+      menuItems.insertBefore(listItem, cartItem);
+      log.info('FindMusic button added to navigation');
+    } else {
+      menuItems.appendChild(listItem);
+      log.info('FindMusic button added to navigation (end)');
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addButton);
   } else {
-    menuItems.appendChild(listItem);
-    log.info('FindMusic button added to navigation (end)');
+    addButton();
   }
 };
 

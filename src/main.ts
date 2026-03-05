@@ -16,21 +16,29 @@ const initFindMusicButton = (): void => {
     return;
   }
 
-  if (document.querySelector('.findmusic-button')) {
+  if (document.querySelector('.findmusic-item')) {
     log.debug('FindMusic button already exists');
     return;
   }
 
-  const buttonContainer = document.createElement('li');
-  buttonContainer.className = 'findmusic-button';
+  const listItem = document.createElement('li');
+  listItem.className = 'findmusic-item';
+  listItem.setAttribute('role', 'none');
+  listItem.setAttribute('data-v-0265009c', '');
 
   const button = document.createElement('button');
-  button.className = 'g-button';
-  button.style.cssText = 'padding: 8px 12px; display: flex; align-items: center; gap: 6px; cursor: pointer;';
-  button.title = 'Open FindMusic.club';
+  button.className = 'g-button no-outline icon-left popover popover-bottom';
+  button.setAttribute('role', 'menuitem');
+  button.setAttribute('aria-label', 'FindMusic.club');
+  button.setAttribute('data-v-4ebd4eaa', '');
+  button.setAttribute('data-v-0265009c', '');
 
   const icon = createFindMusicSvgIcon();
-  (icon as SVGElement).style.cssText = 'width: 16px; height: 16px; fill: currentColor;';
+  (icon as SVGElement).setAttribute('width', '24');
+  (icon as SVGElement).setAttribute('height', '24');
+  (icon as SVGElement).setAttribute('role', 'img');
+  (icon as SVGElement).setAttribute('aria-hidden', 'true');
+  (icon as SVGElement).setAttribute('class', 'icon');
   button.appendChild(icon);
 
   const label = document.createElement('span');
@@ -42,14 +50,14 @@ const initFindMusicButton = (): void => {
     chrome.runtime.sendMessage({ contentScriptQuery: 'openFindMusic' });
   });
 
-  buttonContainer.appendChild(button);
+  listItem.appendChild(button);
 
   const cartItem = menuItems.querySelector('li.cart');
   if (cartItem) {
-    menuItems.insertBefore(buttonContainer, cartItem);
+    menuItems.insertBefore(listItem, cartItem);
     log.info('FindMusic button added to navigation');
   } else {
-    menuItems.appendChild(buttonContainer);
+    menuItems.appendChild(listItem);
     log.info('FindMusic button added to navigation (end)');
   }
 };

@@ -12,10 +12,10 @@ const FINDMUSIC_BASE_URL = process.env.FINDMUSIC_BASE_URL as string;
 const privacyLink = document.getElementById('privacy-link') as HTMLAnchorElement;
 const termsLink = document.getElementById('terms-link') as HTMLAnchorElement;
 if (privacyLink) {
-  privacyLink.href = `${FINDMUSIC_BASE_URL}/privacy-policy.html`;
+  privacyLink.href = `${FINDMUSIC_BASE_URL}/privacy-policy`;
 }
 if (termsLink) {
-  termsLink.href = `${FINDMUSIC_BASE_URL}/terms-of-use.html`;
+  termsLink.href = `${FINDMUSIC_BASE_URL}/terms-of-use`;
 }
 
 // Cancel button handler

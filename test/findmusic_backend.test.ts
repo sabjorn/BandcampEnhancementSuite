@@ -15,8 +15,8 @@ vi.mock('../src/clients/findmusic', () => ({
 
 const mockOnMessageAddListener = vi.fn();
 const mockTabsCreate = vi.fn();
-const mockNotificationsCreate = vi.fn();
 const mockGetURL = vi.fn((path: string) => path);
+const mockPermissionsContains = vi.fn();
 
 Object.assign(global, {
   chrome: {
@@ -29,8 +29,8 @@ Object.assign(global, {
     tabs: {
       create: mockTabsCreate
     },
-    notifications: {
-      create: mockNotificationsCreate
+    permissions: {
+      contains: mockPermissionsContains
     }
   }
 });
@@ -58,38 +58,56 @@ describe('FindMusic Backend', () => {
   });
 
   describe('processRequest()', () => {
-    it('should return false for non-openFindMusic messages', () => {
+    it('should return false for non-openFindMusic messages', async () => {
       const request = { contentScriptQuery: 'somethingElse' };
       const sender = {} as chrome.runtime.MessageSender;
       const sendResponse = vi.fn();
 
-      const result = processRequest(request, sender, sendResponse);
+      const result = await processRequest(request, sender, sendResponse);
 
       expect(result).toBe(false);
       expect(sendResponse).not.toHaveBeenCalled();
     });
 
-    it('should return true for openFindMusic messages', () => {
+    it('should return true for openFindMusic messages', async () => {
       const request = { contentScriptQuery: 'openFindMusic' };
       const sender = {} as chrome.runtime.MessageSender;
       const sendResponse = vi.fn();
 
+      mockPermissionsContains.mockResolvedValue(true);
       mockExchangeBandcampToken.mockResolvedValue('mock-jwt-token');
 
-      const result = processRequest(request, sender, sendResponse);
+      const result = await processRequest(request, sender, sendResponse);
 
       expect(result).toBe(true);
     });
 
-    it('should exchange token and open tab on success', async () => {
+    it('should open permission page when permissions missing', async () => {
+      const request = { contentScriptQuery: 'openFindMusic' };
+      const sender = {} as chrome.runtime.MessageSender;
+      const sendResponse = vi.fn();
+
+      mockPermissionsContains.mockResolvedValue(false);
+
+      await processRequest(request, sender, sendResponse);
+
+      expect(mockTabsCreate).toHaveBeenCalledWith({
+        url: 'html/findmusic_permission.html'
+      });
+      expect(sendResponse).toHaveBeenCalledWith({ success: true, needsPermission: true });
+      expect(mockExchangeBandcampToken).not.toHaveBeenCalled();
+    });
+
+    it('should exchange token and open tab when permissions granted', async () => {
       const request = { contentScriptQuery: 'openFindMusic' };
       const sender = {} as chrome.runtime.MessageSender;
       const sendResponse = vi.fn();
 
       const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock';
+      mockPermissionsContains.mockResolvedValue(true);
       mockExchangeBandcampToken.mockResolvedValue(mockToken);
 
-      processRequest(request, sender, sendResponse);
+      await processRequest(request, sender, sendResponse);
 
       await vi.waitFor(() => {
         expect(mockExchangeBandcampToken).toHaveBeenCalled();
@@ -106,27 +124,19 @@ describe('FindMusic Backend', () => {
       });
     });
 
-    it('should show notification and send error response on failure', async () => {
+    it('should send error response on failure', async () => {
       const request = { contentScriptQuery: 'openFindMusic' };
       const sender = {} as chrome.runtime.MessageSender;
       const sendResponse = vi.fn();
 
       const errorMessage = 'No Bandcamp identity cookie found';
+      mockPermissionsContains.mockResolvedValue(true);
       mockExchangeBandcampToken.mockRejectedValue(new Error(errorMessage));
 
-      processRequest(request, sender, sendResponse);
+      await processRequest(request, sender, sendResponse);
 
       await vi.waitFor(() => {
         expect(mockExchangeBandcampToken).toHaveBeenCalled();
-      });
-
-      await vi.waitFor(() => {
-        expect(mockNotificationsCreate).toHaveBeenCalledWith({
-          type: 'basic',
-          iconUrl: 'icons/icon48.png',
-          title: 'FindMusic.club Login Failed',
-          message: errorMessage
-        });
       });
 
       await vi.waitFor(() => {
@@ -137,52 +147,6 @@ describe('FindMusic Backend', () => {
       });
 
       expect(mockTabsCreate).not.toHaveBeenCalled();
-    });
-
-    it('should handle permission denied errors', async () => {
-      const request = { contentScriptQuery: 'openFindMusic' };
-      const sender = {} as chrome.runtime.MessageSender;
-      const sendResponse = vi.fn();
-
-      const errorMessage =
-        'Permission denied. To use FindMusic.club, please allow access to Bandcamp cookies when prompted.';
-      mockExchangeBandcampToken.mockRejectedValue(new Error(errorMessage));
-
-      processRequest(request, sender, sendResponse);
-
-      await vi.waitFor(() => {
-        expect(mockNotificationsCreate).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: 'FindMusic.club Login Failed',
-            message: errorMessage
-          })
-        );
-      });
-
-      await vi.waitFor(() => {
-        expect(sendResponse).toHaveBeenCalledWith({
-          success: false,
-          error: errorMessage
-        });
-      });
-    });
-
-    it('should use default error message when error has no message', async () => {
-      const request = { contentScriptQuery: 'openFindMusic' };
-      const sender = {} as chrome.runtime.MessageSender;
-      const sendResponse = vi.fn();
-
-      mockExchangeBandcampToken.mockRejectedValue(new Error());
-
-      processRequest(request, sender, sendResponse);
-
-      await vi.waitFor(() => {
-        expect(mockNotificationsCreate).toHaveBeenCalledWith(
-          expect.objectContaining({
-            message: 'Could not log in to FindMusic.club. Please make sure you are logged in to Bandcamp.'
-          })
-        );
-      });
     });
   });
 });

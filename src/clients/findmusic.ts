@@ -4,88 +4,14 @@ const log = new Logger();
 
 interface BcTokenResponse {
   token: string;
-  user: {
-    id: string;
-    username: string;
-  };
 }
 
 interface BcTokenRequest {
   bc_token: string;
 }
 
-/**
- * Requests permissions to access Bandcamp cookies with user explanation
- * @returns true if permissions granted, false if denied
- */
-async function requestBandcampPermissions(): Promise<boolean> {
-  log.info('Checking for Bandcamp permissions');
-
-  const hasPermissions = await chrome.permissions.contains({
-    permissions: ['cookies']
-  });
-
-  if (hasPermissions) {
-    log.info('Already have cookies permission');
-    return true;
-  }
-
-  log.info('Requesting Bandcamp permissions from user');
-
-  await chrome.notifications.create({
-    type: 'basic',
-    iconUrl: 'icons/icon48.png',
-    title: 'FindMusic.club Permission Request',
-    message:
-      'To log in to FindMusic.club, we need to read your Bandcamp cookie. ' +
-      'Your credentials are only used to create a secure login token and are never stored. ' +
-      'Please click "Allow" in the next dialog.'
-  });
-
-  await new Promise(resolve => setTimeout(resolve, 1500));
-
-  const granted = await chrome.permissions.request({
-    permissions: ['cookies'],
-    origins: ['https://*.findmusic.club/*']
-  });
-
-  if (granted) {
-    log.info('User granted Bandcamp permissions');
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'icons/icon48.png',
-      title: 'FindMusic.club Connected',
-      message: 'Successfully connected! Opening FindMusic.club...'
-    });
-  } else {
-    log.warn('User denied Bandcamp permissions');
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'icons/icon48.png',
-      title: 'FindMusic.club Access Denied',
-      message:
-        'Permission was denied. To use FindMusic.club, please click the FindMusic button again ' +
-        'and allow access to Bandcamp cookies when prompted.'
-    });
-  }
-
-  return granted;
-}
-
-/**
- * Exchanges a Bandcamp identity cookie for a FindMusic.club JWT token
- * @returns FindMusic.club JWT token
- * @throws Error if no Bandcamp identity cookie found or API request fails
- */
 export async function exchangeBandcampToken(): Promise<string> {
   log.info('Attempting to exchange Bandcamp token for FindMusic.club token');
-
-  const hasPermission = await requestBandcampPermissions();
-  if (!hasPermission) {
-    throw new Error(
-      'Permission denied. To use FindMusic.club, please allow access to Bandcamp cookies when prompted.'
-    );
-  }
 
   const cookie = await chrome.cookies.get({
     url: 'https://bandcamp.com/',
@@ -117,7 +43,7 @@ export async function exchangeBandcampToken(): Promise<string> {
     }
 
     const data: BcTokenResponse = await response.json();
-    log.info(`Successfully exchanged token for user: ${data.user.username}`);
+    log.info(`Successfully exchanged token`);
 
     return data.token;
   } catch (error) {

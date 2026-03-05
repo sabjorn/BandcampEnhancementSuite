@@ -4,14 +4,25 @@ import { exchangeBandcampToken } from '../clients/findmusic';
 const log = new Logger();
 const FINDMUSIC_BASE_URL = process.env.FINDMUSIC_BASE_URL as string;
 
-export function processRequest(
+export async function processRequest(
   request: any,
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: any) => void
-): boolean {
+): Promise<boolean> {
   if (request.contentScriptQuery !== 'openFindMusic') return false;
 
   log.info('Processing openFindMusic request');
+
+  const hasPermissions = await chrome.permissions.contains({
+    permissions: ['cookies']
+  });
+
+  if (!hasPermissions) {
+    log.info('Missing cookies permission, opening permission page');
+    chrome.tabs.create({ url: chrome.runtime.getURL('html/findmusic_permission.html') });
+    sendResponse({ success: true, needsPermission: true });
+    return true;
+  }
 
   exchangeBandcampToken()
     .then(token => {
@@ -23,14 +34,6 @@ export function processRequest(
     })
     .catch(error => {
       log.error(`Failed to open FindMusic.club: ${error.message}`);
-
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: chrome.runtime.getURL('icons/icon48.png'),
-        title: 'FindMusic.club Login Failed',
-        message: error.message || 'Could not log in to FindMusic.club. Please make sure you are logged in to Bandcamp.'
-      });
-
       sendResponse({ success: false, error: error.message });
     });
 

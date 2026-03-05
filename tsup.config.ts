@@ -3,7 +3,8 @@ import { defineConfig } from 'tsup';
 export default defineConfig(options => ({
   entry: {
     main: './src/main.ts',
-    background: './src/background.ts'
+    background: './src/background.ts',
+    findmusic_permission: './src/findmusic_permission.ts'
   },
   format: ['iife'],
   target: 'es2022',
@@ -32,11 +33,15 @@ export default defineConfig(options => ({
     }
   },
   esbuildOptions(esbuildOpts) {
+    const isProduction = options.env?.NODE_ENV === 'production';
     esbuildOpts.define = {
       ...esbuildOpts.define,
       global: 'globalThis',
       'process.env.FINDMUSIC_BASE_URL': JSON.stringify(
-        options.env?.NODE_ENV === 'production' ? 'https://findmusic.club' : 'http://localhost:3001'
+        isProduction ? 'https://findmusic.club' : 'http://localhost:3001'
+      ),
+      'process.env.FINDMUSIC_ORIGIN_PATTERN': JSON.stringify(
+        isProduction ? 'https://*.findmusic.club/*' : 'http://localhost:3001/*'
       )
     };
     esbuildOpts.inject = esbuildOpts.inject || [];

@@ -11,21 +11,30 @@ const initFindMusicButton = (): void => {
   const log = createLogger();
 
   const addButton = (): void => {
-    const menuItems = document.querySelector('ul.page-wrapper.menu-items');
-    if (!menuItems) {
-      log.debug('Bandcamp navigation not found, skipping FindMusic button');
-      return;
-    }
-
     if (document.querySelector('.findmusic-item')) {
       log.debug('FindMusic button already exists');
       return;
     }
 
+    const nav = document.querySelector('nav[aria-label="Bandcamp"]');
+    if (!nav) {
+      log.debug('Bandcamp nav not found yet');
+      return;
+    }
+
+    const menuItems = nav.querySelector('ul.menu-items');
+    if (!menuItems) {
+      log.debug('Menu items ul not found yet');
+      return;
+    }
+
+    log.debug('Found navigation menu, adding FindMusic button');
+
     const listItem = document.createElement('li');
     listItem.className = 'findmusic-item';
     listItem.setAttribute('role', 'none');
     listItem.setAttribute('data-v-0265009c', '');
+    listItem.style.cssText = 'display: list-item;';
 
     const button = document.createElement('button');
     button.className = 'g-button no-outline icon-left popover popover-bottom';
@@ -63,11 +72,20 @@ const initFindMusicButton = (): void => {
     }
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', addButton);
-  } else {
-    addButton();
-  }
+  const observer = new MutationObserver(() => {
+    const nav = document.querySelector('nav[aria-label="Bandcamp"]');
+    if (nav) {
+      addButton();
+      observer.disconnect();
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  addButton();
 };
 
 const main = async (): Promise<void> => {

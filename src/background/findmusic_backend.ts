@@ -2,7 +2,7 @@ import Logger from '../logger';
 import { exchangeBandcampToken } from '../clients/findmusic';
 
 const log = new Logger();
-const FINDMUSIC_BASE_URL = 'http://localhost:3001';
+const FINDMUSIC_BASE_URL = process.env.FINDMUSIC_BASE_URL as string;
 
 export function processRequest(
   request: any,

@@ -16,13 +16,15 @@ vi.mock('../src/clients/findmusic', () => ({
 const mockOnMessageAddListener = vi.fn();
 const mockTabsCreate = vi.fn();
 const mockNotificationsCreate = vi.fn();
+const mockGetURL = vi.fn((path: string) => path);
 
 Object.assign(global, {
   chrome: {
     runtime: {
       onMessage: {
         addListener: mockOnMessageAddListener
-      }
+      },
+      getURL: mockGetURL
     },
     tabs: {
       create: mockTabsCreate

@@ -100,7 +100,7 @@ export async function exchangeBandcampToken(): Promise<string> {
   log.debug(`Found Bandcamp identity cookie: ${cookie.value.substring(0, 20)}...`);
 
   try {
-    const response = await fetch('https://findmusic.club/api/bctoken', {
+    const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/bctoken`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

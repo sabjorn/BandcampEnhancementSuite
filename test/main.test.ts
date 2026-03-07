@@ -1,17 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 
-// Set up chrome global before any vi.mock or import statements
+// Set up chrome global mocks
 const mockRuntimeSendMessage = vi.fn();
 const mockRuntimeConnect = vi.fn(() => ({
   onMessage: { addListener: vi.fn() },
   postMessage: vi.fn()
 }));
+const mockRuntimeGetURL = vi.fn((path: string) => `chrome-extension://mock/${path}`);
 
+// Set up chrome before dynamic import
 (globalThis as any).chrome = {
   runtime: {
     sendMessage: mockRuntimeSendMessage,
-    getURL: (path: string) => `chrome-extension://mock/${path}`,
+    getURL: mockRuntimeGetURL,
     connect: mockRuntimeConnect
   }
 };
@@ -57,19 +59,21 @@ vi.mock('../src/pages/hide_unhide_collection', () => ({
   initHideUnhide: vi.fn()
 }));
 
-// Import the function to test
-import { initBESDrawer } from '../src/main';
-
 describe('BES Drawer', () => {
   let mockPort: any;
+  let initBESDrawer: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockPort = {
       onMessage: { addListener: vi.fn() },
       postMessage: vi.fn()
     };
 
     createDomNodes('<body></body>');
+
+    // Dynamically import after chrome is set up
+    const mainModule = await import('../src/main');
+    initBESDrawer = mainModule.initBESDrawer;
 
     // Initialize the drawer
     initBESDrawer(mockPort as any);

@@ -1,13 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 
-// Mock chrome API
+// Set up chrome global before any vi.mock or import statements
 const mockRuntimeSendMessage = vi.fn();
+const mockRuntimeConnect = vi.fn(() => ({
+  onMessage: { addListener: vi.fn() },
+  postMessage: vi.fn()
+}));
 
-(global as any).chrome = {
+(globalThis as any).chrome = {
   runtime: {
     sendMessage: mockRuntimeSendMessage,
-    getURL: (path: string) => `chrome-extension://mock/${path}`
+    getURL: (path: string) => `chrome-extension://mock/${path}`,
+    connect: mockRuntimeConnect
   }
 };
 

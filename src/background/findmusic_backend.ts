@@ -34,12 +34,25 @@ export function processRequest(
     .then((hasPermissions: boolean) => {
       if (!hasPermissions) {
         log.info('Missing cookies permission, opening permission popup');
-        chrome.windows.create({
-          url: chrome.runtime.getURL('html/findmusic_permission.html'),
-          type: 'popup',
-          width: 500,
-          height: 650,
-          focused: true
+        chrome.windows.getCurrent((currentWindow: chrome.windows.Window) => {
+          const width = 500;
+          const height = 650;
+          const left = currentWindow.left
+            ? Math.round(currentWindow.left + (currentWindow.width! - width) / 2)
+            : undefined;
+          const top = currentWindow.top
+            ? Math.round(currentWindow.top + (currentWindow.height! - height) / 2)
+            : undefined;
+
+          chrome.windows.create({
+            url: chrome.runtime.getURL('html/findmusic_permission.html'),
+            type: 'popup',
+            width,
+            height,
+            left,
+            top,
+            focused: true
+          });
         });
         sendResponse({ success: true, needsPermission: true });
         return;

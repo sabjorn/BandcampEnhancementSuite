@@ -46,10 +46,6 @@ const initBESDrawer = (): void => {
   const findMusicButton = document.createElement('button');
   findMusicButton.className = 'bes-drawer-button';
   findMusicButton.textContent = 'Enable FindMusic.club Integration';
-  findMusicButton.addEventListener('click', () => {
-    log.info('FindMusic integration button clicked');
-    chrome.runtime.sendMessage({ contentScriptQuery: 'openFindMusic' });
-  });
 
   const updateButtonText = async () => {
     try {
@@ -101,6 +97,12 @@ const initBESDrawer = (): void => {
 
   closeButton.addEventListener('click', closeDrawer);
   overlay.addEventListener('click', closeDrawer);
+
+  findMusicButton.addEventListener('click', () => {
+    log.info('FindMusic integration button clicked');
+    closeDrawer();
+    chrome.runtime.sendMessage({ contentScriptQuery: 'openFindMusic' });
+  });
 
   const button = document.createElement('button');
   button.className = 'findmusic-floating-button';

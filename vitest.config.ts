@@ -3,7 +3,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   assetsInclude: ['**/*.html'],
   define: {
-    'process.env.FINDMUSIC_BASE_URL': JSON.stringify('https://findmusic.club')
+    'process.env.FINDMUSIC_BASE_URL': JSON.stringify('https://findmusic.club'),
+    'process.env.FINDMUSIC_ORIGIN_PATTERN': JSON.stringify('https://*.findmusic.club/*')
   },
   test: {
     environment: 'happy-dom',

@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+const FINDMUSIC_ORIGIN_PATTERN = 'https://*.findmusic.club/*';
+
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
     info = vi.fn();
@@ -44,9 +46,6 @@ Object.assign(global, {
 import { processRequest, initFindMusicBackend } from '../src/background/findmusic_backend';
 import { exchangeBandcampToken } from '../src/clients/findmusic';
 
-process.env.FINDMUSIC_BASE_URL = 'https://findmusic.club';
-process.env.FINDMUSIC_ORIGIN_PATTERN = 'https://*.findmusic.club/*';
-
 describe('FindMusic Backend', () => {
   const mockExchangeBandcampToken = vi.mocked(exchangeBandcampToken);
 
@@ -67,6 +66,29 @@ describe('FindMusic Backend', () => {
   });
 
   describe('processRequest()', () => {
+    it('should check permissions when requested', async () => {
+      const request = { contentScriptQuery: 'checkFindMusicPermissions' };
+      const sender = {} as chrome.runtime.MessageSender;
+      const sendResponse = vi.fn();
+
+      mockPermissionsContains.mockResolvedValue(true);
+
+      const result = processRequest(request, sender, sendResponse);
+
+      expect(result).toBe(true);
+
+      await vi.waitFor(() => {
+        expect(mockPermissionsContains).toHaveBeenCalledWith({
+          permissions: ['cookies'],
+          origins: [FINDMUSIC_ORIGIN_PATTERN]
+        });
+      });
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith({ granted: true });
+      });
+    });
+
     it('should return false for non-openFindMusic messages', async () => {
       const request = { contentScriptQuery: 'somethingElse' };
       const sender = {} as chrome.runtime.MessageSender;

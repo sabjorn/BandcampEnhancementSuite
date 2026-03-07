@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 
-// Set up chrome global mocks
 const mockRuntimeSendMessage = vi.fn();
 const mockRuntimeConnect = vi.fn(() => ({
   onMessage: { addListener: vi.fn() },
@@ -9,7 +8,6 @@ const mockRuntimeConnect = vi.fn(() => ({
 }));
 const mockRuntimeGetURL = vi.fn((path: string) => `chrome-extension://mock/${path}`);
 
-// Set up chrome before dynamic import
 (globalThis as any).chrome = {
   runtime: {
     sendMessage: mockRuntimeSendMessage,
@@ -18,7 +16,6 @@ const mockRuntimeGetURL = vi.fn((path: string) => `chrome-extension://mock/${pat
   }
 };
 
-// Mock logger
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
     info = vi.fn();
@@ -34,7 +31,6 @@ vi.mock('../src/logger', () => ({
   })
 }));
 
-// Mock other modules that main.ts imports
 vi.mock('../src/label_view', () => ({
   initLabelView: vi.fn()
 }));
@@ -71,11 +67,9 @@ describe('BES Drawer', () => {
 
     createDomNodes('<body></body>');
 
-    // Dynamically import after chrome is set up
     const mainModule = await import('../src/main');
     initBESDrawer = mainModule.initBESDrawer;
 
-    // Initialize the drawer
     initBESDrawer(mockPort as any);
   });
 

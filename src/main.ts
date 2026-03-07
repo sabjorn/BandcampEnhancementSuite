@@ -6,9 +6,9 @@ import { initAudioFeatures } from './audioFeatures';
 import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
 
-export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
-  const log = createLogger();
+const log = createLogger();
 
+export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   if (document.querySelector('.bes-drawer')) {
     log.debug('BES drawer already exists');
     return;
@@ -174,8 +174,6 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 };
 
 const main = async (): Promise<void> => {
-  const log = createLogger();
-
   const checkIsDownloadPage: Element | null = document.querySelector('.download-item-container');
   if (checkIsDownloadPage) {
     initDownload();
@@ -218,7 +216,6 @@ const main = async (): Promise<void> => {
     await initHideUnhide(config_port);
   }
 
-  // Add BES settings drawer
   initBESDrawer(config_port);
 };
 

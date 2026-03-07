@@ -41,7 +41,7 @@ button.addEventListener('click', async () => {
       log.info('User granted FindMusic.club permissions');
 
       const token = await exchangeBandcampToken();
-      const url = `${FINDMUSIC_BASE_URL}/bes-login?bes_token=${encodeURIComponent(token)}`;
+      const url = `${FINDMUSIC_BASE_URL}/login?bes_token=${encodeURIComponent(token)}`;
 
       // Open FindMusic in a new tab in the main browser window
       chrome.tabs.create({ url });

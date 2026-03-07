@@ -32,7 +32,7 @@ export async function processRequest(
 
   exchangeBandcampToken()
     .then(token => {
-      const url = `${FINDMUSIC_BASE_URL}/bes-login?bes_token=${encodeURIComponent(token)}`;
+      const url = `${FINDMUSIC_BASE_URL}/login?bes_token=${encodeURIComponent(token)}`;
       log.info(`Opening FindMusic.club with token`);
 
       chrome.tabs.create({ url });

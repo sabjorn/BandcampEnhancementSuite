@@ -115,7 +115,7 @@ describe('FindMusic Backend', () => {
 
       await vi.waitFor(() => {
         expect(mockTabsCreate).toHaveBeenCalledWith({
-          url: `https://findmusic.club/bes-login?bes_token=${encodeURIComponent(mockToken)}`
+          url: `https://findmusic.club/login?bes_token=${encodeURIComponent(mockToken)}`
         });
       });
 

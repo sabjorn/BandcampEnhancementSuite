@@ -6,7 +6,7 @@ import { initAudioFeatures } from './audioFeatures';
 import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
 
-const initBESDrawer = (): void => {
+const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   const log = createLogger();
 
   if (document.querySelector('.bes-drawer')) {
@@ -33,6 +33,44 @@ const initBESDrawer = (): void => {
 
   const content = document.createElement('div');
   content.className = 'bes-drawer-content';
+
+  const settingsSection = document.createElement('div');
+  settingsSection.className = 'bes-drawer-section';
+
+  const settingsTitle = document.createElement('h3');
+  settingsTitle.textContent = 'Settings';
+
+  const waveformToggleContainer = document.createElement('div');
+  waveformToggleContainer.className = 'bes-drawer-setting';
+
+  const waveformLabel = document.createElement('label');
+  waveformLabel.className = 'bes-drawer-setting-label';
+  waveformLabel.textContent = 'Display Waveform';
+
+  const waveformToggle = document.createElement('input');
+  waveformToggle.type = 'checkbox';
+  waveformToggle.className = 'bes-drawer-toggle';
+  waveformToggle.id = 'bes-waveform-toggle';
+
+  waveformLabel.htmlFor = 'bes-waveform-toggle';
+
+  waveformToggleContainer.appendChild(waveformLabel);
+  waveformToggleContainer.appendChild(waveformToggle);
+
+  settingsSection.appendChild(settingsTitle);
+  settingsSection.appendChild(waveformToggleContainer);
+
+  config_port.onMessage.addListener((msg: any) => {
+    if (msg.config && typeof msg.config.displayWaveform === 'boolean') {
+      waveformToggle.checked = msg.config.displayWaveform;
+    }
+  });
+
+  waveformToggle.addEventListener('change', () => {
+    config_port.postMessage({ toggleWaveformDisplay: {} });
+  });
+
+  config_port.postMessage({ requestConfig: {} });
 
   const findMusicSection = document.createElement('div');
   findMusicSection.className = 'bes-drawer-section';
@@ -68,6 +106,7 @@ const initBESDrawer = (): void => {
   findMusicSection.appendChild(findMusicDesc);
   findMusicSection.appendChild(findMusicButton);
 
+  content.appendChild(settingsSection);
   content.appendChild(findMusicSection);
 
   drawer.appendChild(header);
@@ -173,7 +212,7 @@ const main = async (): Promise<void> => {
   }
 
   // Add BES settings drawer
-  initBESDrawer();
+  initBESDrawer(config_port);
 };
 
 main();

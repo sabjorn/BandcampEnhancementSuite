@@ -40,25 +40,32 @@ const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   const settingsTitle = document.createElement('h3');
   settingsTitle.textContent = 'Settings';
 
-  const waveformToggleContainer = document.createElement('div');
-  waveformToggleContainer.className = 'bes-drawer-setting';
+  const waveformSettingRow = document.createElement('div');
+  waveformSettingRow.className = 'bes-drawer-setting';
 
-  const waveformLabel = document.createElement('label');
-  waveformLabel.className = 'bes-drawer-setting-label';
-  waveformLabel.textContent = 'Display Waveform';
+  const waveformLabelText = document.createElement('span');
+  waveformLabelText.className = 'bes-drawer-setting-label';
+  waveformLabelText.textContent = 'Display Waveform';
 
   const waveformToggle = document.createElement('input');
-  waveformToggle.type = 'checkbox';
-  waveformToggle.className = 'bes-drawer-toggle';
-  waveformToggle.id = 'bes-waveform-toggle';
+  waveformToggle.setAttribute('type', 'checkbox');
+  waveformToggle.setAttribute('class', 'waveform');
+  waveformToggle.setAttribute('id', 'bes-waveform-toggle');
 
+  const waveformLabel = document.createElement('label');
+  waveformLabel.setAttribute('class', 'waveform');
   waveformLabel.htmlFor = 'bes-waveform-toggle';
+  waveformLabel.innerHTML = 'Toggle';
 
-  waveformToggleContainer.appendChild(waveformLabel);
+  const waveformToggleContainer = document.createElement('div');
   waveformToggleContainer.appendChild(waveformToggle);
+  waveformToggleContainer.appendChild(waveformLabel);
+
+  waveformSettingRow.appendChild(waveformLabelText);
+  waveformSettingRow.appendChild(waveformToggleContainer);
 
   settingsSection.appendChild(settingsTitle);
-  settingsSection.appendChild(waveformToggleContainer);
+  settingsSection.appendChild(waveformSettingRow);
 
   config_port.onMessage.addListener((msg: any) => {
     if (msg.config && typeof msg.config.displayWaveform === 'boolean') {

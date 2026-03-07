@@ -541,48 +541,25 @@ button.bes-downloadall[disabled]::after {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.bes-drawer-setting:last-child {
-  border-bottom: none;
+  margin-bottom: 8px;
 }
 
 .bes-drawer-setting-label {
   font-size: 14px;
   color: #333;
-  cursor: pointer;
-  user-select: none;
 }
 
-.bes-drawer-toggle {
+.bes-drawer-setting > div {
+  display: flex;
+  align-items: center;
+  width: 60px;
+}
+
+.bes-drawer-setting input.waveform + label.waveform {
   position: relative;
-  width: 48px;
-  height: 24px;
-  appearance: none;
-  background: #ccc;
-  border-radius: 24px;
-  outline: none;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.bes-drawer-toggle:checked {
-  background: #1da0c3;
-}
-
-.bes-drawer-toggle::before {
-  content: '';
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  top: 2px;
-  left: 2px;
-  background: white;
-  transition: transform 0.3s ease;
-}
-
-.bes-drawer-toggle:checked::before {
-  transform: translateX(24px);
+  top: 0;
+  left: 25%;
+  width: 50%;
+  margin: 0;
+  pointer-events: all;
 }

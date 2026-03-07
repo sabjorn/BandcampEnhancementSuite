@@ -6,7 +6,7 @@ import { initAudioFeatures } from './audioFeatures';
 import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
 
-const initBESDrawer = (config_port: chrome.runtime.Port): void => {
+export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   const log = createLogger();
 
   if (document.querySelector('.bes-drawer')) {

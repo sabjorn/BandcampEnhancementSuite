@@ -14,23 +14,17 @@ const initFindMusicButton = (): void => {
     return;
   }
 
-  // Create floating button container
   const button = document.createElement('button');
   button.className = 'findmusic-floating-button';
   button.title = 'Log in to FindMusic.club';
   button.setAttribute('aria-label', 'Log in to FindMusic.club');
 
-  // Create button content with icon
-  const buttonContent = document.createElement('div');
-  buttonContent.className = 'findmusic-button-content';
-
-  // Music note icon (using Unicode musical note)
-  const icon = document.createElement('span');
+  const icon = document.createElement('img');
   icon.className = 'findmusic-button-icon';
-  icon.textContent = '♪';
+  icon.src = chrome.runtime.getURL('icons/icon48.png');
+  icon.alt = 'FindMusic.club';
 
-  buttonContent.appendChild(icon);
-  button.appendChild(buttonContent);
+  button.appendChild(icon);
 
   // Add click handler
   button.addEventListener('click', () => {

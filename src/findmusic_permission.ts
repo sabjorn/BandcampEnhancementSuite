@@ -8,6 +8,12 @@ const cancelButton = document.getElementById('cancel-button')!;
 
 const FINDMUSIC_BASE_URL = process.env.FINDMUSIC_BASE_URL as string;
 
+// Set BES logo
+const headerLogo = document.getElementById('header-logo') as HTMLImageElement;
+if (headerLogo) {
+  headerLogo.src = chrome.runtime.getURL('icons/icon48.png');
+}
+
 // Set environment-specific URLs for privacy policy and terms
 const privacyLink = document.getElementById('privacy-link') as HTMLAnchorElement;
 const termsLink = document.getElementById('terms-link') as HTMLAnchorElement;

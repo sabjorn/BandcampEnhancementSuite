@@ -383,44 +383,33 @@ button.bes-downloadall[disabled]::after {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #1da0c3;
-  color: white;
-  border: none;
+  width: 60px;
+  height: 60px;
+  background: transparent;
+  border: 2px solid #1da0c3;
+  border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(29, 160, 195, 0.4);
   z-index: 9999;
+  padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  font-size: 0;
-  padding: 0;
 }
 
 .findmusic-floating-button:hover {
-  background: #1589a8;
-  box-shadow: 0 6px 16px rgba(29, 160, 195, 0.6);
+  border-color: #158ba8;
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(29, 160, 195, 0.3);
 }
 
 .findmusic-floating-button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(29, 160, 195, 0.4);
-}
-
-.findmusic-button-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
+  box-shadow: 0 2px 6px rgba(29, 160, 195, 0.2);
 }
 
 .findmusic-button-icon {
-  font-size: 28px;
-  line-height: 1;
-  font-weight: bold;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }

@@ -16,7 +16,10 @@
     "default_title": "Bandcamp Enhancement Suite",
     "default_popup": "html/browser_action.html"
   },
-  "host_permissions": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*", "https://*.bcbits.com/*"],
+  "permissions": ["notifications"],
+  "host_permissions": ["https://*.bandcamp.com/*", "https://*.bcbits.com/*"],
+  "optional_permissions": ["cookies"],
+  "optional_host_permissions": ["https://*.findmusic.club/*"],
   "minimum_chrome_version": "93",
   "background": {
     "service_worker": "dist/background.js"
@@ -26,6 +29,12 @@
       "matches": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*"],
       "js": ["dist/main.js"],
       "css": ["css/style.css"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*.png"],
+      "matches": ["https://*.bandcamp.com/*"]
     }
   ],
   "browser_specific_settings": {

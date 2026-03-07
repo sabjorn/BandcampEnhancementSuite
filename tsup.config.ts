@@ -1,9 +1,10 @@
 import { defineConfig } from 'tsup';
 
-export default defineConfig({
+export default defineConfig(options => ({
   entry: {
     main: './src/main.ts',
-    background: './src/background.ts'
+    background: './src/background.ts',
+    findmusic_permission: './src/findmusic_permission.ts'
   },
   format: ['iife'],
   target: 'es2022',
@@ -11,7 +12,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  minify: process.env.NODE_ENV === 'production',
+  minify: options.env?.NODE_ENV === 'production',
   outDir: 'dist',
   outExtension() {
     return {
@@ -31,12 +32,19 @@ export default defineConfig({
       }
     }
   },
-  esbuildOptions(options) {
-    options.define = {
-      ...options.define,
-      global: 'globalThis'
+  esbuildOptions(esbuildOpts) {
+    const isProduction = options.env?.NODE_ENV === 'production';
+    esbuildOpts.define = {
+      ...esbuildOpts.define,
+      global: 'globalThis',
+      'process.env.FINDMUSIC_BASE_URL': JSON.stringify(
+        isProduction ? 'https://findmusic.club' : 'http://localhost:3000'
+      ),
+      'process.env.FINDMUSIC_ORIGIN_PATTERN': JSON.stringify(
+        isProduction ? 'https://*.findmusic.club/*' : 'http://localhost:3000/*'
+      )
     };
-    options.inject = options.inject || [];
+    esbuildOpts.inject = esbuildOpts.inject || [];
   },
-  onSuccess: process.env.NODE_ENV === 'development' ? 'echo "Build completed"' : undefined
-});
+  onSuccess: options.env?.NODE_ENV === 'development' ? 'echo "Build completed"' : undefined
+}));

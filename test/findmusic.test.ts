@@ -9,158 +9,33 @@ vi.mock('../src/logger', () => ({
   }
 }));
 
-const mockPermissionsContains = vi.fn();
-const mockPermissionsRequest = vi.fn();
 const mockCookiesGet = vi.fn();
-const mockNotificationsCreate = vi.fn();
 
 Object.assign(global, {
   chrome: {
-    permissions: {
-      contains: mockPermissionsContains,
-      request: mockPermissionsRequest
-    },
     cookies: {
       get: mockCookiesGet
-    },
-    notifications: {
-      create: mockNotificationsCreate
     }
   }
 });
 
 global.fetch = vi.fn();
 
+process.env.FINDMUSIC_BASE_URL = 'https://findmusic.club';
+
 import { exchangeBandcampToken } from '../src/clients/findmusic';
 
 describe('FindMusic Client', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.useRealTimers();
   });
 
   describe('exchangeBandcampToken()', () => {
-    describe('Permission Handling', () => {
-      it('should proceed without requesting permissions if already granted', async () => {
-        mockPermissionsContains.mockResolvedValue(true);
-        mockCookiesGet.mockResolvedValue({ value: 'mock-bc-token' });
-        vi.mocked(global.fetch).mockResolvedValue({
-          ok: true,
-          json: async () => ({
-            token: 'mock-jwt-token',
-            user: { id: '123', username: 'testuser' }
-          })
-        } as any);
-
-        await exchangeBandcampToken();
-
-        expect(mockPermissionsContains).toHaveBeenCalledWith({
-          permissions: ['cookies']
-        });
-        expect(mockPermissionsRequest).not.toHaveBeenCalled();
-        expect(mockNotificationsCreate).not.toHaveBeenCalled();
-      });
-
-      it('should request permissions and show explanatory notification when not granted', async () => {
-        mockPermissionsContains.mockResolvedValue(false);
-        mockPermissionsRequest.mockResolvedValue(true);
-        mockCookiesGet.mockResolvedValue({ value: 'mock-bc-token' });
-        vi.mocked(global.fetch).mockResolvedValue({
-          ok: true,
-          json: async () => ({
-            token: 'mock-jwt-token',
-            user: { id: '123', username: 'testuser' }
-          })
-        } as any);
-
-        const promise = exchangeBandcampToken();
-
-        await vi.waitFor(() => {
-          expect(mockNotificationsCreate).toHaveBeenCalledWith(
-            expect.objectContaining({
-              title: 'FindMusic.club Permission Request',
-              message: expect.stringContaining('we need to read your Bandcamp cookie')
-            })
-          );
-        });
-
-        await vi.advanceTimersByTimeAsync(1500);
-
-        await vi.waitFor(() => {
-          expect(mockPermissionsRequest).toHaveBeenCalledWith({
-            permissions: ['cookies'],
-            origins: ['https://*.findmusic.club/*']
-          });
-        });
-
-        await promise;
-      });
-
-      it('should show success notification when permissions are granted', async () => {
-        mockPermissionsContains.mockResolvedValue(false);
-        mockPermissionsRequest.mockResolvedValue(true);
-        mockCookiesGet.mockResolvedValue({ value: 'mock-bc-token' });
-        vi.mocked(global.fetch).mockResolvedValue({
-          ok: true,
-          json: async () => ({
-            token: 'mock-jwt-token',
-            user: { id: '123', username: 'testuser' }
-          })
-        } as any);
-
-        const promise = exchangeBandcampToken();
-        await vi.advanceTimersByTimeAsync(1500);
-        await promise;
-
-        expect(mockNotificationsCreate).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: 'FindMusic.club Connected',
-            message: expect.stringContaining('Successfully connected')
-          })
-        );
-      });
-
-      it('should throw error and show notification when permissions are denied', async () => {
-        mockPermissionsContains.mockResolvedValue(false);
-        mockPermissionsRequest.mockResolvedValue(false);
-
-        const promise = exchangeBandcampToken();
-
-        promise.catch(() => {});
-
-        await vi.waitFor(() => {
-          expect(mockNotificationsCreate).toHaveBeenCalledWith(
-            expect.objectContaining({
-              title: 'FindMusic.club Permission Request'
-            })
-          );
-        });
-
-        await vi.advanceTimersByTimeAsync(1500);
-
-        await expect(promise).rejects.toThrow(
-          'Permission denied. To use FindMusic.club, please allow access to Bandcamp cookies when prompted.'
-        );
-
-        expect(mockNotificationsCreate).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: 'FindMusic.club Access Denied',
-            message: expect.stringContaining('Permission was denied')
-          })
-        );
-      });
-    });
-
     describe('Cookie Retrieval', () => {
-      beforeEach(() => {
-        mockPermissionsContains.mockResolvedValue(true);
-      });
-
       it('should retrieve Bandcamp identity cookie', async () => {
         mockCookiesGet.mockResolvedValue({ value: 'mock-bc-token' });
         vi.mocked(global.fetch).mockResolvedValue({
@@ -198,7 +73,6 @@ describe('FindMusic Client', () => {
 
     describe('Token Exchange API', () => {
       beforeEach(() => {
-        mockPermissionsContains.mockResolvedValue(true);
         mockCookiesGet.mockResolvedValue({ value: 'test-bc-token' });
       });
 
@@ -271,59 +145,6 @@ describe('FindMusic Client', () => {
         vi.mocked(global.fetch).mockRejectedValue('String error');
 
         await expect(exchangeBandcampToken()).rejects.toThrow('Unknown error occurred while exchanging token');
-      });
-    });
-
-    describe('Integration Flow', () => {
-      it('should complete full flow: no permissions → request → get cookie → exchange → return token', async () => {
-        const mockBcToken = 'bandcamp-cookie-value';
-        const mockJwtToken = 'jwt-token-value';
-
-        mockPermissionsContains.mockResolvedValue(false);
-        mockPermissionsRequest.mockResolvedValue(true);
-        mockCookiesGet.mockResolvedValue({ value: mockBcToken });
-        vi.mocked(global.fetch).mockResolvedValue({
-          ok: true,
-          json: async () => ({
-            token: mockJwtToken,
-            user: { id: '123', username: 'testuser' }
-          })
-        } as any);
-
-        const promise = exchangeBandcampToken();
-
-        await vi.waitFor(() => {
-          expect(mockNotificationsCreate).toHaveBeenCalledWith(
-            expect.objectContaining({
-              title: 'FindMusic.club Permission Request'
-            })
-          );
-        });
-
-        await vi.advanceTimersByTimeAsync(1500);
-
-        await vi.waitFor(() => {
-          expect(mockPermissionsRequest).toHaveBeenCalled();
-        });
-
-        const result = await promise;
-
-        expect(mockNotificationsCreate).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: 'FindMusic.club Connected'
-          })
-        );
-
-        expect(mockCookiesGet).toHaveBeenCalled();
-
-        expect(global.fetch).toHaveBeenCalledWith(
-          'https://findmusic.club/api/bctoken',
-          expect.objectContaining({
-            body: JSON.stringify({ bc_token: mockBcToken })
-          })
-        );
-
-        expect(result).toBe(mockJwtToken);
       });
     });
   });

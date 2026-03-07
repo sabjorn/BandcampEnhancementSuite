@@ -15,6 +15,8 @@ vi.mock('../src/clients/findmusic', () => ({
 
 const mockOnMessageAddListener = vi.fn();
 const mockTabsCreate = vi.fn();
+const mockWindowsCreate = vi.fn();
+const mockWindowsGetCurrent = vi.fn();
 const mockGetURL = vi.fn((path: string) => path);
 const mockPermissionsContains = vi.fn();
 
@@ -29,6 +31,10 @@ Object.assign(global, {
     tabs: {
       create: mockTabsCreate
     },
+    windows: {
+      create: mockWindowsCreate,
+      getCurrent: mockWindowsGetCurrent
+    },
     permissions: {
       contains: mockPermissionsContains
     }
@@ -37,6 +43,9 @@ Object.assign(global, {
 
 import { processRequest, initFindMusicBackend } from '../src/background/findmusic_backend';
 import { exchangeBandcampToken } from '../src/clients/findmusic';
+
+process.env.FINDMUSIC_BASE_URL = 'https://findmusic.club';
+process.env.FINDMUSIC_ORIGIN_PATTERN = 'https://*.findmusic.club/*';
 
 describe('FindMusic Backend', () => {
   const mockExchangeBandcampToken = vi.mocked(exchangeBandcampToken);
@@ -87,13 +96,36 @@ describe('FindMusic Backend', () => {
       const sender = {} as chrome.runtime.MessageSender;
       const sendResponse = vi.fn();
 
+      const mockWindow = {
+        left: 100,
+        top: 100,
+        width: 1200,
+        height: 800
+      };
+
       mockPermissionsContains.mockResolvedValue(false);
+      mockWindowsGetCurrent.mockImplementation((callback: any) => {
+        callback(mockWindow);
+      });
 
       await processRequest(request, sender, sendResponse);
 
-      expect(mockTabsCreate).toHaveBeenCalledWith({
-        url: 'html/findmusic_permission.html'
+      await vi.waitFor(() => {
+        expect(mockWindowsGetCurrent).toHaveBeenCalled();
       });
+
+      await vi.waitFor(() => {
+        expect(mockWindowsCreate).toHaveBeenCalledWith({
+          url: 'html/findmusic_permission.html',
+          type: 'popup',
+          width: 500,
+          height: 650,
+          left: 450,
+          top: 175,
+          focused: true
+        });
+      });
+
       expect(sendResponse).toHaveBeenCalledWith({ success: true, needsPermission: true });
       expect(mockExchangeBandcampToken).not.toHaveBeenCalled();
     });

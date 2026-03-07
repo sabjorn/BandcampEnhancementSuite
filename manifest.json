@@ -17,7 +17,7 @@
     "default_popup": "html/browser_action.html"
   },
   "permissions": ["notifications"],
-  "host_permissions": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*", "https://*.bcbits.com/*"],
+  "host_permissions": ["https://*.bandcamp.com/*", "https://*.bcbits.com/*"],
   "optional_permissions": ["cookies"],
   "optional_host_permissions": ["https://*.findmusic.club/*"],
   "minimum_chrome_version": "93",

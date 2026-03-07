@@ -382,14 +382,14 @@ button.bes-downloadall[disabled]::after {
 .findmusic-floating-button {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  left: 20px;
   width: 60px;
   height: 60px;
-  background: transparent;
+  background: white;
   border: 2px solid #1da0c3;
   border-radius: 12px;
   cursor: pointer;
-  z-index: 9999;
+  z-index: 10000;
   padding: 6px;
   display: flex;
   align-items: center;

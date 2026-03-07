@@ -51,16 +51,19 @@ const initBESDrawer = (): void => {
     chrome.runtime.sendMessage({ contentScriptQuery: 'openFindMusic' });
   });
 
-  const updateButtonText = () => {
-    chrome.permissions.contains(
-      {
-        permissions: ['cookies'],
-        origins: ['https://*.findmusic.club/*']
-      },
-      (granted: boolean) => {
-        findMusicButton.textContent = granted ? 'Log in to FindMusic.club' : 'Enable FindMusic.club Integration';
-      }
-    );
+  const updateButtonText = async () => {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        contentScriptQuery: 'checkFindMusicPermissions'
+      });
+      log.info(`Permission check response: ${JSON.stringify(response)}`);
+      findMusicButton.textContent = response?.granted
+        ? 'Log in to FindMusic.club'
+        : 'Enable FindMusic.club Integration';
+    } catch (error) {
+      log.error(`Failed to check permissions: ${error}`);
+      findMusicButton.textContent = 'Enable FindMusic.club Integration';
+    }
   };
 
   updateButtonText();
@@ -77,8 +80,8 @@ const initBESDrawer = (): void => {
   const overlay = document.createElement('div');
   overlay.className = 'bes-drawer-overlay';
 
-  const openDrawer = () => {
-    updateButtonText();
+  const openDrawer = async () => {
+    await updateButtonText();
     drawer.classList.add('open');
     overlay.classList.add('open');
   };
@@ -88,13 +91,21 @@ const initBESDrawer = (): void => {
     overlay.classList.remove('open');
   };
 
+  const toggleDrawer = async () => {
+    if (drawer.classList.contains('open')) {
+      closeDrawer();
+      return;
+    }
+    await openDrawer();
+  };
+
   closeButton.addEventListener('click', closeDrawer);
   overlay.addEventListener('click', closeDrawer);
 
   const button = document.createElement('button');
   button.className = 'findmusic-floating-button';
-  button.title = 'Open BES Settings';
-  button.setAttribute('aria-label', 'Open Bandcamp Enhancement Suite Settings');
+  button.title = 'BES Settings';
+  button.setAttribute('aria-label', 'Toggle Bandcamp Enhancement Suite Settings');
 
   const icon = document.createElement('img');
   icon.className = 'findmusic-button-icon';
@@ -104,7 +115,7 @@ const initBESDrawer = (): void => {
   button.appendChild(icon);
   button.addEventListener('click', () => {
     log.info('BES settings button clicked');
-    openDrawer();
+    toggleDrawer();
   });
 
   document.body.appendChild(overlay);

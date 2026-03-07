@@ -19,7 +19,7 @@
   "permissions": ["notifications"],
   "host_permissions": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*", "https://*.bcbits.com/*"],
   "optional_permissions": ["cookies"],
-  "optional_host_permissions": ["https://*.findmusic.club/*", "http://localhost:3000/*"],
+  "optional_host_permissions": ["https://*.findmusic.club/*"],
   "minimum_chrome_version": "93",
   "background": {
     "service_worker": "dist/background.js"

@@ -40,7 +40,7 @@
     "dev": "pnpm run build:watch",
     "snapshots": "percy exec -- node snapshots.js",
     "clean": "rm -fr ./node_modules ./dist",
-    "package": "pnpm run build && zip BandcampEnhancementSuite_chrome.zip LICENSE _locales/**/* icons/* css/* dist/* svg/* manifest.json html/browser_action.html && cp manifest.json manifest.json.backup &&  sed -i '' -e 's,\"service_worker\": \"dist/background.js\",\"scripts\": [\"dist/background.js\"],g' ./manifest.json && zip BandcampEnhancementSuite_firefox.zip LICENSE _locales/**/* icons/* css/* dist/* manifest.json html/browser_action.html &&  mv manifest.json.backup manifest.json"
+    "package": "pnpm run build && zip BandcampEnhancementSuite_chrome.zip LICENSE _locales/**/* icons/* css/* dist/* svg/* manifest.json html/* && cp manifest.json manifest.json.backup &&  sed -i '' -e 's,\"service_worker\": \"dist/background.js\",\"scripts\": [\"dist/background.js\"],g' ./manifest.json && zip BandcampEnhancementSuite_firefox.zip LICENSE _locales/**/* icons/* css/* dist/* manifest.json html/* &&  mv manifest.json.backup manifest.json"
   },
   "repository": {
     "type": "git",

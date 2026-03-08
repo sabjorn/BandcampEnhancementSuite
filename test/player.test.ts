@@ -10,8 +10,15 @@ vi.mock('../src/logger', () => ({
   }
 }));
 
-import { createVolumeSlider, keydownCallback, volumeSliderCallback, initPlayer } from '../src/player';
+import {
+  createVolumeSlider,
+  keydownCallback,
+  volumeSliderCallback,
+  initPlayer,
+  buildKeyHandlersFromSettings
+} from '../src/player';
 import Logger from '../src/logger';
+import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS } from '../src/types/keyboard';
 
 describe('Player', () => {
   beforeEach(() => {
@@ -70,5 +77,117 @@ describe('Player', () => {
 
     expect(() => keydownCallback(mockKeyEvent, mockKeyHandlers, false, mockLogger)).not.toThrow();
     expect(mockKeyHandlers['p']).toHaveBeenCalled();
+  });
+
+  describe('buildKeyHandlersFromSettings', () => {
+    it('should build handlers from default settings', () => {
+      const handlers = buildKeyHandlersFromSettings(DEFAULT_KEYBOARD_SETTINGS);
+      expect(handlers).toBeDefined();
+      expect(Object.keys(handlers).length).toBeGreaterThan(0);
+    });
+
+    it('should create handler for play/pause action', () => {
+      const settings: KeyboardSettings = {
+        controls: [
+          {
+            action: KeyboardAction.PLAY_PAUSE,
+            binding: { key: 'p' },
+            enabled: true
+          }
+        ],
+        seekStepSize: 10,
+        largeSeekStepSize: 30,
+        volumeStep: 0.05
+      };
+
+      const handlers = buildKeyHandlersFromSettings(settings);
+      expect(handlers['p']).toBeDefined();
+      expect(typeof handlers['p']).toBe('function');
+    });
+
+    it('should not create handler for disabled actions', () => {
+      const settings: KeyboardSettings = {
+        controls: [
+          {
+            action: KeyboardAction.PLAY_PAUSE,
+            binding: { key: 'p' },
+            enabled: false
+          }
+        ],
+        seekStepSize: 10,
+        largeSeekStepSize: 30,
+        volumeStep: 0.05
+      };
+
+      const handlers = buildKeyHandlersFromSettings(settings);
+      expect(handlers['p']).toBeUndefined();
+    });
+
+    it('should use custom seek step sizes', () => {
+      const audio = document.querySelector('audio') as HTMLAudioElement;
+      audio.currentTime = 0;
+
+      const customSeekStep = 15;
+      const settings: KeyboardSettings = {
+        controls: [
+          {
+            action: KeyboardAction.SEEK_FORWARD,
+            binding: { key: 'ArrowRight' },
+            enabled: true
+          }
+        ],
+        seekStepSize: customSeekStep,
+        largeSeekStepSize: 30,
+        volumeStep: 0.05
+      };
+
+      const handlers = buildKeyHandlersFromSettings(settings);
+      handlers['ArrowRight']();
+
+      expect(audio.currentTime).toBe(customSeekStep);
+    });
+
+    it('should use custom volume step', () => {
+      const volumeInput = document.querySelector('input.volume') as HTMLInputElement;
+      volumeInput.value = '0.5';
+
+      const customVolumeStep = 0.1;
+      const settings: KeyboardSettings = {
+        controls: [
+          {
+            action: KeyboardAction.VOLUME_UP,
+            binding: { key: 'ArrowUp', shift: true },
+            enabled: true
+          }
+        ],
+        seekStepSize: 10,
+        largeSeekStepSize: 30,
+        volumeStep: customVolumeStep
+      };
+
+      const handlers = buildKeyHandlersFromSettings(settings);
+      handlers['Shift+ArrowUp']();
+
+      expect(parseFloat(volumeInput.value)).toBe(0.6);
+    });
+
+    it('should handle modifier keys in bindings', () => {
+      const settings: KeyboardSettings = {
+        controls: [
+          {
+            action: KeyboardAction.SEEK_FORWARD_LARGE,
+            binding: { key: 'ArrowRight', shift: true },
+            enabled: true
+          }
+        ],
+        seekStepSize: 10,
+        largeSeekStepSize: 30,
+        volumeStep: 0.05
+      };
+
+      const handlers = buildKeyHandlersFromSettings(settings);
+      expect(handlers['Shift+ArrowRight']).toBeDefined();
+      expect(typeof handlers['Shift+ArrowRight']).toBe('function');
+    });
   });
 });

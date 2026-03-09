@@ -4,6 +4,7 @@ import { CURRENCY_MINIMUMS, getTralbumDetails, addAlbumToCart } from './bclient'
 import { createInputButtonPair } from './components/buttons.js';
 import { createShoppingCartItem } from './components/shoppingCart.js';
 import { createPlusSvgIcon } from './components/svgIcons';
+import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS, keyBindingToString } from './types/keyboard.js';
 
 interface KeyCombo {
   key: string;
@@ -17,81 +18,111 @@ interface KeyHandlers {
   [key: string]: () => void;
 }
 
-const SEEK_STEP_SIZE = 10;
-const LARGE_SEEK_STEP_SIZE = 30;
-const VOLUME_STEP = 0.05;
-const DEFAULT_KEY_HANDLERS: KeyHandlers = {
-  ' ': () => {
-    const playButton = document.querySelector('div.playbutton');
-    if (!playButton) return;
-    (playButton as HTMLElement).click();
-  },
-  p: () => {
-    const playButton = document.querySelector('div.playbutton');
-    if (!playButton) return;
-    (playButton as HTMLElement).click();
-  },
-  ArrowUp: () => {
-    const prevButton = document.querySelector('div.prevbutton');
-    if (!prevButton) return;
-    (prevButton as HTMLElement).click();
-  },
-  ArrowDown: () => {
-    const nextButton = document.querySelector('div.nextbutton');
-    if (!nextButton) return;
-    (nextButton as HTMLElement).click();
-  },
-  ArrowRight: () => {
-    const audio = document.querySelector('audio') as HTMLAudioElement;
-    if (!audio) return;
-
-    audio.currentTime = audio.currentTime + SEEK_STEP_SIZE;
-  },
-  ArrowLeft: () => {
-    const audio = document.querySelector('audio') as HTMLAudioElement;
-    if (!audio) return;
-
-    audio.currentTime = audio.currentTime - SEEK_STEP_SIZE;
-  },
-  'Shift+ArrowLeft': () => {
-    const audio = document.querySelector('audio') as HTMLAudioElement;
-    if (!audio) return;
-
-    audio.currentTime = audio.currentTime - LARGE_SEEK_STEP_SIZE;
-  },
-  'Shift+ArrowRight': () => {
-    const audio = document.querySelector('audio') as HTMLAudioElement;
-    if (!audio) return;
-
-    audio.currentTime = audio.currentTime + LARGE_SEEK_STEP_SIZE;
-  },
-  'Shift+ArrowUp': () => {
-    const input = document.querySelector('input.volume') as HTMLInputElement;
-    if (!input) return;
-
-    const currentVolume = parseFloat(input.value);
-    const newVolume = currentVolume + VOLUME_STEP;
-    input.value = (newVolume > 1.0 ? 1.0 : newVolume).toString();
-
-    const event = new Event('input');
-    input.dispatchEvent(event);
-  },
-  'Shift+ArrowDown': () => {
-    const input = document.querySelector('input.volume') as HTMLInputElement;
-    if (!input) return;
-
-    const currentVolume = parseFloat(input.value);
-    const newVolume = currentVolume - VOLUME_STEP;
-    input.value = (newVolume < 0.0 ? 0.0 : newVolume).toString();
-
-    const event = new Event('input');
-    input.dispatchEvent(event);
-  }
-};
-
 function keyComboToString(combo: KeyCombo): string {
   const { key, alt = false, ctrl = false, shift = false, meta = false } = combo;
   return `${alt ? 'Alt+' : ''}${ctrl ? 'Ctrl+' : ''}${shift ? 'Shift+' : ''}${meta ? 'Meta+' : ''}${key}`;
+}
+
+/**
+ * Build key handlers from keyboard settings
+ */
+export function buildKeyHandlersFromSettings(settings: KeyboardSettings): KeyHandlers {
+  const handlers: KeyHandlers = {};
+
+  settings.controls.forEach(control => {
+    if (!control.enabled) return;
+
+    const bindingKey = keyBindingToString(control.binding);
+
+    switch (control.action) {
+      case KeyboardAction.PLAY_PAUSE:
+      case KeyboardAction.PLAY_PAUSE_ALT:
+        handlers[bindingKey] = () => {
+          const playButton = document.querySelector('div.playbutton');
+          if (!playButton) return;
+          (playButton as HTMLElement).click();
+        };
+        break;
+
+      case KeyboardAction.PREV_TRACK:
+        handlers[bindingKey] = () => {
+          const prevButton = document.querySelector('div.prevbutton');
+          if (!prevButton) return;
+          (prevButton as HTMLElement).click();
+        };
+        break;
+
+      case KeyboardAction.NEXT_TRACK:
+        handlers[bindingKey] = () => {
+          const nextButton = document.querySelector('div.nextbutton');
+          if (!nextButton) return;
+          (nextButton as HTMLElement).click();
+        };
+        break;
+
+      case KeyboardAction.SEEK_FORWARD:
+        handlers[bindingKey] = () => {
+          const audio = document.querySelector('audio') as HTMLAudioElement;
+          if (!audio) return;
+          audio.currentTime = audio.currentTime + settings.seekStepSize;
+        };
+        break;
+
+      case KeyboardAction.SEEK_BACKWARD:
+        handlers[bindingKey] = () => {
+          const audio = document.querySelector('audio') as HTMLAudioElement;
+          if (!audio) return;
+          audio.currentTime = audio.currentTime - settings.seekStepSize;
+        };
+        break;
+
+      case KeyboardAction.SEEK_FORWARD_LARGE:
+        handlers[bindingKey] = () => {
+          const audio = document.querySelector('audio') as HTMLAudioElement;
+          if (!audio) return;
+          audio.currentTime = audio.currentTime + settings.largeSeekStepSize;
+        };
+        break;
+
+      case KeyboardAction.SEEK_BACKWARD_LARGE:
+        handlers[bindingKey] = () => {
+          const audio = document.querySelector('audio') as HTMLAudioElement;
+          if (!audio) return;
+          audio.currentTime = audio.currentTime - settings.largeSeekStepSize;
+        };
+        break;
+
+      case KeyboardAction.VOLUME_UP:
+        handlers[bindingKey] = () => {
+          const input = document.querySelector('input.volume') as HTMLInputElement;
+          if (!input) return;
+
+          const currentVolume = parseFloat(input.value);
+          const newVolume = currentVolume + settings.volumeStep;
+          input.value = (newVolume > 1.0 ? 1.0 : newVolume).toString();
+
+          const event = new Event('input');
+          input.dispatchEvent(event);
+        };
+        break;
+
+      case KeyboardAction.VOLUME_DOWN:
+        handlers[bindingKey] = () => {
+          const input = document.querySelector('input.volume') as HTMLInputElement;
+          if (!input) return;
+
+          const currentVolume = parseFloat(input.value);
+          const newVolume = currentVolume - settings.volumeStep;
+          input.value = (newVolume < 0.0 ? 0.0 : newVolume).toString();
+
+          const event = new Event('input');
+          input.dispatchEvent(event);
+        };
+        break;
+    }
+  });
+
+  return handlers;
 }
 
 export function keydownCallback(
@@ -191,9 +222,12 @@ export function createOneClickBuyButton(
   return pair;
 }
 
-export async function initPlayer(): Promise<void> {
+export async function initPlayer(keyboardSettings?: KeyboardSettings): Promise<void> {
   const log = new Logger();
-  const keyHandlers = DEFAULT_KEY_HANDLERS;
+
+  // Use provided settings or fall back to defaults
+  const settings = keyboardSettings || DEFAULT_KEYBOARD_SETTINGS;
+  const keyHandlers = buildKeyHandlersFromSettings(settings);
   const preventDefault = true;
 
   log.info('Starting BES Player');

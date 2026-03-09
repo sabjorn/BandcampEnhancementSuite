@@ -39,7 +39,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   const settingsSection = document.createElement('div');
   settingsSection.className = 'bes-drawer-section';
 
-  const settingsTitle = document.createElement('h3');
+  const settingsTitle = document.createElement('h2');
   settingsTitle.textContent = 'Settings';
 
   const waveformSettingRow = document.createElement('div');
@@ -85,8 +85,13 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
     });
 
     // Insert after settings section
-    if (findMusicSection.parentNode) {
-      findMusicSection.parentNode.insertBefore(keyboardSection, findMusicSection);
+    if (settingsSection.parentNode) {
+      const nextSibling = settingsSection.nextSibling;
+      if (nextSibling) {
+        settingsSection.parentNode.insertBefore(keyboardSection, nextSibling);
+      } else {
+        settingsSection.parentNode.appendChild(keyboardSection);
+      }
     } else {
       content.appendChild(keyboardSection);
     }
@@ -160,8 +165,8 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   findMusicSection.appendChild(findMusicDesc);
   findMusicSection.appendChild(findMusicButton);
 
-  content.appendChild(settingsSection);
   content.appendChild(findMusicSection);
+  content.appendChild(settingsSection);
 
   drawer.appendChild(header);
   drawer.appendChild(content);

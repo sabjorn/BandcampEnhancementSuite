@@ -1,4 +1,5 @@
 import Logger from '../logger';
+import { storeFindMusicToken, getFindMusicTokenFromStorage } from '../utilities';
 
 const log = new Logger();
 
@@ -45,6 +46,8 @@ export async function exchangeBandcampToken(): Promise<string> {
     const data: BcTokenResponse = await response.json();
     log.info(`Successfully exchanged token`);
 
+    await storeFindMusicToken(data.token);
+
     return data.token;
   } catch (error) {
     if (error instanceof Error) {
@@ -54,4 +57,16 @@ export async function exchangeBandcampToken(): Promise<string> {
     log.error(`Unknown error exchanging token: ${error}`);
     throw new Error('Unknown error occurred while exchanging token');
   }
+}
+
+export async function getFindMusicToken(): Promise<string> {
+  const storedToken = await getFindMusicTokenFromStorage();
+
+  if (storedToken) {
+    log.debug('Using stored FindMusic.club token');
+    return storedToken;
+  }
+
+  log.info('No valid stored token, exchanging new token');
+  return await exchangeBandcampToken();
 }

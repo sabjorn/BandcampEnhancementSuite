@@ -5,6 +5,7 @@ import { initHideUnhideCollectionBackend } from './background/hide_unhide_collec
 import { initDownloadBackend } from './background/download_backend.js';
 import { initCartImportBackend } from './background/cart_import_backend.js';
 import { initFindMusicBackend } from './background/findmusic_backend.js';
+import { initCacheBackend } from './background/cache_backend.js';
 
 initLabelViewBackend();
 initWaveformBackend();
@@ -13,3 +14,4 @@ initHideUnhideCollectionBackend();
 initDownloadBackend();
 initCartImportBackend();
 initFindMusicBackend();
+initCacheBackend();

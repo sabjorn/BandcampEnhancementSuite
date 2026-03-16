@@ -1,3 +1,5 @@
+import { cachedFetch } from './utilities';
+
 const API_RATE_LIMIT_DELAY_MS = 1000;
 
 export const CURRENCY_MINIMUMS: Record<string, number> = {
@@ -119,7 +121,7 @@ export async function getTralbumDetails(
 
   const url = baseUrl ? `${baseUrl}/api/mobile/25/tralbum_details` : `/api/mobile/25/tralbum_details`;
 
-  const response = await fetch(url, {
+  const response = await cachedFetch(url, {
     method: 'POST',
     headers: {
       accept: 'application/json',

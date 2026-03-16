@@ -194,4 +194,65 @@ export function centreElement(element: HTMLElement): void {
   element.style.zIndex = '9999';
 }
 
-export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset };
+interface FindMusicTokenData {
+  token: string;
+  expiresAt: number;
+}
+
+export async function storeFindMusicToken(token: string, expiresInSeconds: number = 86400): Promise<void> {
+  const db = await getDB();
+  const expiresAt = Date.now() + expiresInSeconds * 1000;
+  const tokenData: FindMusicTokenData = { token, expiresAt };
+  await db.put('config', tokenData, 'findmusicToken');
+}
+
+export async function getFindMusicTokenFromStorage(): Promise<string | null> {
+  const db = await getDB();
+  const tokenData: FindMusicTokenData | undefined = await db.get('config', 'findmusicToken');
+
+  if (!tokenData) return null;
+
+  if (Date.now() >= tokenData.expiresAt) {
+    await db.delete('config', 'findmusicToken');
+    return null;
+  }
+
+  return tokenData.token;
+}
+
+export async function clearFindMusicToken(): Promise<void> {
+  const db = await getDB();
+  await db.delete('config', 'findmusicToken');
+}
+
+export async function cachedFetch(url: string, options?: RequestInit): Promise<Response> {
+  const response = await fetch(url, options);
+
+  const db = await getDB();
+  const config = await db.get('config', 'config');
+
+  if (!config?.enableFindMusicCaching) {
+    return response;
+  }
+
+  const clonedResponse = response.clone();
+
+  const responseText = await clonedResponse.text();
+  const requestBody = options?.body ? String(options.body) : '';
+
+  chrome.runtime
+    .sendMessage({
+      contentScriptQuery: 'postCache',
+      url: url,
+      method: options?.method || 'GET',
+      requestBody: requestBody,
+      responseBody: responseText
+    })
+    .catch((_error: Error) => {
+      // Silently ignore cache failures to not degrade user experience
+    });
+
+  return response;
+}
+
+export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset, FindMusicTokenData };

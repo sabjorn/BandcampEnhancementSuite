@@ -66,69 +66,101 @@ function extractTrackId(audioSrc: string): number | null {
   return isNaN(trackId) ? null : trackId;
 }
 
-function extractAllTrackIdsFromPage(): number[] {
+function extractAllTrackIdsFromPage(log: Logger): number[] {
   const trackIds: number[] = [];
 
   // Try to get TralbumData from the page
   const tralbumDataElement = document.querySelector('[data-tralbum]');
-  if (tralbumDataElement) {
-    const data = tralbumDataElement.getAttribute('data-tralbum');
-    if (data) {
-      try {
-        const tralbumData = JSON.parse(
-          data
-            .replace(/&quot;/g, '"')
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&#39;/g, "'")
-        );
-
-        // Extract track IDs from trackinfo array
-        if (tralbumData.trackinfo && Array.isArray(tralbumData.trackinfo)) {
-          tralbumData.trackinfo.forEach((track: any) => {
-            if (track.file && typeof track.file === 'object') {
-              // Get any file URL (mp3-128, mp3-v0, etc.)
-              const fileUrl = Object.values(track.file)[0];
-              if (typeof fileUrl === 'string') {
-                const trackId = extractTrackId(fileUrl);
-                if (trackId !== null) {
-                  trackIds.push(trackId);
-                }
-              }
-            }
-          });
-        }
-      } catch (error) {
-        console.warn('Failed to parse tralbum data:', error);
-      }
-    }
+  if (!tralbumDataElement) {
+    log.warn('No [data-tralbum] element found on page');
+    return trackIds;
   }
 
+  const data = tralbumDataElement.getAttribute('data-tralbum');
+  if (!data) {
+    log.warn('data-tralbum attribute is empty');
+    return trackIds;
+  }
+
+  try {
+    const tralbumData = JSON.parse(
+      data
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'")
+    );
+
+    log.debug(`Parsed tralbum data, has trackinfo: ${!!tralbumData.trackinfo}`);
+
+    // Extract track IDs from trackinfo array
+    if (tralbumData.trackinfo && Array.isArray(tralbumData.trackinfo)) {
+      log.debug(`Found ${tralbumData.trackinfo.length} tracks in trackinfo`);
+
+      tralbumData.trackinfo.forEach((track: any, index: number) => {
+        if (track.file && typeof track.file === 'object') {
+          // Get any file URL (mp3-128, mp3-v0, etc.)
+          const fileUrl = Object.values(track.file)[0];
+          if (typeof fileUrl === 'string') {
+            const trackId = extractTrackId(fileUrl);
+            if (trackId !== null) {
+              trackIds.push(trackId);
+              log.debug(`Track ${index}: extracted ID ${trackId} from ${fileUrl}`);
+            } else {
+              log.warn(`Track ${index}: failed to extract ID from ${fileUrl}`);
+            }
+          } else {
+            log.warn(`Track ${index}: file URL is not a string:`, fileUrl);
+          }
+        } else {
+          log.debug(`Track ${index}: no file object found`);
+        }
+      });
+    } else {
+      log.warn('No trackinfo array found in tralbum data');
+    }
+  } catch (error) {
+    log.error('Failed to parse tralbum data:', error);
+  }
+
+  log.info(`Extracted ${trackIds.length} track IDs from page: ${trackIds.join(', ')}`);
   return trackIds;
 }
 
 async function prefetchTrackMetadata(log: Logger): Promise<void> {
+  log.info('=== Starting prefetch metadata ===');
+
   try {
     const db = await getDB();
     const config = await db.get('config', 'config');
 
+    log.info(`Config state - displayWaveform: ${config?.displayWaveform}, enableFindMusicCaching: ${config?.enableFindMusicCaching}`);
+
     // Only prefetch if both waveform display and caching are enabled
-    if (!config?.displayWaveform || !config?.enableFindMusicCaching) {
+    if (!config?.displayWaveform) {
+      log.info('Prefetch skipped: waveform display is disabled');
       return;
     }
 
-    const trackIds = extractAllTrackIdsFromPage();
+    if (!config?.enableFindMusicCaching) {
+      log.info('Prefetch skipped: FindMusic caching is disabled');
+      return;
+    }
+
+    const trackIds = extractAllTrackIdsFromPage(log);
     if (trackIds.length === 0) {
-      log.info('No tracks found on page for prefetching');
+      log.warn('No tracks found on page for prefetching');
       return;
     }
 
-    log.info(`Prefetching metadata for ${trackIds.length} tracks`);
+    log.info(`Starting prefetch for ${trackIds.length} tracks: ${trackIds.join(', ')}`);
 
     // Prefetch all track metadata
-    const prefetchPromises = trackIds.map(async trackId => {
+    const prefetchPromises = trackIds.map(async (trackId, index) => {
       try {
+        log.debug(`[${index + 1}/${trackIds.length}] Fetching metadata for track ${trackId}`);
+
         const metadata = await chrome.runtime.sendMessage({
           contentScriptQuery: 'fetchTrackMetadata',
           trackId: trackId
@@ -136,17 +168,24 @@ async function prefetchTrackMetadata(log: Logger): Promise<void> {
 
         if (metadata && metadata.waveform && metadata.bpm) {
           metadataCache.set(trackId, metadata);
-          log.debug(`Cached metadata for track ${trackId}`);
+          log.info(`✓ Cached metadata for track ${trackId} (BPM: ${metadata.bpm.toFixed(2)}, Waveform: ${metadata.waveform.length} points)`);
+          return { trackId, success: true };
+        } else {
+          log.debug(`✗ No cached metadata available for track ${trackId}`);
+          return { trackId, success: false };
         }
       } catch (error) {
-        log.debug(`No cached metadata for track ${trackId}`);
+        log.debug(`✗ Failed to fetch metadata for track ${trackId}: ${error}`);
+        return { trackId, success: false };
       }
     });
 
-    await Promise.all(prefetchPromises);
-    log.info(`Prefetch complete: ${metadataCache.size} tracks cached`);
+    const results = await Promise.all(prefetchPromises);
+    const successCount = results.filter(r => r.success).length;
+
+    log.info(`=== Prefetch complete: ${successCount}/${trackIds.length} tracks cached in memory ===`);
   } catch (error) {
-    log.warn(`Failed to prefetch metadata: ${error}`);
+    log.error(`Failed to prefetch metadata: ${error}`);
   }
 }
 

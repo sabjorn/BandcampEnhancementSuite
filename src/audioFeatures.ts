@@ -75,18 +75,25 @@ function extractTrackId(audioSrc: string): number | null {
 function extractAllTrackIdsFromPage(log: Logger): number[] {
   const trackIds: number[] = [];
 
+  log.debug(`Looking for [data-tralbum] element on page: ${window.location.href}`);
+
   // Try to get TralbumData from the page
   const tralbumDataElement = document.querySelector('[data-tralbum]');
   if (!tralbumDataElement) {
     log.warn('No [data-tralbum] element found on page');
+    log.debug(`Available elements with 'data-' attributes: ${document.querySelectorAll('[data-tralbum], [data-blob]').length}`);
     return trackIds;
   }
+
+  log.debug(`Found [data-tralbum] element: ${tralbumDataElement.tagName}`);
 
   const data = tralbumDataElement.getAttribute('data-tralbum');
   if (!data) {
     log.warn('data-tralbum attribute is empty');
     return trackIds;
   }
+
+  log.debug(`data-tralbum attribute length: ${data.length} characters`);
 
   try {
     const tralbumData = JSON.parse(
@@ -136,6 +143,8 @@ function extractAllTrackIdsFromPage(log: Logger): number[] {
 
 async function prefetchTrackMetadata(log: Logger): Promise<void> {
   log.info('=== Starting prefetch metadata ===');
+  log.info(`Current URL: ${window.location.href}`);
+  log.info(`Page type check - has inline_player: ${!!document.querySelector('div.inline_player')}`);
 
   try {
     const db = await getDB();
@@ -390,8 +399,13 @@ export function initAudioFeatures(port: PortMessage): void {
   port.postMessage({ requestConfig: {} });
 
   // Prefetch metadata for all tracks on the page
-  log.info('Calling prefetchTrackMetadata()');
-  prefetchTrackMetadata(log);
+  // Wait a bit for page to fully load and populate data-tralbum
+  log.info('Scheduling prefetch metadata in 1 second...');
+  setTimeout(() => {
+    log.info('Calling prefetchTrackMetadata()');
+    prefetchTrackMetadata(log);
+  }, 1000);
+
   log.info('Audio features initialization complete');
 }
 

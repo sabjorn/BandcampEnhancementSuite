@@ -1,7 +1,10 @@
 import { analyze } from 'web-audio-beat-detector';
 
 import Logger from './logger';
-import { mousedownCallback } from './utilities.js';
+import { mousedownCallback, getDB } from './utilities.js';
+
+// In-memory cache for prefetched metadata
+const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
 
 interface PortMessage {
   onMessage: {
@@ -63,6 +66,90 @@ function extractTrackId(audioSrc: string): number | null {
   return isNaN(trackId) ? null : trackId;
 }
 
+function extractAllTrackIdsFromPage(): number[] {
+  const trackIds: number[] = [];
+
+  // Try to get TralbumData from the page
+  const tralbumDataElement = document.querySelector('[data-tralbum]');
+  if (tralbumDataElement) {
+    const data = tralbumDataElement.getAttribute('data-tralbum');
+    if (data) {
+      try {
+        const tralbumData = JSON.parse(
+          data
+            .replace(/&quot;/g, '"')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&#39;/g, "'")
+        );
+
+        // Extract track IDs from trackinfo array
+        if (tralbumData.trackinfo && Array.isArray(tralbumData.trackinfo)) {
+          tralbumData.trackinfo.forEach((track: any) => {
+            if (track.file && typeof track.file === 'object') {
+              // Get any file URL (mp3-128, mp3-v0, etc.)
+              const fileUrl = Object.values(track.file)[0];
+              if (typeof fileUrl === 'string') {
+                const trackId = extractTrackId(fileUrl);
+                if (trackId !== null) {
+                  trackIds.push(trackId);
+                }
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to parse tralbum data:', error);
+      }
+    }
+  }
+
+  return trackIds;
+}
+
+async function prefetchTrackMetadata(log: Logger): Promise<void> {
+  try {
+    const db = await getDB();
+    const config = await db.get('config', 'config');
+
+    // Only prefetch if both waveform display and caching are enabled
+    if (!config?.displayWaveform || !config?.enableFindMusicCaching) {
+      return;
+    }
+
+    const trackIds = extractAllTrackIdsFromPage();
+    if (trackIds.length === 0) {
+      log.info('No tracks found on page for prefetching');
+      return;
+    }
+
+    log.info(`Prefetching metadata for ${trackIds.length} tracks`);
+
+    // Prefetch all track metadata
+    const prefetchPromises = trackIds.map(async trackId => {
+      try {
+        const metadata = await chrome.runtime.sendMessage({
+          contentScriptQuery: 'fetchTrackMetadata',
+          trackId: trackId
+        });
+
+        if (metadata && metadata.waveform && metadata.bpm) {
+          metadataCache.set(trackId, metadata);
+          log.debug(`Cached metadata for track ${trackId}`);
+        }
+      } catch (error) {
+        log.debug(`No cached metadata for track ${trackId}`);
+      }
+    });
+
+    await Promise.all(prefetchPromises);
+    log.info(`Prefetch complete: ${metadataCache.size} tracks cached`);
+  } catch (error) {
+    log.warn(`Failed to prefetch metadata: ${error}`);
+  }
+}
+
 export async function generateAudioFeatures(
   canvas: HTMLCanvasElement,
   bpmDisplay: HTMLDivElement,
@@ -86,15 +173,26 @@ export async function generateAudioFeatures(
     }
 
     if (trackId) {
-      const cachedMetadata = await chrome.runtime
-        .sendMessage({
-          contentScriptQuery: 'fetchTrackMetadata',
-          trackId: trackId
-        })
-        .catch((error: Error) => {
-          log.warn(`Failed to fetch cached metadata: ${error.message}`);
-          return null;
-        });
+      // Check in-memory cache first (from prefetch)
+      let cachedMetadata = metadataCache.get(trackId);
+
+      // If not in memory, try fetching from API
+      if (!cachedMetadata) {
+        cachedMetadata = await chrome.runtime
+          .sendMessage({
+            contentScriptQuery: 'fetchTrackMetadata',
+            trackId: trackId
+          })
+          .catch((error: Error) => {
+            log.warn(`Failed to fetch cached metadata: ${error.message}`);
+            return null;
+          });
+
+        // Store in memory cache for future use
+        if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
+          metadataCache.set(trackId, cachedMetadata);
+        }
+      }
 
       if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
         log.info('Using cached waveform and BPM data');
@@ -232,6 +330,9 @@ export function initAudioFeatures(port: PortMessage): void {
 
   port.onMessage.addListener((msg: AudioFeaturesConfig) => applyAudioConfig(msg, canvas, canvasDisplayToggle, log));
   port.postMessage({ requestConfig: {} });
+
+  // Prefetch metadata for all tracks on the page
+  prefetchTrackMetadata(log);
 }
 
 export function createCanvas(): HTMLCanvasElement {

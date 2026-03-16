@@ -226,45 +226,96 @@ export async function clearFindMusicToken(): Promise<void> {
   await db.delete('config', 'findmusicToken');
 }
 
-export async function cachedFetch(url: string, options?: RequestInit): Promise<Response> {
-  const log = new Logger();
-  const method = options?.method || 'GET';
+// Fetch function factory - creates appropriate fetch based on caching config
+type FetchFunction = (url: string, options?: RequestInit) => Promise<Response>;
 
-  log.debug(`cachedFetch called: ${method} ${url}`);
+const log = new Logger();
 
-  const response = await fetch(url, options);
+function createCachingFetch(): FetchFunction {
+  return async (url: string, options?: RequestInit): Promise<Response> => {
+    const method = options?.method || 'GET';
+    log.debug(`Caching fetch: ${method} ${url}`);
 
-  const db = await getDB();
-  const config = await db.get('config', 'config');
+    const response = await fetch(url, options);
+    const clonedResponse = response.clone();
+    const responseText = await clonedResponse.text();
+    const requestBody = options?.body ? String(options.body) : '';
 
-  if (!config?.enableFindMusicCaching) {
-    log.debug(`Caching disabled, skipping cache for: ${method} ${url}`);
+    log.debug(`Sending to cache backend: ${method} ${url} (${responseText.length} bytes)`);
+
+    // Non-blocking cache operation
+    chrome.runtime
+      .sendMessage({
+        contentScriptQuery: 'postCache',
+        url: url,
+        method: method,
+        requestBody: requestBody,
+        responseBody: responseText
+      })
+      .then(() => {
+        log.debug(`Successfully cached: ${method} ${url}`);
+      })
+      .catch((error: Error) => {
+        log.warn(`Failed to cache request ${method} ${url}: ${error.message}`);
+      });
+
     return response;
+  };
+}
+
+function createPlainFetch(): FetchFunction {
+  return async (url: string, options?: RequestInit): Promise<Response> => {
+    const method = options?.method || 'GET';
+    log.debug(`Plain fetch (caching disabled): ${method} ${url}`);
+    return fetch(url, options);
+  };
+}
+
+// Stateful fetch manager using factory pattern
+class FetchManager {
+  private currentFetch: FetchFunction;
+  private cachingEnabled: boolean;
+
+  constructor() {
+    this.cachingEnabled = false;
+    this.currentFetch = createPlainFetch();
+    this.initialize();
   }
 
-  const clonedResponse = response.clone();
+  private async initialize(): Promise<void> {
+    try {
+      const db = await getDB();
+      const config = await db.get('config', 'config');
+      this.updateCachingState(config?.enableFindMusicCaching ?? false);
+    } catch (error) {
+      log.warn('Failed to initialize fetch manager, defaulting to plain fetch');
+    }
+  }
 
-  const responseText = await clonedResponse.text();
-  const requestBody = options?.body ? String(options.body) : '';
+  updateCachingState(enabled: boolean): void {
+    if (this.cachingEnabled === enabled) return;
 
-  log.debug(`Sending to cache backend: ${method} ${url} (${responseText.length} bytes)`);
+    this.cachingEnabled = enabled;
+    this.currentFetch = enabled ? createCachingFetch() : createPlainFetch();
+    log.info(`Fetch manager updated: caching ${enabled ? 'enabled' : 'disabled'}`);
+  }
 
-  chrome.runtime
-    .sendMessage({
-      contentScriptQuery: 'postCache',
-      url: url,
-      method: method,
-      requestBody: requestBody,
-      responseBody: responseText
-    })
-    .then(() => {
-      log.debug(`Successfully cached: ${method} ${url}`);
-    })
-    .catch((error: Error) => {
-      log.warn(`Failed to cache request ${method} ${url}: ${error.message}`);
-    });
+  async fetch(url: string, options?: RequestInit): Promise<Response> {
+    return this.currentFetch(url, options);
+  }
+}
 
-  return response;
+// Global fetch manager instance
+const fetchManager = new FetchManager();
+
+// Export function to update caching state (called when config changes)
+export function updateFetchCachingState(enabled: boolean): void {
+  fetchManager.updateCachingState(enabled);
+}
+
+// Main export - smart fetch that uses current configuration
+export async function cachedFetch(url: string, options?: RequestInit): Promise<Response> {
+  return fetchManager.fetch(url, options);
 }
 
 export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset, FindMusicTokenData };

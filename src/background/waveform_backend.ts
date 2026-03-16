@@ -54,7 +54,7 @@ export function processRequest(
   return true;
 }
 
-async function fetchTrackMetadata(trackId: string): Promise<{ waveform: number[]; bpm: number } | null> {
+async function fetchTrackMetadata(trackId: number): Promise<{ waveform: number[]; bpm: number } | null> {
   try {
     const token = await getFindMusicToken();
 
@@ -88,7 +88,7 @@ async function fetchTrackMetadata(trackId: string): Promise<{ waveform: number[]
   }
 }
 
-async function postTrackMetadata(trackId: string, waveform: number[], bpm: number): Promise<void> {
+async function postTrackMetadata(trackId: number, waveform: number[], bpm: number): Promise<void> {
   try {
     const token = await getFindMusicToken();
 

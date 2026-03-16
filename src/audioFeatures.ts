@@ -54,9 +54,13 @@ export function applyAudioConfig(
   canvasDisplayToggle.checked = msg.config.displayWaveform;
 }
 
-function extractTrackId(audioSrc: string): string | null {
-  const match = audioSrc.match(/stream\/([^?]+)/);
-  return match ? match[1] : null;
+function extractTrackId(audioSrc: string): number | null {
+  // URL format: https://t4.bcbits.com/stream/{hash}/{encoding}/{track_id}?...
+  const match = audioSrc.match(/stream\/[^/]+\/[^/]+\/(\d+)/);
+  if (!match) return null;
+
+  const trackId = parseInt(match[1], 10);
+  return isNaN(trackId) ? null : trackId;
 }
 
 export async function generateAudioFeatures(

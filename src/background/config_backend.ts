@@ -4,6 +4,7 @@ import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings }
 
 interface Config {
   displayWaveform: boolean;
+  enableFindMusicCaching: boolean;
   albumPurchasedDuringCheckout: boolean;
   albumOnCheckoutDisabled: boolean;
   albumPurchaseTimeDelaySeconds: number;
@@ -13,6 +14,7 @@ interface Config {
 
 const defaultConfig: Config = {
   displayWaveform: false,
+  enableFindMusicCaching: false,
   albumPurchasedDuringCheckout: false,
   albumOnCheckoutDisabled: false,
   albumPurchaseTimeDelaySeconds: 60 * 60 * 24 * 30,
@@ -55,6 +57,8 @@ export async function portListenerCallback(
 
   if (msg.resetKeyboardSettings) await resetKeyboardSettings(db, log, portState.port);
 
+  if (msg.toggleFindMusicCaching) await toggleFindMusicCaching(db, log, portState.port);
+
   if (msg.requestConfig) await broadcastConfig(db, log, portState.port);
 }
 
@@ -82,6 +86,15 @@ export async function toggleWaveformDisplay(db: any, log: Logger, port?: chrome.
 
   const db_config = await db.get('config', 'config');
   db_config['displayWaveform'] = !db_config['displayWaveform'];
+  await db.put('config', db_config, 'config');
+  port?.postMessage({ config: db_config });
+}
+
+export async function toggleFindMusicCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+  log.info('toggling FindMusic.club caching');
+
+  const db_config = await db.get('config', 'config');
+  db_config['enableFindMusicCaching'] = !db_config['enableFindMusicCaching'];
   await db.put('config', db_config, 'config');
   port?.postMessage({ config: db_config });
 }

@@ -54,6 +54,11 @@ export function applyAudioConfig(
   canvasDisplayToggle.checked = msg.config.displayWaveform;
 }
 
+function extractTrackId(audioSrc: string): string | null {
+  const match = audioSrc.match(/stream\/([^?]+)/);
+  return match ? match[1] : null;
+}
+
 export async function generateAudioFeatures(
   canvas: HTMLCanvasElement,
   bpmDisplay: HTMLDivElement,
@@ -71,6 +76,35 @@ export async function generateAudioFeatures(
     bpmDisplay.innerText = '';
     canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
 
+    const trackId = extractTrackId(audio.src);
+    if (!trackId) {
+      log.warn('Could not extract track ID from audio source');
+    }
+
+    if (trackId) {
+      const cachedMetadata = await chrome.runtime
+        .sendMessage({
+          contentScriptQuery: 'fetchTrackMetadata',
+          trackId: trackId
+        })
+        .catch((error: Error) => {
+          log.warn(`Failed to fetch cached metadata: ${error.message}`);
+          return null;
+        });
+
+      if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
+        log.info('Using cached waveform and BPM data');
+        bpmDisplay.innerText = `bpm: ${cachedMetadata.bpm.toFixed(2)}`;
+
+        const max = cachedMetadata.waveform.reduce((a: number, b: number) => Math.max(a, b));
+        for (let i = 0; i < cachedMetadata.waveform.length; i++) {
+          const amplitude = cachedMetadata.waveform[i] / max;
+          fillBar(canvas, amplitude, i, cachedMetadata.waveform.length, waveformColour);
+        }
+        return;
+      }
+    }
+
     const ctx = new AudioContext();
     const src = audio.src.split('stream/')[1];
 
@@ -83,9 +117,28 @@ export async function generateAudioFeatures(
         const audioBuffer_ = new Uint8Array(audioData.data).buffer;
         const decodePromise = ctx.decodeAudioData(audioBuffer_);
 
+        let computedBpm: number | null = null;
+        let computedWaveform: number[] | null = null;
+
         decodePromise.then(decodedAudio => {
           analyze(decodedAudio)
-            .then(bmp => (bpmDisplay.innerText = `bpm: ${bmp.toFixed(2)}`))
+            .then(bmp => {
+              computedBpm = bmp;
+              bpmDisplay.innerText = `bpm: ${bmp.toFixed(2)}`;
+
+              if (trackId && computedWaveform !== null) {
+                chrome.runtime
+                  .sendMessage({
+                    contentScriptQuery: 'postTrackMetadata',
+                    trackId: trackId,
+                    waveform: computedWaveform,
+                    bpm: computedBpm
+                  })
+                  .catch((error: Error) => {
+                    log.warn(`Failed to cache track metadata: ${error.message}`);
+                  });
+              }
+            })
             .catch(err => log.error(`error finding bpm for track: ${err}`));
         });
 
@@ -108,6 +161,8 @@ export async function generateAudioFeatures(
             rmsBuffer.push(Math.sqrt(rms / rmsSize));
           }
 
+          computedWaveform = rmsBuffer;
+
           log.info('visualizing');
           const max = rmsBuffer.reduce(function (a, b) {
             return Math.max(a, b);
@@ -115,6 +170,19 @@ export async function generateAudioFeatures(
           for (let i = 0; i < rmsBuffer.length; i++) {
             const amplitude = rmsBuffer[i] / max;
             fillBar(canvas, amplitude, i, datapoints, waveformColour);
+          }
+
+          if (trackId && computedBpm !== null) {
+            chrome.runtime
+              .sendMessage({
+                contentScriptQuery: 'postTrackMetadata',
+                trackId: trackId,
+                waveform: computedWaveform,
+                bpm: computedBpm
+              })
+              .catch((error: Error) => {
+                log.warn(`Failed to cache track metadata: ${error.message}`);
+              });
           }
         });
       }

@@ -69,6 +69,33 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   settingsSection.appendChild(settingsTitle);
   settingsSection.appendChild(waveformSettingRow);
 
+  const cachingSettingRow = document.createElement('div');
+  cachingSettingRow.className = 'bes-drawer-setting';
+  cachingSettingRow.style.display = 'none';
+
+  const cachingLabelText = document.createElement('span');
+  cachingLabelText.className = 'bes-drawer-setting-label';
+  cachingLabelText.textContent = 'Enable FindMusic.club Caching';
+
+  const cachingToggle = document.createElement('input');
+  cachingToggle.setAttribute('type', 'checkbox');
+  cachingToggle.setAttribute('class', 'caching');
+  cachingToggle.setAttribute('id', 'bes-caching-toggle');
+
+  const cachingLabel = document.createElement('label');
+  cachingLabel.setAttribute('class', 'caching');
+  cachingLabel.htmlFor = 'bes-caching-toggle';
+  cachingLabel.innerHTML = 'Toggle';
+
+  const cachingToggleContainer = document.createElement('div');
+  cachingToggleContainer.appendChild(cachingToggle);
+  cachingToggleContainer.appendChild(cachingLabel);
+
+  cachingSettingRow.appendChild(cachingLabelText);
+  cachingSettingRow.appendChild(cachingToggleContainer);
+
+  settingsSection.appendChild(cachingSettingRow);
+
   let keyboardSection: HTMLElement | null = null;
 
   const initKeyboardSection = (settings: KeyboardSettings) => {
@@ -105,6 +132,10 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       waveformToggle.checked = msg.config.displayWaveform;
     }
 
+    if (msg.config && typeof msg.config.enableFindMusicCaching === 'boolean') {
+      cachingToggle.checked = msg.config.enableFindMusicCaching;
+    }
+
     if (msg.config && msg.config.keyboardSettings) {
       initKeyboardSection(msg.config.keyboardSettings);
     }
@@ -117,6 +148,10 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   waveformToggle.addEventListener('change', () => {
     config_port.postMessage({ toggleWaveformDisplay: {} });
+  });
+
+  cachingToggle.addEventListener('change', () => {
+    config_port.postMessage({ toggleFindMusicCaching: {} });
   });
 
   config_port.postMessage({ requestConfig: {} });
@@ -143,9 +178,12 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       findMusicButton.textContent = response?.granted
         ? 'Log in to FindMusic.club'
         : 'Enable FindMusic.club Integration';
+
+      cachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
     } catch (error) {
       log.error(`Failed to check permissions: ${error}`);
       findMusicButton.textContent = 'Enable FindMusic.club Integration';
+      cachingSettingRow.style.display = 'none';
     }
   };
 

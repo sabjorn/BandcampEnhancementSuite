@@ -11,10 +11,12 @@ export function processRequest(
   if (request.contentScriptQuery === 'fetchTrackMetadata') {
     fetchTrackMetadata(request.trackId)
       .then(metadata => {
+        // metadata is null on cache miss or error - both are handled gracefully
         sendResponse(metadata);
       })
       .catch(error => {
-        log.error(`Failed to fetch track metadata: ${error.message}`);
+        // Shouldn't happen since fetchTrackMetadata doesn't throw, but handle just in case
+        log.warn(`Unexpected error in fetchTrackMetadata: ${error.message}`);
         sendResponse(null);
       });
     return true;
@@ -26,7 +28,8 @@ export function processRequest(
         sendResponse({ success: true });
       })
       .catch(error => {
-        log.error(`Failed to post track metadata: ${error.message}`);
+        // Shouldn't happen since postTrackMetadata doesn't throw, but handle just in case
+        log.warn(`Unexpected error in postTrackMetadata: ${error.message}`);
         sendResponse({ success: false, error: error.message });
       });
     return true;
@@ -65,26 +68,30 @@ async function fetchTrackMetadata(trackId: number): Promise<{ waveform: number[]
       }
     });
 
-    if (response.status === 404) {
-      log.info(`No cached metadata found for track ${trackId}`);
+    // Cache miss responses (404, 500) are expected and not errors
+    if (response.status === 404 || response.status === 500) {
+      log.debug(`Cache miss for track ${trackId} (${response.status})`);
       return null;
     }
 
+    // Other non-OK responses are actual errors
     if (!response.ok) {
       const errorText = await response.text();
       log.error(`FindMusic.club metadata API error: ${response.status} ${errorText}`);
-      throw new Error(`Failed to fetch metadata: ${response.status} ${response.statusText}`);
+      return null; // Don't throw, just return null to fall back to local computation
     }
 
     const data = await response.json();
     log.info(`Successfully fetched metadata for track ${trackId}`);
     return data;
   } catch (error) {
+    // Network errors, parse errors, etc.
     if (error instanceof Error) {
-      log.error(`Error fetching metadata: ${error.message}`);
-      throw error;
+      log.warn(`Network error fetching metadata for track ${trackId}: ${error.message}`);
+    } else {
+      log.warn(`Unknown error fetching metadata for track ${trackId}`);
     }
-    throw new Error('Unknown error occurred while fetching metadata');
+    return null; // Return null to gracefully fall back to local computation
   }
 }
 
@@ -107,17 +114,19 @@ async function postTrackMetadata(trackId: number, waveform: number[], bpm: numbe
 
     if (!response.ok) {
       const errorText = await response.text();
-      log.error(`FindMusic.club metadata API error: ${response.status} ${errorText}`);
-      throw new Error(`Failed to post metadata: ${response.status} ${response.statusText}`);
+      log.warn(`Failed to post metadata for track ${trackId}: ${response.status} ${errorText}`);
+      return; // Non-critical failure, just log and continue
     }
 
     log.info(`Successfully posted metadata for track ${trackId}`);
   } catch (error) {
+    // Network errors are non-critical for posting metadata
     if (error instanceof Error) {
-      log.error(`Error posting metadata: ${error.message}`);
-      throw error;
+      log.warn(`Network error posting metadata for track ${trackId}: ${error.message}`);
+    } else {
+      log.warn(`Unknown error posting metadata for track ${trackId}`);
     }
-    throw new Error('Unknown error occurred while posting metadata');
+    // Don't throw - posting metadata is a background operation
   }
 }
 

@@ -6,6 +6,12 @@ import { mousedownCallback, getDB } from './utilities.js';
 // In-memory cache for prefetched metadata
 const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
 
+// Debug helper to inspect cache state
+function logCacheState(log: Logger, context: string): void {
+  const cacheEntries = Array.from(metadataCache.keys());
+  log.debug(`[${context}] Memory cache state: ${metadataCache.size} entries - Track IDs: ${cacheEntries.join(', ') || 'none'}`);
+}
+
 interface PortMessage {
   onMessage: {
     addListener: (callback: (message: any) => void) => void;
@@ -111,7 +117,7 @@ function extractAllTrackIdsFromPage(log: Logger): number[] {
               log.warn(`Track ${index}: failed to extract ID from ${fileUrl}`);
             }
           } else {
-            log.warn(`Track ${index}: file URL is not a string:`, fileUrl);
+            log.warn(`Track ${index}: file URL is not a string: ${typeof fileUrl}`);
           }
         } else {
           log.debug(`Track ${index}: no file object found`);
@@ -121,7 +127,7 @@ function extractAllTrackIdsFromPage(log: Logger): number[] {
       log.warn('No trackinfo array found in tralbum data');
     }
   } catch (error) {
-    log.error('Failed to parse tralbum data:', error);
+    log.error(`Failed to parse tralbum data: ${error}`);
   }
 
   log.info(`Extracted ${trackIds.length} track IDs from page: ${trackIds.join(', ')}`);
@@ -183,6 +189,7 @@ async function prefetchTrackMetadata(log: Logger): Promise<void> {
     const results = await Promise.all(prefetchPromises);
     const successCount = results.filter(r => r.success).length;
 
+    logCacheState(log, 'After prefetch');
     log.info(`=== Prefetch complete: ${successCount}/${trackIds.length} tracks cached in memory ===`);
   } catch (error) {
     log.error(`Failed to prefetch metadata: ${error}`);
@@ -212,11 +219,18 @@ export async function generateAudioFeatures(
     }
 
     if (trackId) {
+      logCacheState(log, 'Before cache check');
+      log.debug(`Checking cache for track ID ${trackId}`);
+
       // Check in-memory cache first (from prefetch)
       let cachedMetadata = metadataCache.get(trackId);
 
-      // If not in memory, try fetching from API
-      if (!cachedMetadata) {
+      if (cachedMetadata) {
+        log.info(`✓ MEMORY CACHE HIT for track ${trackId} - Using prefetched data`);
+      } else {
+        log.debug(`✗ Memory cache miss for track ${trackId} - Fetching from API`);
+
+        // If not in memory, try fetching from API
         cachedMetadata = await chrome.runtime
           .sendMessage({
             contentScriptQuery: 'fetchTrackMetadata',
@@ -230,11 +244,12 @@ export async function generateAudioFeatures(
         // Store in memory cache for future use
         if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
           metadataCache.set(trackId, cachedMetadata);
+          log.debug(`Stored track ${trackId} in memory cache for next time`);
         }
       }
 
       if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
-        log.info('Using cached waveform and BPM data');
+        log.info(`Displaying waveform for track ${trackId} (BPM: ${cachedMetadata.bpm.toFixed(2)}, ${cachedMetadata.waveform.length} points)`);
         bpmDisplay.innerText = `bpm: ${cachedMetadata.bpm.toFixed(2)}`;
 
         const max = cachedMetadata.waveform.reduce((a: number, b: number) => Math.max(a, b));
@@ -243,6 +258,8 @@ export async function generateAudioFeatures(
           fillBar(canvas, amplitude, i, cachedMetadata.waveform.length, waveformColour);
         }
         return;
+      } else {
+        log.debug(`No cached metadata available for track ${trackId} - will compute locally`);
       }
     }
 
@@ -333,6 +350,8 @@ export async function generateAudioFeatures(
 
 export function initAudioFeatures(port: PortMessage): void {
   const log = new Logger();
+  log.info('Initializing audio features');
+
   const currentTarget = { value: undefined as string | undefined };
 
   const canvas = createCanvas();
@@ -371,7 +390,9 @@ export function initAudioFeatures(port: PortMessage): void {
   port.postMessage({ requestConfig: {} });
 
   // Prefetch metadata for all tracks on the page
+  log.info('Calling prefetchTrackMetadata()');
   prefetchTrackMetadata(log);
+  log.info('Audio features initialization complete');
 }
 
 export function createCanvas(): HTMLCanvasElement {

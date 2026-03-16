@@ -48,7 +48,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   const waveformLabelText = document.createElement('span');
   waveformLabelText.className = 'bes-drawer-setting-label';
-  waveformLabelText.textContent = 'Display Waveform';
+  waveformLabelText.textContent = 'Display Waveform & Caching';
 
   const waveformToggle = document.createElement('input');
   waveformToggle.setAttribute('type', 'checkbox');
@@ -134,7 +134,6 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
     }
 
     if (msg.config && typeof msg.config.enableFindMusicCaching === 'boolean') {
-      cachingToggle.checked = msg.config.enableFindMusicCaching;
       // Update fetch manager when caching config changes
       updateFetchCachingState(msg.config.enableFindMusicCaching);
     }
@@ -151,10 +150,6 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   waveformToggle.addEventListener('change', () => {
     config_port.postMessage({ toggleWaveformDisplay: {} });
-  });
-
-  cachingToggle.addEventListener('change', () => {
-    config_port.postMessage({ toggleFindMusicCaching: {} });
   });
 
   config_port.postMessage({ requestConfig: {} });
@@ -181,12 +176,9 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       findMusicButton.textContent = response?.granted
         ? 'Log in to FindMusic.club'
         : 'Enable FindMusic.club Integration';
-
-      cachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
     } catch (error) {
       log.error(`Failed to check permissions: ${error}`);
       findMusicButton.textContent = 'Enable FindMusic.club Integration';
-      cachingSettingRow.style.display = 'none';
     }
   };
 

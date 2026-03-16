@@ -82,10 +82,12 @@ export async function synchronizeConfig(db: any, config: Partial<Config>, port?:
 }
 
 export async function toggleWaveformDisplay(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
-  log.info('toggleing waveform display');
+  log.info('toggling waveform display and caching');
 
   const db_config = await db.get('config', 'config');
-  db_config['displayWaveform'] = !db_config['displayWaveform'];
+  const newValue = !db_config['displayWaveform'];
+  db_config['displayWaveform'] = newValue;
+  db_config['enableFindMusicCaching'] = newValue; // Keep caching in sync with waveform
   await db.put('config', db_config, 'config');
   port?.postMessage({ config: db_config });
 }

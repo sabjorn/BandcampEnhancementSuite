@@ -10,14 +10,17 @@ export function processRequest(
 ): boolean {
   if (request.contentScriptQuery !== 'postCache') return false;
 
-  log.info('Processing cache request');
+  const { url, method, requestBody, responseBody } = request;
+  log.debug(`Cache backend received: ${method} ${url}`);
+  log.debug(`Request body size: ${requestBody.length} bytes, Response body size: ${responseBody.length} bytes`);
 
-  postCacheToFindMusic(request.url, request.method, request.requestBody, request.responseBody)
+  postCacheToFindMusic(url, method, requestBody, responseBody)
     .then(() => {
+      log.debug(`Cache backend successfully processed: ${method} ${url}`);
       sendResponse({ success: true });
     })
     .catch((error: Error) => {
-      log.error(`Failed to post cache: ${error.message}`);
+      log.error(`Failed to post cache for ${method} ${url}: ${error.message}`);
       sendResponse({ success: false, error: error.message });
     });
 
@@ -31,9 +34,11 @@ async function postCacheToFindMusic(
   responseBody: string
 ): Promise<void> {
   try {
+    log.debug(`Posting to FindMusic API cache endpoint: ${method} ${url}`);
     const token = await getFindMusicToken();
 
-    const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/cache`, {
+    const cacheEndpoint = `${process.env.FINDMUSIC_BASE_URL}/api/cache`;
+    const response = await fetch(cacheEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -49,14 +54,14 @@ async function postCacheToFindMusic(
 
     if (!response.ok) {
       const errorText = await response.text();
-      log.error(`FindMusic.club cache API error: ${response.status} ${errorText}`);
+      log.error(`FindMusic.club cache API error for ${method} ${url}: ${response.status} ${errorText}`);
       throw new Error(`Failed to post cache: ${response.status} ${response.statusText}`);
     }
 
-    log.info('Successfully posted cache to FindMusic.club');
+    log.info(`Successfully posted cache to FindMusic.club: ${method} ${url}`);
   } catch (error) {
     if (error instanceof Error) {
-      log.error(`Error posting cache: ${error.message}`);
+      log.error(`Error posting cache for ${method} ${url}: ${error.message}`);
       throw error;
     }
     throw new Error('Unknown error occurred while posting cache');

@@ -1,4 +1,5 @@
 import { openDB, IDBPDatabase } from 'idb';
+import Logger from './logger';
 
 interface MouseEventWithOffset extends MouseEvent {
   offsetX: number;
@@ -226,12 +227,18 @@ export async function clearFindMusicToken(): Promise<void> {
 }
 
 export async function cachedFetch(url: string, options?: RequestInit): Promise<Response> {
+  const log = new Logger();
+  const method = options?.method || 'GET';
+
+  log.debug(`cachedFetch called: ${method} ${url}`);
+
   const response = await fetch(url, options);
 
   const db = await getDB();
   const config = await db.get('config', 'config');
 
   if (!config?.enableFindMusicCaching) {
+    log.debug(`Caching disabled, skipping cache for: ${method} ${url}`);
     return response;
   }
 
@@ -240,16 +247,21 @@ export async function cachedFetch(url: string, options?: RequestInit): Promise<R
   const responseText = await clonedResponse.text();
   const requestBody = options?.body ? String(options.body) : '';
 
+  log.debug(`Sending to cache backend: ${method} ${url} (${responseText.length} bytes)`);
+
   chrome.runtime
     .sendMessage({
       contentScriptQuery: 'postCache',
       url: url,
-      method: options?.method || 'GET',
+      method: method,
       requestBody: requestBody,
       responseBody: responseText
     })
-    .catch((_error: Error) => {
-      // Silently ignore cache failures to not degrade user experience
+    .then(() => {
+      log.debug(`Successfully cached: ${method} ${url}`);
+    })
+    .catch((error: Error) => {
+      log.warn(`Failed to cache request ${method} ${url}: ${error.message}`);
     });
 
   return response;

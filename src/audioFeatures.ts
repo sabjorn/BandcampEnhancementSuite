@@ -2,6 +2,7 @@ import { analyze } from 'web-audio-beat-detector';
 
 import Logger from './logger';
 import { mousedownCallback, getDB } from './utilities.js';
+import { hasFindMusicPermissions } from './clients/findmusic';
 
 // In-memory cache for prefetched metadata
 const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
@@ -147,6 +148,13 @@ async function prefetchTrackMetadata(log: Logger): Promise<void> {
   log.info(`Page type check - has inline_player: ${!!document.querySelector('div.inline_player')}`);
 
   try {
+    // Check permissions first
+    const hasPermissions = await hasFindMusicPermissions();
+    if (!hasPermissions) {
+      log.info('Prefetch skipped: FindMusic permissions not granted');
+      return;
+    }
+
     const db = await getDB();
     const config = await db.get('config', 'config');
 

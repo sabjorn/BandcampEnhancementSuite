@@ -61,6 +61,12 @@ async function fetchTrackMetadata(trackId: number): Promise<{ waveform: number[]
   try {
     const token = await getFindMusicToken();
 
+    // No permissions granted - skip API call
+    if (!token) {
+      log.debug(`Skipping metadata fetch for track ${trackId} - no FindMusic permissions`);
+      return null;
+    }
+
     const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/metadata?track_id=${trackId}`, {
       method: 'GET',
       headers: {
@@ -98,6 +104,12 @@ async function fetchTrackMetadata(trackId: number): Promise<{ waveform: number[]
 async function postTrackMetadata(trackId: number, waveform: number[], bpm: number): Promise<void> {
   try {
     const token = await getFindMusicToken();
+
+    // No permissions granted - skip API call
+    if (!token) {
+      log.debug(`Skipping metadata post for track ${trackId} - no FindMusic permissions`);
+      return;
+    }
 
     const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/metadata`, {
       method: 'POST',

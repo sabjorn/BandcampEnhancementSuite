@@ -113,8 +113,93 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   findMusicSection.appendChild(findMusicDesc);
   findMusicSection.appendChild(findMusicButton);
 
+  const customDomainsSection = document.createElement('div');
+  customDomainsSection.className = 'bes-drawer-section';
+
+  const customDomainsTitle = document.createElement('h3');
+  customDomainsTitle.textContent = 'Custom Bandcamp Domains';
+
+  const customDomainsDesc = document.createElement('p');
+  customDomainsDesc.textContent = 'Add custom domains where artists host their Bandcamp pages (e.g., example.com)';
+
+  const domainInputRow = document.createElement('div');
+  domainInputRow.className = 'bes-domain-input-row';
+
+  const domainInput = document.createElement('input');
+  domainInput.type = 'text';
+  domainInput.className = 'bes-domain-input';
+  domainInput.placeholder = 'example.com';
+
+  const addButton = document.createElement('button');
+  addButton.className = 'bes-drawer-button';
+  addButton.textContent = 'Add Domain';
+  addButton.style.marginLeft = '8px';
+
+  domainInputRow.appendChild(domainInput);
+  domainInputRow.appendChild(addButton);
+
+  const domainList = document.createElement('div');
+  domainList.className = 'bes-domain-list';
+
+  const loadDomains = () => {
+    config_port.postMessage({ getCustomDomains: {} });
+  };
+
+  config_port.onMessage.addListener((msg: any) => {
+    if (msg.customDomains) {
+      domainList.innerHTML = '';
+      msg.customDomains.forEach((domain: string) => {
+        const domainItem = document.createElement('div');
+        domainItem.className = 'bes-domain-item';
+
+        const domainText = document.createElement('span');
+        domainText.textContent = domain;
+
+        const removeButton = document.createElement('button');
+        removeButton.className = 'bes-domain-remove';
+        removeButton.innerHTML = '×';
+        removeButton.setAttribute('aria-label', `Remove ${domain}`);
+
+        removeButton.addEventListener('click', () => {
+          chrome.runtime.sendMessage({
+            contentScriptQuery: 'removeCustomDomain',
+            domain: domain
+          });
+          config_port.postMessage({ removeCustomDomain: domain });
+        });
+
+        domainItem.appendChild(domainText);
+        domainItem.appendChild(removeButton);
+        domainList.appendChild(domainItem);
+      });
+    }
+  });
+
+  addButton.addEventListener('click', () => {
+    const domain = domainInput.value.trim();
+    if (domain) {
+      chrome.runtime.sendMessage({
+        contentScriptQuery: 'requestAddCustomDomain',
+        domain: domain
+      });
+      domainInput.value = '';
+    }
+  });
+
+  domainInput.addEventListener('keypress', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      addButton.click();
+    }
+  });
+
+  customDomainsSection.appendChild(customDomainsTitle);
+  customDomainsSection.appendChild(customDomainsDesc);
+  customDomainsSection.appendChild(domainInputRow);
+  customDomainsSection.appendChild(domainList);
+
   content.appendChild(settingsSection);
   content.appendChild(findMusicSection);
+  content.appendChild(customDomainsSection);
 
   drawer.appendChild(header);
   drawer.appendChild(content);
@@ -124,6 +209,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   const openDrawer = async () => {
     await updateButtonText();
+    loadDomains();
     drawer.classList.add('open');
     overlay.classList.add('open');
   };

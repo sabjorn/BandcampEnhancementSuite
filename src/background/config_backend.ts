@@ -7,6 +7,7 @@ interface Config {
   albumOnCheckoutDisabled: boolean;
   albumPurchaseTimeDelaySeconds: number;
   installDateUnixSeconds: number;
+  customDomains: string[];
 }
 
 const defaultConfig: Config = {
@@ -14,7 +15,8 @@ const defaultConfig: Config = {
   albumPurchasedDuringCheckout: false,
   albumOnCheckoutDisabled: false,
   albumPurchaseTimeDelaySeconds: 60 * 60 * 24 * 30,
-  installDateUnixSeconds: Math.floor(Date.now() / 1000)
+  installDateUnixSeconds: Math.floor(Date.now() / 1000),
+  customDomains: []
 };
 
 export function connectionListenerCallback(
@@ -49,6 +51,12 @@ export async function portListenerCallback(
   if (msg.toggleWaveformDisplay) await toggleWaveformDisplay(db, log, portState.port);
 
   if (msg.requestConfig) await broadcastConfig(db, log, portState.port);
+
+  if (msg.addCustomDomain) await addCustomDomain(db, msg.addCustomDomain, log, portState.port);
+
+  if (msg.removeCustomDomain) await removeCustomDomain(db, msg.removeCustomDomain, log, portState.port);
+
+  if (msg.getCustomDomains) await getCustomDomains(db, log, portState.port);
 }
 
 export async function initConfigBackend(): Promise<void> {
@@ -94,4 +102,51 @@ export async function setupDB(db: any): Promise<void> {
 
 export function mergeData(reference_config: Config, new_config: Partial<Config>): Config {
   return Object.assign({}, reference_config, new_config);
+}
+
+export async function addCustomDomain(
+  db: any,
+  domain: string,
+  log: Logger,
+  port?: chrome.runtime.Port
+): Promise<void> {
+  log.info(`Adding custom domain: ${domain}`);
+
+  const db_config = await db.get('config', 'config');
+  const customDomains = db_config.customDomains || [];
+
+  if (!customDomains.includes(domain)) {
+    customDomains.push(domain);
+    db_config.customDomains = customDomains;
+    await db.put('config', db_config, 'config');
+    port?.postMessage({ customDomains: customDomains });
+  }
+}
+
+export async function removeCustomDomain(
+  db: any,
+  domain: string,
+  log: Logger,
+  port?: chrome.runtime.Port
+): Promise<void> {
+  log.info(`Removing custom domain: ${domain}`);
+
+  const db_config = await db.get('config', 'config');
+  const customDomains = db_config.customDomains || [];
+
+  const index = customDomains.indexOf(domain);
+  if (index > -1) {
+    customDomains.splice(index, 1);
+    db_config.customDomains = customDomains;
+    await db.put('config', db_config, 'config');
+    port?.postMessage({ customDomains: customDomains });
+  }
+}
+
+export async function getCustomDomains(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+  log.info('Getting custom domains');
+
+  const db_config = await db.get('config', 'config');
+  const customDomains = db_config.customDomains || [];
+  port?.postMessage({ customDomains: customDomains });
 }

@@ -563,3 +563,90 @@ button.bes-downloadall[disabled]::after {
   margin: 0;
   pointer-events: all;
 }
+
+/* Custom Domain Input */
+.bes-domain-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.bes-domain-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+  transition: border-color 0.2s ease;
+}
+
+.bes-domain-input:focus {
+  outline: none;
+  border-color: #1da0c3;
+}
+
+.bes-domain-input::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.bes-domain-input-row .bes-drawer-button {
+  flex-shrink: 0;
+  width: auto;
+  padding: 10px 16px;
+  margin: 0;
+}
+
+/* Domain List */
+.bes-domain-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bes-domain-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+}
+
+.bes-domain-item span {
+  flex: 1;
+  word-break: break-all;
+  color: #333;
+}
+
+.bes-domain-remove {
+  background: transparent;
+  border: none;
+  color: #f44336;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.bes-domain-remove:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+.bes-domain-remove:active {
+  background-color: rgba(244, 67, 54, 0.2);
+}

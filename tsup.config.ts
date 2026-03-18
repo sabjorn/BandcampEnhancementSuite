@@ -4,7 +4,8 @@ export default defineConfig(options => ({
   entry: {
     main: './src/main.ts',
     background: './src/background.ts',
-    findmusic_permission: './src/findmusic_permission.ts'
+    findmusic_permission: './src/findmusic_permission.ts',
+    custom_domain_permission: './src/custom_domain_permission.ts'
   },
   format: ['iife'],
   target: 'es2022',

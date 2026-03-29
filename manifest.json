@@ -29,6 +29,10 @@
       "matches": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*"],
       "js": ["dist/main.js"],
       "css": ["css/style.css"]
+    },
+    {
+      "matches": ["https://*.findmusic.club/guide*"],
+      "js": ["dist/findmusic_autologin.js"]
     }
   ],
   "web_accessible_resources": [

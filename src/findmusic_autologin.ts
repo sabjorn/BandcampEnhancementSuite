@@ -3,6 +3,7 @@ import Logger from './logger';
 const log = new Logger();
 const FINDMUSIC_BASE_URL = process.env.FINDMUSIC_BASE_URL as string;
 const BUTTON_ID = 'bes-findmusic-login-button';
+const CONTAINER_MODIFIED_FLAG = 'data-bes-modified';
 let isLoggingIn = false;
 
 async function performLogin() {
@@ -61,54 +62,42 @@ async function performLogin() {
 
 function injectLoginButton() {
   if (!window.location.pathname.includes('/guide')) {
-    const existingButton = document.getElementById(BUTTON_ID);
-    if (existingButton) {
-      existingButton.remove();
+    return;
+  }
+
+  const container = document.querySelector('.MuiContainer-root.MuiContainer-maxWidthMd');
+  if (!container) {
+    return;
+  }
+
+  if (container.hasAttribute(CONTAINER_MODIFIED_FLAG)) {
+    return;
+  }
+
+  const boxToKeep = container.querySelector('.MuiBox-root.css-14jdev5');
+  if (!boxToKeep) {
+    return;
+  }
+
+  log.info('Modifying guide page content and injecting login button');
+
+  const children = Array.from(container.children);
+  children.forEach(child => {
+    if (child !== boxToKeep) {
+      child.remove();
     }
-    return;
-  }
-
-  if (document.getElementById(BUTTON_ID)) {
-    return;
-  }
-
-  log.info('Injecting login button on guide page');
+  });
 
   const button = document.createElement('button');
   button.id = BUTTON_ID;
   button.textContent = 'Login with Bandcamp Enhancement Suite';
-  button.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10000;
-    padding: 12px 24px;
-    background: #1ea0c3;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    transition: background 0.2s;
-  `;
-
-  button.addEventListener('mouseenter', () => {
-    if (!button.disabled) {
-      button.style.background = '#1890b0';
-    }
-  });
-
-  button.addEventListener('mouseleave', () => {
-    if (!button.disabled) {
-      button.style.background = '#1ea0c3';
-    }
-  });
+  button.className = 'MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-sghohy-MuiButtonBase-root-MuiButton-root';
+  button.type = 'button';
 
   button.addEventListener('click', performLogin);
 
-  document.body.appendChild(button);
+  container.appendChild(button);
+  container.setAttribute(CONTAINER_MODIFIED_FLAG, 'true');
 }
 
 let lastPathname = window.location.pathname;

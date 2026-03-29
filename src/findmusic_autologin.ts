@@ -43,6 +43,19 @@ async function autoLogin() {
   }
 }
 
+let lastPathname = window.location.pathname;
+
+function checkUrlChange() {
+  if (window.location.pathname !== lastPathname) {
+    lastPathname = window.location.pathname;
+    autoLogin();
+  }
+}
+
+const urlCheckInterval = setInterval(checkUrlChange, 100);
+
+setTimeout(() => clearInterval(urlCheckInterval), 10000);
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', autoLogin);
 } else {

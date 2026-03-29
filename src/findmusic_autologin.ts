@@ -2,8 +2,18 @@ import Logger from './logger';
 
 const log = new Logger();
 const FINDMUSIC_BASE_URL = process.env.FINDMUSIC_BASE_URL as string;
+let hasAttemptedLogin = false;
 
 async function autoLogin() {
+  if (!window.location.pathname.includes('/guide')) {
+    return;
+  }
+
+  if (hasAttemptedLogin) {
+    return;
+  }
+
+  hasAttemptedLogin = true;
   log.info('FindMusic.club guide page detected, attempting auto-login');
 
   try {
@@ -38,3 +48,18 @@ if (document.readyState === 'loading') {
 } else {
   autoLogin();
 }
+
+window.addEventListener('popstate', autoLogin);
+
+const originalPushState = history.pushState;
+const originalReplaceState = history.replaceState;
+
+history.pushState = function(...args) {
+  originalPushState.apply(this, args);
+  autoLogin();
+};
+
+history.replaceState = function(...args) {
+  originalReplaceState.apply(this, args);
+  autoLogin();
+};

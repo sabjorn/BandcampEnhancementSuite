@@ -31,7 +31,7 @@
       "css": ["css/style.css"]
     },
     {
-      "matches": ["https://*.findmusic.club/guide*"],
+      "matches": ["https://*.findmusic.club/*"],
       "js": ["dist/findmusic_autologin.js"]
     }
   ],

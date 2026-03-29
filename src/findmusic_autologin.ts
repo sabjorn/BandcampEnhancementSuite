@@ -121,19 +121,6 @@ function injectLoginButton() {
   container.setAttribute(CONTAINER_MODIFIED_FLAG, 'true');
 }
 
-let lastPathname = window.location.pathname;
-
-function checkUrlChange() {
-  if (window.location.pathname !== lastPathname) {
-    lastPathname = window.location.pathname;
-    injectLoginButton();
-  }
-}
-
-const urlCheckInterval = setInterval(checkUrlChange, 100);
-
-setTimeout(() => clearInterval(urlCheckInterval), 10000);
-
 const observer = new MutationObserver(() => {
   injectLoginButton();
 });
@@ -147,18 +134,3 @@ if (document.readyState === 'loading') {
   injectLoginButton();
   observer.observe(document.body, { childList: true, subtree: true });
 }
-
-window.addEventListener('popstate', injectLoginButton);
-
-const originalPushState = history.pushState;
-const originalReplaceState = history.replaceState;
-
-history.pushState = function(...args) {
-  originalPushState.apply(this, args);
-  injectLoginButton();
-};
-
-history.replaceState = function(...args) {
-  originalReplaceState.apply(this, args);
-  injectLoginButton();
-};

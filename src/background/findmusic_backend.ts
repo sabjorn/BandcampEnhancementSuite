@@ -23,6 +23,22 @@ export function processRequest(
     return true;
   }
 
+  if (request.contentScriptQuery === 'autoLoginFindMusic') {
+    log.info('Processing autoLoginFindMusic request');
+
+    exchangeBandcampToken()
+      .then(token => {
+        log.info('Token exchanged successfully for auto-login');
+        sendResponse({ success: true, token });
+      })
+      .catch(error => {
+        log.error(`Failed to exchange token for auto-login: ${error.message}`);
+        sendResponse({ success: false, error: error.message });
+      });
+
+    return true;
+  }
+
   if (request.contentScriptQuery !== 'openFindMusic') return false;
 
   log.info('Processing openFindMusic request');
@@ -61,7 +77,7 @@ export function processRequest(
       exchangeBandcampToken()
         .then(token => {
           const url = `${FINDMUSIC_BASE_URL}/login?bes_token=${encodeURIComponent(token)}`;
-          log.info(`Opening FindMusic.club with token`);
+          log.info('Opening FindMusic.club with token');
 
           chrome.tabs.create({ url });
           sendResponse({ success: true });

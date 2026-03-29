@@ -202,5 +202,48 @@ describe('FindMusic Backend', () => {
 
       expect(mockTabsCreate).not.toHaveBeenCalled();
     });
+
+    it('should exchange token for auto-login', async () => {
+      const request = { contentScriptQuery: 'autoLoginFindMusic' };
+      const sender = {} as chrome.runtime.MessageSender;
+      const sendResponse = vi.fn();
+
+      const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock';
+      mockExchangeBandcampToken.mockResolvedValue(mockToken);
+
+      const result = processRequest(request, sender, sendResponse);
+
+      expect(result).toBe(true);
+
+      await vi.waitFor(() => {
+        expect(mockExchangeBandcampToken).toHaveBeenCalled();
+      });
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith({ success: true, token: mockToken });
+      });
+    });
+
+    it('should send error response on auto-login failure', async () => {
+      const request = { contentScriptQuery: 'autoLoginFindMusic' };
+      const sender = {} as chrome.runtime.MessageSender;
+      const sendResponse = vi.fn();
+
+      const errorMessage = 'No Bandcamp identity cookie found';
+      mockExchangeBandcampToken.mockRejectedValue(new Error(errorMessage));
+
+      processRequest(request, sender, sendResponse);
+
+      await vi.waitFor(() => {
+        expect(mockExchangeBandcampToken).toHaveBeenCalled();
+      });
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith({
+          success: false,
+          error: errorMessage
+        });
+      });
+    });
   });
 });

@@ -14,10 +14,15 @@ async function performLogin() {
   isLoggingIn = true;
   log.info('Login button clicked, attempting login');
 
-  const button = document.getElementById(BUTTON_ID) as HTMLButtonElement;
-  if (button) {
-    button.disabled = true;
-    button.textContent = 'Logging in...';
+  const buttonWrapper = document.getElementById(BUTTON_ID);
+  const buttonText = buttonWrapper?.querySelector('p');
+
+  if (buttonWrapper) {
+    buttonWrapper.style.pointerEvents = 'none';
+    buttonWrapper.style.opacity = '0.6';
+  }
+  if (buttonText) {
+    buttonText.textContent = '⏳ Logging in...';
   }
 
   try {
@@ -27,8 +32,8 @@ async function performLogin() {
 
     if (!response.granted) {
       log.info('FindMusic.club permissions not granted');
-      if (button) {
-        button.textContent = 'Permission Required';
+      if (buttonText) {
+        buttonText.textContent = '🔒 Permission Required';
       }
       return;
     }
@@ -39,9 +44,12 @@ async function performLogin() {
 
     if (!loginResponse.success || !loginResponse.token) {
       log.error(`Login failed: ${loginResponse.error || 'Unknown error'}`);
-      if (button) {
-        button.disabled = false;
-        button.textContent = 'Login Failed - Try Again';
+      if (buttonWrapper) {
+        buttonWrapper.style.pointerEvents = 'auto';
+        buttonWrapper.style.opacity = '1';
+      }
+      if (buttonText) {
+        buttonText.textContent = '❌ Login Failed - Try Again';
       }
       isLoggingIn = false;
       return;
@@ -52,9 +60,12 @@ async function performLogin() {
     window.location.href = url;
   } catch (error) {
     log.error(`Error during login: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Login Error - Try Again';
+    if (buttonWrapper) {
+      buttonWrapper.style.pointerEvents = 'auto';
+      buttonWrapper.style.opacity = '1';
+    }
+    if (buttonText) {
+      buttonText.textContent = '❌ Login Error - Try Again';
     }
     isLoggingIn = false;
   }
@@ -88,15 +99,25 @@ function injectLoginButton() {
     }
   });
 
-  const button = document.createElement('button');
-  button.id = BUTTON_ID;
-  button.textContent = 'Login with Bandcamp Enhancement Suite';
-  button.className = 'MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-sghohy-MuiButtonBase-root-MuiButton-root';
-  button.type = 'button';
+  const buttonContainer = document.createElement('div');
+  buttonContainer.className = 'MuiBox-root css-13rcduy';
+  buttonContainer.style.display = 'flex';
+  buttonContainer.style.justifyContent = 'center';
 
-  button.addEventListener('click', performLogin);
+  const buttonWrapper = document.createElement('div');
+  buttonWrapper.id = BUTTON_ID;
+  buttonWrapper.className = 'MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 css-11lia1c';
+  buttonWrapper.style.cursor = 'pointer';
 
-  container.appendChild(button);
+  const buttonText = document.createElement('p');
+  buttonText.className = 'MuiTypography-root MuiTypography-body1 css-gi6oim';
+  buttonText.textContent = 'Login with Bandcamp Enhancement Suite';
+
+  buttonWrapper.appendChild(buttonText);
+  buttonWrapper.addEventListener('click', performLogin);
+
+  buttonContainer.appendChild(buttonWrapper);
+  container.appendChild(buttonContainer);
   container.setAttribute(CONTAINER_MODIFIED_FLAG, 'true');
 }
 

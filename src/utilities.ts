@@ -324,39 +324,25 @@ function createCachingFetch(): FetchFunction {
   };
 }
 
+// Simple factory - returns appropriate fetch function
+function getFetch(cached: boolean): FetchFunction {
+  return cached ? createCachingFetch() : createPlainFetch();
+}
+
 function createPlainFetch(): FetchFunction {
   return async (url: string, options?: RequestInit): Promise<Response> => {
     return fetch(url, options);
   };
 }
 
-// Module-level state - simpler than a class
-let currentFetch: FetchFunction = createPlainFetch();
-let cachingEnabled = false;
-
-// Initialize from config
-(async () => {
-  try {
-    const db = await getDB();
-    const config = await db.get('config', 'config');
-    updateFetchCachingState(config?.enableFindMusicCaching ?? false);
-  } catch (error) {
-    log.warn('Failed to initialize fetch state, defaulting to plain fetch');
-  }
-})();
-
-// Export function to update caching state (called when config changes)
-export function updateFetchCachingState(enabled: boolean): void {
-  if (cachingEnabled === enabled) return;
-
-  cachingEnabled = enabled;
-  currentFetch = enabled ? createCachingFetch() : createPlainFetch();
-  log.info(`Fetch caching ${enabled ? 'enabled' : 'disabled'}`);
-}
-
-// Main export - uses current fetch function (caching or plain)
+// Main export - checks config and uses appropriate fetch
 export async function cachedFetch(url: string, options?: RequestInit): Promise<Response> {
-  return currentFetch(url, options);
+  const db = await getDB();
+  const config = await db.get('config', 'config');
+  const cachingEnabled = config?.enableFindMusicCaching ?? false;
+
+  const fetchFn = getFetch(cachingEnabled);
+  return fetchFn(url, options);
 }
 
 export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset, FindMusicTokenData };

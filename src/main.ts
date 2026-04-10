@@ -7,7 +7,6 @@ import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
 import { createKeyboardSettingsSection } from './components/keyboardSettings.js';
 import { KeyboardSettings } from './types/keyboard.js';
-import { updateFetchCachingState } from './utilities';
 
 const log = createLogger();
 
@@ -134,8 +133,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
     }
 
     if (msg.config && typeof msg.config.enableFindMusicCaching === 'boolean') {
-      // Update fetch manager when caching config changes
-      updateFetchCachingState(msg.config.enableFindMusicCaching);
+      cachingToggle.checked = msg.config.enableFindMusicCaching;
     }
 
     if (msg.config && msg.config.keyboardSettings) {

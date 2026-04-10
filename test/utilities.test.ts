@@ -24,7 +24,7 @@ describe('mousedownCallback', () => {
     spyElement.duration = 100;
     spyElement.currentTime = 0;
 
-    let event = {
+    const event = {
       offsetX: 1,
       target: { offsetWidth: 2 }
     };

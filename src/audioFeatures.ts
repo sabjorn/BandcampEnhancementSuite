@@ -97,7 +97,7 @@ export async function generateAudioFeatures(
 
           const rmsSize = Math.min(stepSize, 128);
           const subStepSize = Math.round(stepSize / rmsSize);
-          let rmsBuffer = [];
+          const rmsBuffer = [];
           for (let i = 0; i < datapoints; i++) {
             let rms = 0.0;
             for (let sample = 0; sample < rmsSize; sample++) {

@@ -201,7 +201,7 @@ async function handleUnhideRequest(crumb: string | null, port?: chrome.runtime.P
 
       const hiddenItemsResponse: GetHiddenItemsResponse = await (async () => {
         try {
-          let hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
+          const hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
           log.info(
             `Hidden items batch ${batchCount} fetched successfully. Response: ${JSON.stringify(hiddenItemsResponse)}`
           );
@@ -296,7 +296,7 @@ async function handleHideRequest(crumb: string | null, port?: chrome.runtime.Por
 
       const hiddenItemsResponse: GetHiddenItemsResponse = await (async () => {
         try {
-          let hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
+          const hiddenItemsResponse = await getHiddenItemsRateLimited(fan_id, older_than_token, 100, baseUrl);
           log.info(
             `Hidden items batch ${batchCount} fetched successfully. Found ${hiddenItemsResponse.items.length} items`
           );

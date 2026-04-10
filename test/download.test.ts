@@ -722,9 +722,6 @@ describe('DownloadHelper', () => {
       // Use real btoa/atob for accurate testing
       const originalAtob = global.atob;
       global.atob = (str: string) => {
-        // Simulate real base64 decoding for test
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-        let result = '';
         // Simple mock that returns predictable data
         if (str === 'SGVsbG8=') return 'Hello'; // 'Hello' base64
         if (str === 'V29ybGQ=') return 'World'; // 'World' base64

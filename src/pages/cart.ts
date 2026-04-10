@@ -41,12 +41,12 @@ interface CartExportData {
 export async function initCart(port: chrome.runtime.Port): Promise<void> {
   log.info('cart init');
 
-  let lastImportState: any = null;
+  let _lastImportState: any = null;
 
   port.onMessage.addListener(async (msg: any) => {
     if (msg.cartImportState) {
       const state = msg.cartImportState;
-      lastImportState = state;
+      _lastImportState = state;
 
       if (!state.isProcessing) return;
 

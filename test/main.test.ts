@@ -203,11 +203,6 @@ describe('BES Drawer', () => {
   });
 
   it('should send waveform toggle message when toggle is changed', () => {
-    const mockPort = {
-      onMessage: { addListener: vi.fn() },
-      postMessage: vi.fn()
-    };
-
     const toggle = document.getElementById('bes-waveform-toggle') as HTMLInputElement;
     if (!toggle) return;
 

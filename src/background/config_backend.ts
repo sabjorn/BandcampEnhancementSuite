@@ -73,7 +73,7 @@ export async function synchronizeConfig(db: any, config: Partial<Config>, port?:
 export async function toggleWaveformDisplay(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
   log.info('toggleing waveform display');
 
-  let db_config = await db.get('config', 'config');
+  const db_config = await db.get('config', 'config');
   db_config['displayWaveform'] = !db_config['displayWaveform'];
   await db.put('config', db_config, 'config');
   port?.postMessage({ config: db_config });

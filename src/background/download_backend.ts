@@ -49,7 +49,7 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
     message: `Starting download of ${urls.length} files...`
   } as DownloadProgress);
 
-  const downloadFile = async (url: string, index: number): Promise<void> => {
+  const downloadFile = async (url: string, _index: number): Promise<void> => {
     try {
       const response = await fetch(url);
 

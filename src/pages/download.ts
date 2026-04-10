@@ -123,7 +123,7 @@ export async function initDownload(): Promise<void> {
   const config = { attributes: true, attributeFilter: ['href'] };
   const targetNodes = document.querySelectorAll('.download-title .item-button');
 
-  for (let node of targetNodes) {
+  for (const node of targetNodes) {
     observer.observe(node, config);
   }
 }
@@ -260,7 +260,7 @@ function convertBase64ChunksToBinary(zipChunks: string[]): Uint8Array {
 
 function triggerZipDownload(bytes: Uint8Array, filename: string): void {
   log.info('Creating blob...');
-  const blob = new Blob([bytes], { type: 'application/zip' });
+  const blob = new Blob([bytes as BlobPart], { type: 'application/zip' });
   log.info(`Blob created, size: ${blob.size} bytes`);
 
   log.info('Creating download URL...');

@@ -49,11 +49,12 @@ describe('FindMusic Auto-login', () => {
     const otherContent = document.querySelector('.other-content');
     expect(otherContent).toBeNull();
 
-    const buttonContainer = document.querySelector('.MuiBox-root.css-13rcduy') as HTMLElement;
+    const container = document.querySelector('.MuiContainer-root.MuiContainer-maxWidthMd');
+    const buttonContainer = container?.children[1] as HTMLElement;
     expect(buttonContainer?.style.display).toBe('flex');
     expect(buttonContainer?.style.justifyContent).toBe('center');
 
-    const header = document.querySelector('.MuiBox-root.css-14jdev5');
+    const header = container?.firstElementChild;
     expect(header?.textContent).toBe('Header');
   });
 

@@ -85,32 +85,46 @@ function injectLoginButton() {
     return;
   }
 
-  const boxToKeep = container.querySelector('.MuiBox-root.css-14jdev5');
-  if (!boxToKeep) {
-    return;
-  }
-
   log.info('Modifying guide page content and injecting login button');
 
+  // Keep the first child (the graphic at the top)
+  const firstChild = container.firstElementChild;
+
+  // Remove all children except the first one
   const children = Array.from(container.children);
   children.forEach(child => {
-    if (child !== boxToKeep) {
+    if (child !== firstChild) {
       child.remove();
     }
   });
 
   const buttonContainer = document.createElement('div');
-  buttonContainer.className = 'MuiBox-root css-13rcduy';
   buttonContainer.style.display = 'flex';
   buttonContainer.style.justifyContent = 'center';
+  buttonContainer.style.marginTop = '2rem';
 
   const buttonWrapper = document.createElement('div');
   buttonWrapper.id = BUTTON_ID;
-  buttonWrapper.className = 'MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 css-11lia1c';
   buttonWrapper.style.cursor = 'pointer';
+  buttonWrapper.style.padding = '1rem 2rem';
+  buttonWrapper.style.backgroundColor = '#1976d2';
+  buttonWrapper.style.color = 'white';
+  buttonWrapper.style.borderRadius = '4px';
+  buttonWrapper.style.boxShadow = '0px 2px 4px rgba(0,0,0,0.2)';
+  buttonWrapper.style.transition = 'background-color 0.3s';
+  buttonWrapper.addEventListener('mouseenter', () => {
+    buttonWrapper.style.backgroundColor = '#1565c0';
+  });
+  buttonWrapper.addEventListener('mouseleave', () => {
+    if (!isLoggingIn) {
+      buttonWrapper.style.backgroundColor = '#1976d2';
+    }
+  });
 
   const buttonText = document.createElement('p');
-  buttonText.className = 'MuiTypography-root MuiTypography-body1 css-gi6oim';
+  buttonText.style.margin = '0';
+  buttonText.style.fontSize = '1rem';
+  buttonText.style.fontWeight = '500';
   buttonText.textContent = 'Login with Bandcamp Enhancement Suite';
 
   buttonWrapper.appendChild(buttonText);

@@ -20,7 +20,7 @@ export function mousedownCallback(e: MouseEventWithOffset): void {
 
 export async function getDB(_name?: string): Promise<IDBPDatabase> {
   const dbName: string = 'BandcampEnhancementSuite';
-  const version: number = 2;
+  const version: number = 3;
 
   const db = await openDB(dbName, version, {
     upgrade(db: IDBPDatabase, _oldVersion: number, _newVersion: number | null, _transaction: any): void {
@@ -28,6 +28,7 @@ export async function getDB(_name?: string): Promise<IDBPDatabase> {
 
       if (!stores.contains('previews')) db.createObjectStore('previews');
       if (!stores.contains('config')) db.createObjectStore('config');
+      if (!stores.contains('cachedRequests')) db.createObjectStore('cachedRequests');
     },
     blocked(): void {},
     blocking(): void {},
@@ -226,6 +227,49 @@ export async function clearFindMusicToken(): Promise<void> {
   await db.delete('config', 'findmusicToken');
 }
 
+// Simple hash function for cache deduplication
+async function hashRequest(url: string, method: string, body: string): Promise<string> {
+  const text = `${method}:${url}:${body}`;
+  const msgBuffer = new TextEncoder().encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Check if we've already cached this exact request
+async function hasBeenCached(url: string, method: string, body: string): Promise<boolean> {
+  try {
+    const hash = await hashRequest(url, method, body);
+    const db = await getDB();
+    const cached = await db.get('cachedRequests', hash);
+    return !!cached;
+  } catch (error) {
+    return false; // If error, assume not cached and try to cache
+  }
+}
+
+// Mark request as cached
+async function markAsCached(url: string, method: string, body: string): Promise<void> {
+  try {
+    const hash = await hashRequest(url, method, body);
+    const db = await getDB();
+    await db.put('cachedRequests', Date.now(), hash);
+  } catch (error) {
+    // Non-critical, just log
+    console.warn('Failed to mark request as cached:', error);
+  }
+}
+
+// URLs we want to cache - whitelist approach
+const CACHEABLE_URLS = [
+  '/api/mobile/25/tralbum_details',
+  // Add more endpoints here as needed
+];
+
+function shouldCacheUrl(url: string): boolean {
+  return CACHEABLE_URLS.some(pattern => url.includes(pattern));
+}
+
 // Fetch function factory - creates appropriate fetch based on caching config
 type FetchFunction = (url: string, options?: RequestInit) => Promise<Response>;
 
@@ -234,14 +278,31 @@ const log = new Logger();
 function createCachingFetch(): FetchFunction {
   return async (url: string, options?: RequestInit): Promise<Response> => {
     const method = options?.method || 'GET';
+    const requestBody = options?.body ? String(options.body) : '';
+
+    // Check if this URL should be cached
+    if (!shouldCacheUrl(url)) {
+      log.debug(`Skipping cache for ${method} ${url} - not in whitelist`);
+      return fetch(url, options);
+    }
+
+    // Check if we've already cached this exact request
+    const alreadyCached = await hasBeenCached(url, method, requestBody);
+    if (alreadyCached) {
+      log.debug(`Already cached ${method} ${url} - skipping duplicate`);
+      return fetch(url, options);
+    }
+
     log.debug(`Caching fetch: ${method} ${url}`);
 
     const response = await fetch(url, options);
     const clonedResponse = response.clone();
     const responseText = await clonedResponse.text();
-    const requestBody = options?.body ? String(options.body) : '';
 
     log.debug(`Sending to cache backend: ${method} ${url} (${responseText.length} bytes)`);
+
+    // Mark as cached immediately (optimistic)
+    markAsCached(url, method, requestBody);
 
     // Non-blocking cache operation
     chrome.runtime
@@ -265,57 +326,37 @@ function createCachingFetch(): FetchFunction {
 
 function createPlainFetch(): FetchFunction {
   return async (url: string, options?: RequestInit): Promise<Response> => {
-    const method = options?.method || 'GET';
-    log.debug(`Plain fetch (caching disabled): ${method} ${url}`);
     return fetch(url, options);
   };
 }
 
-// Stateful fetch manager using factory pattern
-class FetchManager {
-  private currentFetch: FetchFunction;
-  private cachingEnabled: boolean;
+// Module-level state - simpler than a class
+let currentFetch: FetchFunction = createPlainFetch();
+let cachingEnabled = false;
 
-  constructor() {
-    this.cachingEnabled = false;
-    this.currentFetch = createPlainFetch();
-    this.initialize();
+// Initialize from config
+(async () => {
+  try {
+    const db = await getDB();
+    const config = await db.get('config', 'config');
+    updateFetchCachingState(config?.enableFindMusicCaching ?? false);
+  } catch (error) {
+    log.warn('Failed to initialize fetch state, defaulting to plain fetch');
   }
-
-  private async initialize(): Promise<void> {
-    try {
-      const db = await getDB();
-      const config = await db.get('config', 'config');
-      this.updateCachingState(config?.enableFindMusicCaching ?? false);
-    } catch (error) {
-      log.warn('Failed to initialize fetch manager, defaulting to plain fetch');
-    }
-  }
-
-  updateCachingState(enabled: boolean): void {
-    if (this.cachingEnabled === enabled) return;
-
-    this.cachingEnabled = enabled;
-    this.currentFetch = enabled ? createCachingFetch() : createPlainFetch();
-    log.info(`Fetch manager updated: caching ${enabled ? 'enabled' : 'disabled'}`);
-  }
-
-  async fetch(url: string, options?: RequestInit): Promise<Response> {
-    return this.currentFetch(url, options);
-  }
-}
-
-// Global fetch manager instance
-const fetchManager = new FetchManager();
+})();
 
 // Export function to update caching state (called when config changes)
 export function updateFetchCachingState(enabled: boolean): void {
-  fetchManager.updateCachingState(enabled);
+  if (cachingEnabled === enabled) return;
+
+  cachingEnabled = enabled;
+  currentFetch = enabled ? createCachingFetch() : createPlainFetch();
+  log.info(`Fetch caching ${enabled ? 'enabled' : 'disabled'}`);
 }
 
-// Main export - smart fetch that uses current configuration
+// Main export - uses current fetch function (caching or plain)
 export async function cachedFetch(url: string, options?: RequestInit): Promise<Response> {
-  return fetchManager.fetch(url, options);
+  return currentFetch(url, options);
 }
 
 export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset, FindMusicTokenData };

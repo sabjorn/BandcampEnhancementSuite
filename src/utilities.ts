@@ -243,7 +243,7 @@ async function hasBeenCached(url: string, method: string, body: string): Promise
     const db = await getDB();
     const cached = await db.get('cachedRequests', hash);
     return !!cached;
-  } catch (error) {
+  } catch (_error) {
     return false; // If error, assume not cached and try to cache
   }
 }
@@ -254,9 +254,8 @@ async function markAsCached(url: string, method: string, body: string): Promise<
     const hash = await hashRequest(url, method, body);
     const db = await getDB();
     await db.put('cachedRequests', Date.now(), hash);
-  } catch (error) {
-    // Non-critical, just log
-    console.warn('Failed to mark request as cached:', error);
+  } catch (_error) {
+    // Non-critical, just skip if caching fails
   }
 }
 

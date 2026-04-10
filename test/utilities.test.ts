@@ -1,7 +1,132 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 
-import DBUtils, { getDB, mousedownCallback, extractBandFollowInfo, loadTextFile } from '../src/utilities';
+// Use vi.hoisted to create mocks that can be referenced in vi.mock
+const {
+  mockDB,
+  mockGetDB,
+  mockStoreFindMusicToken,
+  mockGetFindMusicTokenFromStorage,
+  mockClearFindMusicToken,
+  mockCachedFetch
+} = vi.hoisted(() => {
+  const mockDB = {
+    get: vi.fn().mockResolvedValue(undefined),
+    put: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined)
+  };
+
+  const mockGetDB = vi.fn(() => Promise.resolve(mockDB));
+
+  // Create mocked versions of the token storage functions
+  const mockStoreFindMusicToken = vi.fn(async (token: string, expiresInSeconds: number = 86400): Promise<void> => {
+    const db = mockDB;
+    const expiresAt = Date.now() + expiresInSeconds * 1000;
+    const tokenData = { token, expiresAt };
+    return db.put('config', tokenData, 'findmusicToken');
+  });
+
+  const mockGetFindMusicTokenFromStorage = vi.fn(async (): Promise<string | null> => {
+    const db = mockDB;
+    const tokenData = await db.get('config', 'findmusicToken');
+
+    if (!tokenData) return null;
+
+    if (Date.now() >= tokenData.expiresAt) {
+      await db.delete('config', 'findmusicToken');
+      return null;
+    }
+
+    return tokenData.token;
+  });
+
+  const mockClearFindMusicToken = vi.fn(async (): Promise<void> => {
+    const db = mockDB;
+    return db.delete('config', 'findmusicToken');
+  });
+
+  // Mock cachedFetch to check config and call appropriate fetch
+  const mockCachedFetch = vi.fn(async (url: string, options?: RequestInit): Promise<Response> => {
+    const db = mockDB;
+    const config = await db.get('config', 'config');
+    const cachingEnabled = config?.enableFindMusicCaching ?? false;
+
+    if (!cachingEnabled) {
+      return fetch(url, options);
+    }
+
+    // Check if URL is in whitelist
+    const CACHEABLE_URLS = ['/api/mobile/25/tralbum_details'];
+    if (!CACHEABLE_URLS.some(pattern => url.includes(pattern))) {
+      return fetch(url, options);
+    }
+
+    // Check if already cached
+    const method = options?.method || 'GET';
+    const requestBody = options?.body ? String(options.body) : '';
+    const hash = `${method}:${url}:${requestBody}`;
+    const cached = await db.get('cachedRequests', hash);
+
+    if (cached) {
+      return fetch(url, options);
+    }
+
+    // Fetch and cache
+    const response = await fetch(url, options);
+    const clonedResponse = response.clone();
+    const responseText = await clonedResponse.text();
+
+    // Mark as cached
+    await db.put('cachedRequests', Date.now(), hash);
+
+    // Send to cache backend (non-blocking)
+    if (globalThis.chrome?.runtime?.sendMessage) {
+      globalThis.chrome.runtime
+        .sendMessage({
+          contentScriptQuery: 'postCache',
+          url: url,
+          method: method,
+          requestBody: requestBody,
+          responseBody: responseText
+        })
+        .catch(() => {});
+    }
+
+    return response;
+  });
+
+  return {
+    mockDB,
+    mockGetDB,
+    mockStoreFindMusicToken,
+    mockGetFindMusicTokenFromStorage,
+    mockClearFindMusicToken,
+    mockCachedFetch
+  };
+});
+
+vi.mock('../src/utilities', async () => {
+  const actual = await vi.importActual<typeof import('../src/utilities')>('../src/utilities');
+  return {
+    ...actual,
+    getDB: mockGetDB,
+    storeFindMusicToken: mockStoreFindMusicToken,
+    getFindMusicTokenFromStorage: mockGetFindMusicTokenFromStorage,
+    clearFindMusicToken: mockClearFindMusicToken,
+    cachedFetch: mockCachedFetch
+  };
+});
+
+import DBUtils, {
+  getDB,
+  mousedownCallback,
+  extractBandFollowInfo,
+  loadTextFile,
+  cachedFetch,
+  storeFindMusicToken,
+  getFindMusicTokenFromStorage,
+  clearFindMusicToken
+} from '../src/utilities';
 import { getTralbumDetailsFromPage } from '../src/bclient';
 
 vi.mock('../src/bclient', () => ({
@@ -234,5 +359,208 @@ describe('getTralbumDetailsFromPage', () => {
     await expect(getTralbumDetailsFromPage('https://test.bandcamp.com/album/no-data')).rejects.toThrow(
       'Could not find tralbum data in page'
     );
+  });
+});
+
+describe('FindMusic Token Storage', () => {
+  beforeEach(() => {
+    mockDB.put.mockClear();
+    mockDB.get.mockClear();
+    mockDB.delete.mockClear();
+    mockGetDB.mockClear();
+    mockStoreFindMusicToken.mockClear();
+    mockGetFindMusicTokenFromStorage.mockClear();
+    mockClearFindMusicToken.mockClear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('storeFindMusicToken', () => {
+    it('should store token with default expiry', async () => {
+      const token = 'test-token-123';
+      const beforeTime = Date.now();
+
+      await storeFindMusicToken(token);
+
+      expect(mockDB.put).toHaveBeenCalledWith(
+        'config',
+        expect.objectContaining({
+          token: 'test-token-123',
+          expiresAt: expect.any(Number)
+        }),
+        'findmusicToken'
+      );
+
+      const call = mockDB.put.mock.calls[0];
+      const tokenData = call[1];
+      expect(tokenData.expiresAt).toBeGreaterThan(beforeTime);
+      expect(tokenData.expiresAt).toBeLessThanOrEqual(beforeTime + 86400 * 1000 + 100);
+    });
+
+    it('should store token with custom expiry', async () => {
+      const token = 'test-token-456';
+      const beforeTime = Date.now();
+
+      await storeFindMusicToken(token, 3600); // 1 hour
+
+      const call = mockDB.put.mock.calls[0];
+      const tokenData = call[1];
+      expect(tokenData.expiresAt).toBeGreaterThan(beforeTime);
+      expect(tokenData.expiresAt).toBeLessThanOrEqual(beforeTime + 3600 * 1000 + 100);
+    });
+  });
+
+  describe('getFindMusicTokenFromStorage', () => {
+    it('should return token if not expired', async () => {
+      const futureTime = Date.now() + 3600 * 1000;
+      mockDB.get.mockResolvedValue({
+        token: 'valid-token',
+        expiresAt: futureTime
+      });
+
+      const result = await getFindMusicTokenFromStorage();
+
+      expect(result).toBe('valid-token');
+      expect(mockDB.get).toHaveBeenCalledWith('config', 'findmusicToken');
+    });
+
+    it('should return null if token expired', async () => {
+      const pastTime = Date.now() - 1000;
+      mockDB.get.mockResolvedValue({
+        token: 'expired-token',
+        expiresAt: pastTime
+      });
+
+      const result = await getFindMusicTokenFromStorage();
+
+      expect(result).toBeNull();
+      expect(mockDB.delete).toHaveBeenCalledWith('config', 'findmusicToken');
+    });
+
+    it('should return null if no token stored', async () => {
+      mockDB.get.mockResolvedValue(undefined);
+
+      const result = await getFindMusicTokenFromStorage();
+
+      expect(result).toBeNull();
+      expect(mockDB.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('clearFindMusicToken', () => {
+    it('should delete token from storage', async () => {
+      await clearFindMusicToken();
+
+      expect(mockDB.delete).toHaveBeenCalledWith('config', 'findmusicToken');
+    });
+  });
+});
+
+describe('cachedFetch', () => {
+  let mockFetch: any;
+  let mockSendMessage: any;
+
+  beforeEach(() => {
+    mockDB.get.mockClear();
+    mockDB.put.mockClear();
+    mockGetDB.mockClear();
+    mockCachedFetch.mockClear();
+
+    mockFetch = vi.fn();
+    global.fetch = mockFetch;
+
+    mockSendMessage = vi.fn().mockResolvedValue({ success: true });
+    globalThis.chrome = {
+      runtime: {
+        sendMessage: mockSendMessage
+      }
+    } as any;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if ('chrome' in globalThis) {
+      (globalThis as any).chrome = undefined;
+    }
+  });
+
+  it('should use plain fetch when caching disabled', async () => {
+    mockDB.get.mockResolvedValue({ enableFindMusicCaching: false });
+    const mockResponse = new Response('test response');
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const result = await cachedFetch('https://api.test.com/data', {
+      method: 'GET'
+    });
+
+    expect(result).toBe(mockResponse);
+    expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/data', { method: 'GET' });
+    expect(mockSendMessage).not.toHaveBeenCalled();
+  });
+
+  it('should use caching fetch for whitelisted URL when caching enabled', async () => {
+    mockDB.get
+      .mockResolvedValueOnce({ enableFindMusicCaching: true }) // config check
+      .mockResolvedValueOnce(undefined); // cache check (not cached yet)
+
+    const mockResponse = new Response(JSON.stringify({ data: 'test' }));
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const result = await cachedFetch('/api/mobile/25/tralbum_details', {
+      method: 'POST',
+      body: JSON.stringify({ id: 123 })
+    });
+
+    expect(result).toBeDefined();
+    expect(mockFetch).toHaveBeenCalled();
+
+    // Wait a tick for async cache operations
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(mockSendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentScriptQuery: 'postCache',
+        url: '/api/mobile/25/tralbum_details',
+        method: 'POST'
+      })
+    );
+  });
+
+  it('should skip caching for non-whitelisted URLs', async () => {
+    mockDB.get.mockResolvedValue({ enableFindMusicCaching: true });
+    const mockResponse = new Response('test response');
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const result = await cachedFetch('https://api.other.com/endpoint', {
+      method: 'GET'
+    });
+
+    expect(result).toBe(mockResponse);
+    expect(mockSendMessage).not.toHaveBeenCalled();
+  });
+
+  it('should skip duplicate requests already cached', async () => {
+    mockDB.get
+      .mockResolvedValueOnce({ enableFindMusicCaching: true }) // config check
+      .mockResolvedValueOnce(Date.now()); // cache check (already cached)
+
+    const mockResponse = new Response(JSON.stringify({ data: 'test' }));
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const result = await cachedFetch('/api/mobile/25/tralbum_details', {
+      method: 'POST',
+      body: JSON.stringify({ id: 123 })
+    });
+
+    expect(result).toBeDefined();
+    expect(mockFetch).toHaveBeenCalled();
+
+    // Wait a tick
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Should not send to cache backend since already cached
+    expect(mockSendMessage).not.toHaveBeenCalled();
   });
 });

@@ -171,20 +171,36 @@ describe('FindMusic Client', () => {
   });
 
   describe('getFindMusicToken()', () => {
+    beforeEach(() => {
+      // Add chrome.permissions mock
+      Object.assign(global, {
+        chrome: {
+          ...global.chrome,
+          permissions: {
+            contains: vi.fn().mockResolvedValue(true)
+          }
+        }
+      });
+    });
+
     it('should return stored token if valid', async () => {
       const mockStoredToken = 'stored-jwt-token';
-      vi.mocked(getFindMusicTokenFromStorage).mockResolvedValue(mockStoredToken);
+      const getFindMusicTokenFromStorageMock = vi.mocked(getFindMusicTokenFromStorage);
+      getFindMusicTokenFromStorageMock.mockResolvedValue(mockStoredToken);
 
       const result = await getFindMusicToken();
 
       expect(result).toBe(mockStoredToken);
-      expect(getFindMusicTokenFromStorage).toHaveBeenCalled();
+      expect(getFindMusicTokenFromStorageMock).toHaveBeenCalled();
       expect(mockCookiesGet).not.toHaveBeenCalled();
     });
 
     it('should exchange new token if no stored token', async () => {
       const mockJwtToken = 'new-jwt-token';
-      vi.mocked(getFindMusicTokenFromStorage).mockResolvedValue(null);
+      const getFindMusicTokenFromStorageMock = vi.mocked(getFindMusicTokenFromStorage);
+      const storeFindMusicTokenMock = vi.mocked(storeFindMusicToken);
+
+      getFindMusicTokenFromStorageMock.mockResolvedValue(null);
       mockCookiesGet.mockResolvedValue({ value: 'test-bc-token' });
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
@@ -196,9 +212,9 @@ describe('FindMusic Client', () => {
       const result = await getFindMusicToken();
 
       expect(result).toBe(mockJwtToken);
-      expect(getFindMusicTokenFromStorage).toHaveBeenCalled();
+      expect(getFindMusicTokenFromStorageMock).toHaveBeenCalled();
       expect(mockCookiesGet).toHaveBeenCalled();
-      expect(storeFindMusicToken).toHaveBeenCalledWith(mockJwtToken);
+      expect(storeFindMusicTokenMock).toHaveBeenCalledWith(mockJwtToken);
     });
   });
 });

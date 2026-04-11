@@ -201,7 +201,12 @@ interface FindMusicTokenData {
   expiresAt: number;
 }
 
-export async function storeFindMusicToken(token: string, expiresInSeconds: number = 86400): Promise<void> {
+const DEFAULT_TOKEN_EXPIRY_SECONDS = 86400;
+
+export async function storeFindMusicToken(
+  token: string,
+  expiresInSeconds: number = DEFAULT_TOKEN_EXPIRY_SECONDS
+): Promise<void> {
   const db = await getDB();
   const expiresAt = Date.now() + expiresInSeconds * 1000;
   const tokenData: FindMusicTokenData = { token, expiresAt };

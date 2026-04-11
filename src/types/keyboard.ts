@@ -169,12 +169,12 @@ export function validateKeyboardSettings(settings: KeyboardSettings): string[] {
     }
   }
 
-  if (settings.seekStepSize <= 0 || settings.seekStepSize > 60) {
-    errors.push('Seek step size must be between 0 and 60 seconds');
+  if (settings.seekStepSize <= 0) {
+    errors.push('Seek step size must be greater than 0');
   }
 
-  if (settings.largeSeekStepSize <= 0 || settings.largeSeekStepSize > 300) {
-    errors.push('Large seek step size must be between 0 and 300 seconds');
+  if (settings.largeSeekStepSize <= 0) {
+    errors.push('Large seek step size must be greater than 0');
   }
 
   if (settings.volumeStep <= 0 || settings.volumeStep > 1) {

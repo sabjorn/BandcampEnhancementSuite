@@ -126,20 +126,7 @@ describe('Keyboard Settings', () => {
 
       const errors = validateKeyboardSettings(settings);
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0]).toContain('Seek step size must be between 0 and 60 seconds');
-    });
-
-    it('should reject seek step size above maximum', () => {
-      const settings: KeyboardSettings = {
-        controls: [],
-        seekStepSize: 100,
-        largeSeekStepSize: 30,
-        volumeStep: 0.05
-      };
-
-      const errors = validateKeyboardSettings(settings);
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some(e => e.includes('Seek step size must be between 0 and 60 seconds'))).toBe(true);
+      expect(errors[0]).toContain('Seek step size must be greater than 0');
     });
 
     it('should validate large seek step size', () => {
@@ -153,19 +140,6 @@ describe('Keyboard Settings', () => {
       const errors = validateKeyboardSettings(settings);
       expect(errors.length).toBeGreaterThan(0);
       expect(errors.some(e => e.includes('Large seek step size'))).toBe(true);
-    });
-
-    it('should reject large seek step size above maximum', () => {
-      const settings: KeyboardSettings = {
-        controls: [],
-        seekStepSize: 10,
-        largeSeekStepSize: 500,
-        volumeStep: 0.05
-      };
-
-      const errors = validateKeyboardSettings(settings);
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some(e => e.includes('Large seek step size must be between 0 and 300 seconds'))).toBe(true);
     });
 
     it('should validate volume step range', () => {

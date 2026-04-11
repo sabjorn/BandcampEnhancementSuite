@@ -57,8 +57,8 @@ async function postCacheToFindMusic(
       body: JSON.stringify({
         url,
         method,
-        body: requestBody,
-        rawResponse: responseBody
+        request_body: requestBody,
+        response_body: responseBody
       })
     });
 

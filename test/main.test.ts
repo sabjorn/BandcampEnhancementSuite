@@ -104,13 +104,16 @@ describe('BES Drawer', () => {
   });
 
   it('should create settings section with waveform toggle', () => {
-    const settingsSection = document.querySelector('.bes-drawer-section h3');
-    if (!settingsSection) return;
+    const sections = document.querySelectorAll('.bes-drawer-section');
+    if (sections.length < 2) return;
+
+    const settingsSection = sections[1];
+    const settingsTitle = settingsSection.querySelector('h2');
 
     const waveformToggle = document.getElementById('bes-waveform-toggle') as HTMLInputElement;
     const waveformLabel = document.querySelector('label[for="bes-waveform-toggle"]');
 
-    expect(settingsSection.textContent).toContain('Settings');
+    expect(settingsTitle?.textContent).toContain('Settings');
     expect(waveformToggle).toBeTruthy();
     expect(waveformToggle?.type).toBe('checkbox');
     expect(waveformToggle?.className).toBe('waveform');
@@ -122,7 +125,7 @@ describe('BES Drawer', () => {
     const sections = document.querySelectorAll('.bes-drawer-section');
     if (sections.length < 2) return;
 
-    const findMusicSection = sections[1];
+    const findMusicSection = sections[0];
     const title = findMusicSection.querySelector('h3');
     const description = findMusicSection.querySelector('p');
     const button = findMusicSection.querySelector('.bes-drawer-button');

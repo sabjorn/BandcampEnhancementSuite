@@ -422,7 +422,7 @@ button.bes-downloadall[disabled]::after {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 9998;
+  z-index: 10001;
   opacity: 0;
   visibility: hidden;
   transition:
@@ -444,7 +444,7 @@ button.bes-downloadall[disabled]::after {
   height: 100%;
   background: #fff;
   box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
-  z-index: 9999;
+  z-index: 10002;
   transform: translateX(-100%);
   transition: transform 0.3s ease;
   display: flex;
@@ -562,4 +562,251 @@ button.bes-downloadall[disabled]::after {
   width: 50%;
   margin: 0;
   pointer-events: all;
+}
+
+/* Keyboard Settings Styles */
+.bes-keyboard-section {
+  margin-bottom: 32px;
+}
+
+.bes-keyboard-section-header {
+  margin-bottom: 8px;
+}
+
+.bes-keyboard-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.bes-keyboard-section-title:hover {
+  color: #1da0c3;
+}
+
+.bes-keyboard-section-arrow {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+  display: inline-block;
+  width: 12px;
+  text-align: center;
+}
+
+.bes-keyboard-section-content {
+  max-height: 2000px;
+  overflow: hidden;
+  transition:
+    max-height 0.3s ease,
+    opacity 0.3s ease;
+  opacity: 1;
+}
+
+.bes-keyboard-section-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.bes-keyboard-description {
+  margin: 0 0 20px 0;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.bes-keyboard-category-section {
+  margin-bottom: 24px;
+}
+
+.bes-keyboard-category-header {
+  margin: 16px 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1da0c3;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 6px;
+}
+
+.bes-keyboard-control-row {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+  transition: opacity 0.2s ease;
+}
+
+.bes-keyboard-control-row:last-child {
+  border-bottom: none;
+}
+
+.bes-keyboard-control-row.disabled {
+  opacity: 0.5;
+}
+
+.bes-keyboard-control-row.conflict {
+  background-color: #fff3cd;
+  padding: 10px;
+  margin: 0 -10px;
+  border-radius: 4px;
+  border: 1px solid #ffc107;
+}
+
+.bes-keyboard-control-enable-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bes-keyboard-control-enable {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.bes-keyboard-control-description {
+  font-size: 14px;
+  color: #333;
+}
+
+.bes-key-binding-editor-container {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bes-key-binding-display {
+  padding: 6px 12px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+  min-width: 100px;
+  text-align: center;
+}
+
+.bes-key-binding-display:hover {
+  background: #e8e8e8;
+  border-color: #1da0c3;
+}
+
+.bes-key-binding-display.recording {
+  background: #1da0c3;
+  color: white;
+  border-color: #1da0c3;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.bes-keyboard-step-sizes {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 2px solid #e0e0e0;
+}
+
+.bes-keyboard-step-input-container {
+  margin-bottom: 12px;
+}
+
+.bes-keyboard-step-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.bes-keyboard-step-input {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: right;
+}
+
+.bes-keyboard-step-input:focus {
+  outline: none;
+  border-color: #1da0c3;
+}
+
+.bes-keyboard-reset-container {
+  margin-top: 24px;
+}
+
+.bes-keyboard-reset-confirmation {
+  padding: 16px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+}
+
+.bes-keyboard-reset-confirmation-text {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #333;
+  text-align: center;
+}
+
+.bes-keyboard-reset-confirmation-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.bes-keyboard-confirm-button {
+  background: #dc3545;
+  flex: 1;
+}
+
+.bes-keyboard-confirm-button:hover {
+  background: #c82333;
+}
+
+.bes-keyboard-confirm-button:active {
+  background: #bd2130;
+}
+
+.bes-keyboard-cancel-button {
+  background: #6c757d;
+  flex: 1;
+}
+
+.bes-keyboard-cancel-button:hover {
+  background: #5a6268;
+}
+
+.bes-keyboard-cancel-button:active {
+  background: #545b62;
+}
+
+.bes-keyboard-reset-button {
+  margin-top: 16px;
+  background: #6c757d;
+}
+
+.bes-keyboard-reset-button:hover {
+  background: #5a6268;
+}
+
+.bes-keyboard-reset-button:active {
+  background: #545b62;
 }

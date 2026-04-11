@@ -1,5 +1,6 @@
 import Logger from '../logger.js';
 import { getDB } from '../utilities.js';
+import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings } from '../types/keyboard.js';
 
 interface Config {
   displayWaveform: boolean;
@@ -7,6 +8,7 @@ interface Config {
   albumOnCheckoutDisabled: boolean;
   albumPurchaseTimeDelaySeconds: number;
   installDateUnixSeconds: number;
+  keyboardSettings?: KeyboardSettings;
 }
 
 const defaultConfig: Config = {
@@ -14,7 +16,8 @@ const defaultConfig: Config = {
   albumPurchasedDuringCheckout: false,
   albumOnCheckoutDisabled: false,
   albumPurchaseTimeDelaySeconds: 60 * 60 * 24 * 30,
-  installDateUnixSeconds: Math.floor(Date.now() / 1000)
+  installDateUnixSeconds: Math.floor(Date.now() / 1000),
+  keyboardSettings: DEFAULT_KEYBOARD_SETTINGS
 };
 
 export function connectionListenerCallback(
@@ -47,6 +50,10 @@ export async function portListenerCallback(
   if (msg.config) await synchronizeConfig(db, msg.config, portState.port);
 
   if (msg.toggleWaveformDisplay) await toggleWaveformDisplay(db, log, portState.port);
+
+  if (msg.updateKeyboardSettings) await updateKeyboardSettings(db, msg.updateKeyboardSettings, log, portState.port);
+
+  if (msg.resetKeyboardSettings) await resetKeyboardSettings(db, log, portState.port);
 
   if (msg.requestConfig) await broadcastConfig(db, log, portState.port);
 }
@@ -94,4 +101,34 @@ export async function setupDB(db: any): Promise<void> {
 
 export function mergeData(reference_config: Config, new_config: Partial<Config>): Config {
   return Object.assign({}, reference_config, new_config);
+}
+
+export async function updateKeyboardSettings(
+  db: any,
+  settings: KeyboardSettings,
+  log: Logger,
+  port?: chrome.runtime.Port
+): Promise<void> {
+  log.info('updating keyboard settings');
+
+  const errors = validateKeyboardSettings(settings);
+  if (errors.length > 0) {
+    log.error(`Invalid keyboard settings: ${errors.join(', ')}`);
+    port?.postMessage({ keyboardSettingsError: errors });
+    return;
+  }
+
+  const db_config = await db.get('config', 'config');
+  db_config['keyboardSettings'] = settings;
+  await db.put('config', db_config, 'config');
+  port?.postMessage({ config: db_config });
+}
+
+export async function resetKeyboardSettings(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+  log.info('resetting keyboard settings to defaults');
+
+  const db_config = await db.get('config', 'config');
+  db_config['keyboardSettings'] = DEFAULT_KEYBOARD_SETTINGS;
+  await db.put('config', db_config, 'config');
+  port?.postMessage({ config: db_config });
 }

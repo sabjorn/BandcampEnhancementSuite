@@ -1,10 +1,12 @@
 import { createLogger } from './logger';
 import { initLabelView } from './label_view';
 import { initDownload } from './pages/download';
-import { initPlayer } from './player';
+import { initPlayer, updateKeyboardHandlers } from './player';
 import { initAudioFeatures } from './audioFeatures';
 import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
+import { createKeyboardSettingsSection } from './components/keyboardSettings.js';
+import { KeyboardSettings } from './types/keyboard.js';
 
 const log = createLogger();
 
@@ -37,7 +39,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   const settingsSection = document.createElement('div');
   settingsSection.className = 'bes-drawer-section';
 
-  const settingsTitle = document.createElement('h3');
+  const settingsTitle = document.createElement('h2');
   settingsTitle.textContent = 'Settings';
 
   const waveformSettingRow = document.createElement('div');
@@ -67,9 +69,49 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   settingsSection.appendChild(settingsTitle);
   settingsSection.appendChild(waveformSettingRow);
 
+  let keyboardSection: HTMLElement | null = null;
+
+  const initKeyboardSection = (settings: KeyboardSettings) => {
+    if (keyboardSection) {
+      keyboardSection.remove();
+    }
+
+    keyboardSection = createKeyboardSettingsSection(settings, updatedSettings => {
+      log.info('Keyboard settings updated');
+      config_port.postMessage({ updateKeyboardSettings: updatedSettings });
+    });
+
+    if (!settingsSection.parentNode) {
+      content.appendChild(keyboardSection);
+      return;
+    }
+
+    const nextSibling = settingsSection.nextSibling;
+    if (nextSibling) {
+      settingsSection.parentNode.insertBefore(keyboardSection, nextSibling);
+      return;
+    }
+
+    settingsSection.parentNode.appendChild(keyboardSection);
+  };
+
+  document.addEventListener('bes-reset-keyboard-settings', () => {
+    log.info('Resetting keyboard settings');
+    config_port.postMessage({ resetKeyboardSettings: true });
+  });
+
   config_port.onMessage.addListener((msg: any) => {
     if (msg.config && typeof msg.config.displayWaveform === 'boolean') {
       waveformToggle.checked = msg.config.displayWaveform;
+    }
+
+    if (msg.config && msg.config.keyboardSettings) {
+      initKeyboardSection(msg.config.keyboardSettings);
+    }
+
+    if (msg.keyboardSettingsError) {
+      log.error(`Keyboard settings error: ${msg.keyboardSettingsError.join(', ')}`);
+      alert(`Keyboard settings error: ${msg.keyboardSettingsError.join(', ')}`);
     }
   });
 
@@ -113,8 +155,8 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   findMusicSection.appendChild(findMusicDesc);
   findMusicSection.appendChild(findMusicButton);
 
-  content.appendChild(settingsSection);
   content.appendChild(findMusicSection);
+  content.appendChild(settingsSection);
 
   drawer.appendChild(header);
   drawer.appendChild(content);
@@ -185,10 +227,8 @@ const main = async (): Promise<void> => {
     } catch (e: any) {
       if (e.message?.includes('Error in invocation of runtime.connect in main.js')) {
         log.error(e);
-        throw e;
-      } else {
-        throw e;
       }
+      throw e;
     }
   })();
 
@@ -196,7 +236,35 @@ const main = async (): Promise<void> => {
 
   const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
   if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
-    await initPlayer();
+    let keyboardSettings: KeyboardSettings | undefined;
+
+    const getConfigPromise = new Promise<void>(resolve => {
+      const listener = (msg: any) => {
+        if (msg.config && msg.config.keyboardSettings) {
+          keyboardSettings = msg.config.keyboardSettings;
+          config_port.onMessage.removeListener(listener);
+          resolve();
+        }
+      };
+      config_port.onMessage.addListener(listener);
+      config_port.postMessage({ requestConfig: {} });
+
+      setTimeout(() => {
+        config_port.onMessage.removeListener(listener);
+        resolve();
+      }, 1000);
+    });
+
+    await getConfigPromise;
+    await initPlayer(keyboardSettings);
+
+    config_port.onMessage.addListener((msg: any) => {
+      if (msg.config && msg.config.keyboardSettings) {
+        log.info('Keyboard settings changed, updating handlers');
+        updateKeyboardHandlers(msg.config.keyboardSettings);
+      }
+    });
+
     initAudioFeatures(config_port);
   }
 

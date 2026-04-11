@@ -53,7 +53,7 @@ export function extractBandFollowInfo(): BandFollowInfo {
   try {
     const bandFollowInfo: BandFollowInfo = JSON.parse(data);
     return bandFollowInfo;
-  } catch (_error) {
+  } catch {
     return {};
   }
 }
@@ -84,7 +84,7 @@ export function extractFanTralbumData(): FanTralbumData {
     }
 
     return fan_tralbum_data;
-  } catch (_error) {
+  } catch {
     return defaultData;
   }
 }

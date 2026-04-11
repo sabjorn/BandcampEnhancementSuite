@@ -90,12 +90,12 @@ describe('BES Drawer', () => {
 
   it('should create drawer with header, content, and sections', () => {
     const drawer = document.querySelector('.bes-drawer');
-    if (!drawer) return; // Skip if drawer not created yet
+    expect(drawer).toBeTruthy();
 
-    const header = drawer.querySelector('.bes-drawer-header');
+    const header = drawer!.querySelector('.bes-drawer-header');
     const title = header?.querySelector('h2');
     const closeButton = header?.querySelector('.bes-drawer-close');
-    const content = drawer.querySelector('.bes-drawer-content');
+    const content = drawer!.querySelector('.bes-drawer-content');
 
     expect(header).toBeTruthy();
     expect(title?.textContent).toBe('Bandcamp Enhancement Suite');
@@ -104,13 +104,16 @@ describe('BES Drawer', () => {
   });
 
   it('should create settings section with waveform toggle', () => {
-    const settingsSection = document.querySelector('.bes-drawer-section h3');
-    if (!settingsSection) return;
+    const sections = document.querySelectorAll('.bes-drawer-section');
+    expect(sections.length).toBeGreaterThanOrEqual(2);
+
+    const settingsSection = sections[1];
+    const settingsTitle = settingsSection.querySelector('h2');
 
     const waveformToggle = document.getElementById('bes-waveform-toggle') as HTMLInputElement;
     const waveformLabel = document.querySelector('label[for="bes-waveform-toggle"]');
 
-    expect(settingsSection.textContent).toContain('Settings');
+    expect(settingsTitle?.textContent).toContain('Settings');
     expect(waveformToggle).toBeTruthy();
     expect(waveformToggle?.type).toBe('checkbox');
     expect(waveformToggle?.className).toBe('waveform');
@@ -120,9 +123,9 @@ describe('BES Drawer', () => {
 
   it('should create FindMusic section with button', () => {
     const sections = document.querySelectorAll('.bes-drawer-section');
-    if (sections.length < 2) return;
+    expect(sections.length).toBeGreaterThanOrEqual(2);
 
-    const findMusicSection = sections[1];
+    const findMusicSection = sections[0];
     const title = findMusicSection.querySelector('h3');
     const description = findMusicSection.querySelector('p');
     const button = findMusicSection.querySelector('.bes-drawer-button');
@@ -134,12 +137,12 @@ describe('BES Drawer', () => {
 
   it('should have floating button with BES icon', () => {
     const button = document.querySelector('.findmusic-floating-button');
-    if (!button) return;
+    expect(button).toBeTruthy();
 
-    const icon = button.querySelector('img.findmusic-button-icon') as HTMLImageElement;
+    const icon = button!.querySelector('img.findmusic-button-icon') as HTMLImageElement;
 
-    expect(button.getAttribute('title')).toBe('BES Settings');
-    expect(button.getAttribute('aria-label')).toBe('Toggle Bandcamp Enhancement Suite Settings');
+    expect(button!.getAttribute('title')).toBe('BES Settings');
+    expect(button!.getAttribute('aria-label')).toBe('Toggle Bandcamp Enhancement Suite Settings');
     expect(icon).toBeTruthy();
     expect(icon.src).toContain('icons/icon48.png');
   });
@@ -149,20 +152,20 @@ describe('BES Drawer', () => {
     const drawer = document.querySelector('.bes-drawer');
     const overlay = document.querySelector('.bes-drawer-overlay');
 
-    if (!button || !drawer || !overlay) return;
+    expect(button).toBeTruthy();
+    expect(drawer).toBeTruthy();
+    expect(overlay).toBeTruthy();
 
-    // Open drawer
     button.click();
     await vi.waitFor(() => {
-      expect(drawer.classList.contains('open')).toBe(true);
-      expect(overlay.classList.contains('open')).toBe(true);
+      expect(drawer!.classList.contains('open')).toBe(true);
+      expect(overlay!.classList.contains('open')).toBe(true);
     });
 
-    // Close drawer
     button.click();
     await vi.waitFor(() => {
-      expect(drawer.classList.contains('open')).toBe(false);
-      expect(overlay.classList.contains('open')).toBe(false);
+      expect(drawer!.classList.contains('open')).toBe(false);
+      expect(overlay!.classList.contains('open')).toBe(false);
     });
   });
 
@@ -171,17 +174,17 @@ describe('BES Drawer', () => {
     const drawer = document.querySelector('.bes-drawer');
     const closeButton = drawer?.querySelector('.bes-drawer-close') as HTMLElement;
 
-    if (!button || !drawer || !closeButton) return;
+    expect(button).toBeTruthy();
+    expect(drawer).toBeTruthy();
+    expect(closeButton).toBeTruthy();
 
-    // Open drawer first
     button.click();
     await vi.waitFor(() => {
-      expect(drawer.classList.contains('open')).toBe(true);
+      expect(drawer!.classList.contains('open')).toBe(true);
     });
 
-    // Click close button
     closeButton.click();
-    expect(drawer.classList.contains('open')).toBe(false);
+    expect(drawer!.classList.contains('open')).toBe(false);
   });
 
   it('should close drawer when overlay is clicked', async () => {
@@ -189,24 +192,23 @@ describe('BES Drawer', () => {
     const drawer = document.querySelector('.bes-drawer');
     const overlay = document.querySelector('.bes-drawer-overlay') as HTMLElement;
 
-    if (!button || !drawer || !overlay) return;
+    expect(button).toBeTruthy();
+    expect(drawer).toBeTruthy();
+    expect(overlay).toBeTruthy();
 
-    // Open drawer first
     button.click();
     await vi.waitFor(() => {
-      expect(drawer.classList.contains('open')).toBe(true);
+      expect(drawer!.classList.contains('open')).toBe(true);
     });
 
-    // Click overlay
     overlay.click();
-    expect(drawer.classList.contains('open')).toBe(false);
+    expect(drawer!.classList.contains('open')).toBe(false);
   });
 
   it('should send waveform toggle message when toggle is changed', () => {
     const toggle = document.getElementById('bes-waveform-toggle') as HTMLInputElement;
-    if (!toggle) return;
+    expect(toggle).toBeTruthy();
 
-    // Simulate toggle change
     toggle.checked = true;
     toggle.dispatchEvent(new Event('change'));
 
@@ -225,9 +227,8 @@ describe('BES Drawer', () => {
 
   it('should update button text based on permission status', async () => {
     const findMusicButton = document.querySelector('.bes-drawer-button') as HTMLElement;
-    if (!findMusicButton) return;
+    expect(findMusicButton).toBeTruthy();
 
-    // Initial text should be set
     expect(findMusicButton.textContent).toMatch(/Enable FindMusic.club Integration|Log in to FindMusic.club/);
   });
 
@@ -236,22 +237,22 @@ describe('BES Drawer', () => {
     const drawer = document.querySelector('.bes-drawer');
     const findMusicButton = document.querySelector('.bes-drawer-button') as HTMLElement;
 
-    if (!openButton || !drawer || !findMusicButton) return;
+    expect(openButton).toBeTruthy();
+    expect(drawer).toBeTruthy();
+    expect(findMusicButton).toBeTruthy();
 
-    // Open drawer first
     openButton.click();
     await vi.waitFor(() => {
-      expect(drawer.classList.contains('open')).toBe(true);
+      expect(drawer!.classList.contains('open')).toBe(true);
     });
 
-    // Click FindMusic button
     findMusicButton.click();
-    expect(drawer.classList.contains('open')).toBe(false);
+    expect(drawer!.classList.contains('open')).toBe(false);
   });
 
   it('should send openFindMusic message when button is clicked', () => {
     const findMusicButton = document.querySelector('.bes-drawer-button') as HTMLElement;
-    if (!findMusicButton) return;
+    expect(findMusicButton).toBeTruthy();
 
     mockRuntimeSendMessage.mockClear();
     findMusicButton.click();

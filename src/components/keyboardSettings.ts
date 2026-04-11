@@ -25,6 +25,7 @@ export function createKeyBindingEditor(currentBinding: KeyBinding, callbacks: Ke
   display.title = 'Click to change key binding';
 
   let isRecording = false;
+  const abortController = new AbortController();
 
   const startRecording = () => {
     isRecording = true;
@@ -74,7 +75,15 @@ export function createKeyBindingEditor(currentBinding: KeyBinding, callbacks: Ke
     }
   });
 
-  document.addEventListener('keydown', handleKeyDown);
+  document.addEventListener('keydown', handleKeyDown, { signal: abortController.signal });
+
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(container)) {
+      abortController.abort();
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 
   container.appendChild(display);
 

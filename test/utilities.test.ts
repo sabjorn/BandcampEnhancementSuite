@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 
-// Use vi.hoisted to create mocks that can be referenced in vi.mock
 const {
   mockDB,
   mockGetDB,
@@ -18,7 +17,6 @@ const {
 
   const mockGetDB = vi.fn(() => Promise.resolve(mockDB));
 
-  // Create mocked versions of the token storage functions
   const mockStoreFindMusicToken = vi.fn(async (token: string, expiresInSeconds: number = 86400): Promise<void> => {
     const db = mockDB;
     const expiresAt = Date.now() + expiresInSeconds * 1000;
@@ -45,7 +43,6 @@ const {
     return db.delete('config', 'findmusicToken');
   });
 
-  // Mock cachedFetch to check config and call appropriate fetch
   const mockCachedFetch = vi.fn(async (url: string, options?: RequestInit): Promise<Response> => {
     const db = mockDB;
     const config = await db.get('config', 'config');
@@ -55,13 +52,11 @@ const {
       return fetch(url, options);
     }
 
-    // Check if URL is in whitelist
     const CACHEABLE_URLS = ['/api/mobile/25/tralbum_details'];
     if (!CACHEABLE_URLS.some(pattern => url.includes(pattern))) {
       return fetch(url, options);
     }
 
-    // Check if already cached
     const method = options?.method || 'GET';
     const requestBody = options?.body ? String(options.body) : '';
     const hash = `${method}:${url}:${requestBody}`;
@@ -71,15 +66,12 @@ const {
       return fetch(url, options);
     }
 
-    // Fetch and cache
     const response = await fetch(url, options);
     const clonedResponse = response.clone();
     const responseText = await clonedResponse.text();
 
-    // Mark as cached
     await db.put('cachedRequests', Date.now(), hash);
 
-    // Send to cache backend (non-blocking)
     if (globalThis.chrome?.runtime?.sendMessage) {
       globalThis.chrome.runtime
         .sendMessage({
@@ -403,7 +395,7 @@ describe('FindMusic Token Storage', () => {
       const token = 'test-token-456';
       const beforeTime = Date.now();
 
-      await storeFindMusicToken(token, 3600); // 1 hour
+      await storeFindMusicToken(token, 3600);
 
       const call = mockDB.put.mock.calls[0];
       const tokenData = call[1];
@@ -501,9 +493,7 @@ describe('cachedFetch', () => {
   });
 
   it('should use caching fetch for whitelisted URL when caching enabled', async () => {
-    mockDB.get
-      .mockResolvedValueOnce({ enableFindMusicCaching: true }) // config check
-      .mockResolvedValueOnce(undefined); // cache check (not cached yet)
+    mockDB.get.mockResolvedValueOnce({ enableFindMusicCaching: true }).mockResolvedValueOnce(undefined);
 
     const mockResponse = new Response(JSON.stringify({ data: 'test' }));
     mockFetch.mockResolvedValue(mockResponse);
@@ -516,7 +506,6 @@ describe('cachedFetch', () => {
     expect(result).toBeDefined();
     expect(mockFetch).toHaveBeenCalled();
 
-    // Wait a tick for async cache operations
     await new Promise(resolve => setTimeout(resolve, 10));
 
     expect(mockSendMessage).toHaveBeenCalledWith(
@@ -542,9 +531,7 @@ describe('cachedFetch', () => {
   });
 
   it('should skip duplicate requests already cached', async () => {
-    mockDB.get
-      .mockResolvedValueOnce({ enableFindMusicCaching: true }) // config check
-      .mockResolvedValueOnce(Date.now()); // cache check (already cached)
+    mockDB.get.mockResolvedValueOnce({ enableFindMusicCaching: true }).mockResolvedValueOnce(Date.now());
 
     const mockResponse = new Response(JSON.stringify({ data: 'test' }));
     mockFetch.mockResolvedValue(mockResponse);
@@ -557,10 +544,8 @@ describe('cachedFetch', () => {
     expect(result).toBeDefined();
     expect(mockFetch).toHaveBeenCalled();
 
-    // Wait a tick
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    // Should not send to cache backend since already cached
     expect(mockSendMessage).not.toHaveBeenCalled();
   });
 });

@@ -227,7 +227,6 @@ export async function clearFindMusicToken(): Promise<void> {
   await db.delete('config', 'findmusicToken');
 }
 
-// Simple hash function for cache deduplication
 async function hashRequest(url: string, method: string, body: string): Promise<string> {
   const text = `${method}:${url}:${body}`;
   const msgBuffer = new TextEncoder().encode(text);
@@ -236,7 +235,6 @@ async function hashRequest(url: string, method: string, body: string): Promise<s
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Check if we've already cached this exact request
 async function hasBeenCached(url: string, method: string, body: string): Promise<boolean> {
   try {
     const hash = await hashRequest(url, method, body);
@@ -244,32 +242,25 @@ async function hasBeenCached(url: string, method: string, body: string): Promise
     const cached = await db.get('cachedRequests', hash);
     return !!cached;
   } catch (_error) {
-    return false; // If error, assume not cached and try to cache
+    return false;
   }
 }
 
-// Mark request as cached
 async function markAsCached(url: string, method: string, body: string): Promise<void> {
   try {
     const hash = await hashRequest(url, method, body);
     const db = await getDB();
     await db.put('cachedRequests', Date.now(), hash);
   } catch (_error) {
-    // Non-critical, just skip if caching fails
   }
 }
 
-// URLs we want to cache - whitelist approach
-const CACHEABLE_URLS = [
-  '/api/mobile/25/tralbum_details',
-  // Add more endpoints here as needed
-];
+const CACHEABLE_URLS = ['/api/mobile/25/tralbum_details'];
 
 function shouldCacheUrl(url: string): boolean {
   return CACHEABLE_URLS.some(pattern => url.includes(pattern));
 }
 
-// Fetch function factory - creates appropriate fetch based on caching config
 type FetchFunction = (url: string, options?: RequestInit) => Promise<Response>;
 
 const log = new Logger();
@@ -279,13 +270,11 @@ function createCachingFetch(): FetchFunction {
     const method = options?.method || 'GET';
     const requestBody = options?.body ? String(options.body) : '';
 
-    // Check if this URL should be cached
     if (!shouldCacheUrl(url)) {
       log.debug(`Skipping cache for ${method} ${url} - not in whitelist`);
       return fetch(url, options);
     }
 
-    // Check if we've already cached this exact request
     const alreadyCached = await hasBeenCached(url, method, requestBody);
     if (alreadyCached) {
       log.debug(`Already cached ${method} ${url} - skipping duplicate`);
@@ -300,10 +289,8 @@ function createCachingFetch(): FetchFunction {
 
     log.debug(`Sending to cache backend: ${method} ${url} (${responseText.length} bytes)`);
 
-    // Mark as cached immediately (optimistic)
     markAsCached(url, method, requestBody);
 
-    // Non-blocking cache operation
     chrome.runtime
       .sendMessage({
         contentScriptQuery: 'postCache',
@@ -323,7 +310,6 @@ function createCachingFetch(): FetchFunction {
   };
 }
 
-// Simple factory - returns appropriate fetch function
 function getFetch(cached: boolean): FetchFunction {
   return cached ? createCachingFetch() : createPlainFetch();
 }
@@ -334,7 +320,6 @@ function createPlainFetch(): FetchFunction {
   };
 }
 
-// Main export - checks config and uses appropriate fetch
 export async function cachedFetch(url: string, options?: RequestInit): Promise<Response> {
   const db = await getDB();
   const config = await db.get('config', 'config');

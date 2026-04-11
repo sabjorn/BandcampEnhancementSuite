@@ -3,10 +3,8 @@ import { analyze } from 'web-audio-beat-detector';
 import Logger from './logger';
 import { mousedownCallback } from './utilities.js';
 
-// In-memory cache for metadata during session
 const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
 
-// Debug helper to inspect cache state
 function logCacheState(log: Logger, context: string): void {
   const cacheEntries = Array.from(metadataCache.keys());
   log.debug(
@@ -66,7 +64,6 @@ export function applyAudioConfig(
 }
 
 function extractTrackId(audioSrc: string): number | null {
-  // URL format: https://t4.bcbits.com/stream/{hash}/{encoding}/{track_id}?...
   const match = audioSrc.match(/stream\/[^/]+\/[^/]+\/(\d+)/);
   if (!match) return null;
 
@@ -100,7 +97,6 @@ export async function generateAudioFeatures(
       logCacheState(log, 'Before cache check');
       log.debug(`Checking cache for track ID ${trackId}`);
 
-      // Check in-memory cache first (from previously played tracks in this session)
       let cachedMetadata = metadataCache.get(trackId);
 
       if (cachedMetadata) {
@@ -108,7 +104,6 @@ export async function generateAudioFeatures(
       } else {
         log.debug(`✗ Memory cache miss for track ${trackId} - Fetching from API`);
 
-        // If not in memory, try fetching from API
         cachedMetadata = await chrome.runtime
           .sendMessage({
             contentScriptQuery: 'fetchTrackMetadata',
@@ -119,7 +114,6 @@ export async function generateAudioFeatures(
             return null;
           });
 
-        // Store in memory cache for future use
         if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
           metadataCache.set(trackId, cachedMetadata);
           log.debug(`Stored track ${trackId} in memory cache for next time`);

@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-// Mock cachedFetch to use plain fetch (avoid IndexedDB in tests)
 vi.mock('../src/utilities', () => ({
   cachedFetch: vi.fn((url: string, options?: RequestInit) => fetch(url, options))
 }));

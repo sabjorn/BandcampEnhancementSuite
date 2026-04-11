@@ -172,7 +172,6 @@ describe('FindMusic Client', () => {
 
   describe('getFindMusicToken()', () => {
     beforeEach(() => {
-      // Add chrome.permissions mock
       Object.assign(global, {
         chrome: {
           ...global.chrome,

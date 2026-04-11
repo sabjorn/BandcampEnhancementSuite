@@ -73,7 +73,6 @@ describe('Cache Backend', () => {
 
       expect(result).toBe(true);
 
-      // Wait for async operations
       await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(hasFindMusicPermissions).toHaveBeenCalled();
@@ -109,7 +108,6 @@ describe('Cache Backend', () => {
 
       processRequest(request, {} as any, mockSendResponse);
 
-      // Wait for async operations
       await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(hasFindMusicPermissions).toHaveBeenCalled();
@@ -131,7 +129,6 @@ describe('Cache Backend', () => {
 
       processRequest(request, {} as any, mockSendResponse);
 
-      // Wait for async operations
       await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(getFindMusicToken).toHaveBeenCalled();
@@ -157,7 +154,6 @@ describe('Cache Backend', () => {
 
       processRequest(request, {} as any, mockSendResponse);
 
-      // Wait for async operations
       await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(mockFetch).toHaveBeenCalled();

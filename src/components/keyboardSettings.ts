@@ -235,15 +235,47 @@ export function createKeyboardSettingsSection(
   const section = document.createElement('div');
   section.className = 'bes-drawer-section bes-keyboard-section';
 
+  const header = document.createElement('div');
+  header.className = 'bes-keyboard-section-header';
+
   const title = document.createElement('h3');
-  title.textContent = 'Keyboard Controls';
+  title.className = 'bes-keyboard-section-title';
+
+  const arrow = document.createElement('span');
+  arrow.className = 'bes-keyboard-section-arrow';
+  arrow.textContent = '▶';
+
+  const titleText = document.createElement('span');
+  titleText.textContent = 'Keyboard Controls';
+
+  title.appendChild(arrow);
+  title.appendChild(titleText);
+
+  header.appendChild(title);
+
+  const content = document.createElement('div');
+  content.className = 'bes-keyboard-section-content';
 
   const description = document.createElement('p');
   description.className = 'bes-keyboard-description';
   description.textContent = 'Customize keyboard shortcuts for player controls. Click a key binding to change it.';
 
-  section.appendChild(title);
-  section.appendChild(description);
+  content.appendChild(description);
+
+  // Toggle collapse/expand
+  let isCollapsed = true;
+  content.classList.add('collapsed');
+
+  const toggleCollapse = () => {
+    isCollapsed = !isCollapsed;
+    content.classList.toggle('collapsed', isCollapsed);
+    arrow.textContent = isCollapsed ? '▶' : '▼';
+  };
+
+  title.addEventListener('click', toggleCollapse);
+  title.style.cursor = 'pointer';
+
+  section.appendChild(header);
 
   // Group controls by category
   const controlsByCategory = new Map<ActionCategory, KeyboardControlSetting[]>();
@@ -263,7 +295,7 @@ export function createKeyboardSettingsSection(
     const controls = controlsByCategory.get(category);
     if (controls && controls.length > 0) {
       const categorySection = createCategorySection(category, controls, settings, onUpdate);
-      section.appendChild(categorySection);
+      content.appendChild(categorySection);
     }
   });
 
@@ -305,7 +337,7 @@ export function createKeyboardSettingsSection(
   });
   stepSizesSection.appendChild(volumeStepInput);
 
-  section.appendChild(stepSizesSection);
+  content.appendChild(stepSizesSection);
 
   // Reset button
   const resetButton = document.createElement('button');
@@ -320,7 +352,9 @@ export function createKeyboardSettingsSection(
     }
   });
 
-  section.appendChild(resetButton);
+  content.appendChild(resetButton);
+
+  section.appendChild(content);
 
   return section;
 }

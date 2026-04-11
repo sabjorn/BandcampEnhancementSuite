@@ -569,6 +569,41 @@ button.bes-downloadall[disabled]::after {
   margin-bottom: 32px;
 }
 
+.bes-keyboard-section-header {
+  margin-bottom: 8px;
+}
+
+.bes-keyboard-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.bes-keyboard-section-title:hover {
+  color: #1da0c3;
+}
+
+.bes-keyboard-section-arrow {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+
+.bes-keyboard-section-content {
+  max-height: 2000px;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+
+.bes-keyboard-section-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
 .bes-keyboard-description {
   margin: 0 0 20px 0;
   font-size: 13px;

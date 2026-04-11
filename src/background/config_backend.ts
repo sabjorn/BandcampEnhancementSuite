@@ -119,8 +119,7 @@ export async function updateKeyboardSettings(
     return;
   }
 
-  // Get current config and update keyboard settings
-  let db_config = await db.get('config', 'config');
+  const db_config = await db.get('config', 'config');
   db_config['keyboardSettings'] = settings;
   await db.put('config', db_config, 'config');
   port?.postMessage({ config: db_config });
@@ -129,7 +128,7 @@ export async function updateKeyboardSettings(
 export async function resetKeyboardSettings(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
   log.info('resetting keyboard settings to defaults');
 
-  let db_config = await db.get('config', 'config');
+  const db_config = await db.get('config', 'config');
   db_config['keyboardSettings'] = DEFAULT_KEYBOARD_SETTINGS;
   await db.put('config', db_config, 'config');
   port?.postMessage({ config: db_config });

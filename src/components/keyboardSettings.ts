@@ -4,14 +4,14 @@
 
 import {
   KeyBinding,
-  KeyboardAction,
   KeyboardSettings,
   KeyboardControlSetting,
   ACTION_DESCRIPTIONS,
   ACTION_CATEGORIES,
   ActionCategory,
   keyBindingToString,
-  keyBindingsEqual
+  keyBindingsEqual,
+  DEFAULT_KEYBOARD_SETTINGS
 } from '../types/keyboard.js';
 
 interface KeyBindingEditorCallbacks {
@@ -236,6 +236,17 @@ export function createKeyboardSettingsSection(
   const section = document.createElement('div');
   section.className = 'bes-drawer-section bes-keyboard-section';
 
+  // Create a ref to hold the update visibility function
+  let updateResetVisibilityFn: (() => void) | null = null;
+
+  // Wrap onUpdate to also update reset button visibility
+  const wrappedOnUpdate = (updatedSettings: KeyboardSettings) => {
+    onUpdate(updatedSettings);
+    if (updateResetVisibilityFn) {
+      updateResetVisibilityFn();
+    }
+  };
+
   const header = document.createElement('div');
   header.className = 'bes-keyboard-section-header';
 
@@ -296,7 +307,7 @@ export function createKeyboardSettingsSection(
   categoryOrder.forEach(category => {
     const controls = controlsByCategory.get(category);
     if (controls && controls.length > 0) {
-      const categorySection = createCategorySection(category, controls, settings, onUpdate);
+      const categorySection = createCategorySection(category, controls, settings, wrappedOnUpdate);
       content.appendChild(categorySection);
     }
   });
@@ -314,7 +325,7 @@ export function createKeyboardSettingsSection(
   // Seek step size
   const seekStepInput = createStepSizeInput('Seek step (seconds):', settings.seekStepSize, 1, 1, value => {
     settings.seekStepSize = value;
-    onUpdate({ ...settings });
+    wrappedOnUpdate({ ...settings });
   });
   stepSizesSection.appendChild(seekStepInput);
 
@@ -326,7 +337,7 @@ export function createKeyboardSettingsSection(
     1,
     value => {
       settings.largeSeekStepSize = value;
-      onUpdate({ ...settings });
+      wrappedOnUpdate({ ...settings });
     }
   );
   stepSizesSection.appendChild(largeSeekStepInput);
@@ -334,15 +345,49 @@ export function createKeyboardSettingsSection(
   // Volume step
   const volumeStepInput = createStepSizeInput('Volume step:', settings.volumeStep, 0.01, 0.01, value => {
     settings.volumeStep = value;
-    onUpdate({ ...settings });
+    wrappedOnUpdate({ ...settings });
   });
   stepSizesSection.appendChild(volumeStepInput);
 
   content.appendChild(stepSizesSection);
 
+  // Helper function to check if settings are modified
+  const areSettingsModified = (current: KeyboardSettings): boolean => {
+    // Check if step sizes are different
+    if (current.seekStepSize !== DEFAULT_KEYBOARD_SETTINGS.seekStepSize) return true;
+    if (current.largeSeekStepSize !== DEFAULT_KEYBOARD_SETTINGS.largeSeekStepSize) return true;
+    if (current.volumeStep !== DEFAULT_KEYBOARD_SETTINGS.volumeStep) return true;
+
+    // Check if controls are different
+    if (current.controls.length !== DEFAULT_KEYBOARD_SETTINGS.controls.length) return true;
+
+    for (let i = 0; i < current.controls.length; i++) {
+      const currentControl = current.controls[i];
+      const defaultControl = DEFAULT_KEYBOARD_SETTINGS.controls[i];
+
+      if (currentControl.action !== defaultControl.action) return true;
+      if (currentControl.enabled !== defaultControl.enabled) return true;
+      if (!keyBindingsEqual(currentControl.binding, defaultControl.binding)) return true;
+    }
+
+    return false;
+  };
+
   // Reset button and confirmation
   const resetContainer = document.createElement('div');
   resetContainer.className = 'bes-keyboard-reset-container';
+
+  // Update reset container visibility based on whether settings are modified
+  const updateResetVisibility = () => {
+    if (areSettingsModified(settings)) {
+      resetContainer.style.display = 'block';
+    } else {
+      resetContainer.style.display = 'none';
+    }
+  };
+
+  // Assign to ref so wrappedOnUpdate can call it
+  updateResetVisibilityFn = updateResetVisibility;
 
   const resetButton = document.createElement('button');
   resetButton.className = 'bes-drawer-button bes-keyboard-reset-button';
@@ -396,6 +441,9 @@ export function createKeyboardSettingsSection(
   content.appendChild(resetContainer);
 
   section.appendChild(content);
+
+  // Set initial visibility of reset button
+  updateResetVisibility();
 
   return section;
 }

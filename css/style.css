@@ -590,6 +590,8 @@ button.bes-downloadall[disabled]::after {
   font-size: 12px;
   transition: transform 0.2s ease;
   display: inline-block;
+  width: 12px;
+  text-align: center;
 }
 
 .bes-keyboard-section-content {
@@ -743,6 +745,55 @@ button.bes-downloadall[disabled]::after {
 .bes-keyboard-step-input:focus {
   outline: none;
   border-color: #1da0c3;
+}
+
+.bes-keyboard-reset-container {
+  margin-top: 24px;
+}
+
+.bes-keyboard-reset-confirmation {
+  padding: 16px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+}
+
+.bes-keyboard-reset-confirmation-text {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #333;
+  text-align: center;
+}
+
+.bes-keyboard-reset-confirmation-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.bes-keyboard-confirm-button {
+  background: #dc3545;
+  flex: 1;
+}
+
+.bes-keyboard-confirm-button:hover {
+  background: #c82333;
+}
+
+.bes-keyboard-confirm-button:active {
+  background: #bd2130;
+}
+
+.bes-keyboard-cancel-button {
+  background: #6c757d;
+  flex: 1;
+}
+
+.bes-keyboard-cancel-button:hover {
+  background: #5a6268;
+}
+
+.bes-keyboard-cancel-button:active {
+  background: #545b62;
 }
 
 .bes-keyboard-reset-button {

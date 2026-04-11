@@ -340,20 +340,60 @@ export function createKeyboardSettingsSection(
 
   content.appendChild(stepSizesSection);
 
-  // Reset button
+  // Reset button and confirmation
+  const resetContainer = document.createElement('div');
+  resetContainer.className = 'bes-keyboard-reset-container';
+
   const resetButton = document.createElement('button');
   resetButton.className = 'bes-drawer-button bes-keyboard-reset-button';
   resetButton.textContent = 'Reset to Defaults';
 
+  const confirmationUI = document.createElement('div');
+  confirmationUI.className = 'bes-keyboard-reset-confirmation';
+  confirmationUI.style.display = 'none';
+
+  const confirmationText = document.createElement('p');
+  confirmationText.className = 'bes-keyboard-reset-confirmation-text';
+  confirmationText.textContent = 'Reset all keyboard settings to defaults?';
+
+  const confirmationButtons = document.createElement('div');
+  confirmationButtons.className = 'bes-keyboard-reset-confirmation-buttons';
+
+  const confirmButton = document.createElement('button');
+  confirmButton.className = 'bes-drawer-button bes-keyboard-confirm-button';
+  confirmButton.textContent = 'Reset';
+
+  const cancelButton = document.createElement('button');
+  cancelButton.className = 'bes-drawer-button bes-keyboard-cancel-button';
+  cancelButton.textContent = 'Cancel';
+
+  confirmationButtons.appendChild(confirmButton);
+  confirmationButtons.appendChild(cancelButton);
+  confirmationUI.appendChild(confirmationText);
+  confirmationUI.appendChild(confirmationButtons);
+
   resetButton.addEventListener('click', () => {
-    if (confirm('Reset all keyboard settings to defaults?')) {
-      // This will be handled by sending a message to the backend
-      const resetEvent = new CustomEvent('bes-reset-keyboard-settings');
-      document.dispatchEvent(resetEvent);
-    }
+    resetButton.style.display = 'none';
+    confirmationUI.style.display = 'block';
   });
 
-  content.appendChild(resetButton);
+  confirmButton.addEventListener('click', () => {
+    // This will be handled by sending a message to the backend
+    const resetEvent = new CustomEvent('bes-reset-keyboard-settings');
+    document.dispatchEvent(resetEvent);
+    // Hide confirmation and show reset button again
+    confirmationUI.style.display = 'none';
+    resetButton.style.display = 'block';
+  });
+
+  cancelButton.addEventListener('click', () => {
+    confirmationUI.style.display = 'none';
+    resetButton.style.display = 'block';
+  });
+
+  resetContainer.appendChild(resetButton);
+  resetContainer.appendChild(confirmationUI);
+  content.appendChild(resetContainer);
 
   section.appendChild(content);
 

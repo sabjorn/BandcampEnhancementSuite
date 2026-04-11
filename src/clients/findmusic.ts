@@ -128,11 +128,8 @@ export async function fetchTrackMetadata(trackId: number): Promise<{ waveform: n
     log.info(`Successfully fetched metadata for track ${trackId}`);
     return data;
   } catch (error) {
-    if (error instanceof Error) {
-      log.warn(`Network error fetching metadata for track ${trackId}: ${error.message}`);
-    } else {
-      log.warn(`Unknown error fetching metadata for track ${trackId}`);
-    }
+    const message = error instanceof Error ? error.message : String(error);
+    log.warn(`Network error fetching metadata for track ${trackId}: ${message}`);
     return null;
   }
 }
@@ -166,10 +163,7 @@ export async function postTrackMetadata(trackId: number, waveform: number[], bpm
 
     log.info(`Successfully posted metadata for track ${trackId}`);
   } catch (error) {
-    if (error instanceof Error) {
-      log.warn(`Network error posting metadata for track ${trackId}: ${error.message}`);
-    } else {
-      log.warn(`Unknown error posting metadata for track ${trackId}`);
-    }
+    const message = error instanceof Error ? error.message : String(error);
+    log.warn(`Network error posting metadata for track ${trackId}: ${message}`);
   }
 }

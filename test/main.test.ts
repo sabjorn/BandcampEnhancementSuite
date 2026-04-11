@@ -116,9 +116,9 @@ describe('BES Drawer', () => {
     expect(settingsTitle?.textContent).toContain('Settings');
     expect(waveformToggle).toBeTruthy();
     expect(waveformToggle?.type).toBe('checkbox');
-    expect(waveformToggle?.className).toBe('waveform');
+    expect(waveformToggle?.className).toBe('bes-toggle');
     expect(waveformLabel).toBeTruthy();
-    expect(waveformLabel?.className).toBe('waveform');
+    expect(waveformLabel?.className).toBe('bes-toggle');
   });
 
   it('should create FindMusic section with button', () => {

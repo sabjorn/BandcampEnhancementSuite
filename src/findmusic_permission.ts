@@ -47,13 +47,18 @@ button.addEventListener('click', async () => {
       status.textContent = 'Permission granted! Logging in to FindMusic.club...';
       log.info('User granted FindMusic.club permissions');
 
+      const db = await getDB();
+      const config = await db.get('config', 'config');
+      config.enableMetadataCaching = true;
+      config.enableFetchCaching = true;
+      await db.put('config', config, 'config');
+      log.info('Enabled FindMusic.club caching after permission grant');
+
       const token = await exchangeBandcampToken();
       const url = `${FINDMUSIC_BASE_URL}/login?bes_token=${encodeURIComponent(token)}`;
 
-      // Open FindMusic in a new tab in the main browser window
       chrome.tabs.create({ url });
 
-      // Close the popup
       window.close();
     } else {
       status.textContent = 'Permission denied. Please try again.';

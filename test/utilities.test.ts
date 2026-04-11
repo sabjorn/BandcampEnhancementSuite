@@ -46,7 +46,7 @@ const {
   const mockCachedFetch = vi.fn(async (url: string, options?: RequestInit): Promise<Response> => {
     const db = mockDB;
     const config = await db.get('config', 'config');
-    const cachingEnabled = config?.enableFindMusicCaching ?? false;
+    const cachingEnabled = config?.enableFetchCaching ?? false;
 
     if (!cachingEnabled) {
       return fetch(url, options);
@@ -479,7 +479,7 @@ describe('cachedFetch', () => {
   });
 
   it('should use plain fetch when caching disabled', async () => {
-    mockDB.get.mockResolvedValue({ enableFindMusicCaching: false });
+    mockDB.get.mockResolvedValue({ enableFetchCaching: false });
     const mockResponse = new Response('test response');
     mockFetch.mockResolvedValue(mockResponse);
 
@@ -493,7 +493,7 @@ describe('cachedFetch', () => {
   });
 
   it('should use caching fetch for whitelisted URL when caching enabled', async () => {
-    mockDB.get.mockResolvedValueOnce({ enableFindMusicCaching: true }).mockResolvedValueOnce(undefined);
+    mockDB.get.mockResolvedValueOnce({ enableFetchCaching: true }).mockResolvedValueOnce(undefined);
 
     const mockResponse = new Response(JSON.stringify({ data: 'test' }));
     mockFetch.mockResolvedValue(mockResponse);
@@ -518,7 +518,7 @@ describe('cachedFetch', () => {
   });
 
   it('should skip caching for non-whitelisted URLs', async () => {
-    mockDB.get.mockResolvedValue({ enableFindMusicCaching: true });
+    mockDB.get.mockResolvedValue({ enableFetchCaching: true });
     const mockResponse = new Response('test response');
     mockFetch.mockResolvedValue(mockResponse);
 
@@ -531,7 +531,7 @@ describe('cachedFetch', () => {
   });
 
   it('should skip duplicate requests already cached', async () => {
-    mockDB.get.mockResolvedValueOnce({ enableFindMusicCaching: true }).mockResolvedValueOnce(Date.now());
+    mockDB.get.mockResolvedValueOnce({ enableFetchCaching: true }).mockResolvedValueOnce(Date.now());
 
     const mockResponse = new Response(JSON.stringify({ data: 'test' }));
     mockFetch.mockResolvedValue(mockResponse);

@@ -1,5 +1,6 @@
 import Logger from '../logger';
 import { getFindMusicToken } from '../clients/findmusic';
+import { getDB } from '../utilities';
 
 const log = new Logger();
 
@@ -56,6 +57,14 @@ export function processRequest(
 
 async function fetchTrackMetadata(trackId: number): Promise<{ waveform: number[]; bpm: number } | null> {
   try {
+    const db = await getDB();
+    const config = await db.get('config', 'config');
+
+    if (!config?.enableMetadataCaching) {
+      log.debug(`Skipping metadata fetch for track ${trackId} - metadata caching disabled`);
+      return null;
+    }
+
     const token = await getFindMusicToken();
 
     if (!token) {
@@ -96,6 +105,14 @@ async function fetchTrackMetadata(trackId: number): Promise<{ waveform: number[]
 
 async function postTrackMetadata(trackId: number, waveform: number[], bpm: number): Promise<void> {
   try {
+    const db = await getDB();
+    const config = await db.get('config', 'config');
+
+    if (!config?.enableMetadataCaching) {
+      log.debug(`Skipping metadata post for track ${trackId} - metadata caching disabled`);
+      return;
+    }
+
     const token = await getFindMusicToken();
 
     if (!token) {

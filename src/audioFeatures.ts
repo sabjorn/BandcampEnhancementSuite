@@ -290,11 +290,11 @@ export function createCanvasDisplayToggle(): HTMLInputElement {
 
   toggle.setAttribute('title', 'toggle waveform display');
   toggle.setAttribute('type', 'checkbox');
-  toggle.setAttribute('class', 'waveform');
+  toggle.setAttribute('class', 'bes-toggle');
   toggle.setAttribute('id', 'switch');
 
   const label = document.createElement('label');
-  label.setAttribute('class', 'waveform');
+  label.setAttribute('class', 'bes-toggle');
   label.htmlFor = 'switch';
   label.innerHTML = 'Toggle';
 

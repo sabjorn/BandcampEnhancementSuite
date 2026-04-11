@@ -251,8 +251,7 @@ async function markAsCached(url: string, method: string, body: string): Promise<
     const hash = await hashRequest(url, method, body);
     const db = await getDB();
     await db.put('cachedRequests', Date.now(), hash);
-  } catch (_error) {
-  }
+  } catch (_error) {}
 }
 
 const CACHEABLE_URLS = ['/api/mobile/25/tralbum_details'];
@@ -320,7 +319,10 @@ function createPlainFetch(): FetchFunction {
 export async function cachedFetch(url: string, options?: RequestInit): Promise<Response> {
   const db = await getDB();
   const config = await db.get('config', 'config');
-  const cachingEnabled = config?.enableFindMusicCaching ?? false;
+  const cachingEnabled = config?.enableFetchCaching ?? false;
+
+  const method = options?.method || 'GET';
+  log.debug(`cachedFetch called: ${method} ${url}, caching=${cachingEnabled}`);
 
   const fetchFn = getFetch(cachingEnabled);
   return fetchFn(url, options);

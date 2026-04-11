@@ -47,15 +47,15 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   const waveformLabelText = document.createElement('span');
   waveformLabelText.className = 'bes-drawer-setting-label';
-  waveformLabelText.textContent = 'Display Waveform & Caching';
+  waveformLabelText.textContent = 'Display waveform and bpm';
 
   const waveformToggle = document.createElement('input');
   waveformToggle.setAttribute('type', 'checkbox');
-  waveformToggle.setAttribute('class', 'waveform');
+  waveformToggle.setAttribute('class', 'bes-toggle');
   waveformToggle.setAttribute('id', 'bes-waveform-toggle');
 
   const waveformLabel = document.createElement('label');
-  waveformLabel.setAttribute('class', 'waveform');
+  waveformLabel.setAttribute('class', 'bes-toggle');
   waveformLabel.htmlFor = 'bes-waveform-toggle';
   waveformLabel.innerHTML = 'Toggle';
 
@@ -69,32 +69,59 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   settingsSection.appendChild(settingsTitle);
   settingsSection.appendChild(waveformSettingRow);
 
-  const cachingSettingRow = document.createElement('div');
-  cachingSettingRow.className = 'bes-drawer-setting';
-  cachingSettingRow.style.display = 'none';
+  const metadataCachingSettingRow = document.createElement('div');
+  metadataCachingSettingRow.className = 'bes-drawer-setting';
+  metadataCachingSettingRow.style.display = 'none';
 
-  const cachingLabelText = document.createElement('span');
-  cachingLabelText.className = 'bes-drawer-setting-label';
-  cachingLabelText.textContent = 'Enable FindMusic.club Caching';
+  const metadataCachingLabelText = document.createElement('span');
+  metadataCachingLabelText.className = 'bes-drawer-setting-label';
+  metadataCachingLabelText.textContent = 'Enable metadata caching';
 
-  const cachingToggle = document.createElement('input');
-  cachingToggle.setAttribute('type', 'checkbox');
-  cachingToggle.setAttribute('class', 'caching');
-  cachingToggle.setAttribute('id', 'bes-caching-toggle');
+  const metadataCachingToggle = document.createElement('input');
+  metadataCachingToggle.setAttribute('type', 'checkbox');
+  metadataCachingToggle.setAttribute('class', 'bes-toggle');
+  metadataCachingToggle.setAttribute('id', 'bes-metadata-caching-toggle');
 
-  const cachingLabel = document.createElement('label');
-  cachingLabel.setAttribute('class', 'caching');
-  cachingLabel.htmlFor = 'bes-caching-toggle';
-  cachingLabel.innerHTML = 'Toggle';
+  const metadataCachingLabel = document.createElement('label');
+  metadataCachingLabel.setAttribute('class', 'bes-toggle');
+  metadataCachingLabel.htmlFor = 'bes-metadata-caching-toggle';
+  metadataCachingLabel.innerHTML = 'Toggle';
 
-  const cachingToggleContainer = document.createElement('div');
-  cachingToggleContainer.appendChild(cachingToggle);
-  cachingToggleContainer.appendChild(cachingLabel);
+  const metadataCachingToggleContainer = document.createElement('div');
+  metadataCachingToggleContainer.appendChild(metadataCachingToggle);
+  metadataCachingToggleContainer.appendChild(metadataCachingLabel);
 
-  cachingSettingRow.appendChild(cachingLabelText);
-  cachingSettingRow.appendChild(cachingToggleContainer);
+  metadataCachingSettingRow.appendChild(metadataCachingLabelText);
+  metadataCachingSettingRow.appendChild(metadataCachingToggleContainer);
 
-  settingsSection.appendChild(cachingSettingRow);
+  settingsSection.appendChild(metadataCachingSettingRow);
+
+  const fetchCachingSettingRow = document.createElement('div');
+  fetchCachingSettingRow.className = 'bes-drawer-setting';
+  fetchCachingSettingRow.style.display = 'none';
+
+  const fetchCachingLabelText = document.createElement('span');
+  fetchCachingLabelText.className = 'bes-drawer-setting-label';
+  fetchCachingLabelText.textContent = 'Enable fetch caching';
+
+  const fetchCachingToggle = document.createElement('input');
+  fetchCachingToggle.setAttribute('type', 'checkbox');
+  fetchCachingToggle.setAttribute('class', 'bes-toggle');
+  fetchCachingToggle.setAttribute('id', 'bes-fetch-caching-toggle');
+
+  const fetchCachingLabel = document.createElement('label');
+  fetchCachingLabel.setAttribute('class', 'bes-toggle');
+  fetchCachingLabel.htmlFor = 'bes-fetch-caching-toggle';
+  fetchCachingLabel.innerHTML = 'Toggle';
+
+  const fetchCachingToggleContainer = document.createElement('div');
+  fetchCachingToggleContainer.appendChild(fetchCachingToggle);
+  fetchCachingToggleContainer.appendChild(fetchCachingLabel);
+
+  fetchCachingSettingRow.appendChild(fetchCachingLabelText);
+  fetchCachingSettingRow.appendChild(fetchCachingToggleContainer);
+
+  settingsSection.appendChild(fetchCachingSettingRow);
 
   let keyboardSection: HTMLElement | null = null;
 
@@ -132,8 +159,12 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       waveformToggle.checked = msg.config.displayWaveform;
     }
 
-    if (msg.config && typeof msg.config.enableFindMusicCaching === 'boolean') {
-      cachingToggle.checked = msg.config.enableFindMusicCaching;
+    if (msg.config && typeof msg.config.enableMetadataCaching === 'boolean') {
+      metadataCachingToggle.checked = msg.config.enableMetadataCaching;
+    }
+
+    if (msg.config && typeof msg.config.enableFetchCaching === 'boolean') {
+      fetchCachingToggle.checked = msg.config.enableFetchCaching;
     }
 
     if (msg.config && msg.config.keyboardSettings) {
@@ -148,6 +179,14 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   waveformToggle.addEventListener('change', () => {
     config_port.postMessage({ toggleWaveformDisplay: {} });
+  });
+
+  metadataCachingToggle.addEventListener('change', () => {
+    config_port.postMessage({ toggleMetadataCaching: {} });
+  });
+
+  fetchCachingToggle.addEventListener('change', () => {
+    config_port.postMessage({ toggleFetchCaching: {} });
   });
 
   config_port.postMessage({ requestConfig: {} });
@@ -174,9 +213,14 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       findMusicButton.textContent = response?.granted
         ? 'Log in to FindMusic.club'
         : 'Enable FindMusic.club Integration';
+
+      metadataCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
+      fetchCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
     } catch (error) {
       log.error(`Failed to check permissions: ${error}`);
       findMusicButton.textContent = 'Enable FindMusic.club Integration';
+      metadataCachingSettingRow.style.display = 'none';
+      fetchCachingSettingRow.style.display = 'none';
     }
   };
 

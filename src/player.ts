@@ -20,7 +20,11 @@ interface KeyHandlers {
 
 function keyComboToString(combo: KeyCombo): string {
   const { key, alt = false, ctrl = false, shift = false, meta = false } = combo;
-  return `${alt ? 'Alt+' : ''}${ctrl ? 'Ctrl+' : ''}${shift ? 'Shift+' : ''}${meta ? 'Meta+' : ''}${key}`;
+
+  // Special case for space key to match keyBindingToString in keyboard.ts
+  const keyDisplay = key === ' ' ? 'Space' : key;
+
+  return `${alt ? 'Alt+' : ''}${ctrl ? 'Ctrl+' : ''}${shift ? 'Shift+' : ''}${meta ? 'Meta+' : ''}${keyDisplay}`;
 }
 
 /**

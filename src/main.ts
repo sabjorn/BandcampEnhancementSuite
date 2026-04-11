@@ -10,6 +10,35 @@ import { KeyboardSettings } from './types/keyboard.js';
 
 const log = createLogger();
 
+function createToggleSetting(id: string, labelText: string, visible: boolean = true) {
+  const row = document.createElement('div');
+  row.className = 'bes-drawer-setting';
+  if (!visible) row.style.display = 'none';
+
+  const label = document.createElement('span');
+  label.className = 'bes-drawer-setting-label';
+  label.textContent = labelText;
+
+  const toggle = document.createElement('input');
+  toggle.setAttribute('type', 'checkbox');
+  toggle.setAttribute('class', 'bes-toggle');
+  toggle.setAttribute('id', id);
+
+  const toggleLabel = document.createElement('label');
+  toggleLabel.setAttribute('class', 'bes-toggle');
+  toggleLabel.htmlFor = id;
+  toggleLabel.innerHTML = 'Toggle';
+
+  const toggleContainer = document.createElement('div');
+  toggleContainer.appendChild(toggle);
+  toggleContainer.appendChild(toggleLabel);
+
+  row.appendChild(label);
+  row.appendChild(toggleContainer);
+
+  return { row, toggle };
+}
+
 export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   if (document.querySelector('.bes-drawer')) {
     log.debug('BES drawer already exists');
@@ -42,85 +71,26 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   const settingsTitle = document.createElement('h2');
   settingsTitle.textContent = 'Settings';
 
-  const waveformSettingRow = document.createElement('div');
-  waveformSettingRow.className = 'bes-drawer-setting';
+  const { row: waveformSettingRow, toggle: waveformToggle } = createToggleSetting(
+    'bes-waveform-toggle',
+    'Display waveform and bpm'
+  );
 
-  const waveformLabelText = document.createElement('span');
-  waveformLabelText.className = 'bes-drawer-setting-label';
-  waveformLabelText.textContent = 'Display waveform and bpm';
+  const { row: metadataCachingSettingRow, toggle: metadataCachingToggle } = createToggleSetting(
+    'bes-metadata-caching-toggle',
+    'Enable metadata caching',
+    false
+  );
 
-  const waveformToggle = document.createElement('input');
-  waveformToggle.setAttribute('type', 'checkbox');
-  waveformToggle.setAttribute('class', 'bes-toggle');
-  waveformToggle.setAttribute('id', 'bes-waveform-toggle');
-
-  const waveformLabel = document.createElement('label');
-  waveformLabel.setAttribute('class', 'bes-toggle');
-  waveformLabel.htmlFor = 'bes-waveform-toggle';
-  waveformLabel.innerHTML = 'Toggle';
-
-  const waveformToggleContainer = document.createElement('div');
-  waveformToggleContainer.appendChild(waveformToggle);
-  waveformToggleContainer.appendChild(waveformLabel);
-
-  waveformSettingRow.appendChild(waveformLabelText);
-  waveformSettingRow.appendChild(waveformToggleContainer);
+  const { row: fetchCachingSettingRow, toggle: fetchCachingToggle } = createToggleSetting(
+    'bes-fetch-caching-toggle',
+    'Enable fetch caching',
+    false
+  );
 
   settingsSection.appendChild(settingsTitle);
   settingsSection.appendChild(waveformSettingRow);
-
-  const metadataCachingSettingRow = document.createElement('div');
-  metadataCachingSettingRow.className = 'bes-drawer-setting';
-  metadataCachingSettingRow.style.display = 'none';
-
-  const metadataCachingLabelText = document.createElement('span');
-  metadataCachingLabelText.className = 'bes-drawer-setting-label';
-  metadataCachingLabelText.textContent = 'Enable metadata caching';
-
-  const metadataCachingToggle = document.createElement('input');
-  metadataCachingToggle.setAttribute('type', 'checkbox');
-  metadataCachingToggle.setAttribute('class', 'bes-toggle');
-  metadataCachingToggle.setAttribute('id', 'bes-metadata-caching-toggle');
-
-  const metadataCachingLabel = document.createElement('label');
-  metadataCachingLabel.setAttribute('class', 'bes-toggle');
-  metadataCachingLabel.htmlFor = 'bes-metadata-caching-toggle';
-  metadataCachingLabel.innerHTML = 'Toggle';
-
-  const metadataCachingToggleContainer = document.createElement('div');
-  metadataCachingToggleContainer.appendChild(metadataCachingToggle);
-  metadataCachingToggleContainer.appendChild(metadataCachingLabel);
-
-  metadataCachingSettingRow.appendChild(metadataCachingLabelText);
-  metadataCachingSettingRow.appendChild(metadataCachingToggleContainer);
-
   settingsSection.appendChild(metadataCachingSettingRow);
-
-  const fetchCachingSettingRow = document.createElement('div');
-  fetchCachingSettingRow.className = 'bes-drawer-setting';
-  fetchCachingSettingRow.style.display = 'none';
-
-  const fetchCachingLabelText = document.createElement('span');
-  fetchCachingLabelText.className = 'bes-drawer-setting-label';
-  fetchCachingLabelText.textContent = 'Enable fetch caching';
-
-  const fetchCachingToggle = document.createElement('input');
-  fetchCachingToggle.setAttribute('type', 'checkbox');
-  fetchCachingToggle.setAttribute('class', 'bes-toggle');
-  fetchCachingToggle.setAttribute('id', 'bes-fetch-caching-toggle');
-
-  const fetchCachingLabel = document.createElement('label');
-  fetchCachingLabel.setAttribute('class', 'bes-toggle');
-  fetchCachingLabel.htmlFor = 'bes-fetch-caching-toggle';
-  fetchCachingLabel.innerHTML = 'Toggle';
-
-  const fetchCachingToggleContainer = document.createElement('div');
-  fetchCachingToggleContainer.appendChild(fetchCachingToggle);
-  fetchCachingToggleContainer.appendChild(fetchCachingLabel);
-
-  fetchCachingSettingRow.appendChild(fetchCachingLabelText);
-  fetchCachingSettingRow.appendChild(fetchCachingToggleContainer);
-
   settingsSection.appendChild(fetchCachingSettingRow);
 
   let keyboardSection: HTMLElement | null = null;

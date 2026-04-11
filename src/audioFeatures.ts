@@ -133,77 +133,75 @@ export async function generateAudioFeatures(
     log.debug(`No cached metadata available for track ${trackId} - will compute locally`);
   }
 
-  (() => {
-    const ctx = new AudioContext();
-    const src = audio.src.split('stream/')[1];
+  const ctx = new AudioContext();
+  const src = audio.src.split('stream/')[1];
 
-    chrome.runtime.sendMessage(
-      {
-        contentScriptQuery: 'renderBuffer',
-        url: src
-      },
-      audioData => {
-        const audioBuffer_ = new Uint8Array(audioData.data).buffer;
-        const decodePromise = ctx.decodeAudioData(audioBuffer_);
+  chrome.runtime.sendMessage(
+    {
+      contentScriptQuery: 'renderBuffer',
+      url: src
+    },
+    audioData => {
+      const audioBuffer_ = new Uint8Array(audioData.data).buffer;
+      const decodePromise = ctx.decodeAudioData(audioBuffer_);
 
-        const bpmPromise = decodePromise.then(decodedAudio =>
-          analyze(decodedAudio)
-            .then(bpm => {
-              bpmDisplay.innerText = `bpm: ${bpm.toFixed(2)}`;
-              return bpm;
+      const bpmPromise = decodePromise.then(decodedAudio =>
+        analyze(decodedAudio)
+          .then(bpm => {
+            bpmDisplay.innerText = `bpm: ${bpm.toFixed(2)}`;
+            return bpm;
+          })
+          .catch(err => {
+            log.error(`error finding bpm for track: ${err}`);
+            return null;
+          })
+      );
+
+      const waveformPromise = decodePromise.then(decodedAudio => {
+        log.info('calculating rms');
+        const leftChannel = decodedAudio.getChannelData(0);
+
+        const stepSize = Math.round(decodedAudio.length / datapoints);
+
+        const rmsSize = Math.min(stepSize, 128);
+        const subStepSize = Math.round(stepSize / rmsSize);
+        const rmsBuffer = [];
+        for (let i = 0; i < datapoints; i++) {
+          let rms = 0.0;
+          for (let sample = 0; sample < rmsSize; sample++) {
+            const sampleIndex = i * stepSize + sample * subStepSize;
+            const audioSample = leftChannel[sampleIndex];
+            rms += audioSample ** 2;
+          }
+          rmsBuffer.push(Math.sqrt(rms / rmsSize));
+        }
+
+        log.info('visualizing');
+        const max = rmsBuffer.reduce((a, b) => Math.max(a, b));
+        for (let i = 0; i < rmsBuffer.length; i++) {
+          const amplitude = rmsBuffer[i] / max;
+          fillBar(canvas, amplitude, i, datapoints, waveformColour);
+        }
+
+        return rmsBuffer;
+      });
+
+      Promise.all([bpmPromise, waveformPromise]).then(([bpm, waveform]) => {
+        if (trackId && bpm !== null && waveform !== null) {
+          chrome.runtime
+            .sendMessage({
+              contentScriptQuery: 'postTrackMetadata',
+              trackId: trackId,
+              waveform: waveform,
+              bpm: bpm
             })
-            .catch(err => {
-              log.error(`error finding bpm for track: ${err}`);
-              return null;
-            })
-        );
-
-        const waveformPromise = decodePromise.then(decodedAudio => {
-          log.info('calculating rms');
-          const leftChannel = decodedAudio.getChannelData(0);
-
-          const stepSize = Math.round(decodedAudio.length / datapoints);
-
-          const rmsSize = Math.min(stepSize, 128);
-          const subStepSize = Math.round(stepSize / rmsSize);
-          const rmsBuffer = [];
-          for (let i = 0; i < datapoints; i++) {
-            let rms = 0.0;
-            for (let sample = 0; sample < rmsSize; sample++) {
-              const sampleIndex = i * stepSize + sample * subStepSize;
-              const audioSample = leftChannel[sampleIndex];
-              rms += audioSample ** 2;
-            }
-            rmsBuffer.push(Math.sqrt(rms / rmsSize));
-          }
-
-          log.info('visualizing');
-          const max = rmsBuffer.reduce((a, b) => Math.max(a, b));
-          for (let i = 0; i < rmsBuffer.length; i++) {
-            const amplitude = rmsBuffer[i] / max;
-            fillBar(canvas, amplitude, i, datapoints, waveformColour);
-          }
-
-          return rmsBuffer;
-        });
-
-        Promise.all([bpmPromise, waveformPromise]).then(([bpm, waveform]) => {
-          if (trackId && bpm !== null && waveform !== null) {
-            chrome.runtime
-              .sendMessage({
-                contentScriptQuery: 'postTrackMetadata',
-                trackId: trackId,
-                waveform: waveform,
-                bpm: bpm
-              })
-              .catch((error: Error) => {
-                log.warn(`Failed to cache track metadata: ${error.message}`);
-              });
-          }
-        });
-      }
-    );
-  })();
+            .catch((error: Error) => {
+              log.warn(`Failed to cache track metadata: ${error.message}`);
+            });
+        }
+      });
+    }
+  );
 }
 
 export function initAudioFeatures(port: PortMessage): void {

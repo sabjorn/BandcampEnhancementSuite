@@ -329,7 +329,7 @@ export async function cachedFetch(url: string, options?: RequestInit): Promise<R
   const cachingEnabled = config?.enableFetchCaching ?? false;
 
   const method = options?.method || 'GET';
-  log.debug(`cachedFetch called: ${method} ${url}, caching=${cachingEnabled}`);
+  log.debug(`cachedFetch called: ${method} ${url}, caching=${cachingEnabled}, config=${JSON.stringify(config)}`);
 
   const fetchFn = getFetch(cachingEnabled);
   return fetchFn(url, options);

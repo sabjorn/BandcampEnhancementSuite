@@ -74,6 +74,10 @@ export async function initConfigBackend(): Promise<void> {
 
   log.info('initializing ConfigBackend');
 
+  const db = await getDB();
+  await setupDB(db);
+  log.info('Config database initialized');
+
   chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) =>
     connectionListenerCallback(port, log, portState)
   );

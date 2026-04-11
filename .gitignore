@@ -71,8 +71,3 @@ dist/
 # random files
 *.bak
 .mcp.json
-
-# Claude Code files
-.claude/
-IMPLEMENTATION_*.md
-yarn.lock

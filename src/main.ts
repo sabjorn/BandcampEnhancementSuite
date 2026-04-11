@@ -312,11 +312,13 @@ const main = async (): Promise<void> => {
   const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
   if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
     let keyboardSettings: KeyboardSettings | undefined;
+    let enableFetchCaching = false;
 
     const getConfigPromise = new Promise<void>(resolve => {
       const listener = (msg: any) => {
         if (msg.config && msg.config.keyboardSettings) {
           keyboardSettings = msg.config.keyboardSettings;
+          enableFetchCaching = msg.config.enableFetchCaching ?? false;
           config_port.onMessage.removeListener(listener);
           resolve();
         }
@@ -331,7 +333,7 @@ const main = async (): Promise<void> => {
     });
 
     await getConfigPromise;
-    await initPlayer(keyboardSettings);
+    await initPlayer(keyboardSettings, enableFetchCaching);
 
     config_port.onMessage.addListener((msg: any) => {
       if (msg.config && msg.config.keyboardSettings) {

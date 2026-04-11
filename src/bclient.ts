@@ -111,7 +111,8 @@ interface TralbumDetailsBody {
 export async function getTralbumDetails(
   item_id: string | number,
   item_type: string = 'a',
-  baseUrl: string | null = null
+  baseUrl: string | null = null,
+  enableCaching: boolean = false
 ): Promise<TralbumDetailsResponse> {
   const bodyData: TralbumDetailsBody = {
     tralbum_type: item_type,
@@ -121,20 +122,24 @@ export async function getTralbumDetails(
 
   const url = baseUrl ? `${baseUrl}/api/mobile/25/tralbum_details` : `/api/mobile/25/tralbum_details`;
 
-  const response = await cachedFetch(url, {
-    method: 'POST',
-    headers: {
-      accept: 'application/json',
-      host: 'bandcamp.com',
-      connection: 'keep-alive',
-      'content-type': 'application/json',
-      'user-agent': 'Bandcamp/218977 CFNetwork/1399 Darwin/22.1.0',
-      'accept-language': 'en-CA:en-US;q=0.9:en;q=0.8',
-      'accept-encoding': 'gzip: deflate: br',
-      'sec-fetch-mode': 'cors'
+  const response = await cachedFetch(
+    url,
+    {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        host: 'bandcamp.com',
+        connection: 'keep-alive',
+        'content-type': 'application/json',
+        'user-agent': 'Bandcamp/218977 CFNetwork/1399 Darwin/22.1.0',
+        'accept-language': 'en-CA:en-US;q=0.9:en;q=0.8',
+        'accept-encoding': 'gzip: deflate: br',
+        'sec-fetch-mode': 'cors'
+      },
+      body: JSON.stringify(bodyData)
     },
-    body: JSON.stringify(bodyData)
-  });
+    enableCaching
+  );
 
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);

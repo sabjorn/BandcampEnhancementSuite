@@ -42,8 +42,15 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   log.info('cart init');
 
   let _lastImportState: any = null;
+  let enableFetchCaching = false;
+
+  port.postMessage({ requestConfig: {} });
 
   port.onMessage.addListener(async (msg: any) => {
+    if (msg.config) {
+      enableFetchCaching = msg.config.enableFetchCaching ?? false;
+    }
+
     if (msg.cartImportState) {
       const state = msg.cartImportState;
       _lastImportState = state;
@@ -207,7 +214,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
       for (const item of cartItems) {
         try {
-          const tralbumDetails = await getTralbumDetails(item.item_id, item.item_type);
+          const tralbumDetails = await getTralbumDetails(item.item_id, item.item_type, null, enableFetchCaching);
           const minimumPrice = tralbumDetails.price > 0.0 ? tralbumDetails.price : CURRENCY_MINIMUMS[item.currency];
 
           const exportItem: CartExportItem = {
@@ -284,7 +291,12 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   }
 
   try {
-    const tralbumDetails = await getTralbumDetails(BES_SUPPORT_TRALBUM_ID, BES_SUPPORT_TRALBUM_TYPE);
+    const tralbumDetails = await getTralbumDetails(
+      BES_SUPPORT_TRALBUM_ID,
+      BES_SUPPORT_TRALBUM_TYPE,
+      null,
+      enableFetchCaching
+    );
 
     const { price, currency, id: tralbumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
 

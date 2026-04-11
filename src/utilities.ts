@@ -323,15 +323,15 @@ function createPlainFetch(): FetchFunction {
   };
 }
 
-export async function cachedFetch(url: string, options?: RequestInit): Promise<Response> {
-  const db = await getDB();
-  const config = await db.get('config', 'config');
-  const cachingEnabled = config?.enableFetchCaching ?? false;
-
+export async function cachedFetch(
+  url: string,
+  options?: RequestInit,
+  enableCaching: boolean = false
+): Promise<Response> {
   const method = options?.method || 'GET';
-  log.debug(`cachedFetch called: ${method} ${url}, caching=${cachingEnabled}, config=${JSON.stringify(config)}`);
+  log.debug(`cachedFetch called: ${method} ${url}, caching=${enableCaching}`);
 
-  const fetchFn = getFetch(cachingEnabled);
+  const fetchFn = getFetch(enableCaching);
   return fetchFn(url, options);
 }
 

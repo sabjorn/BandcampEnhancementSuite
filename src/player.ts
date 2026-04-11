@@ -231,7 +231,10 @@ export function updateKeyboardHandlers(settings: KeyboardSettings): void {
   Object.assign(activeKeyHandlers, newHandlers);
 }
 
-export async function initPlayer(keyboardSettings?: KeyboardSettings): Promise<void> {
+export async function initPlayer(
+  keyboardSettings?: KeyboardSettings,
+  enableFetchCaching: boolean = false
+): Promise<void> {
   const log = new Logger();
 
   const settings = keyboardSettings || DEFAULT_KEYBOARD_SETTINGS;
@@ -262,7 +265,7 @@ export async function initPlayer(keyboardSettings?: KeyboardSettings): Promise<v
   const tralbumType = bandFollowInfo.tralbum_type;
 
   try {
-    const tralbumDetails = await getTralbumDetails(tralbumId, tralbumType);
+    const tralbumDetails = await getTralbumDetails(tralbumId, tralbumType, null, enableFetchCaching);
     document.querySelectorAll('tr.track_row_view').forEach((row, i) => {
       if (tralbumDetails.tracks[i] === undefined) return;
 

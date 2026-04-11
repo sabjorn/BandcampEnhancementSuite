@@ -7,11 +7,13 @@ import { initCartImportBackend } from './background/cart_import_backend.js';
 import { initFindMusicBackend } from './background/findmusic_backend.js';
 import { initCacheBackend } from './background/cache_backend.js';
 
-initLabelViewBackend();
-initWaveformBackend();
-initConfigBackend();
-initHideUnhideCollectionBackend();
-initDownloadBackend();
-initCartImportBackend();
-initFindMusicBackend();
-initCacheBackend();
+(async () => {
+  await initConfigBackend();
+  initLabelViewBackend();
+  initWaveformBackend();
+  initHideUnhideCollectionBackend();
+  initDownloadBackend();
+  initCartImportBackend();
+  initFindMusicBackend();
+  initCacheBackend();
+})();

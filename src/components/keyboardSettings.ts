@@ -225,6 +225,9 @@ function createCategorySection(
   return section;
 }
 
+// Track collapsed state across section recreations
+let keyboardSectionCollapsed = true;
+
 /**
  * Creates the complete keyboard settings section for the drawer
  */
@@ -243,7 +246,7 @@ export function createKeyboardSettingsSection(
 
   const arrow = document.createElement('span');
   arrow.className = 'bes-keyboard-section-arrow';
-  arrow.textContent = '▶';
+  arrow.textContent = keyboardSectionCollapsed ? '▶' : '▼';
 
   const titleText = document.createElement('span');
   titleText.textContent = 'Keyboard Controls';
@@ -262,14 +265,15 @@ export function createKeyboardSettingsSection(
 
   content.appendChild(description);
 
-  // Toggle collapse/expand
-  let isCollapsed = true;
-  content.classList.add('collapsed');
+  // Restore previous collapsed state
+  if (keyboardSectionCollapsed) {
+    content.classList.add('collapsed');
+  }
 
   const toggleCollapse = () => {
-    isCollapsed = !isCollapsed;
-    content.classList.toggle('collapsed', isCollapsed);
-    arrow.textContent = isCollapsed ? '▶' : '▼';
+    keyboardSectionCollapsed = !keyboardSectionCollapsed;
+    content.classList.toggle('collapsed', keyboardSectionCollapsed);
+    arrow.textContent = keyboardSectionCollapsed ? '▶' : '▼';
   };
 
   title.addEventListener('click', toggleCollapse);

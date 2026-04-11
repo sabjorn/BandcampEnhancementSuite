@@ -48,8 +48,7 @@ async function postCacheToFindMusic(
       return;
     }
 
-    const cacheEndpoint = `${process.env.FINDMUSIC_BASE_URL}/api/cache`;
-    const response = await fetch(cacheEndpoint, {
+    const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/cache`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

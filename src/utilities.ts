@@ -267,16 +267,16 @@ const log = new Logger();
 
 function createCachingFetch(): FetchFunction {
   return async (url: string, options?: RequestInit): Promise<Response> => {
-    const method = options?.method || 'GET';
-    const requestBody = options?.body ? String(options.body) : '';
-
     if (!shouldCacheUrl(url)) {
+      const method = options?.method || 'GET';
       log.debug(`Skipping cache for ${method} ${url} - not in whitelist`);
       return fetch(url, options);
     }
 
-    const alreadyCached = await hasBeenCached(url, method, requestBody);
-    if (alreadyCached) {
+    const method = options?.method || 'GET';
+    const requestBody = options?.body ? String(options.body) : '';
+
+    if (await hasBeenCached(url, method, requestBody)) {
       log.debug(`Already cached ${method} ${url} - skipping duplicate`);
       return fetch(url, options);
     }
@@ -284,27 +284,24 @@ function createCachingFetch(): FetchFunction {
     log.debug(`Caching fetch: ${method} ${url}`);
 
     const response = await fetch(url, options);
-    const clonedResponse = response.clone();
-    const responseText = await clonedResponse.text();
 
-    log.debug(`Sending to cache backend: ${method} ${url} (${responseText.length} bytes)`);
+    (async () => {
+      const responseText = await response.clone().text();
+      log.debug(`Sending to cache backend: ${method} ${url} (${responseText.length} bytes)`);
 
-    markAsCached(url, method, requestBody);
+      markAsCached(url, method, requestBody);
 
-    chrome.runtime
-      .sendMessage({
-        contentScriptQuery: 'postCache',
-        url: url,
-        method: method,
-        requestBody: requestBody,
-        responseBody: responseText
-      })
-      .then(() => {
-        log.debug(`Successfully cached: ${method} ${url}`);
-      })
-      .catch((error: Error) => {
-        log.warn(`Failed to cache request ${method} ${url}: ${error.message}`);
-      });
+      chrome.runtime
+        .sendMessage({
+          contentScriptQuery: 'postCache',
+          url,
+          method,
+          requestBody,
+          responseBody: responseText
+        })
+        .then(() => log.debug(`Successfully cached: ${method} ${url}`))
+        .catch((error: Error) => log.warn(`Failed to cache request ${method} ${url}: ${error.message}`));
+    })();
 
     return response;
   };

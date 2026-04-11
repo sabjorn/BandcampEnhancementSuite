@@ -81,64 +81,65 @@ export async function generateAudioFeatures(
   const datapoints = 100;
   const audio = document.querySelector('audio') as HTMLAudioElement;
   if (!audio) return;
+  if (currentTarget.value === audio.src) return;
 
-  if (currentTarget.value !== audio.src) {
-    currentTarget.value = audio.src;
+  currentTarget.value = audio.src;
+  bpmDisplay.innerText = '';
+  canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
 
-    bpmDisplay.innerText = '';
-    canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
-
-    const trackId = extractTrackId(audio.src);
-    if (!trackId) {
-      log.warn('Could not extract track ID from audio source');
-    }
-
-    if (trackId) {
+  const trackId = extractTrackId(audio.src);
+  if (!trackId) {
+    log.warn('Could not extract track ID from audio source');
+  } else {
+    const cachedMetadata = await (async () => {
       logCacheState(log, 'Before cache check');
       log.debug(`Checking cache for track ID ${trackId}`);
 
-      let cachedMetadata = metadataCache.get(trackId);
-
-      if (cachedMetadata) {
+      const memoryCached = metadataCache.get(trackId);
+      if (memoryCached) {
         log.info(`✓ MEMORY CACHE HIT for track ${trackId} - Using cached data`);
-      } else {
-        log.debug(`✗ Memory cache miss for track ${trackId} - Fetching from API`);
-
-        cachedMetadata = await chrome.runtime
-          .sendMessage({
-            contentScriptQuery: 'fetchTrackMetadata',
-            trackId: trackId
-          })
-          .catch((error: Error) => {
-            log.warn(`Failed to fetch cached metadata: ${error.message}`);
-            return null;
-          });
-
-        if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
-          metadataCache.set(trackId, cachedMetadata);
-          log.debug(`Stored track ${trackId} in memory cache for next time`);
-        }
+        return memoryCached;
       }
 
-      if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
-        log.info(
-          `Displaying waveform for track ${trackId} (BPM: ${cachedMetadata.bpm.toFixed(2)}, ${
-            cachedMetadata.waveform.length
-          } points)`
-        );
-        bpmDisplay.innerText = `bpm: ${cachedMetadata.bpm.toFixed(2)}`;
+      log.debug(`✗ Memory cache miss for track ${trackId} - Fetching from API`);
+      const apiMetadata = await chrome.runtime
+        .sendMessage({
+          contentScriptQuery: 'fetchTrackMetadata',
+          trackId: trackId
+        })
+        .catch((error: Error) => {
+          log.warn(`Failed to fetch cached metadata: ${error.message}`);
+          return null;
+        });
 
-        const max = cachedMetadata.waveform.reduce((a: number, b: number) => Math.max(a, b));
-        for (let i = 0; i < cachedMetadata.waveform.length; i++) {
-          const amplitude = cachedMetadata.waveform[i] / max;
-          fillBar(canvas, amplitude, i, cachedMetadata.waveform.length, waveformColour);
-        }
-        return;
-      } else {
-        log.debug(`No cached metadata available for track ${trackId} - will compute locally`);
+      if (apiMetadata && apiMetadata.waveform && apiMetadata.bpm) {
+        metadataCache.set(trackId, apiMetadata);
+        log.debug(`Stored track ${trackId} in memory cache for next time`);
       }
+
+      return apiMetadata;
+    })();
+
+    if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
+      log.info(
+        `Displaying waveform for track ${trackId} (BPM: ${cachedMetadata.bpm.toFixed(2)}, ${
+          cachedMetadata.waveform.length
+        } points)`
+      );
+      bpmDisplay.innerText = `bpm: ${cachedMetadata.bpm.toFixed(2)}`;
+
+      const max = cachedMetadata.waveform.reduce((a: number, b: number) => Math.max(a, b));
+      for (let i = 0; i < cachedMetadata.waveform.length; i++) {
+        const amplitude = cachedMetadata.waveform[i] / max;
+        fillBar(canvas, amplitude, i, cachedMetadata.waveform.length, waveformColour);
+      }
+      return;
     }
 
+    log.debug(`No cached metadata available for track ${trackId} - will compute locally`);
+  }
+
+  (() => {
     const ctx = new AudioContext();
     const src = audio.src.split('stream/')[1];
 
@@ -221,7 +222,7 @@ export async function generateAudioFeatures(
         });
       }
     );
-  }
+  })();
 }
 
 export function initAudioFeatures(port: PortMessage): void {

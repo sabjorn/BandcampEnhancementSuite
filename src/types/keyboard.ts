@@ -1,10 +1,3 @@
-/**
- * Keyboard settings types for configurable keyboard controls
- */
-
-/**
- * Represents a key binding with optional modifiers
- */
 export interface KeyBinding {
   key: string;
   shift?: boolean;
@@ -13,12 +6,9 @@ export interface KeyBinding {
   meta?: boolean;
 }
 
-/**
- * Available keyboard actions
- */
 export enum KeyboardAction {
   PLAY_PAUSE = 'PLAY_PAUSE',
-  PLAY_PAUSE_ALT = 'PLAY_PAUSE_ALT', // Alternative binding (P key)
+  PLAY_PAUSE_ALT = 'PLAY_PAUSE_ALT',
   PREV_TRACK = 'PREV_TRACK',
   NEXT_TRACK = 'NEXT_TRACK',
   SEEK_FORWARD = 'SEEK_FORWARD',
@@ -29,9 +19,6 @@ export enum KeyboardAction {
   VOLUME_DOWN = 'VOLUME_DOWN'
 }
 
-/**
- * Human-readable descriptions for each action
- */
 export const ACTION_DESCRIPTIONS: Record<KeyboardAction, string> = {
   [KeyboardAction.PLAY_PAUSE]: 'Play/Pause',
   [KeyboardAction.PLAY_PAUSE_ALT]: 'Play/Pause (Alternative)',
@@ -45,18 +32,12 @@ export const ACTION_DESCRIPTIONS: Record<KeyboardAction, string> = {
   [KeyboardAction.VOLUME_DOWN]: 'Volume Down'
 };
 
-/**
- * Categories for grouping actions in the UI
- */
 export enum ActionCategory {
   PLAYBACK = 'Playback',
   SEEKING = 'Seeking',
   VOLUME = 'Volume'
 }
 
-/**
- * Mapping of actions to their categories
- */
 export const ACTION_CATEGORIES: Record<KeyboardAction, ActionCategory> = {
   [KeyboardAction.PLAY_PAUSE]: ActionCategory.PLAYBACK,
   [KeyboardAction.PLAY_PAUSE_ALT]: ActionCategory.PLAYBACK,
@@ -70,28 +51,19 @@ export const ACTION_CATEGORIES: Record<KeyboardAction, ActionCategory> = {
   [KeyboardAction.VOLUME_DOWN]: ActionCategory.VOLUME
 };
 
-/**
- * A single keyboard control setting
- */
 export interface KeyboardControlSetting {
   action: KeyboardAction;
   binding: KeyBinding;
   enabled: boolean;
 }
 
-/**
- * Complete keyboard settings including all controls and step sizes
- */
 export interface KeyboardSettings {
   controls: KeyboardControlSetting[];
-  seekStepSize: number; // seconds
-  largeSeekStepSize: number; // seconds
-  volumeStep: number; // 0.0 to 1.0
+  seekStepSize: number;
+  largeSeekStepSize: number;
+  volumeStep: number;
 }
 
-/**
- * Default keyboard settings matching the current hardcoded values
- */
 export const DEFAULT_KEYBOARD_SETTINGS: KeyboardSettings = {
   controls: [
     {
@@ -150,13 +122,9 @@ export const DEFAULT_KEYBOARD_SETTINGS: KeyboardSettings = {
   volumeStep: 0.05
 };
 
-/**
- * Convert a key binding to a string representation
- */
 export function keyBindingToString(binding: KeyBinding): string {
   const { key, alt = false, ctrl = false, shift = false, meta = false } = binding;
 
-  // Special case for space key
   const keyDisplay = key === ' ' ? 'Space' : key;
 
   const modifiers: string[] = [];
@@ -168,9 +136,6 @@ export function keyBindingToString(binding: KeyBinding): string {
   return modifiers.length > 0 ? `${modifiers.join('+')}+${keyDisplay}` : keyDisplay;
 }
 
-/**
- * Check if two key bindings are equal
- */
 export function keyBindingsEqual(a: KeyBinding, b: KeyBinding): boolean {
   return (
     a.key === b.key &&
@@ -181,14 +146,9 @@ export function keyBindingsEqual(a: KeyBinding, b: KeyBinding): boolean {
   );
 }
 
-/**
- * Validate keyboard settings
- * Returns an array of error messages, empty if valid
- */
 export function validateKeyboardSettings(settings: KeyboardSettings): string[] {
   const errors: string[] = [];
 
-  // Check for duplicate bindings
   const bindingMap = new Map<string, KeyboardAction[]>();
 
   for (const control of settings.controls) {
@@ -202,7 +162,6 @@ export function validateKeyboardSettings(settings: KeyboardSettings): string[] {
     bindingMap.get(bindingStr)!.push(control.action);
   }
 
-  // Report duplicates
   for (const [binding, actions] of bindingMap.entries()) {
     if (actions.length > 1) {
       const actionNames = actions.map(a => ACTION_DESCRIPTIONS[a]).join(', ');
@@ -210,7 +169,6 @@ export function validateKeyboardSettings(settings: KeyboardSettings): string[] {
     }
   }
 
-  // Validate step sizes
   if (settings.seekStepSize <= 0) {
     errors.push('Seek step size must be greater than 0');
   }

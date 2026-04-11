@@ -1,7 +1,3 @@
-/**
- * UI components for keyboard settings configuration
- */
-
 import {
   KeyBinding,
   KeyboardSettings,
@@ -19,9 +15,6 @@ interface KeyBindingEditorCallbacks {
   onCancel?: () => void;
 }
 
-/**
- * Creates an interactive key binding editor that captures key presses
- */
 export function createKeyBindingEditor(currentBinding: KeyBinding, callbacks: KeyBindingEditorCallbacks): HTMLElement {
   const container = document.createElement('div');
   container.className = 'bes-key-binding-editor-container';
@@ -51,14 +44,12 @@ export function createKeyBindingEditor(currentBinding: KeyBinding, callbacks: Ke
     e.preventDefault();
     e.stopPropagation();
 
-    // Cancel on Escape
     if (e.key === 'Escape') {
       stopRecording();
       callbacks.onCancel?.();
       return;
     }
 
-    // Ignore modifier-only presses
     if (['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) {
       return;
     }
@@ -71,7 +62,6 @@ export function createKeyBindingEditor(currentBinding: KeyBinding, callbacks: Ke
       meta: e.metaKey
     };
 
-    // Update current binding
     Object.assign(currentBinding, newBinding);
     stopRecording();
     callbacks.onBindingChange(newBinding);
@@ -84,7 +74,6 @@ export function createKeyBindingEditor(currentBinding: KeyBinding, callbacks: Ke
     }
   });
 
-  // Add global keydown listener when recording
   document.addEventListener('keydown', handleKeyDown);
 
   container.appendChild(display);
@@ -92,9 +81,6 @@ export function createKeyBindingEditor(currentBinding: KeyBinding, callbacks: Ke
   return container;
 }
 
-/**
- * Creates a number input for step size settings
- */
 function createStepSizeInput(
   label: string,
   currentValue: number,
@@ -131,9 +117,6 @@ function createStepSizeInput(
   return container;
 }
 
-/**
- * Creates a row for a single keyboard control setting
- */
 function createKeyboardControlRow(
   control: KeyboardControlSetting,
   settings: KeyboardSettings,
@@ -142,12 +125,10 @@ function createKeyboardControlRow(
   const row = document.createElement('div');
   row.className = 'bes-keyboard-control-row';
 
-  // Description
   const description = document.createElement('span');
   description.className = 'bes-keyboard-control-description';
   description.textContent = ACTION_DESCRIPTIONS[control.action];
 
-  // Enable/disable checkbox
   const enableCheckbox = document.createElement('input');
   enableCheckbox.type = 'checkbox';
   enableCheckbox.checked = control.enabled;
@@ -159,12 +140,10 @@ function createKeyboardControlRow(
     onUpdate({ ...settings });
   });
 
-  // Key binding editor
   const editor = createKeyBindingEditor(control.binding, {
     onBindingChange: newBinding => {
       control.binding = newBinding;
 
-      // Check for conflicts
       const conflicts = settings.controls.filter(
         c => c.enabled && c.action !== control.action && keyBindingsEqual(c.binding, newBinding)
       );
@@ -223,12 +202,8 @@ function createCategorySection(
   return section;
 }
 
-// Track collapsed state across section recreations
 let keyboardSectionCollapsed = true;
 
-/**
- * Creates the complete keyboard settings section for the drawer
- */
 export function createKeyboardSettingsSection(
   settings: KeyboardSettings,
   onUpdate: (updatedSettings: KeyboardSettings) => void
@@ -236,10 +211,8 @@ export function createKeyboardSettingsSection(
   const section = document.createElement('div');
   section.className = 'bes-drawer-section bes-keyboard-section';
 
-  // Create a ref to hold the update visibility function
   let updateResetVisibilityFn: (() => void) | null = null;
 
-  // Wrap onUpdate to also update reset button visibility
   const wrappedOnUpdate = (updatedSettings: KeyboardSettings) => {
     onUpdate(updatedSettings);
     if (updateResetVisibilityFn) {
@@ -274,7 +247,6 @@ export function createKeyboardSettingsSection(
 
   content.appendChild(description);
 
-  // Restore previous collapsed state
   if (keyboardSectionCollapsed) {
     content.classList.add('collapsed');
   }
@@ -290,7 +262,6 @@ export function createKeyboardSettingsSection(
 
   section.appendChild(header);
 
-  // Group controls by category
   const controlsByCategory = new Map<ActionCategory, KeyboardControlSetting[]>();
 
   settings.controls.forEach(control => {
@@ -301,7 +272,6 @@ export function createKeyboardSettingsSection(
     controlsByCategory.get(category)!.push(control);
   });
 
-  // Create sections for each category
   const categoryOrder = [ActionCategory.PLAYBACK, ActionCategory.SEEKING, ActionCategory.VOLUME];
 
   categoryOrder.forEach(category => {
@@ -312,7 +282,6 @@ export function createKeyboardSettingsSection(
     }
   });
 
-  // Step size settings
   const stepSizesSection = document.createElement('div');
   stepSizesSection.className = 'bes-keyboard-step-sizes';
 
@@ -322,14 +291,12 @@ export function createKeyboardSettingsSection(
 
   stepSizesSection.appendChild(stepSizesHeader);
 
-  // Seek step size
   const seekStepInput = createStepSizeInput('Seek step (seconds):', settings.seekStepSize, 1, 1, value => {
     settings.seekStepSize = value;
     wrappedOnUpdate({ ...settings });
   });
   stepSizesSection.appendChild(seekStepInput);
 
-  // Large seek step size
   const largeSeekStepInput = createStepSizeInput(
     'Large seek step (seconds):',
     settings.largeSeekStepSize,
@@ -342,7 +309,6 @@ export function createKeyboardSettingsSection(
   );
   stepSizesSection.appendChild(largeSeekStepInput);
 
-  // Volume step
   const volumeStepInput = createStepSizeInput('Volume step:', settings.volumeStep, 0.01, 0.01, value => {
     settings.volumeStep = value;
     wrappedOnUpdate({ ...settings });
@@ -351,14 +317,11 @@ export function createKeyboardSettingsSection(
 
   content.appendChild(stepSizesSection);
 
-  // Helper function to check if settings are modified
   const areSettingsModified = (current: KeyboardSettings): boolean => {
-    // Check if step sizes are different
     if (current.seekStepSize !== DEFAULT_KEYBOARD_SETTINGS.seekStepSize) return true;
     if (current.largeSeekStepSize !== DEFAULT_KEYBOARD_SETTINGS.largeSeekStepSize) return true;
     if (current.volumeStep !== DEFAULT_KEYBOARD_SETTINGS.volumeStep) return true;
 
-    // Check if controls are different
     if (current.controls.length !== DEFAULT_KEYBOARD_SETTINGS.controls.length) return true;
 
     for (let i = 0; i < current.controls.length; i++) {
@@ -373,11 +336,9 @@ export function createKeyboardSettingsSection(
     return false;
   };
 
-  // Reset button and confirmation
   const resetContainer = document.createElement('div');
   resetContainer.className = 'bes-keyboard-reset-container';
 
-  // Update reset container visibility based on whether settings are modified
   const updateResetVisibility = () => {
     if (areSettingsModified(settings)) {
       resetContainer.style.display = 'block';
@@ -386,7 +347,6 @@ export function createKeyboardSettingsSection(
     }
   };
 
-  // Assign to ref so wrappedOnUpdate can call it
   updateResetVisibilityFn = updateResetVisibility;
 
   const resetButton = document.createElement('button');
@@ -423,10 +383,8 @@ export function createKeyboardSettingsSection(
   });
 
   confirmButton.addEventListener('click', () => {
-    // This will be handled by sending a message to the backend
     const resetEvent = new CustomEvent('bes-reset-keyboard-settings');
     document.dispatchEvent(resetEvent);
-    // Hide confirmation and show reset button again
     confirmationUI.style.display = 'none';
     resetButton.style.display = 'block';
   });
@@ -442,7 +400,6 @@ export function createKeyboardSettingsSection(
 
   section.appendChild(content);
 
-  // Set initial visibility of reset button
   updateResetVisibility();
 
   return section;

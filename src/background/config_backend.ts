@@ -111,7 +111,6 @@ export async function updateKeyboardSettings(
 ): Promise<void> {
   log.info('updating keyboard settings');
 
-  // Validate settings
   const errors = validateKeyboardSettings(settings);
   if (errors.length > 0) {
     log.error(`Invalid keyboard settings: ${errors.join(', ')}`);

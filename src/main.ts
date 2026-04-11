@@ -69,22 +69,18 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   settingsSection.appendChild(settingsTitle);
   settingsSection.appendChild(waveformSettingRow);
 
-  // Keyboard settings section
   let keyboardSection: HTMLElement | null = null;
 
   const initKeyboardSection = (settings: KeyboardSettings) => {
-    // Remove old section if it exists
     if (keyboardSection) {
       keyboardSection.remove();
     }
 
-    // Create new keyboard section
     keyboardSection = createKeyboardSettingsSection(settings, updatedSettings => {
       log.info('Keyboard settings updated');
       config_port.postMessage({ updateKeyboardSettings: updatedSettings });
     });
 
-    // Insert after settings section
     if (settingsSection.parentNode) {
       const nextSibling = settingsSection.nextSibling;
       if (nextSibling) {
@@ -97,7 +93,6 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
     }
   };
 
-  // Listen for reset event from keyboard settings UI
   document.addEventListener('bes-reset-keyboard-settings', () => {
     log.info('Resetting keyboard settings');
     config_port.postMessage({ resetKeyboardSettings: true });
@@ -108,17 +103,14 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       waveformToggle.checked = msg.config.displayWaveform;
     }
 
-    // Update keyboard settings
     if (msg.config && msg.config.keyboardSettings) {
       if (!keyboardSection) {
         initKeyboardSection(msg.config.keyboardSettings);
       } else {
-        // Re-initialize section if settings changed externally
         initKeyboardSection(msg.config.keyboardSettings);
       }
     }
 
-    // Handle keyboard settings errors
     if (msg.keyboardSettingsError) {
       log.error(`Keyboard settings error: ${msg.keyboardSettingsError.join(', ')}`);
       alert(`Keyboard settings error: ${msg.keyboardSettingsError.join(', ')}`);
@@ -248,7 +240,6 @@ const main = async (): Promise<void> => {
 
   const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
   if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
-    // Get keyboard settings from config before initializing player
     let keyboardSettings: KeyboardSettings | undefined;
 
     const getConfigPromise = new Promise<void>(resolve => {
@@ -262,7 +253,6 @@ const main = async (): Promise<void> => {
       config_port.onMessage.addListener(listener);
       config_port.postMessage({ requestConfig: {} });
 
-      // Timeout after 1 second and use defaults
       setTimeout(() => {
         config_port.onMessage.removeListener(listener);
         resolve();
@@ -272,7 +262,6 @@ const main = async (): Promise<void> => {
     await getConfigPromise;
     await initPlayer(keyboardSettings);
 
-    // Listen for keyboard settings updates and update handlers dynamically
     config_port.onMessage.addListener((msg: any) => {
       if (msg.config && msg.config.keyboardSettings) {
         log.info('Keyboard settings changed, updating handlers');

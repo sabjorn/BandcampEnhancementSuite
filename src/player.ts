@@ -20,16 +20,10 @@ interface KeyHandlers {
 
 function keyComboToString(combo: KeyCombo): string {
   const { key, alt = false, ctrl = false, shift = false, meta = false } = combo;
-
-  // Special case for space key to match keyBindingToString in keyboard.ts
   const keyDisplay = key === ' ' ? 'Space' : key;
-
   return `${alt ? 'Alt+' : ''}${ctrl ? 'Ctrl+' : ''}${shift ? 'Shift+' : ''}${meta ? 'Meta+' : ''}${keyDisplay}`;
 }
 
-/**
- * Build key handlers from keyboard settings
- */
 export function buildKeyHandlersFromSettings(settings: KeyboardSettings): KeyHandlers {
   const handlers: KeyHandlers = {};
 
@@ -226,37 +220,29 @@ export function createOneClickBuyButton(
   return pair;
 }
 
-// Global handler object that can be updated dynamically
 let activeKeyHandlers: KeyHandlers = {};
 
-/**
- * Update keyboard handlers with new settings
- */
 export function updateKeyboardHandlers(settings: KeyboardSettings): void {
   const log = new Logger();
   log.info('Updating keyboard handlers');
 
-  // Clear existing handlers
   Object.keys(activeKeyHandlers).forEach(key => delete activeKeyHandlers[key]);
-
-  // Build new handlers
   const newHandlers = buildKeyHandlersFromSettings(settings);
-
-  // Copy new handlers into the active object
   Object.assign(activeKeyHandlers, newHandlers);
 }
 
 export async function initPlayer(keyboardSettings?: KeyboardSettings): Promise<void> {
   const log = new Logger();
 
-  // Use provided settings or fall back to defaults
   const settings = keyboardSettings || DEFAULT_KEYBOARD_SETTINGS;
   activeKeyHandlers = buildKeyHandlersFromSettings(settings);
   const preventDefault = true;
 
   log.info('Starting BES Player');
 
-  document.addEventListener('keydown', (e: KeyboardEvent) => keydownCallback(e, activeKeyHandlers, preventDefault, log));
+  document.addEventListener('keydown', (e: KeyboardEvent) =>
+    keydownCallback(e, activeKeyHandlers, preventDefault, log)
+  );
 
   const progressBar = document.querySelector('.progbar') as HTMLElement;
   if (progressBar) {

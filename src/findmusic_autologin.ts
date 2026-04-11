@@ -71,7 +71,7 @@ async function performLogin() {
   }
 }
 
-function injectLoginButton() {
+async function injectLoginButton() {
   if (!window.location.pathname.includes('/guide')) {
     return;
   }
@@ -82,6 +82,21 @@ function injectLoginButton() {
   }
 
   if (container.hasAttribute(CONTAINER_MODIFIED_FLAG)) {
+    return;
+  }
+
+  // Check if permissions are granted before modifying the page
+  try {
+    const response = await chrome.runtime.sendMessage({
+      contentScriptQuery: 'checkFindMusicPermissions'
+    });
+
+    if (!response.granted) {
+      log.info('FindMusic.club permissions not granted, skipping login button injection');
+      return;
+    }
+  } catch (error) {
+    log.error(`Error checking FindMusic permissions: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return;
   }
 
@@ -136,15 +151,15 @@ function injectLoginButton() {
 }
 
 const observer = new MutationObserver(() => {
-  injectLoginButton();
+  void injectLoginButton();
 });
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    injectLoginButton();
+    void injectLoginButton();
     observer.observe(document.body, { childList: true, subtree: true });
   });
 } else {
-  injectLoginButton();
+  void injectLoginButton();
   observer.observe(document.body, { childList: true, subtree: true });
 }

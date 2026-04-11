@@ -29,6 +29,13 @@ describe('FindMusic Auto-login', () => {
       value: { pathname: '/guide', href: '' }
     });
 
+    mockSendMessage.mockImplementation((message: any) => {
+      if (message.contentScriptQuery === 'checkFindMusicPermissions') {
+        return Promise.resolve({ granted: true });
+      }
+      return Promise.resolve({});
+    });
+
     document.body.innerHTML = `
       <div class="MuiContainer-root MuiContainer-maxWidthMd">
         <div class="MuiBox-root css-14jdev5">Header</div>
@@ -101,5 +108,42 @@ describe('FindMusic Auto-login', () => {
     await vi.waitFor(() => {
       expect(window.location.href).toContain('login?bes_token=test-token');
     });
+  });
+
+  it('should not inject login button when permissions are not granted', async () => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    document.body.innerHTML = '';
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { pathname: '/guide', href: '' }
+    });
+
+    mockSendMessage.mockImplementation((message: any) => {
+      if (message.contentScriptQuery === 'checkFindMusicPermissions') {
+        return Promise.resolve({ granted: false });
+      }
+      return Promise.resolve({});
+    });
+
+    document.body.innerHTML = `
+      <div class="MuiContainer-root MuiContainer-maxWidthMd">
+        <div class="MuiBox-root css-14jdev5">Header</div>
+        <div class="other-content">Should not be removed</div>
+      </div>
+    `;
+
+    await import('../src/findmusic_autologin');
+
+    // Wait a bit to ensure the button injection would have happened if it was going to
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const button = document.getElementById('bes-findmusic-login-button');
+    expect(button).toBeNull();
+
+    // Original content should remain untouched
+    const otherContent = document.querySelector('.other-content');
+    expect(otherContent).toBeTruthy();
+    expect(otherContent?.textContent).toBe('Should not be removed');
   });
 });

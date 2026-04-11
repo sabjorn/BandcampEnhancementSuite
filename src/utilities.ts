@@ -240,8 +240,11 @@ async function hasBeenCached(url: string, method: string, body: string): Promise
     const hash = await hashRequest(url, method, body);
     const db = await getDB();
     const cached = await db.get('cachedRequests', hash);
-    return !!cached;
-  } catch (_error) {
+    const result = !!cached;
+    log.debug(`hasBeenCached check: ${method} ${url}, hash=${hash}, cached=${result}`);
+    return result;
+  } catch (error) {
+    log.error(`Error checking cache: ${error}`);
     return false;
   }
 }
@@ -249,9 +252,13 @@ async function hasBeenCached(url: string, method: string, body: string): Promise
 async function markAsCached(url: string, method: string, body: string): Promise<void> {
   try {
     const hash = await hashRequest(url, method, body);
+    log.debug(`Marking as cached: ${method} ${url}, hash=${hash}`);
     const db = await getDB();
     await db.put('cachedRequests', Date.now(), hash);
-  } catch (_error) {}
+    log.debug(`Successfully marked as cached: ${hash}`);
+  } catch (error) {
+    log.error(`Failed to mark as cached: ${error}`);
+  }
 }
 
 const CACHEABLE_URLS = ['/api/mobile/25/tralbum_details'];
@@ -288,7 +295,7 @@ function createCachingFetch(): FetchFunction {
       const responseText = await response.clone().text();
       log.debug(`Sending to cache backend: ${method} ${url} (${responseText.length} bytes)`);
 
-      markAsCached(url, method, requestBody);
+      await markAsCached(url, method, requestBody);
 
       chrome.runtime
         .sendMessage({

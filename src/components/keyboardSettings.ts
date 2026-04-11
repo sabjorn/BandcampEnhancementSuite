@@ -99,7 +99,6 @@ function createStepSizeInput(
   label: string,
   currentValue: number,
   min: number,
-  max: number,
   step: number,
   onChange: (value: number) => void
 ): HTMLElement {
@@ -114,13 +113,12 @@ function createStepSizeInput(
   input.type = 'number';
   input.className = 'bes-keyboard-step-input';
   input.min = min.toString();
-  input.max = max.toString();
   input.step = step.toString();
   input.value = currentValue.toString();
 
   input.addEventListener('change', () => {
     const value = parseFloat(input.value);
-    if (!isNaN(value) && value >= min && value <= max) {
+    if (!isNaN(value) && value >= min) {
       onChange(value);
     } else {
       input.value = currentValue.toString();
@@ -314,7 +312,7 @@ export function createKeyboardSettingsSection(
   stepSizesSection.appendChild(stepSizesHeader);
 
   // Seek step size
-  const seekStepInput = createStepSizeInput('Seek step (seconds):', settings.seekStepSize, 1, 60, 1, value => {
+  const seekStepInput = createStepSizeInput('Seek step (seconds):', settings.seekStepSize, 1, 1, value => {
     settings.seekStepSize = value;
     onUpdate({ ...settings });
   });
@@ -325,7 +323,6 @@ export function createKeyboardSettingsSection(
     'Large seek step (seconds):',
     settings.largeSeekStepSize,
     1,
-    120,
     1,
     value => {
       settings.largeSeekStepSize = value;
@@ -335,7 +332,7 @@ export function createKeyboardSettingsSection(
   stepSizesSection.appendChild(largeSeekStepInput);
 
   // Volume step
-  const volumeStepInput = createStepSizeInput('Volume step:', settings.volumeStep, 0.01, 0.5, 0.01, value => {
+  const volumeStepInput = createStepSizeInput('Volume step:', settings.volumeStep, 0.01, 0.01, value => {
     settings.volumeStep = value;
     onUpdate({ ...settings });
   });

@@ -5,13 +5,6 @@ import { mousedownCallback } from './utilities.js';
 
 const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
 
-function logCacheState(log: Logger, context: string): void {
-  const cacheEntries = Array.from(metadataCache.keys());
-  log.debug(
-    `[${context}] Memory cache state: ${metadataCache.size} entries - Track IDs: ${cacheEntries.join(', ') || 'none'}`
-  );
-}
-
 interface PortMessage {
   onMessage: {
     addListener: (callback: (message: any) => void) => void;
@@ -92,7 +85,6 @@ export async function generateAudioFeatures(
     log.warn('Could not extract track ID from audio source');
   } else {
     const cachedMetadata = await (async () => {
-      logCacheState(log, 'Before cache check');
       log.debug(`Checking cache for track ID ${trackId}`);
 
       const memoryCached = metadataCache.get(trackId);

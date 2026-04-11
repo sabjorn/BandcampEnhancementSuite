@@ -64,6 +64,34 @@ function extractTrackId(audioSrc: string): number | null {
   return isNaN(trackId) ? null : trackId;
 }
 
+async function fetchCachedMetadata(trackId: number, log: Logger): Promise<{ waveform: number[]; bpm: number } | null> {
+  log.debug(`Checking cache for track ID ${trackId}`);
+
+  const memoryCached = metadataCache.get(trackId);
+  if (memoryCached) {
+    log.info(`✓ MEMORY CACHE HIT for track ${trackId} - Using cached data`);
+    return memoryCached;
+  }
+
+  log.debug(`✗ Memory cache miss for track ${trackId} - Fetching from API`);
+  const apiMetadata = await chrome.runtime
+    .sendMessage({
+      contentScriptQuery: 'fetchTrackMetadata',
+      trackId: trackId
+    })
+    .catch((error: Error) => {
+      log.warn(`Failed to fetch cached metadata: ${error.message}`);
+      return null;
+    });
+
+  if (apiMetadata && apiMetadata.waveform && apiMetadata.bpm) {
+    metadataCache.set(trackId, apiMetadata);
+    log.debug(`Stored track ${trackId} in memory cache for next time`);
+  }
+
+  return apiMetadata;
+}
+
 export async function generateAudioFeatures(
   canvas: HTMLCanvasElement,
   bpmDisplay: HTMLDivElement,
@@ -84,33 +112,7 @@ export async function generateAudioFeatures(
   if (!trackId) {
     log.warn('Could not extract track ID from audio source');
   } else {
-    const cachedMetadata = await (async () => {
-      log.debug(`Checking cache for track ID ${trackId}`);
-
-      const memoryCached = metadataCache.get(trackId);
-      if (memoryCached) {
-        log.info(`✓ MEMORY CACHE HIT for track ${trackId} - Using cached data`);
-        return memoryCached;
-      }
-
-      log.debug(`✗ Memory cache miss for track ${trackId} - Fetching from API`);
-      const apiMetadata = await chrome.runtime
-        .sendMessage({
-          contentScriptQuery: 'fetchTrackMetadata',
-          trackId: trackId
-        })
-        .catch((error: Error) => {
-          log.warn(`Failed to fetch cached metadata: ${error.message}`);
-          return null;
-        });
-
-      if (apiMetadata && apiMetadata.waveform && apiMetadata.bpm) {
-        metadataCache.set(trackId, apiMetadata);
-        log.debug(`Stored track ${trackId} in memory cache for next time`);
-      }
-
-      return apiMetadata;
-    })();
+    const cachedMetadata = await fetchCachedMetadata(trackId, log);
 
     if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
       log.info(

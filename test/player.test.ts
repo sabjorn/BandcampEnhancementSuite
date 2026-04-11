@@ -15,7 +15,8 @@ import {
   keydownCallback,
   volumeSliderCallback,
   initPlayer,
-  buildKeyHandlersFromSettings
+  buildKeyHandlersFromSettings,
+  updateKeyboardHandlers
 } from '../src/player';
 import Logger from '../src/logger';
 import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS } from '../src/types/keyboard';
@@ -188,6 +189,40 @@ describe('Player', () => {
       const handlers = buildKeyHandlersFromSettings(settings);
       expect(handlers['Shift+ArrowRight']).toBeDefined();
       expect(typeof handlers['Shift+ArrowRight']).toBe('function');
+    });
+  });
+
+  describe('updateKeyboardHandlers', () => {
+    it('should update handlers with new settings', () => {
+      const initialSettings: KeyboardSettings = {
+        controls: [
+          {
+            action: KeyboardAction.PLAY_PAUSE,
+            binding: { key: 'p' },
+            enabled: true
+          }
+        ],
+        seekStepSize: 10,
+        largeSeekStepSize: 30,
+        volumeStep: 0.05
+      };
+
+      const updatedSettings: KeyboardSettings = {
+        controls: [
+          {
+            action: KeyboardAction.PLAY_PAUSE,
+            binding: { key: 'x' },
+            enabled: true
+          }
+        ],
+        seekStepSize: 10,
+        largeSeekStepSize: 30,
+        volumeStep: 0.05
+      };
+
+      // This test verifies that updateKeyboardHandlers doesn't throw
+      expect(() => updateKeyboardHandlers(initialSettings)).not.toThrow();
+      expect(() => updateKeyboardHandlers(updatedSettings)).not.toThrow();
     });
   });
 });

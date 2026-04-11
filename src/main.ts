@@ -1,7 +1,7 @@
 import { createLogger } from './logger';
 import { initLabelView } from './label_view';
 import { initDownload } from './pages/download';
-import { initPlayer } from './player';
+import { initPlayer, updateKeyboardHandlers } from './player';
 import { initAudioFeatures } from './audioFeatures';
 import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
@@ -271,6 +271,15 @@ const main = async (): Promise<void> => {
 
     await getConfigPromise;
     await initPlayer(keyboardSettings);
+
+    // Listen for keyboard settings updates and update handlers dynamically
+    config_port.onMessage.addListener((msg: any) => {
+      if (msg.config && msg.config.keyboardSettings) {
+        log.info('Keyboard settings changed, updating handlers');
+        updateKeyboardHandlers(msg.config.keyboardSettings);
+      }
+    });
+
     initAudioFeatures(config_port);
   }
 

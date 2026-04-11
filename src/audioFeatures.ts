@@ -152,32 +152,19 @@ export async function generateAudioFeatures(
         const audioBuffer_ = new Uint8Array(audioData.data).buffer;
         const decodePromise = ctx.decodeAudioData(audioBuffer_);
 
-        let computedBpm: number | null = null;
-        let computedWaveform: number[] | null = null;
-
-        decodePromise.then(decodedAudio => {
+        const bpmPromise = decodePromise.then(decodedAudio =>
           analyze(decodedAudio)
-            .then(bmp => {
-              computedBpm = bmp;
-              bpmDisplay.innerText = `bpm: ${bmp.toFixed(2)}`;
-
-              if (trackId && computedWaveform !== null) {
-                chrome.runtime
-                  .sendMessage({
-                    contentScriptQuery: 'postTrackMetadata',
-                    trackId: trackId,
-                    waveform: computedWaveform,
-                    bpm: computedBpm
-                  })
-                  .catch((error: Error) => {
-                    log.warn(`Failed to cache track metadata: ${error.message}`);
-                  });
-              }
+            .then(bpm => {
+              bpmDisplay.innerText = `bpm: ${bpm.toFixed(2)}`;
+              return bpm;
             })
-            .catch(err => log.error(`error finding bpm for track: ${err}`));
-        });
+            .catch(err => {
+              log.error(`error finding bpm for track: ${err}`);
+              return null;
+            })
+        );
 
-        decodePromise.then(decodedAudio => {
+        const waveformPromise = decodePromise.then(decodedAudio => {
           log.info('calculating rms');
           const leftChannel = decodedAudio.getChannelData(0);
 
@@ -196,24 +183,24 @@ export async function generateAudioFeatures(
             rmsBuffer.push(Math.sqrt(rms / rmsSize));
           }
 
-          computedWaveform = rmsBuffer;
-
           log.info('visualizing');
-          const max = rmsBuffer.reduce(function (a, b) {
-            return Math.max(a, b);
-          });
+          const max = rmsBuffer.reduce((a, b) => Math.max(a, b));
           for (let i = 0; i < rmsBuffer.length; i++) {
             const amplitude = rmsBuffer[i] / max;
             fillBar(canvas, amplitude, i, datapoints, waveformColour);
           }
 
-          if (trackId && computedBpm !== null) {
+          return rmsBuffer;
+        });
+
+        Promise.all([bpmPromise, waveformPromise]).then(([bpm, waveform]) => {
+          if (trackId && bpm !== null && waveform !== null) {
             chrome.runtime
               .sendMessage({
                 contentScriptQuery: 'postTrackMetadata',
                 trackId: trackId,
-                waveform: computedWaveform,
-                bpm: computedBpm
+                waveform: waveform,
+                bpm: bpm
               })
               .catch((error: Error) => {
                 log.warn(`Failed to cache track metadata: ${error.message}`);

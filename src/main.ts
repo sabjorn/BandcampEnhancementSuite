@@ -81,16 +81,18 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       config_port.postMessage({ updateKeyboardSettings: updatedSettings });
     });
 
-    if (settingsSection.parentNode) {
-      const nextSibling = settingsSection.nextSibling;
-      if (nextSibling) {
-        settingsSection.parentNode.insertBefore(keyboardSection, nextSibling);
-      } else {
-        settingsSection.parentNode.appendChild(keyboardSection);
-      }
-    } else {
+    if (!settingsSection.parentNode) {
       content.appendChild(keyboardSection);
+      return;
     }
+
+    const nextSibling = settingsSection.nextSibling;
+    if (nextSibling) {
+      settingsSection.parentNode.insertBefore(keyboardSection, nextSibling);
+      return;
+    }
+
+    settingsSection.parentNode.appendChild(keyboardSection);
   };
 
   document.addEventListener('bes-reset-keyboard-settings', () => {
@@ -104,11 +106,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
     }
 
     if (msg.config && msg.config.keyboardSettings) {
-      if (!keyboardSection) {
-        initKeyboardSection(msg.config.keyboardSettings);
-      } else {
-        initKeyboardSection(msg.config.keyboardSettings);
-      }
+      initKeyboardSection(msg.config.keyboardSettings);
     }
 
     if (msg.keyboardSettingsError) {
@@ -229,10 +227,8 @@ const main = async (): Promise<void> => {
     } catch (e: any) {
       if (e.message?.includes('Error in invocation of runtime.connect in main.js')) {
         log.error(e);
-        throw e;
-      } else {
-        throw e;
       }
+      throw e;
     }
   })();
 

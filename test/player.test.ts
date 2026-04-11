@@ -220,7 +220,6 @@ describe('Player', () => {
         volumeStep: 0.05
       };
 
-      // This test verifies that updateKeyboardHandlers doesn't throw
       expect(() => updateKeyboardHandlers(initialSettings)).not.toThrow();
       expect(() => updateKeyboardHandlers(updatedSettings)).not.toThrow();
     });

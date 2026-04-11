@@ -104,11 +104,11 @@ function createStepSizeInput(
 
   input.addEventListener('change', () => {
     const value = parseFloat(input.value);
-    if (!isNaN(value) && value >= min) {
-      onChange(value);
-    } else {
+    if (isNaN(value) || value < min) {
       input.value = currentValue.toString();
+      return;
     }
+    onChange(value);
   });
 
   labelElement.appendChild(input);
@@ -148,15 +148,16 @@ function createKeyboardControlRow(
         c => c.enabled && c.action !== control.action && keyBindingsEqual(c.binding, newBinding)
       );
 
-      if (conflicts.length > 0) {
-        const conflictNames = conflicts.map(c => ACTION_DESCRIPTIONS[c.action]).join(', ');
-        row.classList.add('conflict');
-        row.title = `Conflicts with: ${conflictNames}`;
-      } else {
+      if (conflicts.length === 0) {
         row.classList.remove('conflict');
         row.title = '';
+        onUpdate({ ...settings });
+        return;
       }
 
+      const conflictNames = conflicts.map(c => ACTION_DESCRIPTIONS[c.action]).join(', ');
+      row.classList.add('conflict');
+      row.title = `Conflicts with: ${conflictNames}`;
       onUpdate({ ...settings });
     }
   });
@@ -176,9 +177,6 @@ function createKeyboardControlRow(
   return row;
 }
 
-/**
- * Creates a category section with grouped controls
- */
 function createCategorySection(
   category: ActionCategory,
   controls: KeyboardControlSetting[],
@@ -342,9 +340,9 @@ export function createKeyboardSettingsSection(
   const updateResetVisibility = () => {
     if (areSettingsModified(settings)) {
       resetContainer.style.display = 'block';
-    } else {
-      resetContainer.style.display = 'none';
+      return;
     }
+    resetContainer.style.display = 'none';
   };
 
   updateResetVisibilityFn = updateResetVisibility;

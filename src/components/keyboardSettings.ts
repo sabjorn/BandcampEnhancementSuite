@@ -331,11 +331,12 @@ export function createKeyboardSettingsSection(
 
     if (current.controls.length !== DEFAULT_KEYBOARD_SETTINGS.controls.length) return true;
 
-    for (let i = 0; i < current.controls.length; i++) {
-      const currentControl = current.controls[i];
-      const defaultControl = DEFAULT_KEYBOARD_SETTINGS.controls[i];
+    const currentByAction = new Map(current.controls.map(c => [c.action, c]));
 
-      if (currentControl.action !== defaultControl.action) return true;
+    for (const defaultControl of DEFAULT_KEYBOARD_SETTINGS.controls) {
+      const currentControl = currentByAction.get(defaultControl.action);
+
+      if (!currentControl) return true;
       if (currentControl.enabled !== defaultControl.enabled) return true;
       if (!keyBindingsEqual(currentControl.binding, defaultControl.binding)) return true;
     }

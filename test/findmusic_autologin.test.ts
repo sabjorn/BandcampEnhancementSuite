@@ -135,13 +135,11 @@ describe('FindMusic Auto-login', () => {
 
     await import('../src/findmusic_autologin');
 
-    // Wait a bit to ensure the button injection would have happened if it was going to
     await new Promise(resolve => setTimeout(resolve, 100));
 
     const button = document.getElementById('bes-findmusic-login-button');
     expect(button).toBeNull();
 
-    // Original content should remain untouched
     const otherContent = document.querySelector('.other-content');
     expect(otherContent).toBeTruthy();
     expect(otherContent?.textContent).toBe('Should not be removed');

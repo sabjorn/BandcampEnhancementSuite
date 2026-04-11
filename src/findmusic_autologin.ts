@@ -85,7 +85,6 @@ async function injectLoginButton() {
     return;
   }
 
-  // Check if permissions are granted before modifying the page
   try {
     const response = await chrome.runtime.sendMessage({
       contentScriptQuery: 'checkFindMusicPermissions'
@@ -102,10 +101,8 @@ async function injectLoginButton() {
 
   log.info('Modifying guide page content and injecting login button');
 
-  // Keep the first child (the graphic at the top)
   const firstChild = container.firstElementChild;
 
-  // Remove all children except the first one
   const children = Array.from(container.children);
   children.forEach(child => {
     if (child !== firstChild) {

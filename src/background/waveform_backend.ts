@@ -1,12 +1,15 @@
 import Logger from '../logger';
-import { getFindMusicToken } from '../clients/findmusic';
+import {
+  fetchTrackMetadata as fetchTrackMetadataFromAPI,
+  postTrackMetadata as postTrackMetadataToAPI
+} from '../clients/findmusic';
 import { getDB } from '../utilities';
 
 const log = new Logger();
 
 export function processRequest(
   request: any,
-  sender: chrome.runtime.MessageSender,
+  _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: any) => void
 ): boolean {
   if (request.contentScriptQuery === 'fetchTrackMetadata') {
@@ -56,97 +59,27 @@ export function processRequest(
 }
 
 async function fetchTrackMetadata(trackId: number): Promise<{ waveform: number[]; bpm: number } | null> {
-  try {
-    const db = await getDB();
-    const config = await db.get('config', 'config');
+  const db = await getDB();
+  const config = await db.get('config', 'config');
 
-    if (!config?.enableMetadataCaching) {
-      log.debug(`Skipping metadata fetch for track ${trackId} - metadata caching disabled`);
-      return null;
-    }
-
-    const token = await getFindMusicToken();
-
-    if (!token) {
-      log.debug(`Skipping metadata fetch for track ${trackId} - no FindMusic permissions`);
-      return null;
-    }
-
-    const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/metadata?track_id=${trackId}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-
-    if (response.status === 404 || response.status === 500) {
-      log.debug(`Cache miss for track ${trackId} (${response.status})`);
-      return null;
-    }
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      log.error(`FindMusic.club metadata API error: ${response.status} ${errorText}`);
-      return null;
-    }
-
-    const data = await response.json();
-    log.info(`Successfully fetched metadata for track ${trackId}`);
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      log.warn(`Network error fetching metadata for track ${trackId}: ${error.message}`);
-    } else {
-      log.warn(`Unknown error fetching metadata for track ${trackId}`);
-    }
+  if (!config?.enableMetadataCaching) {
+    log.debug(`Skipping metadata fetch for track ${trackId} - metadata caching disabled`);
     return null;
   }
+
+  return await fetchTrackMetadataFromAPI(trackId);
 }
 
 async function postTrackMetadata(trackId: number, waveform: number[], bpm: number): Promise<void> {
-  try {
-    const db = await getDB();
-    const config = await db.get('config', 'config');
+  const db = await getDB();
+  const config = await db.get('config', 'config');
 
-    if (!config?.enableMetadataCaching) {
-      log.debug(`Skipping metadata post for track ${trackId} - metadata caching disabled`);
-      return;
-    }
-
-    const token = await getFindMusicToken();
-
-    if (!token) {
-      log.debug(`Skipping metadata post for track ${trackId} - no FindMusic permissions`);
-      return;
-    }
-
-    const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/metadata`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        track_id: trackId,
-        waveform,
-        bpm
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      log.warn(`Failed to post metadata for track ${trackId}: ${response.status} ${errorText}`);
-      return;
-    }
-
-    log.info(`Successfully posted metadata for track ${trackId}`);
-  } catch (error) {
-    if (error instanceof Error) {
-      log.warn(`Network error posting metadata for track ${trackId}: ${error.message}`);
-    } else {
-      log.warn(`Unknown error posting metadata for track ${trackId}`);
-    }
+  if (!config?.enableMetadataCaching) {
+    log.debug(`Skipping metadata post for track ${trackId} - metadata caching disabled`);
+    return;
   }
+
+  return await postTrackMetadataToAPI(trackId, waveform, bpm);
 }
 
 export async function initWaveformBackend(): Promise<void> {

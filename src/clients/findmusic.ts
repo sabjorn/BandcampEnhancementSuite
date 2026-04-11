@@ -91,3 +91,85 @@ export async function getFindMusicToken(): Promise<string | null> {
   log.info('No valid stored token, exchanging new token');
   return await exchangeBandcampToken();
 }
+
+export async function fetchTrackMetadata(trackId: number): Promise<{ waveform: number[]; bpm: number } | null> {
+  try {
+    log.debug(`fetchTrackMetadata called with trackId: ${trackId}, type: ${typeof trackId}`);
+
+    const token = await getFindMusicToken();
+    if (!token) {
+      log.debug(`Skipping metadata fetch for track ${trackId} - no FindMusic permissions`);
+      return null;
+    }
+
+    const url = new URL(`${process.env.FINDMUSIC_BASE_URL}/api/metadata`);
+    url.searchParams.set('track_id', trackId.toString());
+    log.debug(`Fetching metadata from URL: ${url.toString()}`);
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (response.status === 404 || response.status === 500) {
+      log.debug(`Cache miss for track ${trackId} (${response.status})`);
+      return null;
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      log.error(`FindMusic.club metadata API error: ${response.status} ${errorText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    log.info(`Successfully fetched metadata for track ${trackId}`);
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      log.warn(`Network error fetching metadata for track ${trackId}: ${error.message}`);
+    } else {
+      log.warn(`Unknown error fetching metadata for track ${trackId}`);
+    }
+    return null;
+  }
+}
+
+export async function postTrackMetadata(trackId: number, waveform: number[], bpm: number): Promise<void> {
+  try {
+    const token = await getFindMusicToken();
+    if (!token) {
+      log.debug(`Skipping metadata post for track ${trackId} - no FindMusic permissions`);
+      return;
+    }
+
+    const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/metadata`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        track_id: trackId,
+        waveform,
+        bpm
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      log.warn(`Failed to post metadata for track ${trackId}: ${response.status} ${errorText}`);
+      return;
+    }
+
+    log.info(`Successfully posted metadata for track ${trackId}`);
+  } catch (error) {
+    if (error instanceof Error) {
+      log.warn(`Network error posting metadata for track ${trackId}: ${error.message}`);
+    } else {
+      log.warn(`Unknown error posting metadata for track ${trackId}`);
+    }
+  }
+}

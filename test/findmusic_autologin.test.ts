@@ -29,6 +29,13 @@ describe('FindMusic Auto-login', () => {
       value: { pathname: '/guide', href: '' }
     });
 
+    mockSendMessage.mockImplementation((message: any) => {
+      if (message.contentScriptQuery === 'checkFindMusicPermissions') {
+        return Promise.resolve({ granted: true });
+      }
+      return Promise.resolve({});
+    });
+
     document.body.innerHTML = `
       <div class="MuiContainer-root MuiContainer-maxWidthMd">
         <div class="MuiBox-root css-14jdev5">Header</div>
@@ -49,11 +56,12 @@ describe('FindMusic Auto-login', () => {
     const otherContent = document.querySelector('.other-content');
     expect(otherContent).toBeNull();
 
-    const buttonContainer = document.querySelector('.MuiBox-root.css-13rcduy') as HTMLElement;
+    const container = document.querySelector('.MuiContainer-root.MuiContainer-maxWidthMd');
+    const buttonContainer = container?.children[1] as HTMLElement;
     expect(buttonContainer?.style.display).toBe('flex');
     expect(buttonContainer?.style.justifyContent).toBe('center');
 
-    const header = document.querySelector('.MuiBox-root.css-14jdev5');
+    const header = container?.firstElementChild;
     expect(header?.textContent).toBe('Header');
   });
 
@@ -100,5 +108,40 @@ describe('FindMusic Auto-login', () => {
     await vi.waitFor(() => {
       expect(window.location.href).toContain('login?bes_token=test-token');
     });
+  });
+
+  it('should not inject login button when permissions are not granted', async () => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    document.body.innerHTML = '';
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { pathname: '/guide', href: '' }
+    });
+
+    mockSendMessage.mockImplementation((message: any) => {
+      if (message.contentScriptQuery === 'checkFindMusicPermissions') {
+        return Promise.resolve({ granted: false });
+      }
+      return Promise.resolve({});
+    });
+
+    document.body.innerHTML = `
+      <div class="MuiContainer-root MuiContainer-maxWidthMd">
+        <div class="MuiBox-root css-14jdev5">Header</div>
+        <div class="other-content">Should not be removed</div>
+      </div>
+    `;
+
+    await import('../src/findmusic_autologin');
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const button = document.getElementById('bes-findmusic-login-button');
+    expect(button).toBeNull();
+
+    const otherContent = document.querySelector('.other-content');
+    expect(otherContent).toBeTruthy();
+    expect(otherContent?.textContent).toBe('Should not be removed');
   });
 });

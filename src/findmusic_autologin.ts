@@ -71,7 +71,7 @@ async function performLogin() {
   }
 }
 
-function injectLoginButton() {
+async function injectLoginButton() {
   if (!window.location.pathname.includes('/guide')) {
     return;
   }
@@ -85,32 +85,58 @@ function injectLoginButton() {
     return;
   }
 
-  const boxToKeep = container.querySelector('.MuiBox-root.css-14jdev5');
-  if (!boxToKeep) {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      contentScriptQuery: 'checkFindMusicPermissions'
+    });
+
+    if (!response.granted) {
+      log.info('FindMusic.club permissions not granted, skipping login button injection');
+      return;
+    }
+  } catch (error) {
+    log.error(`Error checking FindMusic permissions: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return;
   }
 
   log.info('Modifying guide page content and injecting login button');
 
+  const firstChild = container.firstElementChild;
+
   const children = Array.from(container.children);
   children.forEach(child => {
-    if (child !== boxToKeep) {
+    if (child !== firstChild) {
       child.remove();
     }
   });
 
   const buttonContainer = document.createElement('div');
-  buttonContainer.className = 'MuiBox-root css-13rcduy';
   buttonContainer.style.display = 'flex';
   buttonContainer.style.justifyContent = 'center';
+  buttonContainer.style.marginTop = '2rem';
 
   const buttonWrapper = document.createElement('div');
   buttonWrapper.id = BUTTON_ID;
-  buttonWrapper.className = 'MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 css-11lia1c';
   buttonWrapper.style.cursor = 'pointer';
+  buttonWrapper.style.padding = '1rem 2rem';
+  buttonWrapper.style.backgroundColor = '#1976d2';
+  buttonWrapper.style.color = 'white';
+  buttonWrapper.style.borderRadius = '4px';
+  buttonWrapper.style.boxShadow = '0px 2px 4px rgba(0,0,0,0.2)';
+  buttonWrapper.style.transition = 'background-color 0.3s';
+  buttonWrapper.addEventListener('mouseenter', () => {
+    buttonWrapper.style.backgroundColor = '#1565c0';
+  });
+  buttonWrapper.addEventListener('mouseleave', () => {
+    if (!isLoggingIn) {
+      buttonWrapper.style.backgroundColor = '#1976d2';
+    }
+  });
 
   const buttonText = document.createElement('p');
-  buttonText.className = 'MuiTypography-root MuiTypography-body1 css-gi6oim';
+  buttonText.style.margin = '0';
+  buttonText.style.fontSize = '1rem';
+  buttonText.style.fontWeight = '500';
   buttonText.textContent = 'Login with Bandcamp Enhancement Suite';
 
   buttonWrapper.appendChild(buttonText);
@@ -122,15 +148,15 @@ function injectLoginButton() {
 }
 
 const observer = new MutationObserver(() => {
-  injectLoginButton();
+  void injectLoginButton();
 });
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    injectLoginButton();
+    void injectLoginButton();
     observer.observe(document.body, { childList: true, subtree: true });
   });
 } else {
-  injectLoginButton();
+  void injectLoginButton();
   observer.observe(document.body, { childList: true, subtree: true });
 }

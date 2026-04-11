@@ -1,16 +1,17 @@
 import { analyze } from 'web-audio-beat-detector';
 
 import Logger from './logger';
-import { mousedownCallback, getDB } from './utilities.js';
-import { hasFindMusicPermissions } from './clients/findmusic';
+import { mousedownCallback } from './utilities.js';
 
-// In-memory cache for prefetched metadata
+// In-memory cache for metadata during session
 const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
 
 // Debug helper to inspect cache state
 function logCacheState(log: Logger, context: string): void {
   const cacheEntries = Array.from(metadataCache.keys());
-  log.debug(`[${context}] Memory cache state: ${metadataCache.size} entries - Track IDs: ${cacheEntries.join(', ') || 'none'}`);
+  log.debug(
+    `[${context}] Memory cache state: ${metadataCache.size} entries - Track IDs: ${cacheEntries.join(', ') || 'none'}`
+  );
 }
 
 interface PortMessage {
@@ -73,146 +74,6 @@ function extractTrackId(audioSrc: string): number | null {
   return isNaN(trackId) ? null : trackId;
 }
 
-function extractAllTrackIdsFromPage(log: Logger): number[] {
-  const trackIds: number[] = [];
-
-  log.debug(`Looking for [data-tralbum] element on page: ${window.location.href}`);
-
-  // Try to get TralbumData from the page
-  const tralbumDataElement = document.querySelector('[data-tralbum]');
-  if (!tralbumDataElement) {
-    log.warn('No [data-tralbum] element found on page');
-    log.debug(`Available elements with 'data-' attributes: ${document.querySelectorAll('[data-tralbum], [data-blob]').length}`);
-    return trackIds;
-  }
-
-  log.debug(`Found [data-tralbum] element: ${tralbumDataElement.tagName}`);
-
-  const data = tralbumDataElement.getAttribute('data-tralbum');
-  if (!data) {
-    log.warn('data-tralbum attribute is empty');
-    return trackIds;
-  }
-
-  log.debug(`data-tralbum attribute length: ${data.length} characters`);
-
-  try {
-    const tralbumData = JSON.parse(
-      data
-        .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&#39;/g, "'")
-    );
-
-    log.debug(`Parsed tralbum data, has trackinfo: ${!!tralbumData.trackinfo}`);
-
-    // Extract track IDs from trackinfo array
-    if (tralbumData.trackinfo && Array.isArray(tralbumData.trackinfo)) {
-      log.debug(`Found ${tralbumData.trackinfo.length} tracks in trackinfo`);
-
-      tralbumData.trackinfo.forEach((track: any, index: number) => {
-        if (track.file && typeof track.file === 'object') {
-          // Get any file URL (mp3-128, mp3-v0, etc.)
-          const fileUrl = Object.values(track.file)[0];
-          if (typeof fileUrl === 'string') {
-            const trackId = extractTrackId(fileUrl);
-            if (trackId !== null) {
-              trackIds.push(trackId);
-              log.debug(`Track ${index}: extracted ID ${trackId} from ${fileUrl}`);
-            } else {
-              log.warn(`Track ${index}: failed to extract ID from ${fileUrl}`);
-            }
-          } else {
-            log.warn(`Track ${index}: file URL is not a string: ${typeof fileUrl}`);
-          }
-        } else {
-          log.debug(`Track ${index}: no file object found`);
-        }
-      });
-    } else {
-      log.warn('No trackinfo array found in tralbum data');
-    }
-  } catch (error) {
-    log.error(`Failed to parse tralbum data: ${error}`);
-  }
-
-  log.info(`Extracted ${trackIds.length} track IDs from page: ${trackIds.join(', ')}`);
-  return trackIds;
-}
-
-async function prefetchTrackMetadata(log: Logger): Promise<void> {
-  log.info('=== Starting prefetch metadata ===');
-  log.info(`Current URL: ${window.location.href}`);
-  log.info(`Page type check - has inline_player: ${!!document.querySelector('div.inline_player')}`);
-
-  try {
-    // Check permissions first
-    const hasPermissions = await hasFindMusicPermissions();
-    if (!hasPermissions) {
-      log.info('Prefetch skipped: FindMusic permissions not granted');
-      return;
-    }
-
-    const db = await getDB();
-    const config = await db.get('config', 'config');
-
-    log.info(`Config state - displayWaveform: ${config?.displayWaveform}, enableFindMusicCaching: ${config?.enableFindMusicCaching}`);
-
-    // Only prefetch if both waveform display and caching are enabled
-    if (!config?.displayWaveform) {
-      log.info('Prefetch skipped: waveform display is disabled');
-      return;
-    }
-
-    if (!config?.enableFindMusicCaching) {
-      log.info('Prefetch skipped: FindMusic caching is disabled');
-      return;
-    }
-
-    const trackIds = extractAllTrackIdsFromPage(log);
-    if (trackIds.length === 0) {
-      log.warn('No tracks found on page for prefetching');
-      return;
-    }
-
-    log.info(`Starting prefetch for ${trackIds.length} tracks: ${trackIds.join(', ')}`);
-
-    // Prefetch all track metadata
-    const prefetchPromises = trackIds.map(async (trackId, index) => {
-      try {
-        log.debug(`[${index + 1}/${trackIds.length}] Fetching metadata for track ${trackId}`);
-
-        const metadata = await chrome.runtime.sendMessage({
-          contentScriptQuery: 'fetchTrackMetadata',
-          trackId: trackId
-        });
-
-        if (metadata && metadata.waveform && metadata.bpm) {
-          metadataCache.set(trackId, metadata);
-          log.info(`✓ Cached metadata for track ${trackId} (BPM: ${metadata.bpm.toFixed(2)}, Waveform: ${metadata.waveform.length} points)`);
-          return { trackId, success: true };
-        } else {
-          log.debug(`✗ No cached metadata available for track ${trackId}`);
-          return { trackId, success: false };
-        }
-      } catch (error) {
-        log.debug(`✗ Failed to fetch metadata for track ${trackId}: ${error}`);
-        return { trackId, success: false };
-      }
-    });
-
-    const results = await Promise.all(prefetchPromises);
-    const successCount = results.filter(r => r.success).length;
-
-    logCacheState(log, 'After prefetch');
-    log.info(`=== Prefetch complete: ${successCount}/${trackIds.length} tracks cached in memory ===`);
-  } catch (error) {
-    log.error(`Failed to prefetch metadata: ${error}`);
-  }
-}
-
 export async function generateAudioFeatures(
   canvas: HTMLCanvasElement,
   bpmDisplay: HTMLDivElement,
@@ -239,11 +100,11 @@ export async function generateAudioFeatures(
       logCacheState(log, 'Before cache check');
       log.debug(`Checking cache for track ID ${trackId}`);
 
-      // Check in-memory cache first (from prefetch)
+      // Check in-memory cache first (from previously played tracks in this session)
       let cachedMetadata = metadataCache.get(trackId);
 
       if (cachedMetadata) {
-        log.info(`✓ MEMORY CACHE HIT for track ${trackId} - Using prefetched data`);
+        log.info(`✓ MEMORY CACHE HIT for track ${trackId} - Using cached data`);
       } else {
         log.debug(`✗ Memory cache miss for track ${trackId} - Fetching from API`);
 
@@ -266,7 +127,11 @@ export async function generateAudioFeatures(
       }
 
       if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
-        log.info(`Displaying waveform for track ${trackId} (BPM: ${cachedMetadata.bpm.toFixed(2)}, ${cachedMetadata.waveform.length} points)`);
+        log.info(
+          `Displaying waveform for track ${trackId} (BPM: ${cachedMetadata.bpm.toFixed(2)}, ${
+            cachedMetadata.waveform.length
+          } points)`
+        );
         bpmDisplay.innerText = `bpm: ${cachedMetadata.bpm.toFixed(2)}`;
 
         const max = cachedMetadata.waveform.reduce((a: number, b: number) => Math.max(a, b));
@@ -405,14 +270,6 @@ export function initAudioFeatures(port: PortMessage): void {
 
   port.onMessage.addListener((msg: AudioFeaturesConfig) => applyAudioConfig(msg, canvas, canvasDisplayToggle, log));
   port.postMessage({ requestConfig: {} });
-
-  // Prefetch metadata for all tracks on the page
-  // Wait a bit for page to fully load and populate data-tralbum
-  log.info('Scheduling prefetch metadata in 1 second...');
-  setTimeout(() => {
-    log.info('Calling prefetchTrackMetadata()');
-    prefetchTrackMetadata(log);
-  }, 1000);
 
   log.info('Audio features initialization complete');
 }

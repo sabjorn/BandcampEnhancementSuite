@@ -99,9 +99,11 @@ class CartImportTracker {
         })();
 
         log.info(`Fetching full details for item ${item.item_id} (${item.item_type})`);
-        const db = await getDB();
-        const config = await db.get('config', 'config');
-        const enableFetchCaching = config?.enableFetchCaching ?? false;
+        const enableFetchCaching = await (async () => {
+          const db = await getDB();
+          const config = await db.get('config', 'config');
+          return config?.enableFetchCaching ?? false;
+        })();
         const apiDetails = await getTralbumDetails(item.item_id, item.item_type, BASE_URL, enableFetchCaching);
 
         if (!apiDetails.is_purchasable) {

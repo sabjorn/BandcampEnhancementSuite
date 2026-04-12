@@ -197,6 +197,10 @@ export function centreElement(element: HTMLElement): void {
 }
 
 export async function hasFindMusicPermissions(): Promise<boolean> {
+  if (!chrome?.permissions) {
+    return false;
+  }
+
   const FINDMUSIC_ORIGIN = process.env.FINDMUSIC_ORIGIN_PATTERN as string;
   try {
     const hasPermissions = await chrome.permissions.contains({
@@ -315,12 +319,6 @@ export async function cachedFetch(
   const response = await fetch(url, options);
 
   (async () => {
-    const hasPermissions = await hasFindMusicPermissions();
-    if (!hasPermissions) {
-      log.debug(`Skipping cache for ${method} ${url} - no FindMusic permissions`);
-      return;
-    }
-
     const responseText = await response.clone().text();
 
     await markAsCached(url, method, requestBody);

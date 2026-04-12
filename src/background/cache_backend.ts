@@ -1,5 +1,5 @@
 import Logger from '../logger';
-import { getFindMusicToken, hasFindMusicPermissions } from '../clients/findmusic';
+import { getFindMusicToken } from '../clients/findmusic';
 
 const log = new Logger();
 
@@ -34,12 +34,6 @@ async function postCacheToFindMusic(
   responseBody: string
 ): Promise<void> {
   try {
-    const hasPermissions = await hasFindMusicPermissions();
-    if (!hasPermissions) {
-      log.debug(`Skipping cache post for ${method} ${url} - no FindMusic permissions`);
-      return;
-    }
-
     log.debug(`Posting to FindMusic API cache endpoint: ${method} ${url}`);
     const token = await getFindMusicToken();
 

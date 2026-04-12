@@ -1,5 +1,6 @@
 import { openDB, IDBPDatabase } from 'idb';
 import Logger from './logger';
+import { hasFindMusicPermissions } from './clients/findmusic';
 
 interface MouseEventWithOffset extends MouseEvent {
   offsetX: number;
@@ -297,6 +298,12 @@ function createCachingFetch(): FetchFunction {
     const response = await fetch(url, options);
 
     (async () => {
+      const hasPermissions = await hasFindMusicPermissions();
+      if (!hasPermissions) {
+        log.debug(`Skipping cache for ${method} ${url} - no FindMusic permissions`);
+        return;
+      }
+
       const responseText = await response.clone().text();
       log.debug(`Sending to cache backend: ${method} ${url} (${responseText.length} bytes)`);
 

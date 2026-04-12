@@ -10,12 +10,11 @@ vi.mock('../src/logger', () => ({
 }));
 
 vi.mock('../src/clients/findmusic', () => ({
-  getFindMusicToken: vi.fn(),
-  hasFindMusicPermissions: vi.fn()
+  getFindMusicToken: vi.fn()
 }));
 
 import { processRequest, initCacheBackend } from '../src/background/cache_backend';
-import { getFindMusicToken, hasFindMusicPermissions } from '../src/clients/findmusic';
+import { getFindMusicToken } from '../src/clients/findmusic';
 
 describe('Cache Backend', () => {
   let mockSendResponse: any;
@@ -54,7 +53,6 @@ describe('Cache Backend', () => {
     });
 
     it('should handle cache request with permissions', async () => {
-      vi.mocked(hasFindMusicPermissions).mockResolvedValue(true);
       vi.mocked(getFindMusicToken).mockResolvedValue('test-token');
       mockFetch.mockResolvedValue({
         ok: true,
@@ -75,7 +73,6 @@ describe('Cache Backend', () => {
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(hasFindMusicPermissions).toHaveBeenCalled();
       expect(getFindMusicToken).toHaveBeenCalled();
       expect(mockFetch).toHaveBeenCalledWith(
         'https://findmusic.club/api/cache',
@@ -95,8 +92,8 @@ describe('Cache Backend', () => {
       );
     });
 
-    it('should skip cache when no permissions', async () => {
-      vi.mocked(hasFindMusicPermissions).mockResolvedValue(false);
+    it('should skip cache when no token available', async () => {
+      vi.mocked(getFindMusicToken).mockResolvedValue(null);
 
       const request = {
         contentScriptQuery: 'postCache',
@@ -110,13 +107,11 @@ describe('Cache Backend', () => {
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(hasFindMusicPermissions).toHaveBeenCalled();
-      expect(getFindMusicToken).not.toHaveBeenCalled();
+      expect(getFindMusicToken).toHaveBeenCalled();
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it('should skip cache when no token available', async () => {
-      vi.mocked(hasFindMusicPermissions).mockResolvedValue(true);
       vi.mocked(getFindMusicToken).mockResolvedValue(null);
 
       const request = {
@@ -136,7 +131,6 @@ describe('Cache Backend', () => {
     });
 
     it('should handle API errors gracefully', async () => {
-      vi.mocked(hasFindMusicPermissions).mockResolvedValue(true);
       vi.mocked(getFindMusicToken).mockResolvedValue('test-token');
       mockFetch.mockResolvedValue({
         ok: false,

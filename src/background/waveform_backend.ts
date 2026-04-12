@@ -1,7 +1,9 @@
 import Logger from '../logger';
 import {
   fetchTrackMetadata as fetchTrackMetadataFromAPI,
-  postTrackMetadata as postTrackMetadataToAPI
+  postTrackMetadata as postTrackMetadataToAPI,
+  hasFindMusicPermissions,
+  getFindMusicToken
 } from '../clients/findmusic';
 import { getDB } from '../utilities';
 
@@ -67,7 +69,19 @@ async function fetchTrackMetadata(trackId: number): Promise<{ waveform: number[]
     return null;
   }
 
-  return await fetchTrackMetadataFromAPI(trackId);
+  const hasPermissions = await hasFindMusicPermissions();
+  if (!hasPermissions) {
+    log.debug(`Skipping metadata fetch for track ${trackId} - no FindMusic permissions`);
+    return null;
+  }
+
+  const token = await getFindMusicToken();
+  if (!token) {
+    log.warn(`No token available for metadata fetch despite permissions being granted`);
+    return null;
+  }
+
+  return await fetchTrackMetadataFromAPI(trackId, token);
 }
 
 async function postTrackMetadata(trackId: number, waveform: number[], bpm: number): Promise<void> {
@@ -79,7 +93,19 @@ async function postTrackMetadata(trackId: number, waveform: number[], bpm: numbe
     return;
   }
 
-  return await postTrackMetadataToAPI(trackId, waveform, bpm);
+  const hasPermissions = await hasFindMusicPermissions();
+  if (!hasPermissions) {
+    log.debug(`Skipping metadata post for track ${trackId} - no FindMusic permissions`);
+    return;
+  }
+
+  const token = await getFindMusicToken();
+  if (!token) {
+    log.warn(`No token available for metadata post despite permissions being granted`);
+    return;
+  }
+
+  return await postTrackMetadataToAPI(trackId, waveform, bpm, token);
 }
 
 export async function initWaveformBackend(): Promise<void> {

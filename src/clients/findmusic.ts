@@ -92,15 +92,12 @@ export async function getFindMusicToken(): Promise<string | null> {
   return await exchangeBandcampToken();
 }
 
-export async function fetchTrackMetadata(trackId: number): Promise<{ waveform: number[]; bpm: number } | null> {
+export async function fetchTrackMetadata(
+  trackId: number,
+  token: string
+): Promise<{ waveform: number[]; bpm: number } | null> {
   try {
     log.debug(`fetchTrackMetadata called with trackId: ${trackId}, type: ${typeof trackId}`);
-
-    const token = await getFindMusicToken();
-    if (!token) {
-      log.debug(`Skipping metadata fetch for track ${trackId} - no FindMusic permissions`);
-      return null;
-    }
 
     const url = new URL(`${process.env.FINDMUSIC_BASE_URL}/api/metadata`);
     url.searchParams.set('track_id', trackId.toString());
@@ -134,14 +131,13 @@ export async function fetchTrackMetadata(trackId: number): Promise<{ waveform: n
   }
 }
 
-export async function postTrackMetadata(trackId: number, waveform: number[], bpm: number): Promise<void> {
+export async function postTrackMetadata(
+  trackId: number,
+  waveform: number[],
+  bpm: number,
+  token: string
+): Promise<void> {
   try {
-    const token = await getFindMusicToken();
-    if (!token) {
-      log.debug(`Skipping metadata post for track ${trackId} - no FindMusic permissions`);
-      return;
-    }
-
     const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/metadata`, {
       method: 'POST',
       headers: {

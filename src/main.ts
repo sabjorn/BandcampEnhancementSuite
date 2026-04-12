@@ -10,14 +10,41 @@ import { KeyboardSettings } from './types/keyboard.js';
 
 const log = createLogger();
 
-function createToggleSetting(id: string, labelText: string, visible: boolean = true) {
+function createToggleSetting(id: string, labelText: string, visible: boolean = true, tooltipText?: string) {
   const row = document.createElement('div');
   row.className = 'bes-drawer-setting';
   if (!visible) row.style.display = 'none';
 
+  const labelContainer = document.createElement('div');
+  labelContainer.style.display = 'flex';
+  labelContainer.style.alignItems = 'center';
+  labelContainer.style.gap = '6px';
+
   const label = document.createElement('span');
   label.className = 'bes-drawer-setting-label';
   label.textContent = labelText;
+
+  labelContainer.appendChild(label);
+
+  if (tooltipText) {
+    const tooltip = document.createElement('span');
+    tooltip.className = 'bes-tooltip-icon';
+    tooltip.textContent = '?';
+    tooltip.title = tooltipText;
+    tooltip.style.cursor = 'help';
+    tooltip.style.display = 'inline-block';
+    tooltip.style.width = '14px';
+    tooltip.style.height = '14px';
+    tooltip.style.lineHeight = '14px';
+    tooltip.style.textAlign = 'center';
+    tooltip.style.fontSize = '11px';
+    tooltip.style.fontWeight = 'bold';
+    tooltip.style.borderRadius = '50%';
+    tooltip.style.border = '1px solid currentColor';
+    tooltip.style.opacity = '0.6';
+
+    labelContainer.appendChild(tooltip);
+  }
 
   const toggle = document.createElement('input');
   toggle.setAttribute('type', 'checkbox');
@@ -33,7 +60,7 @@ function createToggleSetting(id: string, labelText: string, visible: boolean = t
   toggleContainer.appendChild(toggle);
   toggleContainer.appendChild(toggleLabel);
 
-  row.appendChild(label);
+  row.appendChild(labelContainer);
   row.appendChild(toggleContainer);
 
   return { row, toggle };
@@ -73,19 +100,23 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   const { row: waveformSettingRow, toggle: waveformToggle } = createToggleSetting(
     'bes-waveform-toggle',
-    'Display waveform and bpm'
+    'Display waveform and bpm',
+    true,
+    'Show audio waveform visualization and BPM (beats per minute) analysis for each track'
   );
 
   const { row: metadataCachingSettingRow, toggle: metadataCachingToggle } = createToggleSetting(
     'bes-metadata-caching-toggle',
     'Enable metadata caching',
-    false
+    false,
+    'Share and receive pre-computed waveform and BPM data with FindMusic.club. Requires FindMusic.club login.'
   );
 
   const { row: fetchCachingSettingRow, toggle: fetchCachingToggle } = createToggleSetting(
     'bes-fetch-caching-toggle',
     'Enable fetch caching',
-    false
+    false,
+    'Share your Bandcamp browsing data with FindMusic.club to help build a music discovery database. Requires FindMusic.club login.'
   );
 
   settingsSection.appendChild(settingsTitle);

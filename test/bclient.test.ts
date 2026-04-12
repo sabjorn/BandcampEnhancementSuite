@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 vi.mock('../src/utilities', () => ({
-  cachedFetch: vi.fn((url: string, options?: RequestInit) => fetch(url, options))
+  cachedFetch: vi.fn()
 }));
 
 import { addAlbumToCart, getTralbumDetails, getCollectionSummary, hideUnhide, getHiddenItems } from '../src/bclient';
+import { cachedFetch } from '../src/utilities';
 
 describe('bclient', () => {
   afterEach(() => {
@@ -77,18 +78,14 @@ describe('bclient', () => {
   });
 
   describe('getTralbumDetails', () => {
-    let fetchSpy: any;
-
     beforeEach(() => {
-      fetchSpy = vi
-        .spyOn(global, 'fetch')
-        .mockResolvedValue(new Response('{"id": 123, "title": "Test Album"}', { status: 200 }));
+      vi.mocked(cachedFetch).mockResolvedValue(new Response('{"id": 123, "title": "Test Album"}', { status: 200 }));
     });
 
     it('should make POST request to tralbum_details endpoint', async () => {
       await getTralbumDetails('456', 't');
 
-      expect(fetchSpy).toHaveBeenCalledWith(
+      expect(cachedFetch).toHaveBeenCalledWith(
         '/api/mobile/25/tralbum_details',
         expect.objectContaining({
           method: 'POST',
@@ -102,14 +99,15 @@ describe('bclient', () => {
             band_id: 12345,
             tralbum_id: '456'
           })
-        })
+        }),
+        false
       );
     });
 
     it('should default item_type to "a"', async () => {
       await getTralbumDetails('789');
 
-      expect(fetchSpy).toHaveBeenCalledWith(
+      expect(cachedFetch).toHaveBeenCalledWith(
         '/api/mobile/25/tralbum_details',
         expect.objectContaining({
           body: JSON.stringify({
@@ -117,7 +115,8 @@ describe('bclient', () => {
             band_id: 12345,
             tralbum_id: '789'
           })
-        })
+        }),
+        false
       );
     });
 
@@ -129,7 +128,7 @@ describe('bclient', () => {
     it('should handle numeric item_id', async () => {
       await getTralbumDetails(999, 'a');
 
-      expect(fetchSpy).toHaveBeenCalledWith(
+      expect(cachedFetch).toHaveBeenCalledWith(
         '/api/mobile/25/tralbum_details',
         expect.objectContaining({
           body: JSON.stringify({
@@ -137,29 +136,32 @@ describe('bclient', () => {
             band_id: 12345,
             tralbum_id: 999
           })
-        })
+        }),
+        false
       );
     });
 
     it('should use relative URL when baseUrl is null', async () => {
       await getTralbumDetails('123', 'a', null);
 
-      expect(fetchSpy).toHaveBeenCalledWith(
+      expect(cachedFetch).toHaveBeenCalledWith(
         '/api/mobile/25/tralbum_details',
         expect.objectContaining({
           method: 'POST'
-        })
+        }),
+        false
       );
     });
 
     it('should use absolute URL when baseUrl is provided', async () => {
       await getTralbumDetails('123', 'a', 'https://bandcamp.com');
 
-      expect(fetchSpy).toHaveBeenCalledWith(
+      expect(cachedFetch).toHaveBeenCalledWith(
         'https://bandcamp.com/api/mobile/25/tralbum_details',
         expect.objectContaining({
           method: 'POST'
-        })
+        }),
+        false
       );
     });
   });

@@ -1,6 +1,5 @@
 import { openDB, IDBPDatabase } from 'idb';
 import Logger from './logger';
-import { hasFindMusicPermissions } from './clients/findmusic';
 
 interface MouseEventWithOffset extends MouseEvent {
   offsetX: number;
@@ -195,6 +194,20 @@ export function centreElement(element: HTMLElement): void {
   element.style.left = `${left}px`;
   element.style.top = `${top}px`;
   element.style.zIndex = '9999';
+}
+
+export async function hasFindMusicPermissions(): Promise<boolean> {
+  const FINDMUSIC_ORIGIN = process.env.FINDMUSIC_ORIGIN_PATTERN as string;
+  try {
+    const hasPermissions = await chrome.permissions.contains({
+      permissions: ['cookies'],
+      origins: [FINDMUSIC_ORIGIN]
+    });
+    return hasPermissions;
+  } catch (error) {
+    log.warn(`Failed to check FindMusic permissions: ${error}`);
+    return false;
+  }
 }
 
 interface FindMusicTokenData {

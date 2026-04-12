@@ -1,21 +1,7 @@
 import Logger from '../logger';
-import { storeFindMusicToken, getFindMusicTokenFromStorage } from '../utilities';
+import { storeFindMusicToken, getFindMusicTokenFromStorage, hasFindMusicPermissions } from '../utilities';
 
 const log = new Logger();
-const FINDMUSIC_ORIGIN = process.env.FINDMUSIC_ORIGIN_PATTERN as string;
-
-export async function hasFindMusicPermissions(): Promise<boolean> {
-  try {
-    const hasPermissions = await chrome.permissions.contains({
-      permissions: ['cookies'],
-      origins: [FINDMUSIC_ORIGIN]
-    });
-    return hasPermissions;
-  } catch (error) {
-    log.warn(`Failed to check FindMusic permissions: ${error}`);
-    return false;
-  }
-}
 
 interface BcTokenResponse {
   token: string;

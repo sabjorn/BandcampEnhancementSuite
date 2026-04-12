@@ -2,10 +2,9 @@ import Logger from '../logger';
 import {
   fetchTrackMetadata as fetchTrackMetadataFromAPI,
   postTrackMetadata as postTrackMetadataToAPI,
-  hasFindMusicPermissions,
   getFindMusicToken
 } from '../clients/findmusic';
-import { getDB } from '../utilities';
+import { getDB, hasFindMusicPermissions } from '../utilities';
 
 const log = new Logger();
 

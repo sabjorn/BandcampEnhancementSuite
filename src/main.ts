@@ -19,9 +19,12 @@ function createToggleSetting(id: string, labelText: string, visible: boolean = t
   labelContainer.style.display = 'flex';
   labelContainer.style.alignItems = 'center';
   labelContainer.style.gap = '6px';
+  labelContainer.style.flex = '1';
+  labelContainer.style.width = 'auto';
 
   const label = document.createElement('span');
-  label.className = 'bes-drawer-setting-label';
+  label.style.fontSize = '14px';
+  label.style.color = '#333';
   label.textContent = labelText;
 
   labelContainer.appendChild(label);
@@ -32,16 +35,18 @@ function createToggleSetting(id: string, labelText: string, visible: boolean = t
     tooltip.textContent = '?';
     tooltip.title = tooltipText;
     tooltip.style.cursor = 'help';
-    tooltip.style.display = 'inline-block';
+    tooltip.style.display = 'inline-flex';
+    tooltip.style.alignItems = 'center';
+    tooltip.style.justifyContent = 'center';
     tooltip.style.width = '14px';
     tooltip.style.height = '14px';
-    tooltip.style.lineHeight = '14px';
-    tooltip.style.textAlign = 'center';
     tooltip.style.fontSize = '11px';
     tooltip.style.fontWeight = 'bold';
     tooltip.style.borderRadius = '50%';
     tooltip.style.border = '1px solid currentColor';
     tooltip.style.opacity = '0.6';
+    tooltip.style.flexShrink = '0';
+    tooltip.style.pointerEvents = 'auto';
 
     labelContainer.appendChild(tooltip);
   }

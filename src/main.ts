@@ -30,11 +30,14 @@ function createToggleSetting(id: string, labelText: string, visible: boolean = t
   labelContainer.appendChild(label);
 
   if (tooltipText) {
+    const tooltipWrapper = document.createElement('span');
+    tooltipWrapper.style.position = 'relative';
+    tooltipWrapper.style.display = 'inline-flex';
+    tooltipWrapper.style.flexShrink = '0';
+
     const tooltip = document.createElement('span');
     tooltip.className = 'bes-tooltip-icon';
     tooltip.textContent = '?';
-    tooltip.title = tooltipText;
-    tooltip.style.cursor = 'help';
     tooltip.style.display = 'inline-flex';
     tooltip.style.alignItems = 'center';
     tooltip.style.justifyContent = 'center';
@@ -45,10 +48,41 @@ function createToggleSetting(id: string, labelText: string, visible: boolean = t
     tooltip.style.borderRadius = '50%';
     tooltip.style.border = '1px solid currentColor';
     tooltip.style.opacity = '0.6';
-    tooltip.style.flexShrink = '0';
-    tooltip.style.pointerEvents = 'auto';
 
-    labelContainer.appendChild(tooltip);
+    const tooltipContent = document.createElement('span');
+    tooltipContent.className = 'bes-tooltip-text';
+    tooltipContent.textContent = tooltipText;
+    tooltipContent.style.visibility = 'hidden';
+    tooltipContent.style.width = '200px';
+    tooltipContent.style.backgroundColor = '#333';
+    tooltipContent.style.color = '#fff';
+    tooltipContent.style.textAlign = 'left';
+    tooltipContent.style.borderRadius = '4px';
+    tooltipContent.style.padding = '8px';
+    tooltipContent.style.position = 'absolute';
+    tooltipContent.style.zIndex = '1000';
+    tooltipContent.style.bottom = '125%';
+    tooltipContent.style.left = '50%';
+    tooltipContent.style.marginLeft = '-100px';
+    tooltipContent.style.fontSize = '12px';
+    tooltipContent.style.lineHeight = '1.4';
+    tooltipContent.style.opacity = '0';
+    tooltipContent.style.transition = 'opacity 0.2s';
+    tooltipContent.style.pointerEvents = 'none';
+
+    tooltip.addEventListener('mouseenter', () => {
+      tooltipContent.style.visibility = 'visible';
+      tooltipContent.style.opacity = '1';
+    });
+
+    tooltip.addEventListener('mouseleave', () => {
+      tooltipContent.style.visibility = 'hidden';
+      tooltipContent.style.opacity = '0';
+    });
+
+    tooltipWrapper.appendChild(tooltip);
+    tooltipWrapper.appendChild(tooltipContent);
+    labelContainer.appendChild(tooltipWrapper);
   }
 
   const toggle = document.createElement('input');
@@ -114,14 +148,14 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
     'bes-metadata-caching-toggle',
     'Enable metadata caching',
     false,
-    'Share and receive pre-computed waveform and BPM data with FindMusic.club. Requires FindMusic.club login.'
+    'Share and receive pre-computed waveform and BPM data with FindMusic.club.'
   );
 
   const { row: fetchCachingSettingRow, toggle: fetchCachingToggle } = createToggleSetting(
     'bes-fetch-caching-toggle',
     'Enable fetch caching',
     false,
-    'Share your Bandcamp browsing data with FindMusic.club to help build a music discovery database. Requires FindMusic.club login.'
+    'Share your Bandcamp browsing data with FindMusic.club to help build a music discovery database.'
   );
 
   settingsSection.appendChild(settingsTitle);

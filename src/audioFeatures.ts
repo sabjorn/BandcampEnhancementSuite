@@ -103,11 +103,8 @@ export async function generateAudioFeatures(
   canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
 
   const trackId = extractTrackId(audio.src);
-  if (!trackId) {
-    log.warn('Could not extract track ID from audio source');
-  } else {
+  if (trackId) {
     const cachedMetadata = await fetchCachedMetadata(trackId, log);
-
     if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
       bpmDisplay.innerText = `bpm: ${cachedMetadata.bpm.toFixed(2)}`;
 

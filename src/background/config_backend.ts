@@ -49,8 +49,6 @@ export async function portListenerCallback(
 
   const db = await getDB();
 
-  await setupDB(db);
-
   if (msg.config) await synchronizeConfig(db, msg.config, portState.port);
 
   if (msg.toggleWaveformDisplay) await toggleWaveformDisplay(db, log, portState.port);

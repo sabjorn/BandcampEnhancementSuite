@@ -45,9 +45,6 @@ async function postCacheToFindMusic(
       response_body: responseBody
     };
 
-    log.info(`Posting cache to FindMusic.club: ${method} ${url}`);
-    log.debug(`Payload size: request_body=${requestBody.length} bytes, response_body=${responseBody.length} bytes`);
-
     const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/cache`, {
       method: 'POST',
       headers: {
@@ -63,8 +60,7 @@ async function postCacheToFindMusic(
       throw new Error(`Failed to post cache: ${response.status} ${response.statusText}`);
     }
 
-    const responseText = await response.text();
-    log.info(`Successfully posted cache to FindMusic.club: ${method} ${url} - Response: ${responseText}`);
+    log.info(`Successfully posted cache to FindMusic.club: ${method} ${url}`);
   } catch (error) {
     if (error instanceof Error) {
       log.error(`Error posting cache for ${method} ${url}: ${error.message}`);

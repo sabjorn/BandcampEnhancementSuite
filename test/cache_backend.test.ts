@@ -85,7 +85,7 @@ describe('Cache Backend', () => {
           body: JSON.stringify({
             url: '/api/test',
             method: 'POST',
-            request_body: '{"test":true}',
+            request_data: '{"test":true}',
             response_body: '{"result":"ok"}'
           })
         })

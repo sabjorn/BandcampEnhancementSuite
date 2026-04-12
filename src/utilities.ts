@@ -215,14 +215,27 @@ interface FindMusicTokenData {
   expiresAt: number;
 }
 
-const DEFAULT_TOKEN_EXPIRY_SECONDS = 86400;
+function decodeJwtExpiry(token: string): number | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
 
-export async function storeFindMusicToken(
-  token: string,
-  expiresInSeconds: number = DEFAULT_TOKEN_EXPIRY_SECONDS
-): Promise<void> {
+    const payload = JSON.parse(atob(parts[1]));
+    if (typeof payload.exp === 'number') {
+      return payload.exp * 1000; // Convert to milliseconds
+    }
+    return null;
+  } catch (error) {
+    log.warn(`Failed to decode JWT token: ${error}`);
+    return null;
+  }
+}
+
+const DEFAULT_TOKEN_EXPIRY_MS = 86400 * 1000; // 1 day in milliseconds
+
+export async function storeFindMusicToken(token: string): Promise<void> {
   const db = await getDB();
-  const expiresAt = Date.now() + expiresInSeconds * 1000;
+  const expiresAt = decodeJwtExpiry(token) ?? Date.now() + DEFAULT_TOKEN_EXPIRY_MS;
   const tokenData: FindMusicTokenData = { token, expiresAt };
   await db.put('config', tokenData, 'findmusicToken');
 }
@@ -278,75 +291,52 @@ async function markAsCached(url: string, method: string, body: string): Promise<
 
 const CACHEABLE_URLS = ['/api/mobile/25/tralbum_details'];
 
-function shouldCacheUrl(url: string): boolean {
-  return CACHEABLE_URLS.some(pattern => url.includes(pattern));
-}
-
-type FetchFunction = (url: string, options?: RequestInit) => Promise<Response>;
-
 const log = new Logger();
-
-function createCachingFetch(): FetchFunction {
-  return async (url: string, options?: RequestInit): Promise<Response> => {
-    if (!shouldCacheUrl(url)) {
-      const method = options?.method || 'GET';
-      log.debug(`Skipping cache for ${method} ${url} - not in whitelist`);
-      return fetch(url, options);
-    }
-
-    const method = options?.method || 'GET';
-    const requestBody = options?.body ? String(options.body) : '';
-
-    if (await hasBeenCached(url, method, requestBody)) {
-      log.debug(`Already cached ${method} ${url} - skipping duplicate`);
-      return fetch(url, options);
-    }
-
-    const response = await fetch(url, options);
-
-    (async () => {
-      const hasPermissions = await hasFindMusicPermissions();
-      if (!hasPermissions) {
-        log.debug(`Skipping cache for ${method} ${url} - no FindMusic permissions`);
-        return;
-      }
-
-      const responseText = await response.clone().text();
-
-      await markAsCached(url, method, requestBody);
-
-      chrome.runtime
-        .sendMessage({
-          contentScriptQuery: 'postCache',
-          url,
-          method,
-          requestBody,
-          responseBody: responseText
-        })
-        .catch((error: Error) => log.warn(`Failed to cache request ${method} ${url}: ${error.message}`));
-    })();
-
-    return response;
-  };
-}
-
-function getFetch(cached: boolean): FetchFunction {
-  return cached ? createCachingFetch() : createPlainFetch();
-}
-
-function createPlainFetch(): FetchFunction {
-  return async (url: string, options?: RequestInit): Promise<Response> => {
-    return fetch(url, options);
-  };
-}
 
 export async function cachedFetch(
   url: string,
   options?: RequestInit,
   enableCaching: boolean = false
 ): Promise<Response> {
-  const fetchFn = getFetch(enableCaching);
-  return fetchFn(url, options);
+  const shouldCache = enableCaching && CACHEABLE_URLS.some(pattern => url.includes(pattern));
+
+  if (!shouldCache) {
+    return fetch(url, options);
+  }
+
+  const method = options?.method || 'GET';
+  const requestBody = options?.body ? String(options.body) : '';
+
+  if (await hasBeenCached(url, method, requestBody)) {
+    log.debug(`Already cached ${method} ${url} - skipping duplicate`);
+    return fetch(url, options);
+  }
+
+  const response = await fetch(url, options);
+
+  (async () => {
+    const hasPermissions = await hasFindMusicPermissions();
+    if (!hasPermissions) {
+      log.debug(`Skipping cache for ${method} ${url} - no FindMusic permissions`);
+      return;
+    }
+
+    const responseText = await response.clone().text();
+
+    await markAsCached(url, method, requestBody);
+
+    chrome.runtime
+      .sendMessage({
+        contentScriptQuery: 'postCache',
+        url,
+        method,
+        requestBody,
+        responseBody: responseText
+      })
+      .catch((error: Error) => log.warn(`Failed to cache request ${method} ${url}: ${error.message}`));
+  })();
+
+  return response;
 }
 
 export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset, FindMusicTokenData };

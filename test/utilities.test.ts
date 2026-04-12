@@ -17,9 +17,25 @@ const {
 
   const mockGetDB = vi.fn(() => Promise.resolve(mockDB));
 
-  const mockStoreFindMusicToken = vi.fn(async (token: string, expiresInSeconds: number = 86400): Promise<void> => {
+  function decodeJwtExpiry(token: string): number | null {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      const payload = JSON.parse(atob(parts[1]));
+      if (typeof payload.exp === 'number') {
+        return payload.exp * 1000;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  const DEFAULT_TOKEN_EXPIRY_MS = 86400 * 1000;
+
+  const mockStoreFindMusicToken = vi.fn(async (token: string): Promise<void> => {
     const db = mockDB;
-    const expiresAt = Date.now() + expiresInSeconds * 1000;
+    const expiresAt = decodeJwtExpiry(token) ?? Date.now() + DEFAULT_TOKEN_EXPIRY_MS;
     const tokenData = { token, expiresAt };
     return db.put('config', tokenData, 'findmusicToken');
   });
@@ -370,7 +386,7 @@ describe('FindMusic Token Storage', () => {
   });
 
   describe('storeFindMusicToken', () => {
-    it('should store token with default expiry', async () => {
+    it('should use default expiry for non-JWT tokens', async () => {
       const token = 'test-token-123';
       const beforeTime = Date.now();
 
@@ -391,16 +407,21 @@ describe('FindMusic Token Storage', () => {
       expect(tokenData.expiresAt).toBeLessThanOrEqual(beforeTime + 86400 * 1000 + 100);
     });
 
-    it('should store token with custom expiry', async () => {
-      const token = 'test-token-456';
-      const beforeTime = Date.now();
+    it('should decode JWT token expiry', async () => {
+      const expiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now in seconds
+      const payloadObj = { exp: expiry, sub: 'test-user' };
+      const payload = btoa(JSON.stringify(payloadObj));
+      const jwtToken = `header.${payload}.signature`;
 
-      await storeFindMusicToken(token, 3600);
+      // Verify atob works in test environment
+      const decoded = JSON.parse(atob(payload));
+      expect(decoded.exp).toBe(expiry);
+
+      await storeFindMusicToken(jwtToken);
 
       const call = mockDB.put.mock.calls[0];
       const tokenData = call[1];
-      expect(tokenData.expiresAt).toBeGreaterThan(beforeTime);
-      expect(tokenData.expiresAt).toBeLessThanOrEqual(beforeTime + 3600 * 1000 + 100);
+      expect(tokenData.expiresAt).toBe(expiry * 1000);
     });
   });
 

@@ -13,6 +13,20 @@ vi.mock('../src/clients/findmusic', () => ({
   getFindMusicToken: vi.fn()
 }));
 
+const mockDB = {
+  get: vi.fn().mockResolvedValue(undefined),
+  put: vi.fn().mockResolvedValue(undefined),
+  delete: vi.fn().mockResolvedValue(undefined)
+};
+
+vi.mock('../src/utilities', async () => {
+  const actual = await vi.importActual<typeof import('../src/utilities')>('../src/utilities');
+  return {
+    ...actual,
+    getDB: vi.fn(() => Promise.resolve(mockDB))
+  };
+});
+
 import { processRequest, initCacheBackend } from '../src/background/cache_backend';
 import { getFindMusicToken } from '../src/clients/findmusic';
 
@@ -44,6 +58,11 @@ describe('Cache Backend', () => {
   });
 
   describe('processRequest', () => {
+    beforeEach(() => {
+      mockDB.get.mockClear();
+      mockDB.put.mockClear();
+    });
+
     it('should return false for non-cache requests', () => {
       const request = { contentScriptQuery: 'otherQuery' };
       const result = processRequest(request, {} as any, mockSendResponse);
@@ -52,7 +71,31 @@ describe('Cache Backend', () => {
       expect(mockSendResponse).not.toHaveBeenCalled();
     });
 
-    it('should handle cache request with permissions', async () => {
+    it('should skip posting when request already cached', async () => {
+      mockDB.get.mockResolvedValue(Date.now()); // Already cached
+      vi.mocked(getFindMusicToken).mockResolvedValue('test-token');
+
+      const request = {
+        contentScriptQuery: 'postCache',
+        url: '/api/test',
+        method: 'POST',
+        requestBody: '{"test":true}',
+        responseBody: '{"result":"ok"}'
+      };
+
+      const result = processRequest(request, {} as any, mockSendResponse);
+
+      expect(result).toBe(true);
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(mockDB.get).toHaveBeenCalled();
+      expect(getFindMusicToken).not.toHaveBeenCalled();
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should handle cache request with permissions when not cached', async () => {
+      mockDB.get.mockResolvedValue(undefined); // Not cached
       vi.mocked(getFindMusicToken).mockResolvedValue('test-token');
       mockFetch.mockResolvedValue({
         ok: true,
@@ -73,6 +116,7 @@ describe('Cache Backend', () => {
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
+      expect(mockDB.get).toHaveBeenCalled(); // Check if cached
       expect(getFindMusicToken).toHaveBeenCalled();
       expect(mockFetch).toHaveBeenCalledWith(
         'https://findmusic.club/api/cache',
@@ -90,6 +134,7 @@ describe('Cache Backend', () => {
           })
         })
       );
+      expect(mockDB.put).toHaveBeenCalled(); // Mark as cached
     });
 
     it('should skip cache when no token available', async () => {

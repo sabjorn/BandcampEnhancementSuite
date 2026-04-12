@@ -59,49 +59,34 @@ const {
     return db.delete('config', 'findmusicToken');
   });
 
-  const mockCachedFetch = vi.fn(async (url: string, options?: RequestInit): Promise<Response> => {
-    const db = mockDB;
-    const config = await db.get('config', 'config');
-    const cachingEnabled = config?.enableFetchCaching ?? false;
+  const mockCachedFetch = vi.fn(
+    async (url: string, options?: RequestInit, enableCaching: boolean = false): Promise<Response> => {
+      if (!enableCaching) {
+        return fetch(url, options);
+      }
 
-    if (!cachingEnabled) {
-      return fetch(url, options);
+      const method = options?.method || 'GET';
+      const requestBody = options?.body ? String(options.body) : '';
+
+      const response = await fetch(url, options);
+      const clonedResponse = response.clone();
+      const responseText = await clonedResponse.text();
+
+      if (globalThis.chrome?.runtime?.sendMessage) {
+        globalThis.chrome.runtime
+          .sendMessage({
+            contentScriptQuery: 'postCache',
+            url: url,
+            method: method,
+            requestBody: requestBody,
+            responseBody: responseText
+          })
+          .catch(() => {});
+      }
+
+      return response;
     }
-
-    const CACHEABLE_URLS = ['/api/mobile/25/tralbum_details'];
-    if (!CACHEABLE_URLS.some(pattern => url.includes(pattern))) {
-      return fetch(url, options);
-    }
-
-    const method = options?.method || 'GET';
-    const requestBody = options?.body ? String(options.body) : '';
-    const hash = `${method}:${url}:${requestBody}`;
-    const cached = await db.get('cachedRequests', hash);
-
-    if (cached) {
-      return fetch(url, options);
-    }
-
-    const response = await fetch(url, options);
-    const clonedResponse = response.clone();
-    const responseText = await clonedResponse.text();
-
-    await db.put('cachedRequests', Date.now(), hash);
-
-    if (globalThis.chrome?.runtime?.sendMessage) {
-      globalThis.chrome.runtime
-        .sendMessage({
-          contentScriptQuery: 'postCache',
-          url: url,
-          method: method,
-          requestBody: requestBody,
-          responseBody: responseText
-        })
-        .catch(() => {});
-    }
-
-    return response;
-  });
+  );
 
   return {
     mockDB,
@@ -500,29 +485,34 @@ describe('cachedFetch', () => {
   });
 
   it('should use plain fetch when caching disabled', async () => {
-    mockDB.get.mockResolvedValue({ enableFetchCaching: false });
     const mockResponse = new Response('test response');
     mockFetch.mockResolvedValue(mockResponse);
 
-    const result = await cachedFetch('https://api.test.com/data', {
-      method: 'GET'
-    });
+    const result = await cachedFetch(
+      'https://api.test.com/data',
+      {
+        method: 'GET'
+      },
+      false
+    );
 
     expect(result).toBe(mockResponse);
     expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/data', { method: 'GET' });
     expect(mockSendMessage).not.toHaveBeenCalled();
   });
 
-  it('should use caching fetch for whitelisted URL when caching enabled', async () => {
-    mockDB.get.mockResolvedValueOnce({ enableFetchCaching: true }).mockResolvedValueOnce(undefined);
-
+  it('should send to backend when caching enabled', async () => {
     const mockResponse = new Response(JSON.stringify({ data: 'test' }));
     mockFetch.mockResolvedValue(mockResponse);
 
-    const result = await cachedFetch('/api/mobile/25/tralbum_details', {
-      method: 'POST',
-      body: JSON.stringify({ id: 123 })
-    });
+    const result = await cachedFetch(
+      '/api/mobile/25/tralbum_details',
+      {
+        method: 'POST',
+        body: JSON.stringify({ id: 123 })
+      },
+      true
+    );
 
     expect(result).toBeDefined();
     expect(mockFetch).toHaveBeenCalled();
@@ -538,35 +528,47 @@ describe('cachedFetch', () => {
     );
   });
 
-  it('should skip caching for non-whitelisted URLs', async () => {
-    mockDB.get.mockResolvedValue({ enableFetchCaching: true });
+  it('should skip caching when enableCaching is false', async () => {
     const mockResponse = new Response('test response');
     mockFetch.mockResolvedValue(mockResponse);
 
-    const result = await cachedFetch('https://api.other.com/endpoint', {
-      method: 'GET'
-    });
+    const result = await cachedFetch(
+      'https://api.other.com/endpoint',
+      {
+        method: 'GET'
+      },
+      false
+    );
 
     expect(result).toBe(mockResponse);
     expect(mockSendMessage).not.toHaveBeenCalled();
   });
 
-  it('should skip duplicate requests already cached', async () => {
-    mockDB.get.mockResolvedValueOnce({ enableFetchCaching: true }).mockResolvedValueOnce(Date.now());
-
+  it('should always send to backend (backend handles duplicates)', async () => {
     const mockResponse = new Response(JSON.stringify({ data: 'test' }));
     mockFetch.mockResolvedValue(mockResponse);
 
-    const result = await cachedFetch('/api/mobile/25/tralbum_details', {
-      method: 'POST',
-      body: JSON.stringify({ id: 123 })
-    });
+    const result = await cachedFetch(
+      '/api/mobile/25/tralbum_details',
+      {
+        method: 'POST',
+        body: JSON.stringify({ id: 123 })
+      },
+      true
+    );
 
     expect(result).toBeDefined();
     expect(mockFetch).toHaveBeenCalled();
 
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    expect(mockSendMessage).not.toHaveBeenCalled();
+    // Should always send to backend - backend decides if it's a duplicate
+    expect(mockSendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentScriptQuery: 'postCache',
+        url: '/api/mobile/25/tralbum_details',
+        method: 'POST'
+      })
+    );
   });
 });

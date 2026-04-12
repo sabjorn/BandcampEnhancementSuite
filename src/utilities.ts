@@ -263,38 +263,6 @@ export async function clearFindMusicToken(): Promise<void> {
   await db.delete('config', 'findmusicToken');
 }
 
-async function hashRequest(url: string, method: string, body: string): Promise<string> {
-  const text = `${method}:${url}:${body}`;
-  const msgBuffer = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function hasBeenCached(url: string, method: string, body: string): Promise<boolean> {
-  try {
-    const hash = await hashRequest(url, method, body);
-    const db = await getDB();
-    const cached = await db.get('cachedRequests', hash);
-    return !!cached;
-  } catch (error) {
-    log.error(`Error checking cache: ${error}`);
-    return false;
-  }
-}
-
-async function markAsCached(url: string, method: string, body: string): Promise<void> {
-  try {
-    const hash = await hashRequest(url, method, body);
-    const db = await getDB();
-    await db.put('cachedRequests', Date.now(), hash);
-  } catch (error) {
-    log.error(`Failed to mark as cached: ${error}`);
-  }
-}
-
-const CACHEABLE_URLS = ['/api/mobile/25/tralbum_details'];
-
 const log = new Logger();
 
 export async function cachedFetch(
@@ -302,26 +270,17 @@ export async function cachedFetch(
   options?: RequestInit,
   enableCaching: boolean = false
 ): Promise<Response> {
-  const shouldCache = enableCaching && CACHEABLE_URLS.some(pattern => url.includes(pattern));
-
-  if (!shouldCache) {
+  if (!enableCaching) {
     return fetch(url, options);
   }
 
   const method = options?.method || 'GET';
   const requestBody = options?.body ? String(options.body) : '';
 
-  if (await hasBeenCached(url, method, requestBody)) {
-    log.debug(`Already cached ${method} ${url} - skipping duplicate`);
-    return fetch(url, options);
-  }
-
   const response = await fetch(url, options);
 
   (async () => {
     const responseText = await response.clone().text();
-
-    await markAsCached(url, method, requestBody);
 
     chrome.runtime
       .sendMessage({

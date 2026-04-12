@@ -11,12 +11,9 @@ export function processRequest(
   if (request.contentScriptQuery !== 'postCache') return false;
 
   const { url, method, requestBody, responseBody } = request;
-  log.debug(`Cache backend received: ${method} ${url}`);
-  log.debug(`Request body size: ${requestBody.length} bytes, Response body size: ${responseBody.length} bytes`);
 
   postCacheToFindMusic(url, method, requestBody, responseBody)
     .then(() => {
-      log.debug(`Cache backend successfully processed: ${method} ${url}`);
       sendResponse({ success: true });
     })
     .catch((error: Error) => {
@@ -34,7 +31,6 @@ async function postCacheToFindMusic(
   responseBody: string
 ): Promise<void> {
   try {
-    log.debug(`Posting to FindMusic API cache endpoint: ${method} ${url}`);
     const token = await getFindMusicToken();
 
     if (!token) {

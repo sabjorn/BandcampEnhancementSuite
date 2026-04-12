@@ -51,7 +51,6 @@ export function applyAudioConfig(
   if (!msg.config) {
     return;
   }
-  log.info('config recieved from backend' + JSON.stringify(msg.config));
   canvas.style.display = msg.config.displayWaveform ? 'inherit' : 'none';
   canvasDisplayToggle.checked = msg.config.displayWaveform;
 }
@@ -65,15 +64,11 @@ function extractTrackId(audioSrc: string): number | null {
 }
 
 async function fetchCachedMetadata(trackId: number, log: Logger): Promise<{ waveform: number[]; bpm: number } | null> {
-  log.debug(`Checking cache for track ID ${trackId}`);
-
   const memoryCached = metadataCache.get(trackId);
   if (memoryCached) {
-    log.info(`✓ MEMORY CACHE HIT for track ${trackId} - Using cached data`);
     return memoryCached;
   }
 
-  log.debug(`✗ Memory cache miss for track ${trackId} - Fetching from API`);
   const apiMetadata = await chrome.runtime
     .sendMessage({
       contentScriptQuery: 'fetchTrackMetadata',
@@ -86,7 +81,6 @@ async function fetchCachedMetadata(trackId: number, log: Logger): Promise<{ wave
 
   if (apiMetadata && apiMetadata.waveform && apiMetadata.bpm) {
     metadataCache.set(trackId, apiMetadata);
-    log.debug(`Stored track ${trackId} in memory cache for next time`);
   }
 
   return apiMetadata;
@@ -115,11 +109,6 @@ export async function generateAudioFeatures(
     const cachedMetadata = await fetchCachedMetadata(trackId, log);
 
     if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
-      log.info(
-        `Displaying waveform for track ${trackId} (BPM: ${cachedMetadata.bpm.toFixed(2)}, ${
-          cachedMetadata.waveform.length
-        } points)`
-      );
       bpmDisplay.innerText = `bpm: ${cachedMetadata.bpm.toFixed(2)}`;
 
       const max = cachedMetadata.waveform.reduce((a: number, b: number) => Math.max(a, b));
@@ -129,8 +118,6 @@ export async function generateAudioFeatures(
       }
       return;
     }
-
-    log.debug(`No cached metadata available for track ${trackId} - will compute locally`);
   }
 
   const ctx = new AudioContext();
@@ -158,7 +145,6 @@ export async function generateAudioFeatures(
       );
 
       const waveformPromise = decodePromise.then(decodedAudio => {
-        log.info('calculating rms');
         const leftChannel = decodedAudio.getChannelData(0);
 
         const stepSize = Math.round(decodedAudio.length / datapoints);
@@ -176,7 +162,6 @@ export async function generateAudioFeatures(
           rmsBuffer.push(Math.sqrt(rms / rmsSize));
         }
 
-        log.info('visualizing');
         const max = rmsBuffer.reduce((a, b) => Math.max(a, b));
         for (let i = 0; i < rmsBuffer.length; i++) {
           const amplitude = rmsBuffer[i] / max;
@@ -206,7 +191,6 @@ export async function generateAudioFeatures(
 
 export function initAudioFeatures(port: PortMessage): void {
   const log = new Logger();
-  log.info('Initializing audio features');
 
   const currentTarget = { value: undefined as string | undefined };
 
@@ -244,8 +228,6 @@ export function initAudioFeatures(port: PortMessage): void {
 
   port.onMessage.addListener((msg: AudioFeaturesConfig) => applyAudioConfig(msg, canvas, canvasDisplayToggle, log));
   port.postMessage({ requestConfig: {} });
-
-  log.info('Audio features initialization complete');
 }
 
 export function createCanvas(): HTMLCanvasElement {

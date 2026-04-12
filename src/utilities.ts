@@ -259,9 +259,7 @@ async function hasBeenCached(url: string, method: string, body: string): Promise
     const hash = await hashRequest(url, method, body);
     const db = await getDB();
     const cached = await db.get('cachedRequests', hash);
-    const result = !!cached;
-    log.debug(`hasBeenCached check: ${method} ${url}, hash=${hash}, cached=${result}`);
-    return result;
+    return !!cached;
   } catch (error) {
     log.error(`Error checking cache: ${error}`);
     return false;
@@ -271,10 +269,8 @@ async function hasBeenCached(url: string, method: string, body: string): Promise
 async function markAsCached(url: string, method: string, body: string): Promise<void> {
   try {
     const hash = await hashRequest(url, method, body);
-    log.debug(`Marking as cached: ${method} ${url}, hash=${hash}`);
     const db = await getDB();
     await db.put('cachedRequests', Date.now(), hash);
-    log.debug(`Successfully marked as cached: ${hash}`);
   } catch (error) {
     log.error(`Failed to mark as cached: ${error}`);
   }
@@ -306,8 +302,6 @@ function createCachingFetch(): FetchFunction {
       return fetch(url, options);
     }
 
-    log.debug(`Caching fetch: ${method} ${url}`);
-
     const response = await fetch(url, options);
 
     (async () => {
@@ -318,7 +312,6 @@ function createCachingFetch(): FetchFunction {
       }
 
       const responseText = await response.clone().text();
-      log.debug(`Sending to cache backend: ${method} ${url} (${responseText.length} bytes)`);
 
       await markAsCached(url, method, requestBody);
 
@@ -330,7 +323,6 @@ function createCachingFetch(): FetchFunction {
           requestBody,
           responseBody: responseText
         })
-        .then(() => log.debug(`Successfully cached: ${method} ${url}`))
         .catch((error: Error) => log.warn(`Failed to cache request ${method} ${url}: ${error.message}`));
     })();
 
@@ -353,9 +345,6 @@ export async function cachedFetch(
   options?: RequestInit,
   enableCaching: boolean = false
 ): Promise<Response> {
-  const method = options?.method || 'GET';
-  log.debug(`cachedFetch called: ${method} ${url}, caching=${enableCaching}`);
-
   const fetchFn = getFetch(enableCaching);
   return fetchFn(url, options);
 }

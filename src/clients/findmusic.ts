@@ -83,11 +83,8 @@ export async function fetchTrackMetadata(
   token: string
 ): Promise<{ waveform: number[]; bpm: number } | null> {
   try {
-    log.debug(`fetchTrackMetadata called with trackId: ${trackId}, type: ${typeof trackId}`);
-
     const url = new URL(`${process.env.FINDMUSIC_BASE_URL}/api/metadata`);
     url.searchParams.set('track_id', trackId.toString());
-    log.debug(`Fetching metadata from URL: ${url.toString()}`);
 
     const response = await fetch(url.toString(), {
       method: 'GET',

@@ -1,5 +1,5 @@
 import Logger from '../logger';
-import { storeFindMusicToken, getFindMusicTokenFromStorage, hasFindMusicPermissions } from '../utilities';
+import { storeFindMusicToken, getFindMusicTokenFromStorage } from '../utilities';
 
 const log = new Logger();
 
@@ -60,13 +60,6 @@ export async function exchangeBandcampToken(): Promise<string> {
 }
 
 export async function getFindMusicToken(): Promise<string | null> {
-  // Check permissions first
-  const hasPermissions = await hasFindMusicPermissions();
-  if (!hasPermissions) {
-    log.debug('FindMusic permissions not granted, skipping token operations');
-    return null;
-  }
-
   const storedToken = await getFindMusicTokenFromStorage();
 
   if (storedToken) {

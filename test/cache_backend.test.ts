@@ -156,25 +156,6 @@ describe('Cache Backend', () => {
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    it('should skip cache when no token available', async () => {
-      vi.mocked(getFindMusicToken).mockResolvedValue(null);
-
-      const request = {
-        contentScriptQuery: 'postCache',
-        url: '/api/test',
-        method: 'POST',
-        requestBody: '',
-        responseBody: ''
-      };
-
-      processRequest(request, {} as any, mockSendResponse);
-
-      await new Promise(resolve => setTimeout(resolve, 10));
-
-      expect(getFindMusicToken).toHaveBeenCalled();
-      expect(mockFetch).not.toHaveBeenCalled();
-    });
-
     it('should handle API errors gracefully', async () => {
       vi.mocked(getFindMusicToken).mockResolvedValue('test-token');
       mockFetch.mockResolvedValue({

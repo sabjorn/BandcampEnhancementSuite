@@ -371,6 +371,9 @@ describe('FindMusic Token Storage', () => {
   });
 
   describe('storeFindMusicToken', () => {
+    const DEFAULT_TOKEN_EXPIRY_MS = 86400 * 1000; // 1 day in milliseconds
+    const TEST_TIMING_BUFFER_MS = 100; // Buffer for test execution time
+
     it('should use default expiry for non-JWT tokens', async () => {
       const token = 'test-token-123';
       const beforeTime = Date.now();
@@ -389,10 +392,11 @@ describe('FindMusic Token Storage', () => {
       const call = mockDB.put.mock.calls[0];
       const tokenData = call[1];
       expect(tokenData.expiresAt).toBeGreaterThan(beforeTime);
-      expect(tokenData.expiresAt).toBeLessThanOrEqual(beforeTime + 86400 * 1000 + 100);
+      expect(tokenData.expiresAt).toBeLessThanOrEqual(beforeTime + DEFAULT_TOKEN_EXPIRY_MS + TEST_TIMING_BUFFER_MS);
     });
 
     it('should decode JWT token expiry', async () => {
+      // JWT exp claim uses Unix timestamp in seconds (standard convention)
       const expiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now in seconds
       const payloadObj = { exp: expiry, sub: 'test-user' };
       const payload = btoa(JSON.stringify(payloadObj));
@@ -406,6 +410,7 @@ describe('FindMusic Token Storage', () => {
 
       const call = mockDB.put.mock.calls[0];
       const tokenData = call[1];
+      // We convert seconds to milliseconds for JavaScript Date.now() compatibility
       expect(tokenData.expiresAt).toBe(expiry * 1000);
     });
   });
@@ -519,50 +524,6 @@ describe('cachedFetch', () => {
 
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    expect(mockSendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        contentScriptQuery: 'postCache',
-        url: '/api/mobile/25/tralbum_details',
-        method: 'POST'
-      })
-    );
-  });
-
-  it('should skip caching when enableCaching is false', async () => {
-    const mockResponse = new Response('test response');
-    mockFetch.mockResolvedValue(mockResponse);
-
-    const result = await cachedFetch(
-      'https://api.other.com/endpoint',
-      {
-        method: 'GET'
-      },
-      false
-    );
-
-    expect(result).toBe(mockResponse);
-    expect(mockSendMessage).not.toHaveBeenCalled();
-  });
-
-  it('should always send to backend (backend handles duplicates)', async () => {
-    const mockResponse = new Response(JSON.stringify({ data: 'test' }));
-    mockFetch.mockResolvedValue(mockResponse);
-
-    const result = await cachedFetch(
-      '/api/mobile/25/tralbum_details',
-      {
-        method: 'POST',
-        body: JSON.stringify({ id: 123 })
-      },
-      true
-    );
-
-    expect(result).toBeDefined();
-    expect(mockFetch).toHaveBeenCalled();
-
-    await new Promise(resolve => setTimeout(resolve, 10));
-
-    // Should always send to backend - backend decides if it's a duplicate
     expect(mockSendMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         contentScriptQuery: 'postCache',

@@ -4,7 +4,7 @@ import {
   postTrackMetadata as postTrackMetadataToAPI,
   getFindMusicToken
 } from '../clients/findmusic';
-import { getDB, hasFindMusicPermissions } from '../utilities';
+import { getDB } from '../utilities';
 
 const log = new Logger();
 
@@ -68,15 +68,9 @@ async function fetchTrackMetadata(trackId: number): Promise<{ waveform: number[]
     return null;
   }
 
-  const hasPermissions = await hasFindMusicPermissions();
-  if (!hasPermissions) {
-    log.debug(`Skipping metadata fetch for track ${trackId} - no FindMusic permissions`);
-    return null;
-  }
-
   const token = await getFindMusicToken();
   if (!token) {
-    log.warn(`No token available for metadata fetch despite permissions being granted`);
+    log.debug(`Skipping metadata fetch for track ${trackId} - no token available`);
     return null;
   }
 
@@ -92,15 +86,9 @@ async function postTrackMetadata(trackId: number, waveform: number[], bpm: numbe
     return;
   }
 
-  const hasPermissions = await hasFindMusicPermissions();
-  if (!hasPermissions) {
-    log.debug(`Skipping metadata post for track ${trackId} - no FindMusic permissions`);
-    return;
-  }
-
   const token = await getFindMusicToken();
   if (!token) {
-    log.warn(`No token available for metadata post despite permissions being granted`);
+    log.debug(`Skipping metadata post for track ${trackId} - no token available`);
     return;
   }
 

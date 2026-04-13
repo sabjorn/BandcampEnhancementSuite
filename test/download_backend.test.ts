@@ -10,7 +10,8 @@ vi.mock('../src/logger', () => ({
 }));
 
 vi.mock('../src/utilities', () => ({
-  dateString: vi.fn(() => '2023-01-01')
+  dateString: vi.fn(() => '2023-01-01'),
+  createFetchFunction: vi.fn(() => globalThis.fetch)
 }));
 
 vi.mock('client-zip', () => ({

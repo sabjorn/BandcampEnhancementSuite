@@ -19,7 +19,8 @@ vi.mock('../src/utilities', () => ({
     Promise.resolve({
       get: vi.fn(() => Promise.resolve({ enableFetchCaching: false }))
     })
-  )
+  ),
+  createFetchFunction: vi.fn((enableCaching: boolean) => globalThis.fetch)
 }));
 
 import { getTralbumDetails, getTralbumDetailsFromPage } from '../src/bclient';
@@ -126,7 +127,7 @@ describe('cart_import_backend', () => {
 
         await portListenerCallback({ cartImport: { items: [mockCartItems[1]] } }, portState);
 
-        expect(getTralbumDetails).toHaveBeenCalledWith(456, 't', 'http://bandcamp.com', false);
+        expect(getTralbumDetails).toHaveBeenCalledWith(456, 't', 'http://bandcamp.com', expect.any(Function));
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartAddRequest: {
             item_id: 456,
@@ -239,7 +240,7 @@ describe('cart_import_backend', () => {
         await portListenerCallback({ cartUrlImport: { urls: [mockUrls[0]] } }, portState);
 
         expect(getTralbumDetailsFromPage).toHaveBeenCalledWith(mockUrls[0]);
-        expect(getTralbumDetails).toHaveBeenCalledWith(123, 'a', 'http://bandcamp.com', false);
+        expect(getTralbumDetails).toHaveBeenCalledWith(123, 'a', 'http://bandcamp.com', expect.any(Function));
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartAddRequest: {
             item_id: 123,

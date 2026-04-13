@@ -1,5 +1,5 @@
 import Logger from './logger';
-import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData } from './utilities.js';
+import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, createFetchFunction } from './utilities.js';
 import { CURRENCY_MINIMUMS, getTralbumDetails, addAlbumToCart } from './bclient';
 import { createInputButtonPair } from './components/buttons.js';
 import { createShoppingCartItem } from './components/shoppingCart.js';
@@ -265,7 +265,8 @@ export async function initPlayer(
   const tralbumType = bandFollowInfo.tralbum_type;
 
   try {
-    const tralbumDetails = await getTralbumDetails(tralbumId, tralbumType, null, enableFetchCaching);
+    const fetchFn = createFetchFunction(enableFetchCaching);
+    const tralbumDetails = await getTralbumDetails(tralbumId, tralbumType, null, fetchFn);
     document.querySelectorAll('tr.track_row_view').forEach((row, i) => {
       if (tralbumDetails.tracks[i] === undefined) return;
 

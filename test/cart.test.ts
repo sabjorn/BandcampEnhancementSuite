@@ -19,7 +19,8 @@ vi.mock('../src/bclient', () => ({
 vi.mock('../src/utilities', () => ({
   downloadFile: vi.fn(),
   dateString: vi.fn().mockReturnValue('25-01-01'),
-  loadTextFile: vi.fn()
+  loadTextFile: vi.fn(),
+  createFetchFunction: vi.fn(() => globalThis.fetch)
 }));
 
 vi.mock('../src/components/notifications', () => ({

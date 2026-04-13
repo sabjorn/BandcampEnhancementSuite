@@ -296,4 +296,13 @@ export async function cachedFetch(
   return response;
 }
 
+export type FetchFunction = (url: string, options?: RequestInit) => Promise<Response>;
+
+export function createFetchFunction(enableCaching: boolean): FetchFunction {
+  if (!enableCaching) {
+    return globalThis.fetch;
+  }
+  return (url: string, options?: RequestInit) => cachedFetch(url, options, true);
+}
+
 export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset, FindMusicTokenData };

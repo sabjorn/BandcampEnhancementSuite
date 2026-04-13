@@ -12,7 +12,8 @@ vi.mock('../src/logger', () => ({
 vi.mock('../src/utilities', () => ({
   storeFindMusicToken: vi.fn(),
   getFindMusicTokenFromStorage: vi.fn(),
-  hasFindMusicPermissions: vi.fn()
+  hasFindMusicPermissions: vi.fn(),
+  createFetchFunction: vi.fn(() => globalThis.fetch)
 }));
 
 const mockCookiesGet = vi.fn();

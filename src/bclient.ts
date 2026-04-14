@@ -1,5 +1,7 @@
 const API_RATE_LIMIT_DELAY_MS = 1000;
 
+type FetchFunction = (url: string, options?: RequestInit) => Promise<Response>;
+
 export const CURRENCY_MINIMUMS: Record<string, number> = {
   USD: 0.5,
   AUD: 0.5,
@@ -109,7 +111,8 @@ interface TralbumDetailsBody {
 export async function getTralbumDetails(
   item_id: string | number,
   item_type: string = 'a',
-  baseUrl: string | null = null
+  baseUrl: string | null = null,
+  fetchFn: FetchFunction = globalThis.fetch
 ): Promise<TralbumDetailsResponse> {
   const bodyData: TralbumDetailsBody = {
     tralbum_type: item_type,
@@ -119,7 +122,7 @@ export async function getTralbumDetails(
 
   const url = baseUrl ? `${baseUrl}/api/mobile/25/tralbum_details` : `/api/mobile/25/tralbum_details`;
 
-  const response = await fetch(url, {
+  const response = await fetchFn(url, {
     method: 'POST',
     headers: {
       accept: 'application/json',

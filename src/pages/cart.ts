@@ -1,7 +1,7 @@
 import Logger from '../logger';
 
 import { createButton, createInputButtonPair } from '../components/buttons.js';
-import { downloadFile, dateString, loadTextFile } from '../utilities';
+import { downloadFile, dateString, loadTextFile, createFetchFunction } from '../utilities';
 import { CURRENCY_MINIMUMS, addAlbumToCart, getTralbumDetails } from '../bclient';
 import {
   showSuccessMessage,
@@ -42,8 +42,15 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   log.info('cart init');
 
   let _lastImportState: any = null;
+  let enableFetchCaching = false;
+
+  port.postMessage({ requestConfig: {} });
 
   port.onMessage.addListener(async (msg: any) => {
+    if (msg.config) {
+      enableFetchCaching = msg.config.enableFetchCaching ?? false;
+    }
+
     if (msg.cartImportState) {
       const state = msg.cartImportState;
       _lastImportState = state;
@@ -205,9 +212,10 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       const cartItems = items.filter(item => item.item_type === 'a' || item.item_type === 't');
       const tracks_export: CartExportItem[] = [];
 
+      const fetchFn = createFetchFunction(enableFetchCaching);
       for (const item of cartItems) {
         try {
-          const tralbumDetails = await getTralbumDetails(item.item_id, item.item_type);
+          const tralbumDetails = await getTralbumDetails(item.item_id, item.item_type, null, fetchFn);
           const minimumPrice = tralbumDetails.price > 0.0 ? tralbumDetails.price : CURRENCY_MINIMUMS[item.currency];
 
           const exportItem: CartExportItem = {
@@ -284,7 +292,8 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   }
 
   try {
-    const tralbumDetails = await getTralbumDetails(BES_SUPPORT_TRALBUM_ID, BES_SUPPORT_TRALBUM_TYPE);
+    const fetchFn = createFetchFunction(enableFetchCaching);
+    const tralbumDetails = await getTralbumDetails(BES_SUPPORT_TRALBUM_ID, BES_SUPPORT_TRALBUM_TYPE, null, fetchFn);
 
     const { price, currency, id: tralbumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
 

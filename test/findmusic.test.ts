@@ -9,6 +9,13 @@ vi.mock('../src/logger', () => ({
   }
 }));
 
+vi.mock('../src/utilities', () => ({
+  storeFindMusicToken: vi.fn(),
+  getFindMusicTokenFromStorage: vi.fn(),
+  hasFindMusicPermissions: vi.fn(),
+  createFetchFunction: vi.fn(() => globalThis.fetch)
+}));
+
 const mockCookiesGet = vi.fn();
 
 Object.assign(global, {
@@ -23,7 +30,8 @@ global.fetch = vi.fn();
 
 process.env.FINDMUSIC_BASE_URL = 'https://findmusic.club';
 
-import { exchangeBandcampToken } from '../src/clients/findmusic';
+import { exchangeBandcampToken, getFindMusicToken } from '../src/clients/findmusic';
+import { storeFindMusicToken, getFindMusicTokenFromStorage, hasFindMusicPermissions } from '../src/utilities';
 
 describe('FindMusic Client', () => {
   beforeEach(() => {
@@ -113,6 +121,21 @@ describe('FindMusic Client', () => {
         expect(result).toBe(mockJwtToken);
       });
 
+      it('should store token after successful exchange', async () => {
+        const mockJwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock';
+        vi.mocked(global.fetch).mockResolvedValue({
+          ok: true,
+          json: async () => ({
+            token: mockJwtToken,
+            user: { id: '123', username: 'testuser' }
+          })
+        } as any);
+
+        await exchangeBandcampToken();
+
+        expect(storeFindMusicToken).toHaveBeenCalledWith(mockJwtToken);
+      });
+
       it('should throw error when API returns non-OK status', async () => {
         vi.mocked(global.fetch).mockResolvedValue({
           ok: false,
@@ -146,6 +169,57 @@ describe('FindMusic Client', () => {
 
         await expect(exchangeBandcampToken()).rejects.toThrow('Unknown error occurred while exchanging token');
       });
+    });
+  });
+
+  describe('getFindMusicToken()', () => {
+    beforeEach(() => {
+      Object.assign(global, {
+        chrome: {
+          ...global.chrome,
+          permissions: {
+            contains: vi.fn().mockResolvedValue(true)
+          }
+        }
+      });
+    });
+
+    it('should return stored token if valid', async () => {
+      const mockStoredToken = 'stored-jwt-token';
+      const hasFindMusicPermissionsMock = vi.mocked(hasFindMusicPermissions);
+      const getFindMusicTokenFromStorageMock = vi.mocked(getFindMusicTokenFromStorage);
+      hasFindMusicPermissionsMock.mockResolvedValue(true);
+      getFindMusicTokenFromStorageMock.mockResolvedValue(mockStoredToken);
+
+      const result = await getFindMusicToken();
+
+      expect(result).toBe(mockStoredToken);
+      expect(getFindMusicTokenFromStorageMock).toHaveBeenCalled();
+      expect(mockCookiesGet).not.toHaveBeenCalled();
+    });
+
+    it('should exchange new token if no stored token', async () => {
+      const mockJwtToken = 'new-jwt-token';
+      const hasFindMusicPermissionsMock = vi.mocked(hasFindMusicPermissions);
+      const getFindMusicTokenFromStorageMock = vi.mocked(getFindMusicTokenFromStorage);
+      const storeFindMusicTokenMock = vi.mocked(storeFindMusicToken);
+
+      hasFindMusicPermissionsMock.mockResolvedValue(true);
+      getFindMusicTokenFromStorageMock.mockResolvedValue(null);
+      mockCookiesGet.mockResolvedValue({ value: 'test-bc-token' });
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          token: mockJwtToken
+        })
+      } as any);
+
+      const result = await getFindMusicToken();
+
+      expect(result).toBe(mockJwtToken);
+      expect(getFindMusicTokenFromStorageMock).toHaveBeenCalled();
+      expect(mockCookiesGet).toHaveBeenCalled();
+      expect(storeFindMusicTokenMock).toHaveBeenCalledWith(mockJwtToken);
     });
   });
 });

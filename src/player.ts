@@ -1,5 +1,5 @@
 import Logger from './logger';
-import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData } from './utilities.js';
+import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, createFetchFunction } from './utilities.js';
 import { CURRENCY_MINIMUMS, getTralbumDetails, addAlbumToCart } from './bclient';
 import { createInputButtonPair } from './components/buttons.js';
 import { createShoppingCartItem } from './components/shoppingCart.js';
@@ -231,7 +231,10 @@ export function updateKeyboardHandlers(settings: KeyboardSettings): void {
   Object.assign(activeKeyHandlers, newHandlers);
 }
 
-export async function initPlayer(keyboardSettings?: KeyboardSettings): Promise<void> {
+export async function initPlayer(
+  keyboardSettings?: KeyboardSettings,
+  enableFetchCaching: boolean = false
+): Promise<void> {
   const log = new Logger();
 
   const settings = keyboardSettings || DEFAULT_KEYBOARD_SETTINGS;
@@ -262,7 +265,8 @@ export async function initPlayer(keyboardSettings?: KeyboardSettings): Promise<v
   const tralbumType = bandFollowInfo.tralbum_type;
 
   try {
-    const tralbumDetails = await getTralbumDetails(tralbumId, tralbumType);
+    const fetchFn = createFetchFunction(enableFetchCaching);
+    const tralbumDetails = await getTralbumDetails(tralbumId, tralbumType, null, fetchFn);
     document.querySelectorAll('tr.track_row_view').forEach((row, i) => {
       if (tralbumDetails.tracks[i] === undefined) return;
 

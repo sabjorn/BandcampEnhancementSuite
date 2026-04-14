@@ -1,7 +1,125 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 
-import DBUtils, { getDB, mousedownCallback, extractBandFollowInfo, loadTextFile } from '../src/utilities';
+const {
+  mockDB,
+  mockGetDB,
+  mockStoreFindMusicToken,
+  mockGetFindMusicTokenFromStorage,
+  mockClearFindMusicToken,
+  mockCachedFetch
+} = vi.hoisted(() => {
+  const mockDB = {
+    get: vi.fn().mockResolvedValue(undefined),
+    put: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined)
+  };
+
+  const mockGetDB = vi.fn(() => Promise.resolve(mockDB));
+
+  function decodeJwtExpiry(token: string): number | null {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      const payload = JSON.parse(atob(parts[1]));
+      if (typeof payload.exp === 'number') {
+        return payload.exp * 1000;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  const DEFAULT_TOKEN_EXPIRY_MS = 86400 * 1000;
+
+  const mockStoreFindMusicToken = vi.fn(async (token: string): Promise<void> => {
+    const db = mockDB;
+    const expiresAt = decodeJwtExpiry(token) ?? Date.now() + DEFAULT_TOKEN_EXPIRY_MS;
+    const tokenData = { token, expiresAt };
+    return db.put('config', tokenData, 'findmusicToken');
+  });
+
+  const mockGetFindMusicTokenFromStorage = vi.fn(async (): Promise<string | null> => {
+    const db = mockDB;
+    const tokenData = await db.get('config', 'findmusicToken');
+
+    if (!tokenData) return null;
+
+    if (Date.now() >= tokenData.expiresAt) {
+      await db.delete('config', 'findmusicToken');
+      return null;
+    }
+
+    return tokenData.token;
+  });
+
+  const mockClearFindMusicToken = vi.fn(async (): Promise<void> => {
+    const db = mockDB;
+    return db.delete('config', 'findmusicToken');
+  });
+
+  const mockCachedFetch = vi.fn(
+    async (url: string, options?: RequestInit, enableCaching: boolean = false): Promise<Response> => {
+      if (!enableCaching) {
+        return fetch(url, options);
+      }
+
+      const method = options?.method || 'GET';
+      const requestBody = options?.body ? String(options.body) : '';
+
+      const response = await fetch(url, options);
+      const clonedResponse = response.clone();
+      const responseText = await clonedResponse.text();
+
+      if (globalThis.chrome?.runtime?.sendMessage) {
+        globalThis.chrome.runtime
+          .sendMessage({
+            contentScriptQuery: 'postCache',
+            url: url,
+            method: method,
+            requestBody: requestBody,
+            responseBody: responseText
+          })
+          .catch(() => {});
+      }
+
+      return response;
+    }
+  );
+
+  return {
+    mockDB,
+    mockGetDB,
+    mockStoreFindMusicToken,
+    mockGetFindMusicTokenFromStorage,
+    mockClearFindMusicToken,
+    mockCachedFetch
+  };
+});
+
+vi.mock('../src/utilities', async () => {
+  const actual = await vi.importActual<typeof import('../src/utilities')>('../src/utilities');
+  return {
+    ...actual,
+    getDB: mockGetDB,
+    storeFindMusicToken: mockStoreFindMusicToken,
+    getFindMusicTokenFromStorage: mockGetFindMusicTokenFromStorage,
+    clearFindMusicToken: mockClearFindMusicToken,
+    cachedFetch: mockCachedFetch
+  };
+});
+
+import DBUtils, {
+  getDB,
+  mousedownCallback,
+  extractBandFollowInfo,
+  loadTextFile,
+  cachedFetch,
+  storeFindMusicToken,
+  getFindMusicTokenFromStorage,
+  clearFindMusicToken
+} from '../src/utilities';
 import { getTralbumDetailsFromPage } from '../src/bclient';
 
 vi.mock('../src/bclient', () => ({
@@ -233,6 +351,185 @@ describe('getTralbumDetailsFromPage', () => {
 
     await expect(getTralbumDetailsFromPage('https://test.bandcamp.com/album/no-data')).rejects.toThrow(
       'Could not find tralbum data in page'
+    );
+  });
+});
+
+describe('FindMusic Token Storage', () => {
+  beforeEach(() => {
+    mockDB.put.mockClear();
+    mockDB.get.mockClear();
+    mockDB.delete.mockClear();
+    mockGetDB.mockClear();
+    mockStoreFindMusicToken.mockClear();
+    mockGetFindMusicTokenFromStorage.mockClear();
+    mockClearFindMusicToken.mockClear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('storeFindMusicToken', () => {
+    const DEFAULT_TOKEN_EXPIRY_MS = 86400 * 1000; // 1 day in milliseconds
+    const TEST_TIMING_BUFFER_MS = 100; // Buffer for test execution time
+
+    it('should use default expiry for non-JWT tokens', async () => {
+      const token = 'test-token-123';
+      const beforeTime = Date.now();
+
+      await storeFindMusicToken(token);
+
+      expect(mockDB.put).toHaveBeenCalledWith(
+        'config',
+        expect.objectContaining({
+          token: 'test-token-123',
+          expiresAt: expect.any(Number)
+        }),
+        'findmusicToken'
+      );
+
+      const call = mockDB.put.mock.calls[0];
+      const tokenData = call[1];
+      expect(tokenData.expiresAt).toBeGreaterThan(beforeTime);
+      expect(tokenData.expiresAt).toBeLessThanOrEqual(beforeTime + DEFAULT_TOKEN_EXPIRY_MS + TEST_TIMING_BUFFER_MS);
+    });
+
+    it('should decode JWT token expiry', async () => {
+      // JWT exp claim uses Unix timestamp in seconds (standard convention)
+      const expiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now in seconds
+      const payloadObj = { exp: expiry, sub: 'test-user' };
+      const payload = btoa(JSON.stringify(payloadObj));
+      const jwtToken = `header.${payload}.signature`;
+
+      // Verify atob works in test environment
+      const decoded = JSON.parse(atob(payload));
+      expect(decoded.exp).toBe(expiry);
+
+      await storeFindMusicToken(jwtToken);
+
+      const call = mockDB.put.mock.calls[0];
+      const tokenData = call[1];
+      // We convert seconds to milliseconds for JavaScript Date.now() compatibility
+      expect(tokenData.expiresAt).toBe(expiry * 1000);
+    });
+  });
+
+  describe('getFindMusicTokenFromStorage', () => {
+    it('should return token if not expired', async () => {
+      const futureTime = Date.now() + 3600 * 1000;
+      mockDB.get.mockResolvedValue({
+        token: 'valid-token',
+        expiresAt: futureTime
+      });
+
+      const result = await getFindMusicTokenFromStorage();
+
+      expect(result).toBe('valid-token');
+      expect(mockDB.get).toHaveBeenCalledWith('config', 'findmusicToken');
+    });
+
+    it('should return null if token expired', async () => {
+      const pastTime = Date.now() - 1000;
+      mockDB.get.mockResolvedValue({
+        token: 'expired-token',
+        expiresAt: pastTime
+      });
+
+      const result = await getFindMusicTokenFromStorage();
+
+      expect(result).toBeNull();
+      expect(mockDB.delete).toHaveBeenCalledWith('config', 'findmusicToken');
+    });
+
+    it('should return null if no token stored', async () => {
+      mockDB.get.mockResolvedValue(undefined);
+
+      const result = await getFindMusicTokenFromStorage();
+
+      expect(result).toBeNull();
+      expect(mockDB.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('clearFindMusicToken', () => {
+    it('should delete token from storage', async () => {
+      await clearFindMusicToken();
+
+      expect(mockDB.delete).toHaveBeenCalledWith('config', 'findmusicToken');
+    });
+  });
+});
+
+describe('cachedFetch', () => {
+  let mockFetch: any;
+  let mockSendMessage: any;
+
+  beforeEach(() => {
+    mockDB.get.mockClear();
+    mockDB.put.mockClear();
+    mockGetDB.mockClear();
+    mockCachedFetch.mockClear();
+
+    mockFetch = vi.fn();
+    global.fetch = mockFetch;
+
+    mockSendMessage = vi.fn().mockResolvedValue({ success: true });
+    globalThis.chrome = {
+      runtime: {
+        sendMessage: mockSendMessage
+      }
+    } as any;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if ('chrome' in globalThis) {
+      (globalThis as any).chrome = undefined;
+    }
+  });
+
+  it('should use plain fetch when caching disabled', async () => {
+    const mockResponse = new Response('test response');
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const result = await cachedFetch(
+      'https://api.test.com/data',
+      {
+        method: 'GET'
+      },
+      false
+    );
+
+    expect(result).toBe(mockResponse);
+    expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/data', { method: 'GET' });
+    expect(mockSendMessage).not.toHaveBeenCalled();
+  });
+
+  it('should send to backend when caching enabled', async () => {
+    const mockResponse = new Response(JSON.stringify({ data: 'test' }));
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const result = await cachedFetch(
+      '/api/mobile/25/tralbum_details',
+      {
+        method: 'POST',
+        body: JSON.stringify({ id: 123 })
+      },
+      true
+    );
+
+    expect(result).toBeDefined();
+    expect(mockFetch).toHaveBeenCalled();
+
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(mockSendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentScriptQuery: 'postCache',
+        url: '/api/mobile/25/tralbum_details',
+        method: 'POST'
+      })
     );
   });
 });

@@ -10,6 +10,101 @@ import { KeyboardSettings } from './types/keyboard.js';
 
 const log = createLogger();
 
+function createToggleSetting(id: string, labelText: string, visible: boolean = true, tooltipText?: string) {
+  const row = document.createElement('div');
+  row.className = 'bes-drawer-setting';
+  if (!visible) row.style.display = 'none';
+
+  const labelContainer = document.createElement('div');
+  labelContainer.style.display = 'flex';
+  labelContainer.style.alignItems = 'center';
+  labelContainer.style.gap = '6px';
+  labelContainer.style.flex = '1';
+  labelContainer.style.width = 'auto';
+
+  const label = document.createElement('span');
+  label.style.fontSize = '14px';
+  label.style.color = '#333';
+  label.textContent = labelText;
+
+  labelContainer.appendChild(label);
+
+  if (tooltipText) {
+    const tooltipWrapper = document.createElement('span');
+    tooltipWrapper.style.position = 'relative';
+    tooltipWrapper.style.display = 'inline-flex';
+    tooltipWrapper.style.flexShrink = '0';
+
+    const tooltip = document.createElement('span');
+    tooltip.className = 'bes-tooltip-icon';
+    tooltip.textContent = '?';
+    tooltip.style.display = 'inline-flex';
+    tooltip.style.alignItems = 'center';
+    tooltip.style.justifyContent = 'center';
+    tooltip.style.width = '14px';
+    tooltip.style.height = '14px';
+    tooltip.style.fontSize = '11px';
+    tooltip.style.fontWeight = 'bold';
+    tooltip.style.borderRadius = '50%';
+    tooltip.style.border = '1px solid currentColor';
+    tooltip.style.opacity = '0.6';
+
+    const tooltipContent = document.createElement('span');
+    tooltipContent.className = 'bes-tooltip-text';
+    tooltipContent.textContent = tooltipText;
+    tooltipContent.style.visibility = 'hidden';
+    tooltipContent.style.width = '200px';
+    tooltipContent.style.backgroundColor = '#333';
+    tooltipContent.style.color = '#fff';
+    tooltipContent.style.textAlign = 'left';
+    tooltipContent.style.borderRadius = '4px';
+    tooltipContent.style.padding = '8px';
+    tooltipContent.style.position = 'absolute';
+    tooltipContent.style.zIndex = '1000';
+    tooltipContent.style.bottom = '125%';
+    tooltipContent.style.left = '50%';
+    tooltipContent.style.marginLeft = '-100px';
+    tooltipContent.style.fontSize = '12px';
+    tooltipContent.style.lineHeight = '1.4';
+    tooltipContent.style.opacity = '0';
+    tooltipContent.style.transition = 'opacity 0.2s';
+    tooltipContent.style.pointerEvents = 'none';
+
+    tooltip.addEventListener('mouseenter', () => {
+      tooltipContent.style.visibility = 'visible';
+      tooltipContent.style.opacity = '1';
+    });
+
+    tooltip.addEventListener('mouseleave', () => {
+      tooltipContent.style.visibility = 'hidden';
+      tooltipContent.style.opacity = '0';
+    });
+
+    tooltipWrapper.appendChild(tooltip);
+    tooltipWrapper.appendChild(tooltipContent);
+    labelContainer.appendChild(tooltipWrapper);
+  }
+
+  const toggle = document.createElement('input');
+  toggle.setAttribute('type', 'checkbox');
+  toggle.setAttribute('class', 'bes-toggle');
+  toggle.setAttribute('id', id);
+
+  const toggleLabel = document.createElement('label');
+  toggleLabel.setAttribute('class', 'bes-toggle');
+  toggleLabel.htmlFor = id;
+  toggleLabel.innerHTML = 'Toggle';
+
+  const toggleContainer = document.createElement('div');
+  toggleContainer.appendChild(toggle);
+  toggleContainer.appendChild(toggleLabel);
+
+  row.appendChild(labelContainer);
+  row.appendChild(toggleContainer);
+
+  return { row, toggle };
+}
+
 export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   if (document.querySelector('.bes-drawer')) {
     log.debug('BES drawer already exists');
@@ -42,32 +137,31 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   const settingsTitle = document.createElement('h2');
   settingsTitle.textContent = 'Settings';
 
-  const waveformSettingRow = document.createElement('div');
-  waveformSettingRow.className = 'bes-drawer-setting';
+  const { row: waveformSettingRow, toggle: waveformToggle } = createToggleSetting(
+    'bes-waveform-toggle',
+    'Display waveform and bpm',
+    true,
+    'Show audio waveform visualization and BPM (beats per minute) analysis for each track'
+  );
 
-  const waveformLabelText = document.createElement('span');
-  waveformLabelText.className = 'bes-drawer-setting-label';
-  waveformLabelText.textContent = 'Display Waveform';
+  const { row: metadataCachingSettingRow, toggle: metadataCachingToggle } = createToggleSetting(
+    'bes-metadata-caching-toggle',
+    'Enable metadata caching',
+    false,
+    'Share and receive pre-computed waveform and BPM data with FindMusic.club.'
+  );
 
-  const waveformToggle = document.createElement('input');
-  waveformToggle.setAttribute('type', 'checkbox');
-  waveformToggle.setAttribute('class', 'waveform');
-  waveformToggle.setAttribute('id', 'bes-waveform-toggle');
-
-  const waveformLabel = document.createElement('label');
-  waveformLabel.setAttribute('class', 'waveform');
-  waveformLabel.htmlFor = 'bes-waveform-toggle';
-  waveformLabel.innerHTML = 'Toggle';
-
-  const waveformToggleContainer = document.createElement('div');
-  waveformToggleContainer.appendChild(waveformToggle);
-  waveformToggleContainer.appendChild(waveformLabel);
-
-  waveformSettingRow.appendChild(waveformLabelText);
-  waveformSettingRow.appendChild(waveformToggleContainer);
+  const { row: fetchCachingSettingRow, toggle: fetchCachingToggle } = createToggleSetting(
+    'bes-fetch-caching-toggle',
+    'Enable fetch caching',
+    false,
+    'Share your Bandcamp browsing data with FindMusic.club to help build a music discovery database.'
+  );
 
   settingsSection.appendChild(settingsTitle);
   settingsSection.appendChild(waveformSettingRow);
+  settingsSection.appendChild(metadataCachingSettingRow);
+  settingsSection.appendChild(fetchCachingSettingRow);
 
   let keyboardSection: HTMLElement | null = null;
 
@@ -105,6 +199,14 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       waveformToggle.checked = msg.config.displayWaveform;
     }
 
+    if (msg.config && typeof msg.config.enableMetadataCaching === 'boolean') {
+      metadataCachingToggle.checked = msg.config.enableMetadataCaching;
+    }
+
+    if (msg.config && typeof msg.config.enableFetchCaching === 'boolean') {
+      fetchCachingToggle.checked = msg.config.enableFetchCaching;
+    }
+
     if (msg.config && msg.config.keyboardSettings) {
       initKeyboardSection(msg.config.keyboardSettings);
     }
@@ -117,6 +219,14 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   waveformToggle.addEventListener('change', () => {
     config_port.postMessage({ toggleWaveformDisplay: {} });
+  });
+
+  metadataCachingToggle.addEventListener('change', () => {
+    config_port.postMessage({ toggleMetadataCaching: {} });
+  });
+
+  fetchCachingToggle.addEventListener('change', () => {
+    config_port.postMessage({ toggleFetchCaching: {} });
   });
 
   config_port.postMessage({ requestConfig: {} });
@@ -143,9 +253,14 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       findMusicButton.textContent = response?.granted
         ? 'Log in to FindMusic.club'
         : 'Enable FindMusic.club Integration';
+
+      metadataCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
+      fetchCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
     } catch (error) {
       log.error(`Failed to check permissions: ${error}`);
       findMusicButton.textContent = 'Enable FindMusic.club Integration';
+      metadataCachingSettingRow.style.display = 'none';
+      fetchCachingSettingRow.style.display = 'none';
     }
   };
 
@@ -237,11 +352,13 @@ const main = async (): Promise<void> => {
   const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
   if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
     let keyboardSettings: KeyboardSettings | undefined;
+    let enableFetchCaching = false;
 
     const getConfigPromise = new Promise<void>(resolve => {
       const listener = (msg: any) => {
         if (msg.config && msg.config.keyboardSettings) {
           keyboardSettings = msg.config.keyboardSettings;
+          enableFetchCaching = msg.config.enableFetchCaching ?? false;
           config_port.onMessage.removeListener(listener);
           resolve();
         }
@@ -256,7 +373,7 @@ const main = async (): Promise<void> => {
     });
 
     await getConfigPromise;
-    await initPlayer(keyboardSettings);
+    await initPlayer(keyboardSettings, enableFetchCaching);
 
     config_port.onMessage.addListener((msg: any) => {
       if (msg.config && msg.config.keyboardSettings) {

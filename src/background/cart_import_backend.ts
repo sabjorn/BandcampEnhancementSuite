@@ -1,5 +1,6 @@
 import Logger from '../logger.js';
 import { getTralbumDetails, getTralbumDetailsFromPage, CURRENCY_MINIMUMS } from '../bclient.js';
+import { getDB, createFetchFunction } from '../utilities.js';
 
 const BASE_URL = 'http://bandcamp.com';
 
@@ -98,7 +99,13 @@ class CartImportTracker {
         })();
 
         log.info(`Fetching full details for item ${item.item_id} (${item.item_type})`);
-        const apiDetails = await getTralbumDetails(item.item_id, item.item_type, BASE_URL);
+        const enableFetchCaching = await (async () => {
+          const db = await getDB();
+          const config = await db.get('config', 'config');
+          return config?.enableFetchCaching ?? false;
+        })();
+        const fetchFn = createFetchFunction(enableFetchCaching);
+        const apiDetails = await getTralbumDetails(item.item_id, item.item_type, BASE_URL, fetchFn);
 
         if (!apiDetails.is_purchasable) {
           throw new Error(`Item "${item.item_title}" is not purchasable`);

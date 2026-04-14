@@ -4,6 +4,8 @@ import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings }
 
 interface Config {
   displayWaveform: boolean;
+  enableMetadataCaching: boolean;
+  enableFetchCaching: boolean;
   albumPurchasedDuringCheckout: boolean;
   albumOnCheckoutDisabled: boolean;
   albumPurchaseTimeDelaySeconds: number;
@@ -12,7 +14,9 @@ interface Config {
 }
 
 const defaultConfig: Config = {
-  displayWaveform: false,
+  displayWaveform: true,
+  enableMetadataCaching: true,
+  enableFetchCaching: true,
   albumPurchasedDuringCheckout: false,
   albumOnCheckoutDisabled: false,
   albumPurchaseTimeDelaySeconds: 60 * 60 * 24 * 30,
@@ -45,8 +49,6 @@ export async function portListenerCallback(
 
   const db = await getDB();
 
-  await setupDB(db);
-
   if (msg.config) await synchronizeConfig(db, msg.config, portState.port);
 
   if (msg.toggleWaveformDisplay) await toggleWaveformDisplay(db, log, portState.port);
@@ -54,6 +56,12 @@ export async function portListenerCallback(
   if (msg.updateKeyboardSettings) await updateKeyboardSettings(db, msg.updateKeyboardSettings, log, portState.port);
 
   if (msg.resetKeyboardSettings) await resetKeyboardSettings(db, log, portState.port);
+
+  if (msg.toggleMetadataCaching) await toggleMetadataCaching(db, log, portState.port);
+
+  if (msg.toggleFetchCaching) await toggleFetchCaching(db, log, portState.port);
+
+  if (msg.enableFindMusicCaching) await enableFindMusicCaching(db, log, portState.port);
 
   if (msg.requestConfig) await broadcastConfig(db, log, portState.port);
 }
@@ -63,6 +71,10 @@ export async function initConfigBackend(): Promise<void> {
   const portState: { port?: chrome.runtime.Port } = {};
 
   log.info('initializing ConfigBackend');
+
+  const db = await getDB();
+  await setupDB(db);
+  log.info('Config database initialized');
 
   chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) =>
     connectionListenerCallback(port, log, portState)
@@ -78,10 +90,50 @@ export async function synchronizeConfig(db: any, config: Partial<Config>, port?:
 }
 
 export async function toggleWaveformDisplay(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
-  log.info('toggleing waveform display');
+  log.info('toggling waveform display');
 
   const db_config = await db.get('config', 'config');
-  db_config['displayWaveform'] = !db_config['displayWaveform'];
+  const newValue = !db_config['displayWaveform'];
+  db_config['displayWaveform'] = newValue;
+
+  if (!newValue && db_config['enableMetadataCaching']) {
+    db_config['enableMetadataCaching'] = false;
+  }
+
+  await db.put('config', db_config, 'config');
+  port?.postMessage({ config: db_config });
+}
+
+export async function toggleMetadataCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+  log.info('toggling metadata caching');
+
+  const db_config = await db.get('config', 'config');
+  const newValue = !db_config['enableMetadataCaching'];
+  db_config['enableMetadataCaching'] = newValue;
+
+  if (newValue && !db_config['displayWaveform']) {
+    db_config['displayWaveform'] = true;
+  }
+
+  await db.put('config', db_config, 'config');
+  port?.postMessage({ config: db_config });
+}
+
+export async function toggleFetchCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+  log.info('toggling fetch caching');
+
+  const db_config = await db.get('config', 'config');
+  db_config['enableFetchCaching'] = !db_config['enableFetchCaching'];
+  await db.put('config', db_config, 'config');
+  port?.postMessage({ config: db_config });
+}
+
+export async function enableFindMusicCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+  log.info('enabling FindMusic.club caching after permission grant');
+
+  const db_config = await db.get('config', 'config');
+  db_config['enableMetadataCaching'] = true;
+  db_config['enableFetchCaching'] = true;
   await db.put('config', db_config, 'config');
   port?.postMessage({ config: db_config });
 }

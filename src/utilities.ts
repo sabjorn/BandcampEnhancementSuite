@@ -1,4 +1,5 @@
 import { openDB, IDBPDatabase } from 'idb';
+import Logger from './logger';
 
 interface MouseEventWithOffset extends MouseEvent {
   offsetX: number;
@@ -19,7 +20,7 @@ export function mousedownCallback(e: MouseEventWithOffset): void {
 
 export async function getDB(_name?: string): Promise<IDBPDatabase> {
   const dbName: string = 'BandcampEnhancementSuite';
-  const version: number = 2;
+  const version: number = 3;
 
   const db = await openDB(dbName, version, {
     upgrade(db: IDBPDatabase, _oldVersion: number, _newVersion: number | null, _transaction: any): void {
@@ -27,6 +28,7 @@ export async function getDB(_name?: string): Promise<IDBPDatabase> {
 
       if (!stores.contains('previews')) db.createObjectStore('previews');
       if (!stores.contains('config')) db.createObjectStore('config');
+      if (!stores.contains('cachedRequests')) db.createObjectStore('cachedRequests');
     },
     blocked(): void {},
     blocking(): void {},
@@ -194,4 +196,113 @@ export function centreElement(element: HTMLElement): void {
   element.style.zIndex = '9999';
 }
 
-export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset };
+export async function hasFindMusicPermissions(): Promise<boolean> {
+  if (!chrome?.permissions) {
+    return false;
+  }
+
+  const FINDMUSIC_ORIGIN = process.env.FINDMUSIC_ORIGIN_PATTERN as string;
+  try {
+    const hasPermissions = await chrome.permissions.contains({
+      permissions: ['cookies'],
+      origins: [FINDMUSIC_ORIGIN]
+    });
+    return hasPermissions;
+  } catch (error) {
+    log.warn(`Failed to check FindMusic permissions: ${error}`);
+    return false;
+  }
+}
+
+interface FindMusicTokenData {
+  token: string;
+  expiresAt: number;
+}
+
+function decodeJwtExpiry(token: string): number | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+
+    const payload = JSON.parse(atob(parts[1]));
+    if (typeof payload.exp === 'number') {
+      return payload.exp * 1000; // Convert to milliseconds
+    }
+    return null;
+  } catch (error) {
+    log.warn(`Failed to decode JWT token: ${error}`);
+    return null;
+  }
+}
+
+const DEFAULT_TOKEN_EXPIRY_MS = 86400 * 1000; // 1 day in milliseconds
+
+export async function storeFindMusicToken(token: string): Promise<void> {
+  const db = await getDB();
+  const expiresAt = decodeJwtExpiry(token) ?? Date.now() + DEFAULT_TOKEN_EXPIRY_MS;
+  const tokenData: FindMusicTokenData = { token, expiresAt };
+  await db.put('config', tokenData, 'findmusicToken');
+}
+
+export async function getFindMusicTokenFromStorage(): Promise<string | null> {
+  const db = await getDB();
+  const tokenData: FindMusicTokenData | undefined = await db.get('config', 'findmusicToken');
+
+  if (!tokenData) return null;
+
+  if (Date.now() >= tokenData.expiresAt) {
+    await db.delete('config', 'findmusicToken');
+    return null;
+  }
+
+  return tokenData.token;
+}
+
+export async function clearFindMusicToken(): Promise<void> {
+  const db = await getDB();
+  await db.delete('config', 'findmusicToken');
+}
+
+const log = new Logger();
+
+export async function cachedFetch(
+  url: string,
+  options?: RequestInit,
+  enableCaching: boolean = false
+): Promise<Response> {
+  if (!enableCaching) {
+    return fetch(url, options);
+  }
+
+  const method = options?.method || 'GET';
+  const requestBody = options?.body ? String(options.body) : '';
+
+  const response = await fetch(url, options);
+
+  (async () => {
+    const responseText = await response.clone().text();
+
+    chrome.runtime
+      .sendMessage({
+        contentScriptQuery: 'postCache',
+        url,
+        method,
+        requestBody,
+        responseBody: responseText
+      })
+      .catch((error: Error) => log.warn(`Failed to cache request ${method} ${url}: ${error.message}`));
+  })();
+
+  return response;
+}
+
+export type FetchFunction = (url: string, options?: RequestInit) => Promise<Response>;
+
+export function createFetchFunction(enableCaching: boolean): FetchFunction {
+  if (!enableCaching) {
+    return globalThis.fetch;
+  }
+  return (url: string, options?: RequestInit) => cachedFetch(url, options, true);
+}
+
+export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset, FindMusicTokenData };

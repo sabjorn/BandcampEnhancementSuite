@@ -25,13 +25,13 @@ input[type='range'].volume::-webkit-slider-thumb {
   box-shadow: -100px 0 0 100px #f6f6f6;
 }
 
-input[type='checkbox'].waveform {
+input[type='checkbox'].bes-toggle {
   height: 0;
   width: 0;
   visibility: hidden;
 }
 
-label.waveform {
+label.bes-toggle {
   pointer-events: none;
   cursor: pointer;
   text-indent: -9999px;
@@ -45,7 +45,7 @@ label.waveform {
   position: relative;
 }
 
-label.waveform:after {
+label.bes-toggle:after {
   content: '';
   position: absolute;
   top: 3px;
@@ -57,16 +57,16 @@ label.waveform:after {
   transition: 0.3s;
 }
 
-input:checked + label.waveform {
+input:checked + label.bes-toggle {
   background: #619aa9;
 }
 
-input:checked + label.waveform:after {
+input:checked + label.bes-toggle:after {
   left: calc(100% - 3px);
   transform: translateX(-100%);
 }
 
-label.waveform:active:after {
+label.bes-toggle:active:after {
   width: 20px;
 }
 
@@ -555,7 +555,7 @@ button.bes-downloadall[disabled]::after {
   width: 60px;
 }
 
-.bes-drawer-setting input.waveform + label.waveform {
+.bes-drawer-setting input.bes-toggle + label.bes-toggle {
   position: relative;
   top: 0;
   left: 25%;

@@ -1,4 +1,5 @@
 import Logger from '../logger';
+import { storeFindMusicToken, getFindMusicTokenFromStorage } from '../utilities';
 
 const log = new Logger();
 
@@ -45,6 +46,8 @@ export async function exchangeBandcampToken(): Promise<string> {
     const data: BcTokenResponse = await response.json();
     log.info(`Successfully exchanged token`);
 
+    await storeFindMusicToken(data.token);
+
     return data.token;
   } catch (error) {
     if (error instanceof Error) {
@@ -53,5 +56,86 @@ export async function exchangeBandcampToken(): Promise<string> {
     }
     log.error(`Unknown error exchanging token: ${error}`);
     throw new Error('Unknown error occurred while exchanging token');
+  }
+}
+
+export async function getFindMusicToken(): Promise<string | null> {
+  const storedToken = await getFindMusicTokenFromStorage();
+
+  if (storedToken) {
+    log.debug('Using stored FindMusic.club token');
+    return storedToken;
+  }
+
+  log.info('No valid stored token, exchanging new token');
+  return await exchangeBandcampToken();
+}
+
+export async function fetchTrackMetadata(
+  trackId: number,
+  token: string
+): Promise<{ waveform: number[]; bpm: number } | null> {
+  try {
+    const url = new URL(`${process.env.FINDMUSIC_BASE_URL}/api/metadata`);
+    url.searchParams.set('track_id', trackId.toString());
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (response.status === 404 || response.status === 500) {
+      log.debug(`Cache miss for track ${trackId} (${response.status})`);
+      return null;
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      log.error(`FindMusic.club metadata API error: ${response.status} ${errorText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    log.info(`Successfully fetched metadata for track ${trackId}`);
+    return data;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    log.warn(`Network error fetching metadata for track ${trackId}: ${message}`);
+    return null;
+  }
+}
+
+export async function postTrackMetadata(
+  trackId: number,
+  waveform: number[],
+  bpm: number,
+  token: string
+): Promise<void> {
+  try {
+    const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/metadata`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        track_id: trackId,
+        waveform,
+        bpm
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      log.warn(`Failed to post metadata for track ${trackId}: ${response.status} ${errorText}`);
+      return;
+    }
+
+    log.info(`Successfully posted metadata for track ${trackId}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    log.warn(`Network error posting metadata for track ${trackId}: ${message}`);
   }
 }

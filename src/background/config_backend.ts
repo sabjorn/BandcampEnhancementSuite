@@ -15,8 +15,8 @@ interface Config {
 
 const defaultConfig: Config = {
   displayWaveform: true,
-  enableMetadataCaching: false,
-  enableFetchCaching: false,
+  enableMetadataCaching: true,
+  enableFetchCaching: true,
   albumPurchasedDuringCheckout: false,
   albumOnCheckoutDisabled: false,
   albumPurchaseTimeDelaySeconds: 60 * 60 * 24 * 30,

@@ -157,7 +157,7 @@ describe('Cart', () => {
         <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
       `);
 
-      await initCart(mockPort);
+      initCart(mockPort);
 
       importButton = mockButtons.find(btn => btn.textContent === 'import') as HTMLButtonElement;
     });
@@ -251,7 +251,7 @@ describe('Cart', () => {
         <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
       `);
 
-      await initCart(mockPort);
+      initCart(mockPort);
       importButton = mockButtons.find(btn => btn.textContent === 'import') as HTMLButtonElement;
     });
 
@@ -326,7 +326,7 @@ invalid line`;
     it('should export cart with price optimization', async () => {
       (getTralbumDetails as any).mockResolvedValue({ price: 10.0 });
 
-      await initCart(mockPort);
+      initCart(mockPort);
 
       const exportButton = mockButtons.find(btn => btn.textContent === 'export') as HTMLButtonElement;
 
@@ -347,7 +347,7 @@ invalid line`;
         <div data-cart='{"items": [{"cart_id": "test123", "item_type": "a", "item_id": 123, "band_name": "Test Band", "item_title": "Test Album", "unit_price": 15, "url": "https://test.bandcamp.com/album/test", "currency": "USD"}]}'></div>
       `);
 
-      await initCart(mockPort);
+      initCart(mockPort);
 
       const exportButton = mockButtons.find(btn => btn.textContent === 'export') as HTMLButtonElement;
 
@@ -362,7 +362,7 @@ invalid line`;
     it('should handle export errors gracefully', async () => {
       (getTralbumDetails as any).mockRejectedValue(new Error('HTTP 404: Not Found'));
 
-      await initCart(mockPort);
+      initCart(mockPort);
 
       const exportButton = mockButtons.find(btn => btn.textContent === 'export') as HTMLButtonElement;
 
@@ -384,7 +384,7 @@ invalid line`;
         <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
       `);
 
-      await initCart(mockPort);
+      initCart(mockPort);
 
       const exportButton = mockButtons.find(btn => btn.textContent === 'export') as HTMLButtonElement;
 
@@ -402,7 +402,7 @@ invalid line`;
         <div id="item_list"></div>
         <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
       `);
-      await initCart(mockPort);
+      initCart(mockPort);
     });
 
     it('should add successful cart items to DOM', async () => {
@@ -501,6 +501,368 @@ invalid line`;
         'cart-import-progress',
         expect.stringContaining('1 errors occurred')
       );
+    });
+  });
+
+  describe('URL-based cart import', () => {
+    beforeEach(() => {
+      createDomNodes(`
+        <div id="sidecartReveal"></div>
+        <div id="sidecartSummary"></div>
+        <div id="item_list"></div>
+        <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
+      `);
+
+      global.sessionStorage = {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        clear: vi.fn(),
+        length: 0,
+        key: vi.fn()
+      };
+    });
+
+    it('should not process when no bes_cart parameter exists', async () => {
+      delete (global as any).window;
+      (global as any).window = {
+        location: { search: '', href: 'https://bandcamp.com/' },
+        history: { replaceState: vi.fn() }
+      };
+
+      initCart(mockPort);
+
+      expect(mockPort.postMessage).not.toHaveBeenCalledWith(
+        expect.objectContaining({ cartImport: expect.anything() })
+      );
+    });
+
+    it('should process valid bes_cart parameter with items only', async () => {
+      const cartData = {
+        items: [
+          { id: 1234, type: 'a' },
+          { id: 5678, type: 't' }
+        ]
+      };
+      const encoded = btoa(JSON.stringify(cartData));
+
+      delete (global as any).window;
+      (global as any).window = {
+        location: { search: `?bes_cart=${encoded}`, href: `https://bandcamp.com/?bes_cart=${encoded}` },
+        history: { replaceState: vi.fn() },
+        sessionStorage: global.sessionStorage
+      };
+
+      initCart(mockPort);
+
+      expect(showPersistentNotification).toHaveBeenCalledWith({
+        id: 'cart-import-progress',
+        message: 'Starting import of 2 items from URL...',
+        type: 'info'
+      });
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        cartImport: {
+          items: [
+            { item_id: 1234, item_type: 'a', item_title: '', band_name: '', currency: '', url: '' },
+            { item_id: 5678, item_type: 't', item_title: '', band_name: '', currency: '', url: '' }
+          ]
+        }
+      });
+    });
+
+    it('should process valid bes_cart parameter with donation item', async () => {
+      const cartData = {
+        items: [{ id: 1234, type: 'a' }],
+        donation: { id: 9999, type: 'a', message: 'Thank you for your support!' }
+      };
+      const encoded = btoa(JSON.stringify(cartData));
+
+      delete (global as any).window;
+      (global as any).window = {
+        location: { search: `?bes_cart=${encoded}`, href: `https://bandcamp.com/?bes_cart=${encoded}` },
+        history: { replaceState: vi.fn() },
+        sessionStorage: global.sessionStorage
+      };
+
+      initCart(mockPort);
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        cartImport: {
+          items: [{ item_id: 1234, item_type: 'a', item_title: '', band_name: '', currency: '', url: '' }]
+        }
+      });
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        cartDonationItem: {
+          item_id: 9999,
+          item_type: 'a',
+          message: 'Thank you for your support!'
+        }
+      });
+    });
+
+    it('should process donation without custom message', async () => {
+      const cartData = {
+        items: [{ id: 1234, type: 'a' }],
+        donation: { id: 9999, type: 'a' }
+      };
+      const encoded = btoa(JSON.stringify(cartData));
+
+      delete (global as any).window;
+      (global as any).window = {
+        location: { search: `?bes_cart=${encoded}`, href: `https://bandcamp.com/?bes_cart=${encoded}` },
+        history: { replaceState: vi.fn() },
+        sessionStorage: global.sessionStorage
+      };
+
+      initCart(mockPort);
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        cartDonationItem: {
+          item_id: 9999,
+          item_type: 'a',
+          message: undefined
+        }
+      });
+    });
+
+    it('should remove bes_cart parameter from URL after processing', async () => {
+      const cartData = { items: [{ id: 1234, type: 'a' }] };
+      const encoded = btoa(JSON.stringify(cartData));
+
+      const mockReplaceState = vi.fn();
+      delete (global as any).window;
+      (global as any).window = {
+        location: {
+          search: `?bes_cart=${encoded}&other=param`,
+          href: `https://bandcamp.com/?bes_cart=${encoded}&other=param`
+        },
+        history: { replaceState: mockReplaceState },
+        sessionStorage: global.sessionStorage
+      };
+
+      initCart(mockPort);
+
+      expect(mockReplaceState).toHaveBeenCalledWith({}, '', 'https://bandcamp.com/?other=param');
+    });
+
+    it('should show error for invalid base64', async () => {
+      delete (global as any).window;
+      (global as any).window = {
+        location: { search: '?bes_cart=invalid!!!base64', href: 'https://bandcamp.com/?bes_cart=invalid!!!base64' },
+        history: { replaceState: vi.fn() },
+        sessionStorage: global.sessionStorage
+      };
+
+      initCart(mockPort);
+
+      expect(showErrorMessage).toHaveBeenCalledWith('Invalid cart data in URL');
+      expect(mockPort.postMessage).not.toHaveBeenCalledWith(
+        expect.objectContaining({ cartImport: expect.anything() })
+      );
+    });
+
+    it('should show error for invalid JSON structure', async () => {
+      const encoded = btoa('not valid json{]');
+
+      delete (global as any).window;
+      (global as any).window = {
+        location: { search: `?bes_cart=${encoded}`, href: `https://bandcamp.com/?bes_cart=${encoded}` },
+        history: { replaceState: vi.fn() },
+        sessionStorage: global.sessionStorage
+      };
+
+      initCart(mockPort);
+
+      expect(showErrorMessage).toHaveBeenCalledWith('Invalid cart data in URL');
+    });
+
+    it('should show error for missing items array', async () => {
+      const cartData = { donation: { id: 1, type: 'a' } };
+      const encoded = btoa(JSON.stringify(cartData));
+
+      delete (global as any).window;
+      (global as any).window = {
+        location: { search: `?bes_cart=${encoded}`, href: `https://bandcamp.com/?bes_cart=${encoded}` },
+        history: { replaceState: vi.fn() },
+        sessionStorage: global.sessionStorage
+      };
+
+      initCart(mockPort);
+
+      expect(showErrorMessage).toHaveBeenCalledWith('Invalid cart data in URL');
+    });
+
+    it('should show error for empty items array', async () => {
+      const cartData = { items: [] };
+      const encoded = btoa(JSON.stringify(cartData));
+
+      delete (global as any).window;
+      (global as any).window = {
+        location: { search: `?bes_cart=${encoded}`, href: `https://bandcamp.com/?bes_cart=${encoded}` },
+        history: { replaceState: vi.fn() },
+        sessionStorage: global.sessionStorage
+      };
+
+      initCart(mockPort);
+
+      expect(showErrorMessage).toHaveBeenCalledWith('Invalid cart data in URL');
+    });
+
+    it('should validate item structure and show error for invalid items', async () => {
+      const cartData = {
+        items: [{ id: 'not-a-number', type: 'a' }]
+      };
+      const encoded = btoa(JSON.stringify(cartData));
+
+      delete (global as any).window;
+      (global as any).window = {
+        location: { search: `?bes_cart=${encoded}`, href: `https://bandcamp.com/?bes_cart=${encoded}` },
+        history: { replaceState: vi.fn() },
+        sessionStorage: global.sessionStorage
+      };
+
+      initCart(mockPort);
+
+      expect(showErrorMessage).toHaveBeenCalledWith('Invalid cart data in URL');
+    });
+
+    it('should skip invalid donation but still process items', async () => {
+      const cartData = {
+        items: [{ id: 1234, type: 'a' }],
+        donation: { id: 'invalid', type: 'a' }
+      };
+      const encoded = btoa(JSON.stringify(cartData));
+
+      delete (global as any).window;
+      (global as any).window = {
+        location: { search: `?bes_cart=${encoded}`, href: `https://bandcamp.com/?bes_cart=${encoded}` },
+        history: { replaceState: vi.fn() },
+        sessionStorage: global.sessionStorage
+      };
+
+      initCart(mockPort);
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        cartImport: {
+          items: [{ item_id: 1234, item_type: 'a', item_title: '', band_name: '', currency: '', url: '' }]
+        }
+      });
+
+      expect(mockPort.postMessage).not.toHaveBeenCalledWith(
+        expect.objectContaining({ cartDonationItem: expect.anything() })
+      );
+    });
+  });
+
+  describe('donation banner', () => {
+    beforeEach(async () => {
+      createDomNodes(`
+        <div id="sidecartReveal"></div>
+        <div id="sidecartSummary"></div>
+        <div id="item_list">
+          <div id="sidecart_item_9999" class="item"></div>
+        </div>
+        <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
+      `);
+
+      global.sessionStorage = {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        clear: vi.fn(),
+        length: 0,
+        key: vi.fn()
+      };
+
+      initCart(mockPort);
+    });
+
+    it('should display donation banner when cartDonationAdded message received', async () => {
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageHandler({
+        cartDonationAdded: {
+          item_id: 9999,
+          item_title: 'Support Album',
+          message: 'Thank you!'
+        }
+      });
+
+      const banner = document.querySelector('#bes-donation-banner-9999');
+      expect(banner).not.toBeNull();
+      expect(banner?.textContent).toContain('Thank you!');
+    });
+
+    it('should use default message when no custom message provided', async () => {
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageHandler({
+        cartDonationAdded: {
+          item_id: 9999,
+          item_title: 'Support Album'
+        }
+      });
+
+      const banner = document.querySelector('#bes-donation-banner-9999');
+      expect(banner?.textContent).toContain('Support this project');
+    });
+
+    it('should not display donation banner if already dismissed', async () => {
+      (global.sessionStorage.getItem as any).mockReturnValue(JSON.stringify(['9999']));
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageHandler({
+        cartDonationAdded: {
+          item_id: 9999,
+          item_title: 'Support Album',
+          message: 'Thank you!'
+        }
+      });
+
+      const banner = document.querySelector('#bes-donation-banner-9999');
+      expect(banner).toBeNull();
+    });
+
+    it('should remove banner and store in sessionStorage when close button clicked', async () => {
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageHandler({
+        cartDonationAdded: {
+          item_id: 9999,
+          item_title: 'Support Album',
+          message: 'Thank you!'
+        }
+      });
+
+      const banner = document.querySelector('#bes-donation-banner-9999');
+      const closeButton = banner?.querySelector('.bes-donation-close') as HTMLButtonElement;
+
+      expect(closeButton).not.toBeNull();
+
+      closeButton.click();
+
+      expect(document.querySelector('#bes-donation-banner-9999')).toBeNull();
+      expect(global.sessionStorage.setItem).toHaveBeenCalledWith('bes_dismissed_donations', JSON.stringify(['9999']));
+    });
+
+    it('should position banner after cart item', async () => {
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageHandler({
+        cartDonationAdded: {
+          item_id: 9999,
+          item_title: 'Support Album',
+          message: 'Thank you!'
+        }
+      });
+
+      const cartItem = document.querySelector('#sidecart_item_9999');
+      const banner = document.querySelector('#bes-donation-banner-9999');
+
+      expect(cartItem?.nextElementSibling).toBe(banner);
     });
   });
 });

@@ -810,3 +810,77 @@ button.bes-downloadall[disabled]::after {
 .bes-keyboard-reset-button:active {
   background: #545b62;
 }
+
+/* Donation Banner */
+.bes-donation-banner {
+  display: flex;
+  align-items: center;
+  background: #fff9e6;
+  border: 1px solid #ffd700;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 8px 0;
+  position: relative;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.bes-donation-banner:hover {
+  background: #fff5cc;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.2);
+}
+
+.bes-donation-indicator {
+  width: 4px;
+  min-height: 30px;
+  background: linear-gradient(180deg, #ffd700 0%, #ffb700 100%);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.bes-donation-arrow {
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 10px solid #ffd700;
+  flex-shrink: 0;
+}
+
+.bes-donation-message {
+  flex: 1;
+  font-size: 14px;
+  color: #856404;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.bes-donation-close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #856404;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.bes-donation-close:hover {
+  color: #533f03;
+  background: rgba(255, 215, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.bes-donation-close:active {
+  transform: scale(0.95);
+}

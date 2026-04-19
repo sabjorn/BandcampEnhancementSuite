@@ -18,6 +18,8 @@ const BES_SUPPORT_TRALBUM_TYPE = 'a';
 
 const log = new Logger();
 
+const DONATION_BANNER_STORAGE_KEY = 'bes_dismissed_donations';
+
 interface CartData {
   items: any[];
 }
@@ -36,6 +38,145 @@ interface CartExportData {
   date: string;
   cart_id: string;
   tracks_export: CartExportItem[];
+}
+
+interface UrlCartItem {
+  id: number;
+  type: 'a' | 't';
+}
+
+interface UrlCartDonation {
+  id: number;
+  type: 'a' | 't';
+  message?: string;
+}
+
+interface UrlCartData {
+  items: UrlCartItem[];
+  donation?: UrlCartDonation;
+}
+
+interface ParsedUrlCartData {
+  items: Array<{
+    item_id: number;
+    item_type: 'a' | 't';
+    item_title: string;
+    band_name: string;
+    currency: string;
+    url: string;
+  }>;
+  donation?: UrlCartDonation;
+}
+
+function parseUrlCartData(base64Str: string): ParsedUrlCartData | null {
+  try {
+    const decoded = atob(base64Str);
+    const parsed = JSON.parse(decoded) as UrlCartData;
+
+    if (!parsed.items || !Array.isArray(parsed.items)) {
+      log.error('Invalid URL cart data: missing or invalid items array');
+      return null;
+    }
+
+    if (parsed.items.length === 0) {
+      log.error('Invalid URL cart data: items array is empty');
+      return null;
+    }
+
+    const items = parsed.items.map(item => {
+      if (typeof item.id !== 'number' || !item.type || (item.type !== 'a' && item.type !== 't')) {
+        throw new Error('Invalid item structure');
+      }
+
+      return {
+        item_id: item.id,
+        item_type: item.type,
+        item_title: '',
+        band_name: '',
+        currency: '',
+        url: ''
+      };
+    });
+
+    if (parsed.donation) {
+      const { id, type, message } = parsed.donation;
+
+      if (typeof id !== 'number' || !type || (type !== 'a' && type !== 't')) {
+        log.error('Invalid donation structure');
+        return { items };
+      }
+
+      return {
+        items,
+        donation: { id, type, message }
+      };
+    }
+
+    return { items };
+  } catch (error) {
+    log.error(`Failed to parse URL cart data: ${error}`);
+    return null;
+  }
+}
+
+function createDonationBanner(itemId: string, message?: string): HTMLDivElement {
+  const bannerId = `bes-donation-banner-${itemId}`;
+  const displayMessage = message || 'Support this project';
+
+  const banner = document.createElement('div');
+  banner.id = bannerId;
+  banner.className = 'bes-donation-banner';
+
+  const indicator = document.createElement('div');
+  indicator.className = 'bes-donation-indicator';
+
+  const arrow = document.createElement('div');
+  arrow.className = 'bes-donation-arrow';
+
+  const messageContainer = document.createElement('div');
+  messageContainer.className = 'bes-donation-message';
+  messageContainer.textContent = displayMessage;
+
+  const closeButton = document.createElement('button');
+  closeButton.className = 'bes-donation-close';
+  closeButton.innerHTML = '×';
+  closeButton.setAttribute('aria-label', 'Close donation message');
+  closeButton.addEventListener('click', () => {
+    banner.remove();
+
+    const dismissedDonations = (() => {
+      const stored = sessionStorage.getItem(DONATION_BANNER_STORAGE_KEY);
+      if (!stored) return [];
+
+      try {
+        return JSON.parse(stored) as string[];
+      } catch {
+        return [];
+      }
+    })();
+
+    dismissedDonations.push(itemId);
+    sessionStorage.setItem(DONATION_BANNER_STORAGE_KEY, JSON.stringify(dismissedDonations));
+  });
+
+  banner.appendChild(indicator);
+  banner.appendChild(arrow);
+  banner.appendChild(messageContainer);
+  banner.appendChild(closeButton);
+
+  return banner;
+}
+
+function isDonationDismissed(itemId: string): boolean {
+  const stored = sessionStorage.getItem(DONATION_BANNER_STORAGE_KEY);
+  if (!stored) return false;
+
+  try {
+    const dismissedDonations = JSON.parse(stored) as string[];
+    return dismissedDonations.includes(itemId);
+  } catch {
+    return false;
+  }
 }
 
 export async function initCart(port: chrome.runtime.Port): Promise<void> {
@@ -126,7 +267,61 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       showErrorMessage(`Import failed: ${msg.cartImportError.message}`);
       return;
     }
+
+    if (msg.cartDonationAdded) {
+      const { item_id, message } = msg.cartDonationAdded;
+      const itemId = String(item_id);
+
+      if (isDonationDismissed(itemId)) {
+        return;
+      }
+
+      const donationBanner = createDonationBanner(itemId, message);
+      const cartItem = document.querySelector(`#sidecart_item_${itemId}`);
+
+      if (cartItem) {
+        cartItem.after(donationBanner);
+      }
+
+      return;
+    }
   });
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const besCartParam = urlParams.get('bes_cart');
+
+  if (besCartParam) {
+    log.info('Found bes_cart URL parameter, processing...');
+
+    const parsedData = parseUrlCartData(besCartParam);
+
+    if (parsedData) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('bes_cart');
+      window.history.replaceState({}, '', url.toString());
+
+      showPersistentNotification({
+        id: 'cart-import-progress',
+        message: `Starting import of ${parsedData.items.length} items from URL...`,
+        type: 'info'
+      });
+
+      port.postMessage({ cartImport: { items: parsedData.items } });
+
+      if (parsedData.donation) {
+        const { id, type, message } = parsedData.donation;
+        port.postMessage({
+          cartDonationItem: {
+            item_id: id,
+            item_type: type,
+            message
+          }
+        });
+      }
+    } else {
+      showErrorMessage('Invalid cart data in URL');
+    }
+  }
 
   const importButton = createButton({
     className: 'buttonLink',

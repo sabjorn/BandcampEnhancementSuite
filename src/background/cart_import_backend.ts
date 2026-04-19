@@ -245,6 +245,55 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
     }
   }
 
+  if (msg.cartDonationItem) {
+    try {
+      const { item_id, item_type, message } = msg.cartDonationItem;
+
+      log.info(`Processing donation item ${item_id} (${item_type})`);
+
+      const enableFetchCaching = await (async () => {
+        const db = await getDB();
+        const config = await db.get('config', 'config');
+        return config?.enableFetchCaching ?? false;
+      })();
+
+      const fetchFn = createFetchFunction(enableFetchCaching);
+      const apiDetails = await getTralbumDetails(item_id, item_type, BASE_URL, fetchFn);
+
+      if (!apiDetails.is_purchasable) {
+        throw new Error(`Donation item "${apiDetails.title}" is not purchasable`);
+      }
+
+      const finalPrice = apiDetails.price > 0.0 ? apiDetails.price : CURRENCY_MINIMUMS[apiDetails.currency];
+
+      log.info(`Sending donation cart add request for item ${item_id} with price ${finalPrice}`);
+
+      portState.port?.postMessage({
+        cartAddRequest: {
+          item_id,
+          item_type,
+          item_title: apiDetails.title,
+          band_name: apiDetails.tralbum_artist,
+          unit_price: finalPrice,
+          currency: apiDetails.currency,
+          url: apiDetails.bandcamp_url || ''
+        }
+      });
+
+      portState.port?.postMessage({
+        cartDonationAdded: {
+          item_id,
+          item_title: apiDetails.title,
+          message
+        }
+      });
+    } catch (error) {
+      log.error(`Error processing donation item: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      portState.port?.postMessage({ cartItemError: { message: `Failed to add donation item: ${errorMessage}` } });
+    }
+  }
+
   if (msg.getCartImportState) {
     const state = importTracker?.getState();
     portState.port?.postMessage({ cartImportState: state });

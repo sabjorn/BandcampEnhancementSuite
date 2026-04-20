@@ -327,6 +327,21 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   document.body.appendChild(drawer);
   document.body.appendChild(button);
 
+  const carouselPlayer = document.querySelector('.carousel-player');
+  if (carouselPlayer?.parentElement) {
+    const originalBottom = window.getComputedStyle(button).bottom;
+
+    const observer = new MutationObserver(() => {
+      const isPlayerVisible = carouselPlayer.parentElement?.classList.contains('show-player');
+      button.style.bottom = isPlayerVisible ? '90px' : originalBottom;
+    });
+
+    observer.observe(carouselPlayer.parentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
   log.info('BES drawer and button added to page');
 };
 

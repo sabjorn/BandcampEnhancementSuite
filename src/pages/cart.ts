@@ -339,10 +339,23 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       log.info('Removed bes_cart from URL to prevent retry loops');
     }
 
-    const parsedData = parseUrlCartData(cartDataToProcess);
+    const parsedData = (() => {
+      if (isFromUrl) {
+        return parseUrlCartData(cartDataToProcess);
+      }
+
+      try {
+        const parsed = JSON.parse(cartDataToProcess) as ParsedUrlCartData;
+        log.info('Successfully parsed cart data from sessionStorage');
+        return parsed;
+      } catch (error) {
+        log.error(`Failed to parse sessionStorage cart data: ${error}`);
+        return null;
+      }
+    })();
 
     if (!parsedData) {
-      log.error('Failed to parse URL cart data, showing error to user');
+      log.error('Failed to parse cart data, showing error to user');
       showErrorMessage('Invalid cart data in URL');
       sessionStorage.removeItem('bes_pending_cart_import');
       return;

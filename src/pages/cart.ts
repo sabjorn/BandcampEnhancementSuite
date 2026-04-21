@@ -184,6 +184,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
   let _lastImportState: any = null;
   let enableFetchCaching = false;
+  let pendingDonation: { id: number; type: 'a' | 't'; message?: string } | null = null;
 
   port.postMessage({ requestConfig: {} });
 
@@ -254,6 +255,21 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     if (msg.cartImportComplete) {
       removePersistentNotification('cart-import-progress');
       showSuccessMessage(msg.cartImportComplete.message);
+
+      if (pendingDonation) {
+        log.info(
+          `Cart import complete, now sending donation item: id=${pendingDonation.id}, type=${pendingDonation.type}`
+        );
+        port.postMessage({
+          cartDonationItem: {
+            item_id: pendingDonation.id,
+            item_type: pendingDonation.type,
+            message: pendingDonation.message
+          }
+        });
+        pendingDonation = null;
+      }
+
       return;
     }
 
@@ -272,17 +288,31 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       const { item_id, message } = msg.cartDonationAdded;
       const itemId = String(item_id);
 
+      log.info(`Received cartDonationAdded message for item ${itemId}`);
+
       if (isDonationDismissed(itemId)) {
+        log.info(`Donation banner for item ${itemId} was previously dismissed, skipping display`);
         return;
       }
 
-      const donationBanner = createDonationBanner(itemId, message);
-      const cartItem = document.querySelector(`#sidecart_item_${itemId}`);
+      const insertDonationBanner = (attempt: number = 0): void => {
+        const cartItem = document.querySelector(`#sidecart_item_${itemId}`);
 
-      if (cartItem) {
-        cartItem.after(donationBanner);
-      }
+        if (cartItem) {
+          const donationBanner = createDonationBanner(itemId, message);
+          cartItem.appendChild(donationBanner);
+          log.info(`Donation banner inserted as overlay on cart item ${itemId}`);
+        } else if (attempt < 10) {
+          log.debug(`Cart item not yet in DOM for donation ${itemId}, retrying (attempt ${attempt + 1}/10)`);
+          setTimeout(() => insertDonationBanner(attempt + 1), 100);
+        } else {
+          log.error(
+            `Failed to insert donation banner after 10 attempts: cart item #sidecart_item_${itemId} not found`
+          );
+        }
+      };
 
+      insertDonationBanner();
       return;
     }
   });
@@ -324,8 +354,12 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     if (cartNeedsCreation && isFromUrl) {
       log.info('Cart does not exist yet (sidecart hidden), storing data and adding first item to create cart');
 
-      sessionStorage.setItem('bes_pending_cart_import', cartDataToProcess);
-      log.info('Stored cart data in sessionStorage for processing after reload');
+      const remainingData = {
+        items: parsedData.items.slice(1),
+        donation: parsedData.donation
+      };
+      sessionStorage.setItem('bes_pending_cart_import', JSON.stringify(remainingData));
+      log.info(`Stored remaining ${remainingData.items.length} items in sessionStorage for processing after reload`);
 
       const firstItem = parsedData.items[0];
       log.info(`Adding first item ${firstItem.item_id} to create cart, then will reload`);
@@ -362,14 +396,10 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
     if (parsedData.donation) {
       const { id, type, message } = parsedData.donation;
-      log.info(`Sending donation item to backend: id=${id}, type=${type}, hasMessage=${!!message}`);
-      port.postMessage({
-        cartDonationItem: {
-          item_id: id,
-          item_type: type,
-          message
-        }
-      });
+      log.info(
+        `Storing donation item to send after cart import completes: id=${id}, type=${type}, hasMessage=${!!message}`
+      );
+      pendingDonation = { id, type, message };
     } else {
       log.debug('No donation item to process');
     }

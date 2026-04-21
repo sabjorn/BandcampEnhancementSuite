@@ -610,7 +610,7 @@ invalid line`;
       const cartItem = document.querySelector('#sidecart_item_9999');
       const banner = document.querySelector('#bes-donation-banner-9999');
 
-      expect(cartItem?.nextElementSibling).toBe(banner);
+      expect(cartItem?.contains(banner)).toBe(true);
     });
   });
 });

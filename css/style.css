@@ -815,8 +815,6 @@ button.bes-downloadall[disabled]::after {
 .bes-donation-banner {
   position: absolute;
   left: -220px;
-  top: 50%;
-  transform: translateY(-50%);
   display: flex;
   align-items: center;
   background: #fff9e6;
@@ -825,7 +823,7 @@ button.bes-downloadall[disabled]::after {
   padding: 12px;
   gap: 12px;
   transition: all 0.2s ease;
-  z-index: 100;
+  z-index: 10000;
   width: 200px;
   box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
 }
@@ -893,14 +891,8 @@ button.bes-downloadall[disabled]::after {
   transform: scale(0.95);
 }
 
-/* Make cart item relatively positioned for banner overlay */
-#sidecart_item_9999,
-[id^='sidecart_item_'] {
-  position: relative;
-}
-
-/* Ensure cart container doesn't clip the banner */
-#item_list,
+/* Make sidecart positioned so banner can be positioned relative to it */
 #sidecart {
+  position: relative !important;
   overflow: visible !important;
 }

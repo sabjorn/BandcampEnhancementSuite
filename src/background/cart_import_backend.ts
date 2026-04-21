@@ -32,13 +32,14 @@ class CartImportTracker {
   private totalCount = 0;
   private errors: string[] = [];
   private currentOperation: ImportOperation = 'import';
+  private isCreatingCart = false;
   private port?: chrome.runtime.Port;
 
   constructor(port?: chrome.runtime.Port) {
     this.port = port;
   }
 
-  async processItems(items: (CartImportItem | string)[]): Promise<void> {
+  async processItems(items: (CartImportItem | string)[], isCreatingCart: boolean = false): Promise<void> {
     if (items.length === 0) {
       this.port?.postMessage({
         cartImportComplete: { message: 'No items found to import' }
@@ -48,6 +49,7 @@ class CartImportTracker {
 
     const operation: ImportOperation = typeof items[0] === 'string' ? 'url_import' : 'import';
     this.currentOperation = operation;
+    this.isCreatingCart = isCreatingCart;
 
     this.isProcessing = true;
     this.processedCount = 0;
@@ -167,10 +169,22 @@ class CartImportTracker {
 
     const completionMessage = (() => {
       if (failureCount === 0) {
+        if (this.isCreatingCart && successCount === 1) {
+          return `Successfully created cart with 1 item`;
+        }
+        if (successCount === 1) {
+          return `Successfully added 1 item to cart`;
+        }
         return `Successfully added ${successCount} items to cart`;
       }
       if (successCount === 0) {
         return `${failureCount} items could not be added`;
+      }
+      if (this.isCreatingCart && successCount === 1) {
+        return `Successfully created cart with 1 item. ${failureCount} items could not be added`;
+      }
+      if (successCount === 1) {
+        return `Successfully added 1 item to cart. ${failureCount} items could not be added`;
       }
       return `Successfully added ${successCount} items to cart. ${failureCount} items could not be added`;
     })();
@@ -226,7 +240,8 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
   if (msg.cartImport) {
     try {
       log.info('Starting cart import process');
-      await importTracker.processItems(msg.cartImport.items);
+      const isCreatingCart = msg.cartImport.isCreatingCart ?? false;
+      await importTracker.processItems(msg.cartImport.items, isCreatingCart);
     } catch (error) {
       log.error(`Error in cart import process: ${error}`);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -237,7 +252,7 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
   if (msg.cartUrlImport) {
     try {
       log.info('Starting cart URL import process');
-      await importTracker.processItems(msg.cartUrlImport.urls);
+      await importTracker.processItems(msg.cartUrlImport.urls, false);
     } catch (error) {
       log.error(`Error in cart URL import process: ${error}`);
       const errorMessage = error instanceof Error ? error.message : String(error);

@@ -297,11 +297,19 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
       const insertDonationBanner = (attempt: number = 0): void => {
         const cartItem = document.querySelector(`#sidecart_item_${itemId}`);
+        const sidecart = document.querySelector('#sidecart');
 
-        if (cartItem) {
+        if (cartItem && sidecart) {
           const donationBanner = createDonationBanner(itemId, message);
-          cartItem.appendChild(donationBanner);
-          log.info(`Donation banner inserted as overlay on cart item ${itemId}`);
+
+          const rect = cartItem.getBoundingClientRect();
+          const sidecartRect = sidecart.getBoundingClientRect();
+
+          donationBanner.style.top = `${rect.top - sidecartRect.top + rect.height / 2}px`;
+          donationBanner.style.transform = 'translateY(-50%)';
+
+          sidecart.appendChild(donationBanner);
+          log.info(`Donation banner inserted into sidecart positioned at cart item ${itemId}`);
         } else if (attempt < 10) {
           log.debug(`Cart item not yet in DOM for donation ${itemId}, retrying (attempt ${attempt + 1}/10)`);
           setTimeout(() => insertDonationBanner(attempt + 1), 100);
@@ -383,7 +391,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
         type: 'info'
       });
 
-      port.postMessage({ cartImport: { items: [firstItem] } });
+      port.postMessage({ cartImport: { items: [firstItem], isCreatingCart: true } });
 
       const urlWithoutParam = new URL(window.location.href);
       urlWithoutParam.searchParams.delete('bes_cart');
@@ -414,7 +422,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     });
 
     log.info(`Sending cartImport message with ${parsedData.items.length} items to backend`);
-    port.postMessage({ cartImport: { items: parsedData.items } });
+    port.postMessage({ cartImport: { items: parsedData.items, isCreatingCart: false } });
 
     if (parsedData.donation) {
       const { id, type, message } = parsedData.donation;
@@ -476,7 +484,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
         });
 
         if (importType === 'json') {
-          port.postMessage({ cartImport: { items: importData.tracks_export } });
+          port.postMessage({ cartImport: { items: importData.tracks_export, isCreatingCart: false } });
           return;
         }
 

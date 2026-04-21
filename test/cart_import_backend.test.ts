@@ -123,7 +123,14 @@ describe('cart_import_backend', () => {
       });
 
       it('should fetch price when unit_price is missing', async () => {
-        (getTralbumDetails as any).mockResolvedValue({ price: 5.0, is_purchasable: true });
+        (getTralbumDetails as any).mockResolvedValue({
+          price: 5.0,
+          is_purchasable: true,
+          title: 'Test Track',
+          tralbum_artist: 'Test Band',
+          currency: 'USD',
+          bandcamp_url: 'https://test.bandcamp.com/track/test'
+        });
 
         await portListenerCallback({ cartImport: { items: [mockCartItems[1]] } }, portState);
 
@@ -142,7 +149,14 @@ describe('cart_import_backend', () => {
       });
 
       it('should use currency minimum when API price is 0', async () => {
-        (getTralbumDetails as any).mockResolvedValue({ price: 0, is_purchasable: true });
+        (getTralbumDetails as any).mockResolvedValue({
+          price: 0,
+          is_purchasable: true,
+          title: 'Test Track',
+          tralbum_artist: 'Test Band',
+          currency: 'USD',
+          bandcamp_url: 'https://test.bandcamp.com/track/test'
+        });
 
         await portListenerCallback({ cartImport: { items: [mockCartItems[1]] } }, portState);
 
@@ -235,7 +249,14 @@ describe('cart_import_backend', () => {
           bandcamp_url: mockUrls[0],
           price: 10.0
         });
-        (getTralbumDetails as any).mockResolvedValueOnce({ price: 10.0, is_purchasable: true });
+        (getTralbumDetails as any).mockResolvedValueOnce({
+          price: 10.0,
+          is_purchasable: true,
+          title: 'Test Album',
+          tralbum_artist: 'Test Band',
+          currency: 'USD',
+          bandcamp_url: mockUrls[0]
+        });
 
         await portListenerCallback({ cartUrlImport: { urls: [mockUrls[0]] } }, portState);
 
@@ -286,7 +307,14 @@ describe('cart_import_backend', () => {
           bandcamp_url: mockUrls[0],
           price: 10.0
         });
-        (getTralbumDetails as any).mockResolvedValue({ price: 10.0, is_purchasable: true });
+        (getTralbumDetails as any).mockResolvedValue({
+          price: 10.0,
+          is_purchasable: true,
+          title: 'Test Album',
+          tralbum_artist: 'Test Band',
+          currency: 'USD',
+          bandcamp_url: mockUrls[0]
+        });
 
         await portListenerCallback({ cartUrlImport: { urls: [mockUrls[0]] } }, portState);
 
@@ -315,7 +343,14 @@ describe('cart_import_backend', () => {
             bandcamp_url: mockUrls[1],
             price: 5.0
           });
-        (getTralbumDetails as any).mockResolvedValue({ price: 10.0, is_purchasable: true });
+        (getTralbumDetails as any).mockResolvedValue({
+          price: 10.0,
+          is_purchasable: true,
+          title: 'Test Title',
+          tralbum_artist: 'Test Artist',
+          currency: 'USD',
+          bandcamp_url: 'https://test.bandcamp.com'
+        });
 
         await portListenerCallback({ cartUrlImport: { urls: mockUrls } }, portState);
 

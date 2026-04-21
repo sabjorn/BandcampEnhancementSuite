@@ -111,16 +111,16 @@ class CartImportTracker {
           throw new Error(`Item "${item.item_title}" is not purchasable`);
         }
 
-        const finalPrice = apiDetails.price > 0.0 ? apiDetails.price : CURRENCY_MINIMUMS[item.currency];
+        const finalPrice = apiDetails.price > 0.0 ? apiDetails.price : CURRENCY_MINIMUMS[apiDetails.currency];
 
         const tralbumInfo = {
           id: item.item_id,
           type: item.item_type,
-          title: item.item_title,
-          tralbum_artist: item.band_name,
-          currency: item.currency,
+          title: apiDetails.title,
+          tralbum_artist: apiDetails.tralbum_artist,
+          currency: apiDetails.currency,
           price: finalPrice,
-          bandcamp_url: item.url
+          bandcamp_url: apiDetails.bandcamp_url || item.url
         };
         this.processedCount += 1;
 

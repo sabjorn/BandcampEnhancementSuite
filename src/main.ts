@@ -378,14 +378,6 @@ const main = async (): Promise<void> => {
     url.searchParams.delete('bes_cart');
     window.history.replaceState({}, '', url.toString());
     log.info(`Removed bes_cart from URL. New URL: ${window.location.href}`);
-
-    if (!window.location.pathname.includes('/cart')) {
-      log.info(`Current pathname: ${window.location.pathname}, redirecting to cart page for processing`);
-      const cartUrl = new URL('/cart', window.location.origin);
-      log.info(`Redirecting to: ${cartUrl.toString()}`);
-      window.location.href = cartUrl.toString();
-      return;
-    }
   } else {
     log.debug('No bes_cart query parameter found');
   }

@@ -340,7 +340,9 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
       setTimeout(() => {
         log.info('Reloading page to initialize cart');
-        window.location.reload();
+        const cleanUrl = window.location.href.split('?')[0];
+        log.info(`Reloading to clean URL: ${cleanUrl}`);
+        window.location.href = cleanUrl;
       }, 1000);
 
       return;

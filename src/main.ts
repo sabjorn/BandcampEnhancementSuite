@@ -400,12 +400,15 @@ const main = async (): Promise<void> => {
     initAudioFeatures(config_port);
   }
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasBesCartParam = urlParams.has('bes_cart');
+
   const dataBlobElement: Element | null = document.querySelector('[data-blob]');
   if (dataBlobElement) {
     const dataBlobAttr: string | null = dataBlobElement.getAttribute('data-blob');
     if (dataBlobAttr) {
       const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
-      if (has_cart) {
+      if (has_cart || hasBesCartParam) {
         await initCart(config_port);
       }
     }

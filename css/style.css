@@ -898,3 +898,9 @@ button.bes-downloadall[disabled]::after {
 [id^='sidecart_item_'] {
   position: relative;
 }
+
+/* Ensure cart container doesn't clip the banner */
+#item_list,
+#sidecart {
+  overflow: visible !important;
+}

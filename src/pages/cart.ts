@@ -287,17 +287,17 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     }
   });
 
-  log.debug('initCart: Checking sessionStorage for pending import');
-  const besCartParam = sessionStorage.getItem('bes_pending_cart_import');
-  log.debug(
-    `initCart: sessionStorage value: ${besCartParam ? `found (length: ${besCartParam.length})` : 'not found'}`
-  );
+  log.debug(`Checking for bes_cart query param. Current URL: ${window.location.href}`);
+  const urlParams = new URLSearchParams(window.location.search);
+  const besCartParam = urlParams.get('bes_cart');
 
   if (besCartParam) {
-    log.info('Found pending cart import in sessionStorage, processing...');
+    log.info(`Found bes_cart query parameter (length: ${besCartParam.length}), processing...`);
 
-    sessionStorage.removeItem('bes_pending_cart_import');
-    log.debug('Removed bes_pending_cart_import from sessionStorage');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('bes_cart');
+    window.history.replaceState({}, '', url.toString());
+    log.info(`Removed bes_cart from URL. New URL: ${window.location.href}`);
 
     const parsedData = parseUrlCartData(besCartParam);
 
@@ -329,7 +329,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       showErrorMessage('Invalid cart data in URL');
     }
   } else {
-    log.debug('No pending cart import found in sessionStorage');
+    log.debug('No bes_cart URL parameter found');
   }
 
   const importButton = createButton({

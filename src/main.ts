@@ -362,26 +362,6 @@ const main = async (): Promise<void> => {
     }
   })();
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const besCartParam = urlParams.get('bes_cart');
-
-  log.debug(`Checking for bes_cart query param. Current URL: ${window.location.href}`);
-  log.debug(`Current sessionStorage: ${sessionStorage.getItem('bes_pending_cart_import')}`);
-
-  if (besCartParam) {
-    log.info(`Found bes_cart query parameter (length: ${besCartParam.length}), storing for cart page processing`);
-
-    sessionStorage.setItem('bes_pending_cart_import', besCartParam);
-    log.info(`Stored in sessionStorage. Verify: ${sessionStorage.getItem('bes_pending_cart_import') !== null}`);
-
-    const url = new URL(window.location.href);
-    url.searchParams.delete('bes_cart');
-    window.history.replaceState({}, '', url.toString());
-    log.info(`Removed bes_cart from URL. New URL: ${window.location.href}`);
-  } else {
-    log.debug('No bes_cart query parameter found');
-  }
-
   initLabelView(config_port);
 
   const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');

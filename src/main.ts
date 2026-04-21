@@ -381,7 +381,9 @@ const main = async (): Promise<void> => {
 
     if (!window.location.pathname.includes('/cart')) {
       log.info(`Current pathname: ${window.location.pathname}, redirecting to cart page for processing`);
-      window.location.href = 'https://bandcamp.com/cart';
+      const cartUrl = new URL('/cart', window.location.origin);
+      log.info(`Redirecting to: ${cartUrl.toString()}`);
+      window.location.href = cartUrl.toString();
       return;
     }
   } else {

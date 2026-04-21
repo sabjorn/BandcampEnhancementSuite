@@ -402,13 +402,14 @@ const main = async (): Promise<void> => {
 
   const urlParams = new URLSearchParams(window.location.search);
   const hasBesCartParam = urlParams.has('bes_cart');
+  const hasStoredCartData = sessionStorage.getItem('bes_pending_cart_import') !== null;
 
   const dataBlobElement: Element | null = document.querySelector('[data-blob]');
   if (dataBlobElement) {
     const dataBlobAttr: string | null = dataBlobElement.getAttribute('data-blob');
     if (dataBlobAttr) {
       const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
-      if (has_cart || hasBesCartParam) {
+      if (has_cart || hasBesCartParam || hasStoredCartData) {
         await initCart(config_port);
       }
     }

@@ -290,28 +290,42 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   log.debug(`Checking for bes_cart query param. Current URL: ${window.location.href}`);
   const urlParams = new URLSearchParams(window.location.search);
   const besCartParam = urlParams.get('bes_cart');
+  const storedCartParam = sessionStorage.getItem('bes_pending_cart_import');
 
-  if (besCartParam) {
-    log.info(`Found bes_cart query parameter (length: ${besCartParam.length}), processing...`);
+  const cartDataToProcess = besCartParam || storedCartParam;
 
-    const parsedData = parseUrlCartData(besCartParam);
+  if (cartDataToProcess) {
+    const isFromUrl = !!besCartParam;
+    log.info(
+      `Found cart data ${isFromUrl ? 'from URL parameter' : 'from sessionStorage'} (length: ${
+        cartDataToProcess.length
+      })`
+    );
+
+    if (isFromUrl) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('bes_cart');
+      window.history.replaceState({}, '', url.toString());
+      log.info('Removed bes_cart from URL to prevent retry loops');
+    }
+
+    const parsedData = parseUrlCartData(cartDataToProcess);
 
     if (!parsedData) {
       log.error('Failed to parse URL cart data, showing error to user');
       showErrorMessage('Invalid cart data in URL');
-
-      const url = new URL(window.location.href);
-      url.searchParams.delete('bes_cart');
-      window.history.replaceState({}, '', url.toString());
-      log.info('Removed invalid bes_cart from URL');
+      sessionStorage.removeItem('bes_pending_cart_import');
       return;
     }
 
     const sidecart = document.querySelector('#sidecart') as HTMLElement;
     const cartNeedsCreation = sidecart && sidecart.style.display === 'none';
 
-    if (cartNeedsCreation) {
-      log.info('Cart does not exist yet (sidecart hidden), adding first item and reloading');
+    if (cartNeedsCreation && isFromUrl) {
+      log.info('Cart does not exist yet (sidecart hidden), storing data and adding first item to create cart');
+
+      sessionStorage.setItem('bes_pending_cart_import', cartDataToProcess);
+      log.info('Stored cart data in sessionStorage for processing after reload');
 
       const firstItem = parsedData.items[0];
       log.info(`Adding first item ${firstItem.item_id} to create cart, then will reload`);
@@ -333,11 +347,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     }
 
     log.info('Cart exists, processing all items');
-
-    const url = new URL(window.location.href);
-    url.searchParams.delete('bes_cart');
-    window.history.replaceState({}, '', url.toString());
-    log.info(`Removed bes_cart from URL. New URL: ${window.location.href}`);
+    sessionStorage.removeItem('bes_pending_cart_import');
 
     showPersistentNotification({
       id: 'cart-import-progress',
@@ -362,7 +372,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       log.debug('No donation item to process');
     }
   } else {
-    log.debug('No bes_cart URL parameter found');
+    log.debug('No bes_cart URL parameter or stored cart data found');
   }
 
   const importButton = createButton({

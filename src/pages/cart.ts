@@ -294,39 +294,72 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   if (besCartParam) {
     log.info(`Found bes_cart query parameter (length: ${besCartParam.length}), processing...`);
 
+    const parsedData = parseUrlCartData(besCartParam);
+
+    if (!parsedData) {
+      log.error('Failed to parse URL cart data, showing error to user');
+      showErrorMessage('Invalid cart data in URL');
+
+      const url = new URL(window.location.href);
+      url.searchParams.delete('bes_cart');
+      window.history.replaceState({}, '', url.toString());
+      log.info('Removed invalid bes_cart from URL');
+      return;
+    }
+
+    const sidecart = document.querySelector('#sidecart') as HTMLElement;
+    const cartNeedsCreation = sidecart && sidecart.style.display === 'none';
+
+    if (cartNeedsCreation) {
+      log.info('Cart does not exist yet (sidecart hidden), adding first item and reloading');
+
+      const firstItem = parsedData.items[0];
+      log.info(`Adding first item ${firstItem.item_id} to create cart, then will reload`);
+
+      showPersistentNotification({
+        id: 'cart-import-progress',
+        message: `Creating cart with first item, page will reload...`,
+        type: 'info'
+      });
+
+      port.postMessage({ cartImport: { items: [firstItem] } });
+
+      setTimeout(() => {
+        log.info('Reloading page to initialize cart');
+        window.location.reload();
+      }, 1000);
+
+      return;
+    }
+
+    log.info('Cart exists, processing all items');
+
     const url = new URL(window.location.href);
     url.searchParams.delete('bes_cart');
     window.history.replaceState({}, '', url.toString());
     log.info(`Removed bes_cart from URL. New URL: ${window.location.href}`);
 
-    const parsedData = parseUrlCartData(besCartParam);
+    showPersistentNotification({
+      id: 'cart-import-progress',
+      message: `Starting import of ${parsedData.items.length} items from URL...`,
+      type: 'info'
+    });
 
-    if (parsedData) {
-      showPersistentNotification({
-        id: 'cart-import-progress',
-        message: `Starting import of ${parsedData.items.length} items from URL...`,
-        type: 'info'
+    log.info(`Sending cartImport message with ${parsedData.items.length} items to backend`);
+    port.postMessage({ cartImport: { items: parsedData.items } });
+
+    if (parsedData.donation) {
+      const { id, type, message } = parsedData.donation;
+      log.info(`Sending donation item to backend: id=${id}, type=${type}, hasMessage=${!!message}`);
+      port.postMessage({
+        cartDonationItem: {
+          item_id: id,
+          item_type: type,
+          message
+        }
       });
-
-      log.info(`Sending cartImport message with ${parsedData.items.length} items to backend`);
-      port.postMessage({ cartImport: { items: parsedData.items } });
-
-      if (parsedData.donation) {
-        const { id, type, message } = parsedData.donation;
-        log.info(`Sending donation item to backend: id=${id}, type=${type}, hasMessage=${!!message}`);
-        port.postMessage({
-          cartDonationItem: {
-            item_id: id,
-            item_type: type,
-            message
-          }
-        });
-      } else {
-        log.debug('No donation item to process');
-      }
     } else {
-      log.error('Failed to parse URL cart data, showing error to user');
-      showErrorMessage('Invalid cart data in URL');
+      log.debug('No donation item to process');
     }
   } else {
     log.debug('No bes_cart URL parameter found');

@@ -287,12 +287,17 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     }
   });
 
+  log.debug('initCart: Checking sessionStorage for pending import');
   const besCartParam = sessionStorage.getItem('bes_pending_cart_import');
+  log.debug(
+    `initCart: sessionStorage value: ${besCartParam ? `found (length: ${besCartParam.length})` : 'not found'}`
+  );
 
   if (besCartParam) {
     log.info('Found pending cart import in sessionStorage, processing...');
 
     sessionStorage.removeItem('bes_pending_cart_import');
+    log.debug('Removed bes_pending_cart_import from sessionStorage');
 
     const parsedData = parseUrlCartData(besCartParam);
 

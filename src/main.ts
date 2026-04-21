@@ -365,21 +365,27 @@ const main = async (): Promise<void> => {
   const urlParams = new URLSearchParams(window.location.search);
   const besCartParam = urlParams.get('bes_cart');
 
+  log.debug(`Checking for bes_cart query param. Current URL: ${window.location.href}`);
+  log.debug(`Current sessionStorage: ${sessionStorage.getItem('bes_pending_cart_import')}`);
+
   if (besCartParam) {
-    log.info('Found bes_cart query parameter, storing for cart page processing');
+    log.info(`Found bes_cart query parameter (length: ${besCartParam.length}), storing for cart page processing`);
 
     sessionStorage.setItem('bes_pending_cart_import', besCartParam);
+    log.info(`Stored in sessionStorage. Verify: ${sessionStorage.getItem('bes_pending_cart_import') !== null}`);
 
     const url = new URL(window.location.href);
     url.searchParams.delete('bes_cart');
     window.history.replaceState({}, '', url.toString());
-    log.info('Removed bes_cart from URL');
+    log.info(`Removed bes_cart from URL. New URL: ${window.location.href}`);
 
     if (!window.location.pathname.includes('/cart')) {
-      log.info('Redirecting to cart page for processing');
+      log.info(`Current pathname: ${window.location.pathname}, redirecting to cart page for processing`);
       window.location.href = 'https://bandcamp.com/cart';
       return;
     }
+  } else {
+    log.debug('No bes_cart query parameter found');
   }
 
   initLabelView(config_port);

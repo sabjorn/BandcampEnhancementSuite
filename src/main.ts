@@ -362,6 +362,26 @@ const main = async (): Promise<void> => {
     }
   })();
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const besCartParam = urlParams.get('bes_cart');
+
+  if (besCartParam) {
+    log.info('Found bes_cart query parameter, storing for cart page processing');
+
+    sessionStorage.setItem('bes_pending_cart_import', besCartParam);
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete('bes_cart');
+    window.history.replaceState({}, '', url.toString());
+    log.info('Removed bes_cart from URL');
+
+    if (!window.location.pathname.includes('/cart')) {
+      log.info('Redirecting to cart page for processing');
+      window.location.href = 'https://bandcamp.com/cart';
+      return;
+    }
+  }
+
   initLabelView(config_port);
 
   const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');

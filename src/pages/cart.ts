@@ -287,29 +287,28 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     }
   });
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const besCartParam = urlParams.get('bes_cart');
+  const besCartParam = sessionStorage.getItem('bes_pending_cart_import');
 
   if (besCartParam) {
-    log.info('Found bes_cart URL parameter, processing...');
+    log.info('Found pending cart import in sessionStorage, processing...');
+
+    sessionStorage.removeItem('bes_pending_cart_import');
 
     const parsedData = parseUrlCartData(besCartParam);
 
     if (parsedData) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('bes_cart');
-      window.history.replaceState({}, '', url.toString());
-
       showPersistentNotification({
         id: 'cart-import-progress',
         message: `Starting import of ${parsedData.items.length} items from URL...`,
         type: 'info'
       });
 
+      log.info(`Sending cartImport message with ${parsedData.items.length} items to backend`);
       port.postMessage({ cartImport: { items: parsedData.items } });
 
       if (parsedData.donation) {
         const { id, type, message } = parsedData.donation;
+        log.info(`Sending donation item to backend: id=${id}, type=${type}, hasMessage=${!!message}`);
         port.postMessage({
           cartDonationItem: {
             item_id: id,
@@ -317,10 +316,15 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
             message
           }
         });
+      } else {
+        log.debug('No donation item to process');
       }
     } else {
+      log.error('Failed to parse URL cart data, showing error to user');
       showErrorMessage('Invalid cart data in URL');
     }
+  } else {
+    log.debug('No pending cart import found in sessionStorage');
   }
 
   const importButton = createButton({

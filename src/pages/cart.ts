@@ -18,8 +18,6 @@ const BES_SUPPORT_TRALBUM_TYPE = 'a';
 
 const log = new Logger();
 
-const DONATION_BANNER_STORAGE_KEY = 'bes_dismissed_donations';
-
 interface CartData {
   items: any[];
 }
@@ -119,64 +117,40 @@ function parseUrlCartData(base64Str: string): ParsedUrlCartData | null {
   }
 }
 
-function createDonationBanner(itemId: string, message?: string): HTMLDivElement {
-  const bannerId = `bes-donation-banner-${itemId}`;
+function addDonationHighlight(cartItem: Element, message?: string): void {
   const displayMessage = message || 'Support this project';
+  const sidecart = document.querySelector('#sidecart');
 
-  const banner = document.createElement('div');
-  banner.id = bannerId;
-  banner.className = 'bes-donation-banner';
+  if (!sidecart) {
+    log.error('Could not find #sidecart for tooltip positioning');
+    return;
+  }
 
-  const indicator = document.createElement('div');
-  indicator.className = 'bes-donation-indicator';
+  cartItem.classList.add('bes-donation-item');
 
-  const arrow = document.createElement('div');
-  arrow.className = 'bes-donation-arrow';
+  const tooltip = document.createElement('div');
+  tooltip.className = 'bes-donation-tooltip';
+  tooltip.textContent = displayMessage;
 
-  const messageContainer = document.createElement('div');
-  messageContainer.className = 'bes-donation-message';
-  messageContainer.textContent = displayMessage;
+  sidecart.appendChild(tooltip);
 
-  const closeButton = document.createElement('button');
-  closeButton.className = 'bes-donation-close';
-  closeButton.innerHTML = '×';
-  closeButton.setAttribute('aria-label', 'Close donation message');
-  closeButton.addEventListener('click', () => {
-    banner.remove();
+  const positionTooltip = () => {
+    const itemRect = cartItem.getBoundingClientRect();
+    const sidecartRect = sidecart.getBoundingClientRect();
 
-    const dismissedDonations = (() => {
-      const stored = sessionStorage.getItem(DONATION_BANNER_STORAGE_KEY);
-      if (!stored) return [];
+    tooltip.style.left = `${itemRect.left - sidecartRect.left + itemRect.width / 2}px`;
+    tooltip.style.top = `${itemRect.top - sidecartRect.top - tooltip.offsetHeight - 8}px`;
+    tooltip.style.transform = 'translateX(-50%)';
+  };
 
-      try {
-        return JSON.parse(stored) as string[];
-      } catch {
-        return [];
-      }
-    })();
-
-    dismissedDonations.push(itemId);
-    sessionStorage.setItem(DONATION_BANNER_STORAGE_KEY, JSON.stringify(dismissedDonations));
+  cartItem.addEventListener('mouseenter', () => {
+    positionTooltip();
+    tooltip.classList.add('visible');
   });
 
-  banner.appendChild(indicator);
-  banner.appendChild(arrow);
-  banner.appendChild(messageContainer);
-  banner.appendChild(closeButton);
-
-  return banner;
-}
-
-function isDonationDismissed(itemId: string): boolean {
-  const stored = sessionStorage.getItem(DONATION_BANNER_STORAGE_KEY);
-  if (!stored) return false;
-
-  try {
-    const dismissedDonations = JSON.parse(stored) as string[];
-    return dismissedDonations.includes(itemId);
-  } catch {
-    return false;
-  }
+  cartItem.addEventListener('mouseleave', () => {
+    tooltip.classList.remove('visible');
+  });
 }
 
 export async function initCart(port: chrome.runtime.Port): Promise<void> {
@@ -290,37 +264,23 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
       log.info(`Received cartDonationAdded message for item ${itemId}`);
 
-      if (isDonationDismissed(itemId)) {
-        log.info(`Donation banner for item ${itemId} was previously dismissed, skipping display`);
-        return;
-      }
-
-      const insertDonationBanner = (attempt: number = 0): void => {
+      const insertDonationHighlight = (attempt: number = 0): void => {
         const cartItem = document.querySelector(`#sidecart_item_${itemId}`);
-        const sidecart = document.querySelector('#sidecart');
 
-        if (cartItem && sidecart) {
-          const donationBanner = createDonationBanner(itemId, message);
-
-          const rect = cartItem.getBoundingClientRect();
-          const sidecartRect = sidecart.getBoundingClientRect();
-
-          donationBanner.style.top = `${rect.top - sidecartRect.top + rect.height / 2}px`;
-          donationBanner.style.transform = 'translateY(-50%)';
-
-          sidecart.appendChild(donationBanner);
-          log.info(`Donation banner inserted into sidecart positioned at cart item ${itemId}`);
+        if (cartItem) {
+          addDonationHighlight(cartItem, message);
+          log.info(`Donation highlight added to cart item ${itemId}`);
         } else if (attempt < 10) {
           log.debug(`Cart item not yet in DOM for donation ${itemId}, retrying (attempt ${attempt + 1}/10)`);
-          setTimeout(() => insertDonationBanner(attempt + 1), 100);
+          setTimeout(() => insertDonationHighlight(attempt + 1), 100);
         } else {
           log.error(
-            `Failed to insert donation banner after 10 attempts: cart item #sidecart_item_${itemId} not found`
+            `Failed to add donation highlight after 10 attempts: cart item #sidecart_item_${itemId} not found`
           );
         }
       };
 
-      insertDonationBanner();
+      insertDonationHighlight();
       return;
     }
   });

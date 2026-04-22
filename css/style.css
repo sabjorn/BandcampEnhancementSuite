@@ -811,87 +811,55 @@ button.bes-downloadall[disabled]::after {
   background: #545b62;
 }
 
-/* Donation Banner */
-.bes-donation-banner {
-  position: absolute;
-  left: -230px;
-  display: flex;
-  align-items: center;
-  background: #fff9e6;
-  border: 1px solid #ffd700;
-  border-radius: 6px;
-  padding: 12px;
-  gap: 12px;
+/* Donation Item Highlight */
+.bes-donation-item {
+  position: relative;
+  border: 2px solid #ffd700 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  background: #fff9e6 !important;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3) !important;
   transition: all 0.2s ease;
-  z-index: 10000;
-  width: 200px;
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
 }
 
-.bes-donation-banner:hover {
-  background: #fff5cc;
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+.bes-donation-item:hover {
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.5) !important;
 }
 
-.bes-donation-indicator {
-  width: 4px;
-  min-height: 30px;
-  background: linear-gradient(180deg, #ffd700 0%, #ffb700 100%);
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.bes-donation-arrow {
+.bes-donation-tooltip {
   position: absolute;
-  right: -10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-left: 10px solid #ffd700;
-}
-
-.bes-donation-message {
-  flex: 1;
+  padding: 8px 12px;
+  background: #333;
+  color: #fff;
   font-size: 13px;
-  color: #856404;
   line-height: 1.4;
-  font-weight: 500;
-}
-
-.bes-donation-close {
-  background: transparent;
-  border: none;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #856404;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
   transition:
-    color 0.2s ease,
-    transform 0.2s ease;
-  flex-shrink: 0;
-  border-radius: 50%;
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+  z-index: 10000;
 }
 
-.bes-donation-close:hover {
-  color: #533f03;
-  background: rgba(255, 215, 0, 0.2);
-  transform: scale(1.1);
+.bes-donation-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #333;
 }
 
-.bes-donation-close:active {
-  transform: scale(0.95);
+.bes-donation-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
 }
 
-/* Make sidecart positioned so banner can be positioned relative to it */
+/* Make sidecart positioned so tooltip can be positioned relative to it */
 #sidecart {
   position: relative !important;
   overflow: visible !important;

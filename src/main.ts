@@ -404,8 +404,17 @@ const main = async (): Promise<void> => {
   const besCartParamValue = urlParams.get('bes_cart');
   const hasBesCartParam = besCartParamValue !== null;
   const hasStoredCartData = sessionStorage.getItem('bes_pending_cart_import') !== null;
+  const processingFlag = sessionStorage.getItem('bes_cart_processing');
+
+  log.info(
+    `Page load state - hasParam: ${hasBesCartParam}, hasStored: ${hasStoredCartData}, processing: ${processingFlag}`
+  );
 
   if (hasBesCartParam) {
+    log.info(`Found bes_cart parameter in URL on page load!`);
+    log.info(`This means either: (1) first visit, or (2) browser restored URL from address bar on refresh`);
+    log.info(`Full URL: ${window.location.href}`);
+
     sessionStorage.setItem('bes_url_cart_param', besCartParamValue!);
     sessionStorage.setItem('bes_cart_param_removed', 'true');
 

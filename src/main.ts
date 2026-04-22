@@ -407,10 +407,17 @@ const main = async (): Promise<void> => {
 
   if (hasBesCartParam) {
     sessionStorage.setItem('bes_url_cart_param', besCartParamValue!);
-    const url = new URL(window.location.href);
+
+    const currentUrl = window.location.href;
+    const url = new URL(currentUrl);
     url.searchParams.delete('bes_cart');
-    window.history.pushState({}, '', url.toString());
-    log.info('Removed bes_cart parameter from URL in main.ts and stored in sessionStorage');
+    const cleanUrl = url.toString();
+
+    log.info(`Attempting to remove bes_cart parameter. Before: ${currentUrl}, After: ${cleanUrl}`);
+
+    window.history.replaceState(null, '', cleanUrl);
+
+    log.info(`URL after replaceState: ${window.location.href}`);
   }
 
   const dataBlobElement: Element | null = document.querySelector('[data-blob]');

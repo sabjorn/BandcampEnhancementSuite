@@ -816,7 +816,7 @@ button.bes-downloadall[disabled]::after {
   position: relative;
   border: 2px solid #ffd700 !important;
   border-radius: 0 !important;
-  margin: 0 !important;
+  margin: -2px !important;
   background: #fff9e6 !important;
   box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3) !important;
   transition: all 0.2s ease;

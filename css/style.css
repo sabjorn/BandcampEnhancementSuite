@@ -834,7 +834,9 @@ button.bes-downloadall[disabled]::after {
   font-size: 13px;
   line-height: 1.4;
   border-radius: 4px;
-  white-space: nowrap;
+  max-width: 250px;
+  white-space: normal;
+  word-wrap: break-word;
   pointer-events: none;
   opacity: 0;
   visibility: hidden;

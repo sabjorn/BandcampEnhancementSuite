@@ -315,11 +315,6 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       })`
     );
 
-    if (isFromUrl) {
-      sessionStorage.removeItem('bes_url_cart_param');
-      log.info('Cleared URL cart parameter from sessionStorage');
-    }
-
     const parsedData = (() => {
       if (isFromUrl) {
         return parseUrlCartData(cartDataToProcess);
@@ -381,6 +376,11 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
     log.info('Cart exists, processing all items');
     sessionStorage.removeItem('bes_pending_cart_import');
+
+    if (isFromUrl) {
+      sessionStorage.removeItem('bes_url_cart_param');
+      log.info('Cleared URL cart parameter from sessionStorage');
+    }
 
     showPersistentNotification({
       id: 'cart-import-progress',

@@ -118,7 +118,7 @@ describe('cart_import_backend', () => {
         await portListenerCallback({ cartImport: { items: [mockCartItems[0]] } }, portState);
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
-          cartImportComplete: { message: 'Successfully added 1 items to cart' }
+          cartImportComplete: { message: 'Successfully added 1 item to cart' }
         });
       });
 
@@ -200,7 +200,7 @@ describe('cart_import_backend', () => {
         await portListenerCallback({ cartImport: { items: mixedItems } }, portState);
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
-          cartImportComplete: { message: 'Successfully added 1 items to cart. 1 items could not be added' }
+          cartImportComplete: { message: 'Successfully added 1 item to cart. 1 items could not be added' }
         });
       });
 
@@ -319,7 +319,7 @@ describe('cart_import_backend', () => {
         await portListenerCallback({ cartUrlImport: { urls: [mockUrls[0]] } }, portState);
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
-          cartImportComplete: { message: 'Successfully added 1 items to cart' }
+          cartImportComplete: { message: 'Successfully added 1 item to cart' }
         });
       });
 

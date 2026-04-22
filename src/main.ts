@@ -417,12 +417,14 @@ const main = async (): Promise<void> => {
 
     sessionStorage.setItem('bes_url_cart_param', besCartParamValue!);
 
-    const newSearch = Array.from(urlParams.entries())
-      .filter(([key]) => key !== 'bes_cart')
-      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-      .join('&');
+    const newUrl = (() => {
+      const newSearch = Array.from(urlParams.entries())
+        .filter(([key]) => key !== 'bes_cart')
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&');
 
-    const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+      return window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+    })();
 
     log.info(`Redirecting to clean URL: ${window.location.origin}${newUrl}`);
 

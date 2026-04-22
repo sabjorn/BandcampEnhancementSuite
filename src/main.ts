@@ -407,17 +407,29 @@ const main = async (): Promise<void> => {
 
   if (hasBesCartParam) {
     sessionStorage.setItem('bes_url_cart_param', besCartParamValue!);
+    sessionStorage.setItem('bes_cart_param_removed', 'true');
 
-    const currentUrl = window.location.href;
-    const url = new URL(currentUrl);
-    url.searchParams.delete('bes_cart');
-    const cleanUrl = url.toString();
+    log.info(`Removing bes_cart parameter. Current URL: ${window.location.href}`);
 
-    log.info(`Attempting to remove bes_cart parameter. Before: ${currentUrl}, After: ${cleanUrl}`);
+    const newSearch = Array.from(urlParams.entries())
+      .filter(([key]) => key !== 'bes_cart')
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join('&');
 
-    window.history.replaceState(null, '', cleanUrl);
+    const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
 
-    log.info(`URL after replaceState: ${window.location.href}`);
+    log.info(`New URL will be: ${window.location.origin}${newUrl}`);
+
+    window.history.replaceState({}, '', newUrl);
+
+    setTimeout(() => {
+      const stillThere = new URLSearchParams(window.location.search).has('bes_cart');
+      log.info(`URL after replaceState: ${window.location.href}, parameter still there: ${stillThere}`);
+      if (stillThere) {
+        log.error('Parameter still in URL after replaceState!');
+        window.history.replaceState({}, '', newUrl);
+      }
+    }, 100);
   }
 
   const dataBlobElement: Element | null = document.querySelector('[data-blob]');

@@ -242,6 +242,9 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
           }
         });
         pendingDonation = null;
+      } else {
+        sessionStorage.removeItem('bes_cart_processing');
+        log.info('Cart import complete, cleared processing flag');
       }
 
       return;
@@ -255,6 +258,8 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     if (msg.cartImportError) {
       removePersistentNotification('cart-import-progress');
       showErrorMessage(`Import failed: ${msg.cartImportError.message}`);
+      sessionStorage.removeItem('bes_cart_processing');
+      log.info('Cart import error, cleared processing flag');
       return;
     }
 
@@ -269,13 +274,15 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
         if (cartItem) {
           addDonationHighlight(cartItem, message);
-          log.info(`Donation highlight added to cart item ${itemId}`);
+          sessionStorage.removeItem('bes_cart_processing');
+          log.info(`Donation highlight added to cart item ${itemId}, cleared processing flag`);
         } else if (attempt < 10) {
           log.debug(`Cart item not yet in DOM for donation ${itemId}, retrying (attempt ${attempt + 1}/10)`);
           setTimeout(() => insertDonationHighlight(attempt + 1), 100);
         } else {
+          sessionStorage.removeItem('bes_cart_processing');
           log.error(
-            `Failed to add donation highlight after 10 attempts: cart item #sidecart_item_${itemId} not found`
+            `Failed to add donation highlight after 10 attempts: cart item #sidecart_item_${itemId} not found, cleared processing flag`
           );
         }
       };
@@ -286,12 +293,21 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   });
 
   log.debug(`Checking for bes_cart data`);
+
+  const alreadyProcessed = sessionStorage.getItem('bes_cart_processing');
+  if (alreadyProcessed === 'true') {
+    log.info('Cart import already in progress or completed, skipping');
+    return;
+  }
+
   const urlCartParam = sessionStorage.getItem('bes_url_cart_param');
   const storedCartParam = sessionStorage.getItem('bes_pending_cart_import');
 
   const cartDataToProcess = urlCartParam || storedCartParam;
 
   if (cartDataToProcess) {
+    sessionStorage.setItem('bes_cart_processing', 'true');
+
     const isFromUrl = !!urlCartParam;
     log.info(
       `Found cart data ${isFromUrl ? 'from URL parameter (via sessionStorage)' : 'from pending import'} (length: ${
@@ -323,6 +339,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       log.error('Failed to parse cart data, showing error to user');
       showErrorMessage('Invalid cart data in URL');
       sessionStorage.removeItem('bes_pending_cart_import');
+      sessionStorage.removeItem('bes_cart_processing');
       return;
     }
 

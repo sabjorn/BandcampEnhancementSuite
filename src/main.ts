@@ -401,8 +401,17 @@ const main = async (): Promise<void> => {
   }
 
   const urlParams = new URLSearchParams(window.location.search);
-  const hasBesCartParam = urlParams.has('bes_cart');
+  const besCartParamValue = urlParams.get('bes_cart');
+  const hasBesCartParam = besCartParamValue !== null;
   const hasStoredCartData = sessionStorage.getItem('bes_pending_cart_import') !== null;
+
+  if (hasBesCartParam) {
+    sessionStorage.setItem('bes_url_cart_param', besCartParamValue!);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('bes_cart');
+    window.history.pushState({}, '', url.toString());
+    log.info('Removed bes_cart parameter from URL in main.ts and stored in sessionStorage');
+  }
 
   const dataBlobElement: Element | null = document.querySelector('[data-blob]');
   if (dataBlobElement) {

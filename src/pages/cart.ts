@@ -285,26 +285,23 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     }
   });
 
-  log.debug(`Checking for bes_cart query param. Current URL: ${window.location.href}`);
-  const urlParams = new URLSearchParams(window.location.search);
-  const besCartParam = urlParams.get('bes_cart');
+  log.debug(`Checking for bes_cart data`);
+  const urlCartParam = sessionStorage.getItem('bes_url_cart_param');
   const storedCartParam = sessionStorage.getItem('bes_pending_cart_import');
 
-  const cartDataToProcess = besCartParam || storedCartParam;
+  const cartDataToProcess = urlCartParam || storedCartParam;
 
   if (cartDataToProcess) {
-    const isFromUrl = !!besCartParam;
+    const isFromUrl = !!urlCartParam;
     log.info(
-      `Found cart data ${isFromUrl ? 'from URL parameter' : 'from sessionStorage'} (length: ${
+      `Found cart data ${isFromUrl ? 'from URL parameter (via sessionStorage)' : 'from pending import'} (length: ${
         cartDataToProcess.length
       })`
     );
 
     if (isFromUrl) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('bes_cart');
-      window.history.replaceState({}, '', url.toString());
-      log.info('Removed bes_cart from URL immediately');
+      sessionStorage.removeItem('bes_url_cart_param');
+      log.info('Cleared URL cart parameter from sessionStorage');
     }
 
     const parsedData = (() => {

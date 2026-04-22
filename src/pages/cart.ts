@@ -300,6 +300,13 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       })`
     );
 
+    if (isFromUrl) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('bes_cart');
+      window.history.replaceState({}, '', url.toString());
+      log.info('Removed bes_cart from URL immediately');
+    }
+
     const parsedData = (() => {
       if (isFromUrl) {
         return parseUrlCartData(cartDataToProcess);
@@ -319,13 +326,6 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       log.error('Failed to parse cart data, showing error to user');
       showErrorMessage('Invalid cart data in URL');
       sessionStorage.removeItem('bes_pending_cart_import');
-
-      if (isFromUrl) {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('bes_cart');
-        window.history.replaceState({}, '', url.toString());
-        log.info('Removed invalid bes_cart from URL');
-      }
       return;
     }
 
@@ -367,13 +367,6 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
     log.info('Cart exists, processing all items');
     sessionStorage.removeItem('bes_pending_cart_import');
-
-    if (isFromUrl) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('bes_cart');
-      window.history.replaceState({}, '', url.toString());
-      log.info('Removed bes_cart from URL');
-    }
 
     showPersistentNotification({
       id: 'cart-import-progress',

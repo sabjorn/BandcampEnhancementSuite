@@ -131,6 +131,9 @@ function addDonationHighlight(cartItem: Element, message?: string): void {
   const tooltip = document.createElement('div');
   tooltip.className = 'bes-donation-tooltip';
   tooltip.textContent = displayMessage;
+  tooltip.style.maxWidth = '400px';
+  tooltip.style.whiteSpace = 'normal';
+  tooltip.style.overflowWrap = 'break-word';
 
   sidecart.appendChild(tooltip);
 

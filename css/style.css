@@ -814,7 +814,7 @@ button.bes-downloadall[disabled]::after {
 /* Donation Banner */
 .bes-donation-banner {
   position: absolute;
-  left: -220px;
+  left: -230px;
   display: flex;
   align-items: center;
   background: #fff9e6;

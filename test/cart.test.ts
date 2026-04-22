@@ -469,6 +469,121 @@ invalid line`;
       expect(showSuccessMessage).toHaveBeenCalledWith('Successfully added 2 items to cart');
     });
 
+    it('should delay completion message until all cart adds finish', async () => {
+      const { addAlbumToCart } = await import('../src/bclient');
+
+      let resolveAdd1: any;
+      let resolveAdd2: any;
+
+      const add1Promise = new Promise<Response>(resolve => {
+        resolveAdd1 = resolve;
+      });
+      const add2Promise = new Promise<Response>(resolve => {
+        resolveAdd2 = resolve;
+      });
+
+      let callCount = 0;
+      vi.mocked(addAlbumToCart).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return add1Promise;
+        if (callCount === 2) return add2Promise;
+        return Promise.resolve(new Response('{}', { status: 200 }));
+      });
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      const cartRequest1 = {
+        item_id: 111,
+        item_type: 'a',
+        item_title: 'Album 1',
+        band_name: 'Band 1',
+        unit_price: 5.0,
+        currency: 'USD',
+        url: 'https://test.bandcamp.com/album/1'
+      };
+
+      const cartRequest2 = {
+        item_id: 222,
+        item_type: 'a',
+        item_title: 'Album 2',
+        band_name: 'Band 2',
+        unit_price: 7.0,
+        currency: 'USD',
+        url: 'https://test.bandcamp.com/album/2'
+      };
+
+      const handler1Promise = messageHandler({ cartAddRequest: cartRequest1 });
+      const handler2Promise = messageHandler({ cartAddRequest: cartRequest2 });
+
+      await messageHandler({ cartImportComplete: { message: 'Successfully added 2 items to cart' } });
+
+      expect(showSuccessMessage).not.toHaveBeenCalled();
+
+      resolveAdd1(new Response('{}', { status: 200 }));
+      await handler1Promise;
+      expect(showSuccessMessage).not.toHaveBeenCalled();
+
+      resolveAdd2(new Response('{}', { status: 200 }));
+      await handler2Promise;
+      expect(showSuccessMessage).toHaveBeenCalledWith('Successfully added 2 items to cart');
+    });
+
+    it('should show completion message immediately when no cart adds are pending', async () => {
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      const cartRequest = {
+        item_id: 123,
+        item_type: 'a',
+        item_title: 'Test Album',
+        band_name: 'Test Band',
+        unit_price: 5.0,
+        currency: 'USD',
+        url: 'https://test.bandcamp.com/album/test'
+      };
+
+      await messageHandler({ cartAddRequest: cartRequest });
+
+      expect(showSuccessMessage).not.toHaveBeenCalled();
+
+      await messageHandler({ cartImportComplete: { message: 'Successfully added 1 item to cart' } });
+
+      expect(showSuccessMessage).toHaveBeenCalledWith('Successfully added 1 item to cart');
+    });
+
+    it('should handle completion message with pending donation', async () => {
+      const { addAlbumToCart } = await import('../src/bclient');
+
+      let resolveAdd: any;
+      const addPromise = new Promise<Response>(resolve => {
+        resolveAdd = resolve;
+      });
+
+      vi.mocked(addAlbumToCart).mockImplementationOnce(() => addPromise);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      const cartRequest = {
+        item_id: 123,
+        item_type: 'a',
+        item_title: 'Test Album',
+        band_name: 'Test Band',
+        unit_price: 5.0,
+        currency: 'USD',
+        url: 'https://test.bandcamp.com/album/test'
+      };
+
+      const handlerPromise = messageHandler({ cartAddRequest: cartRequest });
+
+      await messageHandler({ cartImportComplete: { message: 'Successfully added 1 item to cart' } });
+
+      expect(showSuccessMessage).not.toHaveBeenCalled();
+
+      resolveAdd(new Response('{}', { status: 200 }));
+      await handlerPromise;
+
+      expect(showSuccessMessage).toHaveBeenCalledWith('Successfully added 1 item to cart');
+    });
+
     it('should show individual item error notifications from backend', async () => {
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
 

@@ -32,13 +32,14 @@ class CartImportTracker {
   private totalCount = 0;
   private errors: string[] = [];
   private currentOperation: ImportOperation = 'import';
+  private isCreatingCart = false;
   private port?: chrome.runtime.Port;
 
   constructor(port?: chrome.runtime.Port) {
     this.port = port;
   }
 
-  async processItems(items: (CartImportItem | string)[]): Promise<void> {
+  async processItems(items: (CartImportItem | string)[], isCreatingCart: boolean = false): Promise<void> {
     if (items.length === 0) {
       this.port?.postMessage({
         cartImportComplete: { message: 'No items found to import' }
@@ -48,6 +49,7 @@ class CartImportTracker {
 
     const operation: ImportOperation = typeof items[0] === 'string' ? 'url_import' : 'import';
     this.currentOperation = operation;
+    this.isCreatingCart = isCreatingCart;
 
     this.isProcessing = true;
     this.processedCount = 0;
@@ -111,16 +113,16 @@ class CartImportTracker {
           throw new Error(`Item "${item.item_title}" is not purchasable`);
         }
 
-        const finalPrice = apiDetails.price > 0.0 ? apiDetails.price : CURRENCY_MINIMUMS[item.currency];
+        const finalPrice = apiDetails.price > 0.0 ? apiDetails.price : CURRENCY_MINIMUMS[apiDetails.currency];
 
         const tralbumInfo = {
           id: item.item_id,
           type: item.item_type,
-          title: item.item_title,
-          tralbum_artist: item.band_name,
-          currency: item.currency,
+          title: apiDetails.title,
+          tralbum_artist: apiDetails.tralbum_artist,
+          currency: apiDetails.currency,
           price: finalPrice,
-          bandcamp_url: item.url
+          bandcamp_url: apiDetails.bandcamp_url || item.url
         };
         this.processedCount += 1;
 
@@ -167,10 +169,22 @@ class CartImportTracker {
 
     const completionMessage = (() => {
       if (failureCount === 0) {
+        if (this.isCreatingCart && successCount === 1) {
+          return `Successfully created cart with 1 item`;
+        }
+        if (successCount === 1) {
+          return `Successfully added 1 item to cart`;
+        }
         return `Successfully added ${successCount} items to cart`;
       }
       if (successCount === 0) {
         return `${failureCount} items could not be added`;
+      }
+      if (this.isCreatingCart && successCount === 1) {
+        return `Successfully created cart with 1 item. ${failureCount} items could not be added`;
+      }
+      if (successCount === 1) {
+        return `Successfully added 1 item to cart. ${failureCount} items could not be added`;
       }
       return `Successfully added ${successCount} items to cart. ${failureCount} items could not be added`;
     })();
@@ -226,7 +240,8 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
   if (msg.cartImport) {
     try {
       log.info('Starting cart import process');
-      await importTracker.processItems(msg.cartImport.items);
+      const isCreatingCart = msg.cartImport.isCreatingCart ?? false;
+      await importTracker.processItems(msg.cartImport.items, isCreatingCart);
     } catch (error) {
       log.error(`Error in cart import process: ${error}`);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -237,11 +252,60 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
   if (msg.cartUrlImport) {
     try {
       log.info('Starting cart URL import process');
-      await importTracker.processItems(msg.cartUrlImport.urls);
+      await importTracker.processItems(msg.cartUrlImport.urls, false);
     } catch (error) {
       log.error(`Error in cart URL import process: ${error}`);
       const errorMessage = error instanceof Error ? error.message : String(error);
       portState.port?.postMessage({ cartImportError: { message: errorMessage } });
+    }
+  }
+
+  if (msg.cartDonationItem) {
+    try {
+      const { item_id, item_type, message } = msg.cartDonationItem;
+
+      log.info(`Processing donation item ${item_id} (${item_type})`);
+
+      const enableFetchCaching = await (async () => {
+        const db = await getDB();
+        const config = await db.get('config', 'config');
+        return config?.enableFetchCaching ?? false;
+      })();
+
+      const fetchFn = createFetchFunction(enableFetchCaching);
+      const apiDetails = await getTralbumDetails(item_id, item_type, BASE_URL, fetchFn);
+
+      if (!apiDetails.is_purchasable) {
+        throw new Error(`Donation item "${apiDetails.title}" is not purchasable`);
+      }
+
+      const finalPrice = apiDetails.price > 0.0 ? apiDetails.price : CURRENCY_MINIMUMS[apiDetails.currency];
+
+      log.info(`Sending donation cart add request for item ${item_id} with price ${finalPrice}`);
+
+      portState.port?.postMessage({
+        cartAddRequest: {
+          item_id,
+          item_type,
+          item_title: apiDetails.title,
+          band_name: apiDetails.tralbum_artist,
+          unit_price: finalPrice,
+          currency: apiDetails.currency,
+          url: apiDetails.bandcamp_url || ''
+        }
+      });
+
+      portState.port?.postMessage({
+        cartDonationAdded: {
+          item_id,
+          item_title: apiDetails.title,
+          message
+        }
+      });
+    } catch (error) {
+      log.error(`Error processing donation item: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      portState.port?.postMessage({ cartItemError: { message: `Failed to add donation item: ${errorMessage}` } });
     }
   }
 

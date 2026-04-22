@@ -20,7 +20,7 @@ vi.mock('../src/utilities', () => ({
       get: vi.fn(() => Promise.resolve({ enableFetchCaching: false }))
     })
   ),
-  createFetchFunction: vi.fn((enableCaching: boolean) => globalThis.fetch)
+  createFetchFunction: vi.fn(() => globalThis.fetch)
 }));
 
 import { getTralbumDetails, getTralbumDetailsFromPage } from '../src/bclient';
@@ -118,12 +118,19 @@ describe('cart_import_backend', () => {
         await portListenerCallback({ cartImport: { items: [mockCartItems[0]] } }, portState);
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
-          cartImportComplete: { message: 'Successfully added 1 items to cart' }
+          cartImportComplete: { message: 'Successfully added 1 item to cart' }
         });
       });
 
       it('should fetch price when unit_price is missing', async () => {
-        (getTralbumDetails as any).mockResolvedValue({ price: 5.0, is_purchasable: true });
+        (getTralbumDetails as any).mockResolvedValue({
+          price: 5.0,
+          is_purchasable: true,
+          title: 'Test Track',
+          tralbum_artist: 'Test Band',
+          currency: 'USD',
+          bandcamp_url: 'https://test.bandcamp.com/track/test'
+        });
 
         await portListenerCallback({ cartImport: { items: [mockCartItems[1]] } }, portState);
 
@@ -142,7 +149,14 @@ describe('cart_import_backend', () => {
       });
 
       it('should use currency minimum when API price is 0', async () => {
-        (getTralbumDetails as any).mockResolvedValue({ price: 0, is_purchasable: true });
+        (getTralbumDetails as any).mockResolvedValue({
+          price: 0,
+          is_purchasable: true,
+          title: 'Test Track',
+          tralbum_artist: 'Test Band',
+          currency: 'USD',
+          bandcamp_url: 'https://test.bandcamp.com/track/test'
+        });
 
         await portListenerCallback({ cartImport: { items: [mockCartItems[1]] } }, portState);
 
@@ -186,7 +200,7 @@ describe('cart_import_backend', () => {
         await portListenerCallback({ cartImport: { items: mixedItems } }, portState);
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
-          cartImportComplete: { message: 'Successfully added 1 items to cart. 1 items could not be added' }
+          cartImportComplete: { message: 'Successfully added 1 item to cart. 1 items could not be added' }
         });
       });
 
@@ -235,7 +249,14 @@ describe('cart_import_backend', () => {
           bandcamp_url: mockUrls[0],
           price: 10.0
         });
-        (getTralbumDetails as any).mockResolvedValueOnce({ price: 10.0, is_purchasable: true });
+        (getTralbumDetails as any).mockResolvedValueOnce({
+          price: 10.0,
+          is_purchasable: true,
+          title: 'Test Album',
+          tralbum_artist: 'Test Band',
+          currency: 'USD',
+          bandcamp_url: mockUrls[0]
+        });
 
         await portListenerCallback({ cartUrlImport: { urls: [mockUrls[0]] } }, portState);
 
@@ -286,12 +307,19 @@ describe('cart_import_backend', () => {
           bandcamp_url: mockUrls[0],
           price: 10.0
         });
-        (getTralbumDetails as any).mockResolvedValue({ price: 10.0, is_purchasable: true });
+        (getTralbumDetails as any).mockResolvedValue({
+          price: 10.0,
+          is_purchasable: true,
+          title: 'Test Album',
+          tralbum_artist: 'Test Band',
+          currency: 'USD',
+          bandcamp_url: mockUrls[0]
+        });
 
         await portListenerCallback({ cartUrlImport: { urls: [mockUrls[0]] } }, portState);
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
-          cartImportComplete: { message: 'Successfully added 1 items to cart' }
+          cartImportComplete: { message: 'Successfully added 1 item to cart' }
         });
       });
 
@@ -315,7 +343,14 @@ describe('cart_import_backend', () => {
             bandcamp_url: mockUrls[1],
             price: 5.0
           });
-        (getTralbumDetails as any).mockResolvedValue({ price: 10.0, is_purchasable: true });
+        (getTralbumDetails as any).mockResolvedValue({
+          price: 10.0,
+          is_purchasable: true,
+          title: 'Test Title',
+          tralbum_artist: 'Test Artist',
+          currency: 'USD',
+          bandcamp_url: 'https://test.bandcamp.com'
+        });
 
         await portListenerCallback({ cartUrlImport: { urls: mockUrls } }, portState);
 
@@ -348,6 +383,161 @@ describe('cart_import_backend', () => {
             totalCount: 0,
             errors: []
           })
+        });
+      });
+    });
+
+    describe('donation item handling', () => {
+      it('should process donation item and send both cart add and donation added messages', async () => {
+        (getTralbumDetails as any).mockResolvedValue({
+          title: 'Support Album',
+          tralbum_artist: 'Support Artist',
+          price: 10.0,
+          currency: 'USD',
+          is_purchasable: true,
+          bandcamp_url: 'https://test.bandcamp.com/album/support'
+        });
+
+        await portListenerCallback(
+          {
+            cartDonationItem: {
+              item_id: 9999,
+              item_type: 'a',
+              message: 'Thank you for your support!'
+            }
+          },
+          portState
+        );
+
+        expect(getTralbumDetails).toHaveBeenCalledWith(9999, 'a', 'http://bandcamp.com', expect.any(Function));
+
+        expect(mockPort.postMessage).toHaveBeenCalledWith({
+          cartAddRequest: {
+            item_id: 9999,
+            item_type: 'a',
+            item_title: 'Support Album',
+            band_name: 'Support Artist',
+            unit_price: 10.0,
+            currency: 'USD',
+            url: 'https://test.bandcamp.com/album/support'
+          }
+        });
+
+        expect(mockPort.postMessage).toHaveBeenCalledWith({
+          cartDonationAdded: {
+            item_id: 9999,
+            item_title: 'Support Album',
+            message: 'Thank you for your support!'
+          }
+        });
+      });
+
+      it('should process donation item without custom message', async () => {
+        (getTralbumDetails as any).mockResolvedValue({
+          title: 'Support Album',
+          tralbum_artist: 'Support Artist',
+          price: 10.0,
+          currency: 'USD',
+          is_purchasable: true,
+          bandcamp_url: 'https://test.bandcamp.com/album/support'
+        });
+
+        await portListenerCallback(
+          {
+            cartDonationItem: {
+              item_id: 9999,
+              item_type: 'a'
+            }
+          },
+          portState
+        );
+
+        expect(mockPort.postMessage).toHaveBeenCalledWith({
+          cartDonationAdded: {
+            item_id: 9999,
+            item_title: 'Support Album',
+            message: undefined
+          }
+        });
+      });
+
+      it('should use currency minimum when donation item has zero price', async () => {
+        (getTralbumDetails as any).mockResolvedValue({
+          title: 'Support Album',
+          tralbum_artist: 'Support Artist',
+          price: 0,
+          currency: 'USD',
+          is_purchasable: true,
+          bandcamp_url: 'https://test.bandcamp.com/album/support'
+        });
+
+        await portListenerCallback(
+          {
+            cartDonationItem: {
+              item_id: 9999,
+              item_type: 'a',
+              message: 'Thanks!'
+            }
+          },
+          portState
+        );
+
+        expect(mockPort.postMessage).toHaveBeenCalledWith({
+          cartAddRequest: expect.objectContaining({
+            unit_price: 0.5
+          })
+        });
+      });
+
+      it('should handle donation item error when not purchasable', async () => {
+        (getTralbumDetails as any).mockResolvedValue({
+          title: 'Support Album',
+          tralbum_artist: 'Support Artist',
+          price: 10.0,
+          currency: 'USD',
+          is_purchasable: false
+        });
+
+        await portListenerCallback(
+          {
+            cartDonationItem: {
+              item_id: 9999,
+              item_type: 'a',
+              message: 'Thank you!'
+            }
+          },
+          portState
+        );
+
+        expect(mockPort.postMessage).toHaveBeenCalledWith({
+          cartItemError: {
+            message: 'Failed to add donation item: Donation item "Support Album" is not purchasable'
+          }
+        });
+
+        expect(mockPort.postMessage).not.toHaveBeenCalledWith(
+          expect.objectContaining({ cartDonationAdded: expect.anything() })
+        );
+      });
+
+      it('should handle donation item error when API call fails', async () => {
+        (getTralbumDetails as any).mockRejectedValue(new Error('HTTP 404: Not Found'));
+
+        await portListenerCallback(
+          {
+            cartDonationItem: {
+              item_id: 9999,
+              item_type: 'a',
+              message: 'Thank you!'
+            }
+          },
+          portState
+        );
+
+        expect(mockPort.postMessage).toHaveBeenCalledWith({
+          cartItemError: {
+            message: 'Failed to add donation item: HTTP 404: Not Found'
+          }
         });
       });
     });

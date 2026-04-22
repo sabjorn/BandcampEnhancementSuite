@@ -38,11 +38,150 @@ interface CartExportData {
   tracks_export: CartExportItem[];
 }
 
+interface UrlCartItem {
+  id: number;
+  type: 'a' | 't';
+}
+
+interface UrlCartDonation {
+  id: number;
+  type: 'a' | 't';
+  message?: string;
+}
+
+interface UrlCartData {
+  items: UrlCartItem[];
+  donation?: UrlCartDonation;
+}
+
+interface ParsedUrlCartData {
+  items: Array<{
+    item_id: number;
+    item_type: 'a' | 't';
+    item_title: string;
+    band_name: string;
+    currency: string;
+    url: string;
+  }>;
+  donation?: UrlCartDonation;
+}
+
+function parseUrlCartData(base64Str: string): ParsedUrlCartData | null {
+  try {
+    const decoded = atob(base64Str);
+    const parsed = JSON.parse(decoded) as UrlCartData;
+
+    if (!parsed.items || !Array.isArray(parsed.items)) {
+      log.error('Invalid URL cart data: missing or invalid items array');
+      return null;
+    }
+
+    if (parsed.items.length === 0) {
+      log.error('Invalid URL cart data: items array is empty');
+      return null;
+    }
+
+    const items = parsed.items.map(item => {
+      if (typeof item.id !== 'number' || !item.type || (item.type !== 'a' && item.type !== 't')) {
+        throw new Error('Invalid item structure');
+      }
+
+      return {
+        item_id: item.id,
+        item_type: item.type,
+        item_title: '',
+        band_name: '',
+        currency: '',
+        url: ''
+      };
+    });
+
+    if (parsed.donation) {
+      const { id, type, message } = parsed.donation;
+
+      if (typeof id !== 'number' || !type || (type !== 'a' && type !== 't')) {
+        log.error('Invalid donation structure');
+        return { items };
+      }
+
+      return {
+        items,
+        donation: { id, type, message }
+      };
+    }
+
+    return { items };
+  } catch (error) {
+    log.error(`Failed to parse URL cart data: ${error}`);
+    return null;
+  }
+}
+
+function addDonationHighlight(cartItem: Element, message?: string): void {
+  const displayMessage = message || 'Support this project';
+
+  cartItem.classList.add('bes-donation-item');
+
+  const tooltip = document.createElement('div');
+  tooltip.className = 'bes-donation-tooltip';
+  tooltip.textContent = displayMessage;
+  tooltip.style.maxWidth = '400px';
+  tooltip.style.whiteSpace = 'normal';
+  tooltip.style.overflowWrap = 'break-word';
+  tooltip.style.position = 'fixed';
+
+  document.body.appendChild(tooltip);
+
+  const positionTooltip = () => {
+    const itemRect = cartItem.getBoundingClientRect();
+
+    tooltip.style.left = `${itemRect.left + itemRect.width / 2}px`;
+    tooltip.style.top = `${itemRect.top - tooltip.offsetHeight - 8}px`;
+    tooltip.style.transform = 'translateX(-50%)';
+  };
+
+  cartItem.addEventListener('mouseenter', () => {
+    positionTooltip();
+    tooltip.classList.add('visible');
+  });
+
+  cartItem.addEventListener('mouseleave', () => {
+    tooltip.classList.remove('visible');
+  });
+}
+
 export async function initCart(port: chrome.runtime.Port): Promise<void> {
   log.info('cart init');
 
-  let _lastImportState: any = null;
   let enableFetchCaching = false;
+  let pendingDonation: { id: number; type: 'a' | 't'; message?: string } | null = null;
+  let donationItemId: number | null = null;
+  let donationMessage: string | undefined = undefined;
+  let pendingCartAdds = 0;
+  let pendingCompletionMessage: string | null = null;
+
+  const handleImportCompletion = (message: string): void => {
+    removePersistentNotification('cart-import-progress');
+    showSuccessMessage(message);
+
+    if (pendingDonation) {
+      log.info(
+        `Cart import complete, now sending donation item: id=${pendingDonation.id}, type=${pendingDonation.type}`
+      );
+      port.postMessage({
+        cartDonationItem: {
+          item_id: pendingDonation.id,
+          item_type: pendingDonation.type,
+          message: pendingDonation.message
+        }
+      });
+      pendingDonation = null;
+      return;
+    }
+
+    sessionStorage.removeItem('bes_cart_processing');
+    log.info('Cart import complete, cleared processing flag');
+  };
 
   port.postMessage({ requestConfig: {} });
 
@@ -53,7 +192,6 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
     if (msg.cartImportState) {
       const state = msg.cartImportState;
-      _lastImportState = state;
 
       if (!state.isProcessing) return;
 
@@ -73,6 +211,8 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     }
 
     if (msg.cartAddRequest) {
+      pendingCartAdds++;
+
       try {
         log.info(`Starting cart add for ${msg.cartAddRequest.item_title} (${msg.cartAddRequest.item_id})`);
         const result = await addAlbumToCart(
@@ -103,16 +243,36 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
         if (itemList) {
           itemList.append(cartItem);
         }
+
+        if (donationItemId === msg.cartAddRequest.item_id) {
+          log.info(`Applying donation highlight to item ${donationItemId}`);
+          addDonationHighlight(cartItem, donationMessage);
+          donationItemId = null;
+          donationMessage = undefined;
+          sessionStorage.removeItem('bes_cart_processing');
+          log.info('Donation highlight added, cleared processing flag');
+        }
       } catch (error) {
         log.error(`Exception during cart add for ${msg.cartAddRequest.item_title}: ${error}`);
         showErrorMessage(`Failed to add "${msg.cartAddRequest.item_title}" to cart`);
+      } finally {
+        pendingCartAdds--;
+
+        if (pendingCartAdds === 0 && pendingCompletionMessage) {
+          handleImportCompletion(pendingCompletionMessage);
+          pendingCompletionMessage = null;
+        }
       }
       return;
     }
 
     if (msg.cartImportComplete) {
-      removePersistentNotification('cart-import-progress');
-      showSuccessMessage(msg.cartImportComplete.message);
+      if (pendingCartAdds === 0) {
+        handleImportCompletion(msg.cartImportComplete.message);
+        return;
+      }
+
+      pendingCompletionMessage = msg.cartImportComplete.message;
       return;
     }
 
@@ -124,9 +284,138 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     if (msg.cartImportError) {
       removePersistentNotification('cart-import-progress');
       showErrorMessage(`Import failed: ${msg.cartImportError.message}`);
+      sessionStorage.removeItem('bes_pending_cart_import');
+      sessionStorage.removeItem('bes_url_cart_param');
+      sessionStorage.removeItem('bes_cart_processing');
+      log.info('Cart import error, cleared all cart import sessionStorage flags');
+      return;
+    }
+
+    if (msg.cartDonationAdded) {
+      const { item_id, message } = msg.cartDonationAdded;
+      log.info(`Received cartDonationAdded message for item ${item_id}, will apply highlight when cart item is added`);
+      donationItemId = item_id;
+      donationMessage = message;
       return;
     }
   });
+
+  log.debug(`Checking for bes_cart data`);
+
+  const alreadyProcessed = sessionStorage.getItem('bes_cart_processing');
+  if (alreadyProcessed === 'true') {
+    log.info('Cart import already in progress or completed, skipping');
+    return;
+  }
+
+  const urlCartParam = sessionStorage.getItem('bes_url_cart_param');
+  const storedCartParam = sessionStorage.getItem('bes_pending_cart_import');
+
+  const cartDataToProcess = urlCartParam || storedCartParam;
+
+  if (cartDataToProcess) {
+    sessionStorage.setItem('bes_cart_processing', 'true');
+
+    const isFromUrl = !!urlCartParam;
+    log.info(
+      `Found cart data ${isFromUrl ? 'from URL parameter (via sessionStorage)' : 'from pending import'} (length: ${
+        cartDataToProcess.length
+      })`
+    );
+
+    const parsedData = (() => {
+      if (isFromUrl) {
+        return parseUrlCartData(cartDataToProcess);
+      }
+
+      try {
+        const parsed = JSON.parse(cartDataToProcess) as ParsedUrlCartData;
+        log.info('Successfully parsed cart data from sessionStorage');
+        return parsed;
+      } catch (error) {
+        log.error(`Failed to parse sessionStorage cart data: ${error}`);
+        return null;
+      }
+    })();
+
+    if (!parsedData) {
+      log.error('Failed to parse cart data, showing error to user');
+      showErrorMessage('Invalid cart data in URL');
+      sessionStorage.removeItem('bes_pending_cart_import');
+      sessionStorage.removeItem('bes_url_cart_param');
+      sessionStorage.removeItem('bes_cart_processing');
+      log.info('Cleared all cart import sessionStorage flags due to parse error');
+      return;
+    }
+
+    const sidecart = document.querySelector('#sidecart') as HTMLElement;
+    const cartNeedsCreation = sidecart && sidecart.style.display === 'none';
+
+    if (cartNeedsCreation && isFromUrl) {
+      log.info('Cart does not exist yet (sidecart hidden), storing data and adding first item to create cart');
+
+      const remainingData = {
+        items: parsedData.items.slice(1),
+        donation: parsedData.donation
+      };
+      sessionStorage.setItem('bes_pending_cart_import', JSON.stringify(remainingData));
+      sessionStorage.removeItem('bes_url_cart_param');
+      log.info(
+        `Stored remaining ${remainingData.items.length} items in sessionStorage for processing after reload, cleared URL param`
+      );
+
+      const firstItem = parsedData.items[0];
+      log.info(`Adding first item ${firstItem.item_id} to create cart, then will reload`);
+
+      showPersistentNotification({
+        id: 'cart-import-progress',
+        message: `Creating cart with first item, page will reload...`,
+        type: 'info'
+      });
+
+      port.postMessage({ cartImport: { items: [firstItem], isCreatingCart: true } });
+
+      const urlWithoutParam = new URL(window.location.href);
+      urlWithoutParam.searchParams.delete('bes_cart');
+      const cleanUrl = urlWithoutParam.toString();
+
+      setTimeout(() => {
+        log.info(`Reloading to clean URL: ${cleanUrl}`);
+        window.location.href = cleanUrl;
+      }, 1000);
+
+      return;
+    }
+
+    log.info('Cart exists, processing all items');
+    sessionStorage.removeItem('bes_pending_cart_import');
+
+    if (isFromUrl) {
+      sessionStorage.removeItem('bes_url_cart_param');
+      log.info('Cleared URL cart parameter from sessionStorage');
+    }
+
+    showPersistentNotification({
+      id: 'cart-import-progress',
+      message: `Starting import of ${parsedData.items.length} items from URL...`,
+      type: 'info'
+    });
+
+    log.info(`Sending cartImport message with ${parsedData.items.length} items to backend`);
+    port.postMessage({ cartImport: { items: parsedData.items, isCreatingCart: false } });
+
+    if (parsedData.donation) {
+      const { id, type, message } = parsedData.donation;
+      log.info(
+        `Storing donation item to send after cart import completes: id=${id}, type=${type}, hasMessage=${!!message}`
+      );
+      pendingDonation = { id, type, message };
+    } else {
+      log.debug('No donation item to process');
+    }
+  } else {
+    log.debug('No bes_cart URL parameter or stored cart data found');
+  }
 
   const importButton = createButton({
     className: 'buttonLink',
@@ -175,7 +464,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
         });
 
         if (importType === 'json') {
-          port.postMessage({ cartImport: { items: importData.tracks_export } });
+          port.postMessage({ cartImport: { items: importData.tracks_export, isCreatingCart: false } });
           return;
         }
 

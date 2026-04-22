@@ -400,12 +400,44 @@ const main = async (): Promise<void> => {
     initAudioFeatures(config_port);
   }
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const besCartParamValue = urlParams.get('bes_cart');
+  const hasBesCartParam = besCartParamValue !== null;
+  const hasStoredCartData =
+    sessionStorage.getItem('bes_pending_cart_import') !== null ||
+    sessionStorage.getItem('bes_url_cart_param') !== null;
+  const processingFlag = sessionStorage.getItem('bes_cart_processing');
+
+  log.info(
+    `Page load state - hasParam: ${hasBesCartParam}, hasStored: ${hasStoredCartData}, processing: ${processingFlag}`
+  );
+
+  if (hasBesCartParam) {
+    log.info(`Found bes_cart parameter in URL on page load!`);
+
+    sessionStorage.setItem('bes_url_cart_param', besCartParamValue!);
+
+    const newUrl = (() => {
+      const newSearch = Array.from(urlParams.entries())
+        .filter(([key]) => key !== 'bes_cart')
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&');
+
+      return window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+    })();
+
+    log.info(`Redirecting to clean URL: ${window.location.origin}${newUrl}`);
+
+    window.location.replace(newUrl);
+    return;
+  }
+
   const dataBlobElement: Element | null = document.querySelector('[data-blob]');
   if (dataBlobElement) {
     const dataBlobAttr: string | null = dataBlobElement.getAttribute('data-blob');
     if (dataBlobAttr) {
       const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
-      if (has_cart) {
+      if (has_cart || hasBesCartParam || hasStoredCartData) {
         await initCart(config_port);
       }
     }

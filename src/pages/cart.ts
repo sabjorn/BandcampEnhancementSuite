@@ -349,7 +349,10 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
         donation: parsedData.donation
       };
       sessionStorage.setItem('bes_pending_cart_import', JSON.stringify(remainingData));
-      log.info(`Stored remaining ${remainingData.items.length} items in sessionStorage for processing after reload`);
+      sessionStorage.removeItem('bes_url_cart_param');
+      log.info(
+        `Stored remaining ${remainingData.items.length} items in sessionStorage for processing after reload, cleared URL param`
+      );
 
       const firstItem = parsedData.items[0];
       log.info(`Adding first item ${firstItem.item_id} to create cart, then will reload`);

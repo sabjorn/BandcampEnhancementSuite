@@ -157,6 +157,31 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   let pendingDonation: { id: number; type: 'a' | 't'; message?: string } | null = null;
   let donationItemId: number | null = null;
   let donationMessage: string | undefined = undefined;
+  let pendingCartAdds = 0;
+  let pendingCompletionMessage: string | null = null;
+
+  const handleImportCompletion = (message: string): void => {
+    removePersistentNotification('cart-import-progress');
+    showSuccessMessage(message);
+
+    if (pendingDonation) {
+      log.info(
+        `Cart import complete, now sending donation item: id=${pendingDonation.id}, type=${pendingDonation.type}`
+      );
+      port.postMessage({
+        cartDonationItem: {
+          item_id: pendingDonation.id,
+          item_type: pendingDonation.type,
+          message: pendingDonation.message
+        }
+      });
+      pendingDonation = null;
+      return;
+    }
+
+    sessionStorage.removeItem('bes_cart_processing');
+    log.info('Cart import complete, cleared processing flag');
+  };
 
   port.postMessage({ requestConfig: {} });
 
@@ -186,6 +211,8 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     }
 
     if (msg.cartAddRequest) {
+      pendingCartAdds++;
+
       try {
         log.info(`Starting cart add for ${msg.cartAddRequest.item_title} (${msg.cartAddRequest.item_id})`);
         const result = await addAlbumToCart(
@@ -228,31 +255,24 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       } catch (error) {
         log.error(`Exception during cart add for ${msg.cartAddRequest.item_title}: ${error}`);
         showErrorMessage(`Failed to add "${msg.cartAddRequest.item_title}" to cart`);
+      } finally {
+        pendingCartAdds--;
+
+        if (pendingCartAdds === 0 && pendingCompletionMessage) {
+          handleImportCompletion(pendingCompletionMessage);
+          pendingCompletionMessage = null;
+        }
       }
       return;
     }
 
     if (msg.cartImportComplete) {
-      removePersistentNotification('cart-import-progress');
-      showSuccessMessage(msg.cartImportComplete.message);
-
-      if (pendingDonation) {
-        log.info(
-          `Cart import complete, now sending donation item: id=${pendingDonation.id}, type=${pendingDonation.type}`
-        );
-        port.postMessage({
-          cartDonationItem: {
-            item_id: pendingDonation.id,
-            item_type: pendingDonation.type,
-            message: pendingDonation.message
-          }
-        });
-        pendingDonation = null;
-      } else {
-        sessionStorage.removeItem('bes_cart_processing');
-        log.info('Cart import complete, cleared processing flag');
+      if (pendingCartAdds === 0) {
+        handleImportCompletion(msg.cartImportComplete.message);
+        return;
       }
 
+      pendingCompletionMessage = msg.cartImportComplete.message;
       return;
     }
 

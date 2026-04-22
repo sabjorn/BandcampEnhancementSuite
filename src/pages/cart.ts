@@ -253,8 +253,10 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     if (msg.cartImportError) {
       removePersistentNotification('cart-import-progress');
       showErrorMessage(`Import failed: ${msg.cartImportError.message}`);
+      sessionStorage.removeItem('bes_pending_cart_import');
+      sessionStorage.removeItem('bes_url_cart_param');
       sessionStorage.removeItem('bes_cart_processing');
-      log.info('Cart import error, cleared processing flag');
+      log.info('Cart import error, cleared all cart import sessionStorage flags');
       return;
     }
 
@@ -329,7 +331,9 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       log.error('Failed to parse cart data, showing error to user');
       showErrorMessage('Invalid cart data in URL');
       sessionStorage.removeItem('bes_pending_cart_import');
+      sessionStorage.removeItem('bes_url_cart_param');
       sessionStorage.removeItem('bes_cart_processing');
+      log.info('Cleared all cart import sessionStorage flags due to parse error');
       return;
     }
 

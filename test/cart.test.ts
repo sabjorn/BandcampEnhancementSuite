@@ -504,6 +504,102 @@ invalid line`;
     });
   });
 
+  describe('URL cart import error handling', () => {
+    let mockSessionStorage: any;
+
+    beforeEach(() => {
+      mockSessionStorage = {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        clear: vi.fn(),
+        length: 0,
+        key: vi.fn()
+      };
+      global.sessionStorage = mockSessionStorage;
+
+      createDomNodes(`
+        <div id="sidecartReveal"></div>
+        <div id="sidecartSummary"></div>
+        <div id="sidecart" style="display: block;">
+          <div id="item_list"></div>
+        </div>
+        <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
+      `);
+    });
+
+    it('should clear all sessionStorage flags when URL data parse fails', async () => {
+      mockSessionStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'bes_url_cart_param') return 'invalid-base64-!!!';
+        if (key === 'bes_cart_processing') return null;
+        return null;
+      });
+
+      await initCart(mockPort);
+
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_url_cart_param');
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_cart_processing');
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_pending_cart_import');
+      expect(showErrorMessage).toHaveBeenCalledWith('Invalid cart data in URL');
+    });
+
+    it('should clear all sessionStorage flags when JSON is invalid', async () => {
+      const invalidJson = btoa('not valid json{');
+      mockSessionStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'bes_url_cart_param') return invalidJson;
+        if (key === 'bes_cart_processing') return null;
+        return null;
+      });
+
+      await initCart(mockPort);
+
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_url_cart_param');
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_cart_processing');
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_pending_cart_import');
+      expect(showErrorMessage).toHaveBeenCalledWith('Invalid cart data in URL');
+    });
+
+    it('should clear all sessionStorage flags when items array is missing', async () => {
+      const missingItems = btoa(JSON.stringify({ donation: { id: 123, type: 'a' } }));
+      mockSessionStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'bes_url_cart_param') return missingItems;
+        if (key === 'bes_cart_processing') return null;
+        return null;
+      });
+
+      await initCart(mockPort);
+
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_url_cart_param');
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_cart_processing');
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_pending_cart_import');
+      expect(showErrorMessage).toHaveBeenCalledWith('Invalid cart data in URL');
+    });
+
+    it('should clear all sessionStorage flags on cart import error', async () => {
+      const validData = btoa(JSON.stringify({ items: [{ id: 123, type: 'a' }] }));
+      mockSessionStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'bes_url_cart_param') return validData;
+        if (key === 'bes_cart_processing') return null;
+        return null;
+      });
+
+      await initCart(mockPort);
+
+      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageHandler({
+        cartImportError: {
+          message: 'Backend processing failed'
+        }
+      });
+
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_url_cart_param');
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_cart_processing');
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_pending_cart_import');
+      expect(showErrorMessage).toHaveBeenCalledWith('Import failed: Backend processing failed');
+    });
+  });
+
   describe('donation highlight', () => {
     beforeEach(async () => {
       createDomNodes(`

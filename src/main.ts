@@ -403,7 +403,9 @@ const main = async (): Promise<void> => {
   const urlParams = new URLSearchParams(window.location.search);
   const besCartParamValue = urlParams.get('bes_cart');
   const hasBesCartParam = besCartParamValue !== null;
-  const hasStoredCartData = sessionStorage.getItem('bes_pending_cart_import') !== null;
+  const hasStoredCartData =
+    sessionStorage.getItem('bes_pending_cart_import') !== null ||
+    sessionStorage.getItem('bes_url_cart_param') !== null;
   const processingFlag = sessionStorage.getItem('bes_cart_processing');
 
   log.info(

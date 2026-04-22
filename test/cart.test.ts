@@ -188,7 +188,7 @@ describe('Cart', () => {
         type: 'info'
       });
       expect(mockPort.postMessage).toHaveBeenCalledWith({
-        cartImport: { items: mockCartData.tracks_export }
+        cartImport: { items: mockCartData.tracks_export, isCreatingCart: false }
       });
     });
 
@@ -211,7 +211,7 @@ describe('Cart', () => {
       await importButton.click();
 
       expect(mockPort.postMessage).toHaveBeenCalledWith({
-        cartImport: { items: mockCartData.tracks_export }
+        cartImport: { items: mockCartData.tracks_export, isCreatingCart: false }
       });
     });
 
@@ -504,30 +504,23 @@ invalid line`;
     });
   });
 
-  describe('donation banner', () => {
+  describe('donation highlight', () => {
     beforeEach(async () => {
       createDomNodes(`
         <div id="sidecartReveal"></div>
         <div id="sidecartSummary"></div>
-        <div id="item_list">
-          <div id="sidecart_item_9999" class="item"></div>
+        <div id="sidecart">
+          <div id="item_list">
+            <div id="sidecart_item_9999" class="item"></div>
+          </div>
         </div>
         <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
       `);
 
-      global.sessionStorage = {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-        clear: vi.fn(),
-        length: 0,
-        key: vi.fn()
-      };
-
       initCart(mockPort);
     });
 
-    it('should display donation banner when cartDonationAdded message received', async () => {
+    it('should add highlight class and tooltip when cartDonationAdded message received', async () => {
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
 
       await messageHandler({
@@ -538,9 +531,12 @@ invalid line`;
         }
       });
 
-      const banner = document.querySelector('#bes-donation-banner-9999');
-      expect(banner).not.toBeNull();
-      expect(banner?.textContent).toContain('Thank you!');
+      const cartItem = document.querySelector('#sidecart_item_9999');
+      const tooltip = document.querySelector('.bes-donation-tooltip');
+
+      expect(cartItem?.classList.contains('bes-donation-item')).toBe(true);
+      expect(tooltip).not.toBeNull();
+      expect(tooltip?.textContent).toBe('Thank you!');
     });
 
     it('should use default message when no custom message provided', async () => {
@@ -553,13 +549,11 @@ invalid line`;
         }
       });
 
-      const banner = document.querySelector('#bes-donation-banner-9999');
-      expect(banner?.textContent).toContain('Support this project');
+      const tooltip = document.querySelector('.bes-donation-tooltip');
+      expect(tooltip?.textContent).toBe('Support this project');
     });
 
-    it('should not display donation banner if already dismissed', async () => {
-      (global.sessionStorage.getItem as any).mockReturnValue(JSON.stringify(['9999']));
-
+    it('should append tooltip to sidecart container', async () => {
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
 
       await messageHandler({
@@ -570,47 +564,10 @@ invalid line`;
         }
       });
 
-      const banner = document.querySelector('#bes-donation-banner-9999');
-      expect(banner).toBeNull();
-    });
+      const sidecart = document.querySelector('#sidecart');
+      const tooltip = document.querySelector('.bes-donation-tooltip');
 
-    it('should remove banner and store in sessionStorage when close button clicked', async () => {
-      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
-
-      await messageHandler({
-        cartDonationAdded: {
-          item_id: 9999,
-          item_title: 'Support Album',
-          message: 'Thank you!'
-        }
-      });
-
-      const banner = document.querySelector('#bes-donation-banner-9999');
-      const closeButton = banner?.querySelector('.bes-donation-close') as HTMLButtonElement;
-
-      expect(closeButton).not.toBeNull();
-
-      closeButton.click();
-
-      expect(document.querySelector('#bes-donation-banner-9999')).toBeNull();
-      expect(global.sessionStorage.setItem).toHaveBeenCalledWith('bes_dismissed_donations', JSON.stringify(['9999']));
-    });
-
-    it('should position banner after cart item', async () => {
-      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
-
-      await messageHandler({
-        cartDonationAdded: {
-          item_id: 9999,
-          item_title: 'Support Album',
-          message: 'Thank you!'
-        }
-      });
-
-      const cartItem = document.querySelector('#sidecart_item_9999');
-      const banner = document.querySelector('#bes-donation-banner-9999');
-
-      expect(cartItem?.contains(banner)).toBe(true);
+      expect(sidecart?.contains(tooltip)).toBe(true);
     });
   });
 });

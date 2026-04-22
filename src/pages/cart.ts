@@ -156,7 +156,6 @@ function addDonationHighlight(cartItem: Element, message?: string): void {
 export async function initCart(port: chrome.runtime.Port): Promise<void> {
   log.info('cart init');
 
-  let _lastImportState: any = null;
   let enableFetchCaching = false;
   let pendingDonation: { id: number; type: 'a' | 't'; message?: string } | null = null;
 
@@ -169,7 +168,6 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
     if (msg.cartImportState) {
       const state = msg.cartImportState;
-      _lastImportState = state;
 
       if (!state.isProcessing) return;
 

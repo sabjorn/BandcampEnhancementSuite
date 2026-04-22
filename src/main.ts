@@ -412,13 +412,8 @@ const main = async (): Promise<void> => {
 
   if (hasBesCartParam) {
     log.info(`Found bes_cart parameter in URL on page load!`);
-    log.info(`This means either: (1) first visit, or (2) browser restored URL from address bar on refresh`);
-    log.info(`Full URL: ${window.location.href}`);
 
     sessionStorage.setItem('bes_url_cart_param', besCartParamValue!);
-    sessionStorage.setItem('bes_cart_param_removed', 'true');
-
-    log.info(`Removing bes_cart parameter. Current URL: ${window.location.href}`);
 
     const newSearch = Array.from(urlParams.entries())
       .filter(([key]) => key !== 'bes_cart')
@@ -427,18 +422,10 @@ const main = async (): Promise<void> => {
 
     const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
 
-    log.info(`New URL will be: ${window.location.origin}${newUrl}`);
+    log.info(`Redirecting to clean URL: ${window.location.origin}${newUrl}`);
 
-    window.history.replaceState({}, '', newUrl);
-
-    setTimeout(() => {
-      const stillThere = new URLSearchParams(window.location.search).has('bes_cart');
-      log.info(`URL after replaceState: ${window.location.href}, parameter still there: ${stillThere}`);
-      if (stillThere) {
-        log.error('Parameter still in URL after replaceState!');
-        window.history.replaceState({}, '', newUrl);
-      }
-    }, 100);
+    window.location.replace(newUrl);
+    return;
   }
 
   const dataBlobElement: Element | null = document.querySelector('[data-blob]');

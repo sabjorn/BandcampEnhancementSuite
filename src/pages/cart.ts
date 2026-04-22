@@ -155,6 +155,8 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
   let enableFetchCaching = false;
   let pendingDonation: { id: number; type: 'a' | 't'; message?: string } | null = null;
+  let donationItemId: number | null = null;
+  let donationMessage: string | undefined = undefined;
 
   port.postMessage({ requestConfig: {} });
 
@@ -214,6 +216,15 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
         if (itemList) {
           itemList.append(cartItem);
         }
+
+        if (donationItemId === msg.cartAddRequest.item_id) {
+          log.info(`Applying donation highlight to item ${donationItemId}`);
+          addDonationHighlight(cartItem, donationMessage);
+          donationItemId = null;
+          donationMessage = undefined;
+          sessionStorage.removeItem('bes_cart_processing');
+          log.info('Donation highlight added, cleared processing flag');
+        }
       } catch (error) {
         log.error(`Exception during cart add for ${msg.cartAddRequest.item_title}: ${error}`);
         showErrorMessage(`Failed to add "${msg.cartAddRequest.item_title}" to cart`);
@@ -262,29 +273,9 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
     if (msg.cartDonationAdded) {
       const { item_id, message } = msg.cartDonationAdded;
-      const itemId = String(item_id);
-
-      log.info(`Received cartDonationAdded message for item ${itemId}`);
-
-      const insertDonationHighlight = (attempt: number = 0): void => {
-        const cartItem = document.querySelector(`#sidecart_item_${itemId}`);
-
-        if (cartItem) {
-          addDonationHighlight(cartItem, message);
-          sessionStorage.removeItem('bes_cart_processing');
-          log.info(`Donation highlight added to cart item ${itemId}, cleared processing flag`);
-        } else if (attempt < 10) {
-          log.debug(`Cart item not yet in DOM for donation ${itemId}, retrying (attempt ${attempt + 1}/10)`);
-          setTimeout(() => insertDonationHighlight(attempt + 1), 100);
-        } else {
-          sessionStorage.removeItem('bes_cart_processing');
-          log.error(
-            `Failed to add donation highlight after 10 attempts: cart item #sidecart_item_${itemId} not found, cleared processing flag`
-          );
-        }
-      };
-
-      insertDonationHighlight();
+      log.info(`Received cartDonationAdded message for item ${item_id}, will apply highlight when cart item is added`);
+      donationItemId = item_id;
+      donationMessage = message;
       return;
     }
   });

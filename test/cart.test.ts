@@ -77,7 +77,11 @@ vi.mock('../src/components/buttons', () => ({
 }));
 
 vi.mock('../src/components/shoppingCart', () => ({
-  createShoppingCartItem: vi.fn().mockReturnValue(document.createElement('div'))
+  createShoppingCartItem: vi.fn().mockImplementation((options: any) => {
+    const div = document.createElement('div');
+    div.id = `sidecart_item_${options.itemId}`;
+    return div;
+  })
 }));
 
 vi.mock('../src/components/svgIcons', () => ({
@@ -125,6 +129,7 @@ describe('Cart', () => {
   });
 
   afterEach(() => {
+    document.querySelectorAll('.bes-donation-tooltip').forEach(el => el.remove());
     cleanupTestNodes();
     mockButtons.length = 0;
     vi.clearAllMocks();
@@ -601,29 +606,63 @@ invalid line`;
   });
 
   describe('donation highlight', () => {
+    let messageHandler: any;
+    let localMockPort: any;
+
     beforeEach(async () => {
+      const { addAlbumToCart } = await import('../src/bclient');
+      const { createShoppingCartItem } = await import('../src/components/shoppingCart');
+
+      vi.mocked(addAlbumToCart).mockClear();
+      vi.mocked(addAlbumToCart).mockResolvedValue(new Response('{"success": true}', { status: 200 }));
+
+      vi.mocked(createShoppingCartItem).mockClear();
+      vi.mocked(createShoppingCartItem).mockImplementation((options: any) => {
+        const div = document.createElement('div');
+        div.id = `sidecart_item_${options.itemId}`;
+        return div;
+      });
+
+      localMockPort = {
+        onMessage: {
+          addListener: vi.fn()
+        },
+        postMessage: vi.fn()
+      };
+
       createDomNodes(`
         <div id="sidecartReveal"></div>
         <div id="sidecartSummary"></div>
         <div id="sidecart">
-          <div id="item_list">
-            <div id="sidecart_item_9999" class="item"></div>
-          </div>
+          <div id="item_list"></div>
         </div>
         <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
       `);
 
-      initCart(mockPort);
+      initCart(localMockPort);
+
+      const calls = localMockPort.onMessage.addListener.mock.calls;
+      messageHandler = calls[calls.length - 1][0];
     });
 
-    it('should add highlight class and tooltip when cartDonationAdded message received', async () => {
-      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
-
-      await messageHandler({
+    it('should add highlight class and tooltip when donation item is added after cartDonationAdded', async () => {
+      messageHandler({
         cartDonationAdded: {
           item_id: 9999,
           item_title: 'Support Album',
           message: 'Thank you!'
+        }
+      });
+
+      await messageHandler({
+        cartAddRequest: {
+          item_id: 9999,
+          item_type: 'a',
+          item_title: 'Support Album',
+          band_name: 'Test Band',
+          unit_price: 5.0,
+          currency: 'USD',
+          url: 'https://test.bandcamp.com/album/support'
         }
       });
 
@@ -636,12 +675,22 @@ invalid line`;
     });
 
     it('should use default message when no custom message provided', async () => {
-      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
-
-      await messageHandler({
+      messageHandler({
         cartDonationAdded: {
           item_id: 9999,
           item_title: 'Support Album'
+        }
+      });
+
+      await messageHandler({
+        cartAddRequest: {
+          item_id: 9999,
+          item_type: 'a',
+          item_title: 'Support Album',
+          band_name: 'Test Band',
+          unit_price: 5.0,
+          currency: 'USD',
+          url: 'https://test.bandcamp.com/album/support'
         }
       });
 
@@ -650,9 +699,7 @@ invalid line`;
     });
 
     it('should append tooltip to document body', async () => {
-      const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
-
-      await messageHandler({
+      messageHandler({
         cartDonationAdded: {
           item_id: 9999,
           item_title: 'Support Album',
@@ -660,9 +707,81 @@ invalid line`;
         }
       });
 
+      await messageHandler({
+        cartAddRequest: {
+          item_id: 9999,
+          item_type: 'a',
+          item_title: 'Support Album',
+          band_name: 'Test Band',
+          unit_price: 5.0,
+          currency: 'USD',
+          url: 'https://test.bandcamp.com/album/support'
+        }
+      });
+
       const tooltip = document.querySelector('.bes-donation-tooltip');
 
       expect(document.body.contains(tooltip)).toBe(true);
+    });
+
+    it('should process donation when cart already exists via URL import', async () => {
+      const urlData = {
+        items: [{ id: 1234, type: 'a' as const }],
+        donation: { id: 5678, type: 'a' as const, message: 'Support message' }
+      };
+      const base64Data = btoa(JSON.stringify(urlData));
+
+      const mockSessionStorage = {
+        getItem: vi.fn((key: string) => {
+          if (key === 'bes_url_cart_param') return base64Data;
+          if (key === 'bes_cart_processing') return null;
+          return null;
+        }),
+        setItem: vi.fn(),
+        removeItem: vi.fn()
+      };
+      Object.defineProperty(window, 'sessionStorage', {
+        value: mockSessionStorage,
+        writable: true
+      });
+
+      createDomNodes(`
+        <div id="sidecartReveal"></div>
+        <div id="sidecartSummary"></div>
+        <div id="sidecart" style="display: block;">
+          <div id="item_list"></div>
+        </div>
+        <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
+      `);
+
+      const testPort = {
+        onMessage: {
+          addListener: vi.fn()
+        },
+        postMessage: vi.fn()
+      } as any;
+
+      await initCart(testPort);
+
+      expect(testPort.postMessage).toHaveBeenCalledWith({
+        cartImport: { items: expect.any(Array), isCreatingCart: false }
+      });
+
+      const messageHandler = testPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageHandler({
+        cartImportComplete: {
+          message: 'Successfully added 1 item to cart'
+        }
+      });
+
+      expect(testPort.postMessage).toHaveBeenCalledWith({
+        cartDonationItem: {
+          item_id: 5678,
+          item_type: 'a',
+          message: 'Support message'
+        }
+      });
     });
   });
 });

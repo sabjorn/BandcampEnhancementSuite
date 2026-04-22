@@ -553,7 +553,7 @@ invalid line`;
       expect(tooltip?.textContent).toBe('Support this project');
     });
 
-    it('should append tooltip to sidecart container', async () => {
+    it('should append tooltip to document body', async () => {
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
 
       await messageHandler({
@@ -564,10 +564,9 @@ invalid line`;
         }
       });
 
-      const sidecart = document.querySelector('#sidecart');
       const tooltip = document.querySelector('.bes-donation-tooltip');
 
-      expect(sidecart?.contains(tooltip)).toBe(true);
+      expect(document.body.contains(tooltip)).toBe(true);
     });
   });
 });

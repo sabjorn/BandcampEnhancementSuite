@@ -119,12 +119,6 @@ function parseUrlCartData(base64Str: string): ParsedUrlCartData | null {
 
 function addDonationHighlight(cartItem: Element, message?: string): void {
   const displayMessage = message || 'Support this project';
-  const sidecart = document.querySelector('#sidecart');
-
-  if (!sidecart) {
-    log.error('Could not find #sidecart for tooltip positioning');
-    return;
-  }
 
   cartItem.classList.add('bes-donation-item');
 
@@ -134,15 +128,15 @@ function addDonationHighlight(cartItem: Element, message?: string): void {
   tooltip.style.maxWidth = '400px';
   tooltip.style.whiteSpace = 'normal';
   tooltip.style.overflowWrap = 'break-word';
+  tooltip.style.position = 'fixed';
 
-  sidecart.appendChild(tooltip);
+  document.body.appendChild(tooltip);
 
   const positionTooltip = () => {
     const itemRect = cartItem.getBoundingClientRect();
-    const sidecartRect = sidecart.getBoundingClientRect();
 
-    tooltip.style.left = `${itemRect.left - sidecartRect.left + itemRect.width / 2}px`;
-    tooltip.style.top = `${itemRect.top - sidecartRect.top - tooltip.offsetHeight - 8}px`;
+    tooltip.style.left = `${itemRect.left + itemRect.width / 2}px`;
+    tooltip.style.top = `${itemRect.top - tooltip.offsetHeight - 8}px`;
     tooltip.style.transform = 'translateX(-50%)';
   };
 

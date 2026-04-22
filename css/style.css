@@ -827,7 +827,7 @@ button.bes-downloadall[disabled]::after {
 }
 
 .bes-donation-tooltip {
-  position: absolute;
+  position: fixed;
   padding: 8px 12px;
   background: #333;
   color: #fff;

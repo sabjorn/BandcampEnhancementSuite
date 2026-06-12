@@ -200,12 +200,23 @@ describe('DownloadHelper', () => {
       const buttonClickedCallback = createButtonCall.buttonClicked;
 
       expect(buttonClickedCallback).toBeDefined();
-      await buttonClickedCallback!();
+
+      // Start the download (don't await yet)
+      const downloadPromise = buttonClickedCallback!();
+
+      // Simulate the backend completing the download
+      const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
+      await messageListener({ type: 'downloadComplete', success: true });
+
+      // Now await the download
+      await downloadPromise;
 
       expect(global.chrome.runtime.connect).toHaveBeenCalledWith({ name: 'bes' });
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadZip',
-        urls: ['http://example.com/file1.flac']
+        urls: ['http://example.com/file1.flac'],
+        partNumber: 1,
+        totalParts: 1
       });
     });
 
@@ -372,12 +383,22 @@ describe('DownloadHelper', () => {
 
       vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
 
-      await downloadAsZip();
+      // Start the download
+      const downloadPromise = downloadAsZip();
+
+      // Simulate the backend completing the download
+      const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
+      await messageListener({ type: 'downloadComplete', success: true });
+
+      // Await completion
+      await downloadPromise;
 
       expect(global.chrome.runtime.connect).toHaveBeenCalledWith({ name: 'bes' });
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadZip',
-        urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac']
+        urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac'],
+        partNumber: 1,
+        totalParts: 1
       });
     });
 
@@ -392,14 +413,20 @@ describe('DownloadHelper', () => {
 
       const getElementSpy = vi.spyOn(document, 'getElementById').mockReturnValue(null);
 
-      await downloadAsZip();
+      // Start download
+      const downloadPromise = downloadAsZip();
 
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
 
+      // Send progress message
       await messageListener({
         type: 'downloadProgress',
         message: 'Starting download...'
       });
+
+      // Complete the download
+      await messageListener({ type: 'downloadComplete', success: true });
+      await downloadPromise;
 
       expect(vi.mocked(showPersistentNotification)).toHaveBeenCalledWith({
         id: 'bes-download-progress',

@@ -337,6 +337,32 @@ function createZipMessageHandler(): {
   return { zipChunks, expectedChunks, zipFilename, handleMessage };
 }
 
+async function downloadBatch(urls: string[], partNumber: number, totalParts: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const port = chrome.runtime.connect({ name: 'bes' });
+    const { handleMessage } = createZipMessageHandler();
+
+    port.onMessage.addListener(async message => {
+      await handleMessage(message);
+      if (message.type === 'downloadComplete') {
+        port.disconnect();
+        if (message.success) {
+          resolve();
+        } else {
+          reject(new Error(message.message));
+        }
+      }
+    });
+
+    port.postMessage({
+      type: 'downloadZip',
+      urls,
+      partNumber,
+      totalParts
+    });
+  });
+}
+
 export async function downloadAsZip(): Promise<void> {
   const allLinks = [...document.querySelectorAll('.download-title .item-button')];
   const urls = allLinks.map(item => item.getAttribute('href')).filter((url): url is string => url !== null);
@@ -352,25 +378,45 @@ export async function downloadAsZip(): Promise<void> {
     log.warn(`Warning: ${allLinks.length - urls.length} links have no href attribute`);
   }
 
-  log.info(`Starting zip download for ${urls.length} files via background script`);
+  // Calculate batches based on estimated file sizes
+  const AVERAGE_TRACK_SIZE_MB = 35;
+  const MAX_ZIP_SIZE_MB = 400;
+  const filesPerBatch = Math.floor(MAX_ZIP_SIZE_MB / AVERAGE_TRACK_SIZE_MB); // ~11 files
 
+  const batches: string[][] = [];
+  for (let i = 0; i < urls.length; i += filesPerBatch) {
+    batches.push(urls.slice(i, Math.min(i + filesPerBatch, urls.length)));
+  }
+
+  const totalParts = batches.length;
+  log.info(`Splitting ${urls.length} files into ${totalParts} part(s) (${filesPerBatch} files per part)`);
+
+  // Download each batch sequentially
   try {
-    const port = chrome.runtime.connect({ name: 'bes' });
-    const { handleMessage } = createZipMessageHandler();
+    for (let i = 0; i < batches.length; i++) {
+      const partNumber = i + 1;
 
-    port.onMessage.addListener(async message => {
-      await handleMessage(message);
-      if (message.type === 'downloadComplete') {
-        port.disconnect();
+      if (totalParts > 1) {
+        showPersistentNotification({
+          id: 'bes-download-progress',
+          message: `Preparing part ${partNumber} of ${totalParts}...`,
+          type: 'info'
+        });
       }
-    });
 
-    port.postMessage({
-      type: 'downloadZip',
-      urls: urls
-    });
+      log.info(`Starting download of part ${partNumber}/${totalParts} (${batches[i].length} files)`);
+      await downloadBatch(batches[i], partNumber, totalParts);
+      log.info(`Completed part ${partNumber}/${totalParts}`);
+    }
+
+    // All parts complete
+    if (totalParts > 1) {
+      removePersistentNotification('bes-download-progress');
+      showSuccessMessage(`Successfully downloaded all ${totalParts} parts (${urls.length} files total)`);
+    }
   } catch (error) {
-    log.error(`Error connecting to background script: ${error}`);
-    showErrorMessage('Failed to connect to background script for downloading');
+    log.error(`Error during multi-part download: ${error}`);
+    removePersistentNotification('bes-download-progress');
+    showErrorMessage('Download failed. Check console for details.');
   }
 }

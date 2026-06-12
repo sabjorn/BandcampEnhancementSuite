@@ -9,6 +9,8 @@ const BATCH_SIZE = 5;
 interface DownloadRequest {
   type: 'downloadZip';
   urls: string[];
+  partNumber?: number; // 1-indexed: 1, 2, 3, ... (optional for multi-part downloads)
+  totalParts?: number; // Total number of parts (optional for multi-part downloads)
 }
 
 interface DownloadProgress {
@@ -34,8 +36,14 @@ interface ZipChunk {
   filename: string;
 }
 
-async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Promise<void> {
-  log.info(`Starting background download for ${urls.length} files`);
+async function handleDownloadZip(
+  urls: string[],
+  port: chrome.runtime.Port,
+  partNumber?: number,
+  totalParts?: number
+): Promise<void> {
+  const partInfo = totalParts && totalParts > 1 ? ` (part ${partNumber} of ${totalParts})` : '';
+  log.info(`Starting background download for ${urls.length} files${partInfo}`);
 
   const files: { name: string; input: Uint8Array }[] = [];
   let completed = 0;
@@ -123,7 +131,8 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
     log.info(`Zip blob created, size: ${blob.size} bytes`);
 
     const date = dateString();
-    const filename = `bandcamp_${date}.zip`;
+    const baseFilename = `bandcamp_${date}`;
+    const filename = totalParts && totalParts > 1 ? `${baseFilename}_part${partNumber}.zip` : `${baseFilename}.zip`;
 
     log.info('Preparing to send zip data to frontend in chunks...');
 
@@ -228,7 +237,7 @@ export function initDownloadBackend(): void {
     port.onMessage.addListener(async (message: DownloadRequest) => {
       if (message.type === 'downloadZip') {
         log.info('Download backend handling zip request');
-        await handleDownloadZip(message.urls, port);
+        await handleDownloadZip(message.urls, port, message.partNumber, message.totalParts);
       }
     });
   });

@@ -130,7 +130,7 @@ export async function initDownload(): Promise<void> {
 
 export function generateDownloadList(): string {
   const urlSet = new Set(
-    [...document.querySelectorAll('a.item-button')].map(item => {
+    [...document.querySelectorAll('.download-title .item-button')].map(item => {
       return item.getAttribute('href')!;
     })
   );
@@ -338,13 +338,18 @@ function createZipMessageHandler(): {
 }
 
 export async function downloadAsZip(): Promise<void> {
-  const urls = [...document.querySelectorAll('a.item-button')]
-    .map(item => item.getAttribute('href'))
-    .filter((url): url is string => url !== null);
+  const allLinks = [...document.querySelectorAll('.download-title .item-button')];
+  const urls = allLinks.map(item => item.getAttribute('href')).filter((url): url is string => url !== null);
+
+  log.info(`Found ${allLinks.length} download links, ${urls.length} with valid URLs`);
 
   if (urls.length === 0) {
     showErrorMessage('No download links found');
     return;
+  }
+
+  if (allLinks.length !== urls.length) {
+    log.warn(`Warning: ${allLinks.length - urls.length} links have no href attribute`);
   }
 
   log.info(`Starting zip download for ${urls.length} files via background script`);

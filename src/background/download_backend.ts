@@ -98,6 +98,8 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
     await Promise.all(batchPromises);
   }
 
+  log.info(`Download complete: ${completed} succeeded, ${failed} failed out of ${urls.length} total`);
+
   if (files.length === 0) {
     port.postMessage({
       type: 'downloadComplete',

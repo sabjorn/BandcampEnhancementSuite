@@ -134,8 +134,12 @@ describe('DownloadHelper', () => {
     it('should create complete curl script when button is clicked with DOM elements', () => {
       createDomNodes(`
         <div class="download-titles"></div>
-        <a class="item-button" href="http://example.com/track1.flac"></a>
-        <a class="item-button" href="http://example.com/track2.flac"></a>
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/track1.flac"></a>
+        </div>
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/track2.flac"></a>
+        </div>
       `);
 
       createCurlButton();
@@ -177,7 +181,9 @@ describe('DownloadHelper', () => {
       createDomNodes(`
         <div class="download-titles"></div>
         <div id="test-area">
-          <a class="item-button" href="http://example.com/file1.flac"></a>
+          <div class="download-title">
+            <a class="item-button" href="http://example.com/file1.flac"></a>
+          </div>
         </div>
       `);
 
@@ -303,9 +309,15 @@ describe('DownloadHelper', () => {
   describe('generateDownloadList()', () => {
     it('should generate bash array with download URLs', () => {
       createDomNodes(`
-        <a class="item-button" href="http://example.com/file1.flac"></a>
-        <a class="item-button" href="http://example.com/file2.flac"></a>
-        <a class="item-button" href="http://example.com/file1.flac"></a>
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+        </div>
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file2.flac"></a>
+        </div>
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+        </div>
       `);
 
       const result = generateDownloadList();
@@ -341,8 +353,12 @@ describe('DownloadHelper', () => {
     beforeEach(() => {
       createDomNodes(`
         <div id="test-area">
-          <a class="item-button" href="http://example.com/file1.flac"></a>
-          <a class="item-button" href="http://example.com/file2.flac"></a>
+          <div class="download-title">
+            <a class="item-button" href="http://example.com/file1.flac"></a>
+          </div>
+          <div class="download-title">
+            <a class="item-button" href="http://example.com/file2.flac"></a>
+          </div>
         </div>
       `);
     });
@@ -705,8 +721,12 @@ describe('DownloadHelper', () => {
     beforeEach(() => {
       createDomNodes(`
         <div id="test-area">
-          <a class="item-button" href="http://example.com/file1.flac"></a>
-          <a class="item-button" href="http://example.com/file2.flac"></a>
+          <div class="download-title">
+            <a class="item-button" href="http://example.com/file1.flac"></a>
+          </div>
+          <div class="download-title">
+            <a class="item-button" href="http://example.com/file2.flac"></a>
+          </div>
         </div>
       `);
     });

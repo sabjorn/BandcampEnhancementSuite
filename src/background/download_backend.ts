@@ -42,8 +42,12 @@ async function handleDownloadZip(
   partNumber?: number,
   totalParts?: number
 ): Promise<void> {
-  const partInfo = totalParts && totalParts > 1 ? ` (part ${partNumber} of ${totalParts})` : '';
-  log.info(`Starting background download for ${urls.length} files${partInfo}`);
+  const isMultiPart = totalParts && totalParts > 1;
+  if (isMultiPart) {
+    log.info(`Starting background download for ${urls.length} files (part ${partNumber} of ${totalParts})`);
+  } else {
+    log.info(`Starting background download for ${urls.length} files`);
+  }
 
   const files: { name: string; input: Uint8Array }[] = [];
   let completed = 0;
@@ -68,9 +72,7 @@ async function handleDownloadZip(
       }
 
       const filename = getFilenameFromResponse(response, url);
-      if (!filename) {
-        throw new Error(`Unable to determine filename for ${url}`);
-      }
+      if (!filename) throw new Error(`Unable to determine filename for ${url}`);
 
       const arrayBuffer = await response.arrayBuffer();
       log.info(`Downloaded ${filename}: ${arrayBuffer.byteLength} bytes`);
@@ -102,7 +104,6 @@ async function handleDownloadZip(
   for (let i = 0; i < urls.length; i += BATCH_SIZE) {
     const batch = urls.slice(i, i + BATCH_SIZE);
     const batchPromises = batch.map((url, batchIndex) => downloadFile(url, i + batchIndex));
-
     await Promise.all(batchPromises);
   }
 
@@ -130,38 +131,43 @@ async function handleDownloadZip(
     const blob = await downloadZip(files).blob();
     log.info(`Zip blob created, size: ${blob.size} bytes`);
 
-    const date = dateString();
-    const baseFilename = `bandcamp_${date}`;
-    const filename = totalParts && totalParts > 1 ? `${baseFilename}_part${partNumber}.zip` : `${baseFilename}.zip`;
-
-    log.info('Preparing to send zip data to frontend in chunks...');
+    const filename = (() => {
+      const baseFilename = `bandcamp_${dateString()}`;
+      return isMultiPart ? `${baseFilename}_part${partNumber}.zip` : `${baseFilename}.zip`;
+    })();
 
     const arrayBuffer = await blob.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    const oneMBChunk = 1024 * 1024;
-    const chunkSize = oneMBChunk;
-    const totalChunks = Math.ceil(uint8Array.length / chunkSize);
+    const { totalChunks, chunks } = (() => {
+      const CHUNK_SIZE = 1024 * 1024;
+      const count = Math.ceil(uint8Array.length / CHUNK_SIZE);
 
-    log.info(`Sending ${blob.size} bytes in ${totalChunks} chunks`);
+      log.info(`Sending ${blob.size} bytes in ${count} chunks`);
 
-    for (let i = 0; i < totalChunks; i++) {
-      const start = i * chunkSize;
-      const end = Math.min(start + chunkSize, uint8Array.length);
-      const chunk = uint8Array.slice(start, end);
+      const result: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, uint8Array.length);
+        const chunk = uint8Array.slice(start, end);
 
-      let binaryString = '';
-      for (let j = 0; j < chunk.length; j++) {
-        binaryString += String.fromCharCode(chunk[j]);
+        let binaryString = '';
+        for (let j = 0; j < chunk.length; j++) {
+          binaryString += String.fromCharCode(chunk[j]);
+        }
+        result.push(btoa(binaryString));
       }
-      const base64Chunk = btoa(binaryString);
 
+      return { totalChunks: count, chunks: result };
+    })();
+
+    for (let i = 0; i < chunks.length; i++) {
       port.postMessage({
         type: 'zipChunk',
         chunkIndex: i,
-        totalChunks: totalChunks,
-        data: base64Chunk,
-        filename: filename
+        totalChunks,
+        data: chunks[i],
+        filename
       } as ZipChunk);
 
       log.info(`Sent chunk ${i + 1}/${totalChunks}`);
@@ -172,7 +178,7 @@ async function handleDownloadZip(
     port.postMessage({
       type: 'downloadComplete',
       success: true,
-      filename: filename,
+      filename,
       message:
         failed === 0
           ? `Successfully downloaded ${completed} files as ${filename}`
@@ -194,31 +200,24 @@ function getFilenameFromResponse(response: Response, url: string): string | null
 
     if (!contentDisposition) {
       const urlObj = new URL(url);
-      const urlPathname = urlObj.pathname;
-      const filenameFromUrl = urlPathname.split('/').pop();
-
+      const filenameFromUrl = urlObj.pathname.split('/').pop();
       if (!filenameFromUrl) return null;
 
-      if (filenameFromUrl.includes('.')) return filenameFromUrl;
-
-      return `${filenameFromUrl}.flac`;
+      return filenameFromUrl.includes('.') ? filenameFromUrl : `${filenameFromUrl}.flac`;
     }
 
     const headerFilenamePattern = /filename\*?=['"]?([^'";]+)['"]?/i;
     const filenameMatch = contentDisposition.match(headerFilenamePattern);
-
     if (!filenameMatch || !filenameMatch[1]) return null;
 
     let extractedFilename = filenameMatch[1];
 
-    const isRfc5987Encoded = extractedFilename.includes("UTF-8''");
-    if (isRfc5987Encoded) {
+    if (extractedFilename.includes("UTF-8''")) {
       const encodedPart = extractedFilename.split("UTF-8''")[1];
       extractedFilename = decodeURIComponent(encodedPart);
     }
 
-    const hasFileExtension = extractedFilename.includes('.');
-    if (!hasFileExtension) {
+    if (!extractedFilename.includes('.')) {
       extractedFilename += '.flac';
     }
 

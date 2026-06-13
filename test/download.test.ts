@@ -449,7 +449,7 @@ describe('DownloadHelper', () => {
       const mockElement = document.createElement('div');
       const getElementSpy = vi.spyOn(document, 'getElementById').mockReturnValue(mockElement);
 
-      await downloadAsZip();
+      const downloadPromise = downloadAsZip();
 
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
 
@@ -462,6 +462,10 @@ describe('DownloadHelper', () => {
         'bes-download-progress',
         'Downloaded 1 of 3 files...'
       );
+
+      // Complete the download
+      await messageListener({ type: 'downloadComplete', success: true });
+      await downloadPromise;
 
       getElementSpy.mockRestore();
     });
@@ -479,7 +483,7 @@ describe('DownloadHelper', () => {
       global.URL.revokeObjectURL = vi.fn();
       global.atob = vi.fn(str => str);
 
-      await downloadAsZip();
+      const downloadPromise = downloadAsZip();
 
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
 
@@ -512,6 +516,10 @@ describe('DownloadHelper', () => {
       expect(mockLog.info).toHaveBeenCalledWith('All chunks received, assembling zip file...');
       expect(vi.mocked(removePersistentNotification)).toHaveBeenCalledWith('bes-download-progress');
       expect(vi.mocked(showSuccessMessage)).toHaveBeenCalledWith('Successfully downloaded test.zip');
+
+      // Complete the download
+      await messageListener({ type: 'downloadComplete', success: true });
+      await downloadPromise;
     });
 
     it('should handle zipChunk assembly errors', async () => {
@@ -527,7 +535,7 @@ describe('DownloadHelper', () => {
         throw new Error('Invalid base64');
       });
 
-      await downloadAsZip();
+      const downloadPromise = downloadAsZip();
 
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
 
@@ -542,6 +550,10 @@ describe('DownloadHelper', () => {
       expect(mockLog.error).toHaveBeenCalledWith('Error assembling zip file: Error: Invalid base64');
       expect(vi.mocked(removePersistentNotification)).toHaveBeenCalledWith('bes-download-progress');
       expect(vi.mocked(showErrorMessage)).toHaveBeenCalledWith('Failed to assemble zip file');
+
+      // Complete the download (even though it errored)
+      await messageListener({ type: 'downloadComplete', success: false });
+      await downloadPromise.catch(() => {}); // Catch rejection
     });
 
     it('should handle downloadComplete failure messages', async () => {
@@ -553,7 +565,7 @@ describe('DownloadHelper', () => {
 
       vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
 
-      await downloadAsZip();
+      const downloadPromise = downloadAsZip();
 
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
 
@@ -562,6 +574,9 @@ describe('DownloadHelper', () => {
         success: false,
         message: 'Download failed'
       });
+
+      // Should reject the promise
+      await downloadPromise.catch(() => {});
 
       expect(vi.mocked(removePersistentNotification)).toHaveBeenCalledWith('bes-download-progress');
       expect(vi.mocked(showErrorMessage)).toHaveBeenCalledWith('Download failed');
@@ -605,7 +620,7 @@ describe('DownloadHelper', () => {
       const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(node => node);
       const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(node => node);
 
-      await downloadAsZip();
+      const downloadPromise = downloadAsZip();
 
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
 
@@ -641,6 +656,10 @@ describe('DownloadHelper', () => {
       expect(mockAnchor.click).toHaveBeenCalled();
       expect(global.URL.revokeObjectURL).toHaveBeenCalledWith(mockDownloadUrl);
 
+      // Complete the download
+      await messageListener({ type: 'downloadComplete', success: true });
+      await downloadPromise;
+
       // Clean up spies
       createElementSpy.mockRestore();
       appendChildSpy.mockRestore();
@@ -656,7 +675,7 @@ describe('DownloadHelper', () => {
 
       vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
 
-      await downloadAsZip();
+      const downloadPromise = downloadAsZip();
 
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
 
@@ -687,6 +706,10 @@ describe('DownloadHelper', () => {
       // The assembly should fail because empty string is not valid base64
       expect(mockLog.error).toHaveBeenCalledWith(expect.stringContaining('Error assembling zip file:'));
       expect(vi.mocked(showErrorMessage)).toHaveBeenCalledWith('Failed to assemble zip file');
+
+      // Complete the download (even though it errored)
+      await messageListener({ type: 'downloadComplete', success: false });
+      await downloadPromise.catch(() => {}); // Catch rejection
     });
 
     it('should correctly calculate download percentage during chunk assembly', async () => {
@@ -698,7 +721,7 @@ describe('DownloadHelper', () => {
 
       vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
 
-      await downloadAsZip();
+      const downloadPromise = downloadAsZip();
 
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
 
@@ -741,6 +764,18 @@ describe('DownloadHelper', () => {
         'bes-download-progress',
         'Downloading... 75%'
       );
+
+      // Complete all chunks and the download
+      await messageListener({
+        type: 'zipChunk',
+        chunkIndex: 3,
+        totalChunks: 4,
+        data: btoa('chunk4'),
+        filename: 'test.zip'
+      });
+
+      await messageListener({ type: 'downloadComplete', success: true });
+      await downloadPromise;
     });
   });
 
@@ -794,7 +829,8 @@ describe('DownloadHelper', () => {
       vi.spyOn(document.body, 'appendChild').mockImplementation(node => node);
       vi.spyOn(document.body, 'removeChild').mockImplementation(node => node);
 
-      await downloadAsZip();
+      // Start download without awaiting
+      const downloadPromise = downloadAsZip();
 
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
 
@@ -823,6 +859,10 @@ describe('DownloadHelper', () => {
       const resultString = String.fromCharCode(...capturedBlobData);
       expect(resultString).toBe('HelloWorld');
 
+      // Complete the download
+      await messageListener({ type: 'downloadComplete', success: true });
+      await downloadPromise;
+
       // Restore
       global.atob = originalAtob;
     });
@@ -846,7 +886,8 @@ describe('DownloadHelper', () => {
       const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(node => node);
       const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(node => node);
 
-      await downloadAsZip();
+      // Start download without awaiting
+      const downloadPromise = downloadAsZip();
 
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
 
@@ -886,6 +927,10 @@ describe('DownloadHelper', () => {
       expect(mockLog.info).toHaveBeenCalledWith(
         expect.stringMatching(/Converting 12 chunks to single array \(\d+ bytes\)\.\.\./)
       );
+
+      // Complete the download
+      await messageListener({ type: 'downloadComplete', success: true });
+      await downloadPromise;
 
       // Clean up spies
       createElementSpy.mockRestore();

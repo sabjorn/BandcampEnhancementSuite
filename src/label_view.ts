@@ -34,7 +34,7 @@ export function fillFrame(event: Event, previewState: { previewOpen: boolean; pr
     }
   });
 
-  const preview = (event.target as HTMLElement).closest('.music-grid-item')?.querySelector('.preview-frame');
+  const preview = (event.target as HTMLElement).closest('.preview')?.querySelector('.preview-frame');
   if (!preview) return;
 
   const idAndType = preview.getAttribute('id');

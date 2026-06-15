@@ -12,6 +12,10 @@ The goal of this extension is to make Bandcamp easier to use when navigating lar
 
 Provides a "Preview" button on pages with multiple albums. This button will open a player on the same page giving a quick and easy way to listen to tracks without having to navigate away from the page.
 
+### Feed Preview
+
+Adds a "Preview" button to each release in your Bandcamp feed (`bandcamp.com`), both the main feed stories and the "new releases" sidebar. This opens a full player with a tracklist directly in the feed, letting you scan through a track, jump between songs on the album, and work through your backlog without opening every release in a new tab.
+
 ### History Tracking
 
 Adds a history display element next to album. This element is a clickable toggle which persists between page loads thus providing a history. This toggle is automatically set when `preview` button is used and can be manually clicked.

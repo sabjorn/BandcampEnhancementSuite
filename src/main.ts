@@ -5,6 +5,7 @@ import { initPlayer, updateKeyboardHandlers } from './player';
 import { initAudioFeatures } from './audioFeatures';
 import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
+import { initFeed } from './pages/feed';
 import { createKeyboardSettingsSection } from './components/keyboardSettings.js';
 import { KeyboardSettings } from './types/keyboard.js';
 
@@ -446,6 +447,11 @@ const main = async (): Promise<void> => {
   const checkIsCollectionPage: Element | null = document.querySelector('ol.collection-grid.editable.ui-sortable');
   if (checkIsCollectionPage) {
     await initHideUnhide(config_port);
+  }
+
+  const checkIsFeedPage: Element | null = document.querySelector('#stories');
+  if (checkIsFeedPage) {
+    await initFeed(config_port);
   }
 
   initBESDrawer(config_port);

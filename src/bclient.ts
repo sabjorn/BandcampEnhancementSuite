@@ -102,6 +102,41 @@ export function addAlbumToCart(
   });
 }
 
+interface RemoveAlbumFromCartBody {
+  req: string;
+  id: string | number;
+  sync_num: number;
+}
+
+// Removes a line item from the cart. Bandcamp's cart callback handles this with
+// `req=del` + the item id; auth/cart association rides along on the same-origin
+// cookie, exactly as addAlbumToCart relies on it.
+export function removeAlbumFromCart(item_id: string | number, baseUrl: string | null = null): Promise<Response> {
+  const bodyData: RemoveAlbumFromCartBody = {
+    req: 'del',
+    id: item_id,
+    sync_num: 1
+  };
+
+  const body = new URLSearchParams(bodyData as any).toString();
+
+  const url = baseUrl ? `${baseUrl}/cart/cb` : `/cart/cb`;
+
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json, text/javascript, */*; q=0.01',
+      'content-type': 'application/x-www-form-urlencoded',
+      'sec-fetch-dest': 'empty',
+      'sec-fetch-mode': 'cors',
+      'sec-fetch-site': 'same-origin',
+      'x-requested-with': 'XMLHttpRequest'
+    },
+    body: body,
+    mode: 'cors'
+  });
+}
+
 interface TralbumDetailsBody {
   tralbum_type: string;
   band_id: number;

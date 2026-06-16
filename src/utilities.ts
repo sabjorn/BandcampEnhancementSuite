@@ -1,9 +1,23 @@
 import { openDB, IDBPDatabase } from 'idb';
 import Logger from './logger';
+import { fillFrame, previewClicked } from './label_view.js';
 
 interface MouseEventWithOffset extends MouseEvent {
   offsetX: number;
   target: HTMLElement & { offsetWidth: number };
+}
+
+export function attachPreviewListeners(
+  root: Document | HTMLElement,
+  port: chrome.runtime.Port,
+  previewState: { previewOpen: boolean; previewId?: string }
+): void {
+  root.querySelectorAll('.open-iframe').forEach(button => {
+    button.addEventListener('click', event => {
+      fillFrame(event, previewState);
+      previewClicked(event, port);
+    });
+  });
 }
 
 export function mousedownCallback(e: MouseEventWithOffset): void {

@@ -1,4 +1,5 @@
 import Logger from './logger';
+import { attachPreviewListeners } from './utilities.js';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -34,7 +35,7 @@ export function fillFrame(event: Event, previewState: { previewOpen: boolean; pr
     }
   });
 
-  const preview = (event.target as HTMLElement).closest('.music-grid-item')?.querySelector('.preview-frame');
+  const preview = (event.target as HTMLElement).closest('.preview')?.querySelector('.preview-frame');
   if (!preview) return;
 
   const idAndType = preview.getAttribute('id');
@@ -138,12 +139,7 @@ export function renderDom(
     setPreviewed(id, port);
   }
 
-  const _openFrame = document.querySelectorAll('.open-iframe').forEach(item => {
-    item.addEventListener('click', event => {
-      fillFrame(event, previewState);
-      previewClicked(event, port);
-    });
-  });
+  attachPreviewListeners(document, port, previewState);
 
   const _historybox = document.querySelectorAll('.historybox').forEach(item => {
     item.addEventListener('click', event => {

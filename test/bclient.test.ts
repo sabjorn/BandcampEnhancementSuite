@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import { addAlbumToCart, getTralbumDetails, getCollectionSummary, hideUnhide, getHiddenItems } from '../src/bclient';
+import {
+  addAlbumToCart,
+  removeAlbumFromCart,
+  getTralbumDetails,
+  getCollectionSummary,
+  hideUnhide,
+  getHiddenItems
+} from '../src/bclient';
 
 describe('bclient', () => {
   afterEach(() => {
@@ -68,6 +75,47 @@ describe('bclient', () => {
         expect.objectContaining({
           method: 'POST'
         })
+      );
+    });
+  });
+
+  describe('removeAlbumFromCart', () => {
+    let fetchSpy: any;
+
+    beforeEach(() => {
+      fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(new Response('{"success": true}', { status: 200 }));
+    });
+
+    it('should make POST request to cart endpoint with req=del and the item id', async () => {
+      await removeAlbumFromCart('123');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/cart/cb',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            accept: 'application/json, text/javascript, */*; q=0.01',
+            'content-type': 'application/x-www-form-urlencoded',
+            'x-requested-with': 'XMLHttpRequest'
+          }),
+          body: 'req=del&id=123&sync_num=1',
+          mode: 'cors'
+        })
+      );
+    });
+
+    it('should return fetch response', async () => {
+      const response = await removeAlbumFromCart('123');
+      expect(response).toBeInstanceOf(Response);
+      expect(response.status).toBe(200);
+    });
+
+    it('should use absolute URL when baseUrl is provided', async () => {
+      await removeAlbumFromCart('123', 'https://bandcamp.com');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://bandcamp.com/cart/cb',
+        expect.objectContaining({ method: 'POST' })
       );
     });
   });

@@ -1,6 +1,6 @@
 import Logger from '../logger';
 
-import { createButton, createInputButtonPair } from '../components/buttons.js';
+import { createButton } from '../components/buttons.js';
 import { downloadFile, dateString, loadTextFile, createFetchFunction } from '../utilities';
 import { CURRENCY_MINIMUMS, addAlbumToCart, getTralbumDetails } from '../bclient';
 import {
@@ -11,7 +11,7 @@ import {
   removePersistentNotification
 } from '../components/notifications';
 import { createShoppingCartItem } from '../components/shoppingCart.js';
-import { createPlusSvgIcon } from '../components/svgIcons';
+import { createAddToCartButton } from '../components/cartButton';
 
 const BES_SUPPORT_TRALBUM_ID = 1609998585;
 const BES_SUPPORT_TRALBUM_TYPE = 'a';
@@ -621,37 +621,5 @@ export function createBesSupportButton(
   type: string,
   log: Logger
 ): HTMLElement {
-  const pair = createInputButtonPair({
-    inputPrefix: '$',
-    inputSuffix: currency,
-    inputPlaceholder: price,
-    buttonChildElement: createPlusSvgIcon() as HTMLElement,
-    onButtonClick: value => {
-      const numericValue = typeof value === 'string' ? parseFloat(value) : value;
-      if (numericValue < price) {
-        log.error('track price too low');
-        return;
-      }
-
-      addAlbumToCart(tralbumId, numericValue, type).then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const cartItem = createShoppingCartItem({
-          itemId: tralbumId,
-          itemName: itemTitle,
-          itemPrice: numericValue,
-          itemCurrency: currency
-        });
-
-        const itemList = document.querySelector('#item_list');
-        if (!itemList) return;
-        itemList.append(cartItem);
-      });
-    }
-  });
-  pair.classList.add('one-click-button-container');
-
-  return pair;
+  return createAddToCartButton({ price, currency, tralbumId, itemTitle, type, log });
 }

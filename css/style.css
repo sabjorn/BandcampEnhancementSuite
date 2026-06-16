@@ -212,6 +212,123 @@ input.currency-input::-webkit-outer-spin-button {
   fill: #fff;
 }
 
+.one-click-button {
+  transition: transform 0.08s ease;
+}
+
+.one-click-button:active {
+  transform: scale(0.9);
+}
+
+.one-click-button .bes-cart-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.one-click-button .bes-cart-icon {
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.one-click-button .bes-cart-icon .icon {
+  height: 10px;
+  width: 10px;
+}
+
+.one-click-button .bes-cart-icon-check .icon {
+  height: 15px;
+  width: 15px;
+  margin: -2.5px;
+}
+
+.one-click-button[data-cart-state='add'] .bes-cart-icon-add {
+  display: flex;
+}
+
+.one-click-button[data-cart-state='loading'] {
+  pointer-events: none;
+}
+
+.one-click-button[data-cart-state='loading'] .bes-cart-icon-loading {
+  display: flex;
+}
+
+.one-click-button[data-cart-state='in-cart'] .bes-cart-icon-check {
+  display: flex;
+}
+
+.one-click-button[data-cart-state='in-cart'] .icon-check {
+  fill: #2ca84f;
+}
+
+.one-click-button[data-cart-state='in-cart']:is(:hover, :active) {
+  background-color: #fdeaea;
+}
+
+.one-click-button[data-cart-state='in-cart']:hover .bes-cart-icon-check {
+  display: none;
+}
+
+.one-click-button[data-cart-state='in-cart']:hover .bes-cart-icon-remove {
+  display: flex;
+}
+
+.one-click-button[data-cart-state='in-cart'] .icon-x {
+  fill: #d0021b;
+}
+
+.bes-cart-spinner {
+  display: inline-block;
+  box-sizing: border-box;
+  height: 10px;
+  width: 10px;
+  border: 2px solid rgba(6, 135, 245, 0.25);
+  border-top-color: #0687f5;
+  border-radius: 50%;
+  animation: besCartSpin 0.6s linear infinite;
+}
+
+@keyframes besCartSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes besCartPop {
+  0% {
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.one-click-button.bes-cart-pop .bes-cart-icon {
+  animation: besCartPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes besCartShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+
+.one-click-button.bes-cart-error {
+  animation: besCartShake 0.3s ease;
+}
+
 .one-click-button-container {
   background-color: #fff;
   border: 1px solid #d9d9d9;

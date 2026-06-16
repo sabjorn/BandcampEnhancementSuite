@@ -1,9 +1,7 @@
 import Logger from './logger';
 import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, createFetchFunction } from './utilities.js';
-import { CURRENCY_MINIMUMS, getTralbumDetails, addAlbumToCart } from './bclient';
-import { createInputButtonPair } from './components/buttons.js';
-import { createShoppingCartItem } from './components/shoppingCart.js';
-import { createPlusSvgIcon } from './components/svgIcons';
+import { CURRENCY_MINIMUMS, getTralbumDetails } from './bclient';
+import { createAddToCartButton } from './components/cartButton';
 import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS, keyBindingToString } from './types/keyboard.js';
 
 interface KeyCombo {
@@ -178,46 +176,7 @@ export function createOneClickBuyButton(
   type: string,
   log: Logger
 ): HTMLElement {
-  const pair = createInputButtonPair({
-    inputPrefix: '$',
-    inputSuffix: currency,
-    inputPlaceholder: price,
-    buttonChildElement: createPlusSvgIcon() as HTMLElement,
-    onButtonClick: value => {
-      const numericValue = typeof value === 'string' ? parseFloat(value) : value;
-      if (numericValue < price) {
-        log.error('track price too low');
-        return;
-      }
-
-      addAlbumToCart(tralbumId, numericValue, type).then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const cartItem = createShoppingCartItem({
-          itemId: tralbumId,
-          itemName: itemTitle,
-          itemPrice: numericValue,
-          itemCurrency: currency
-        });
-
-        const sidecart = document.querySelector('#sidecart') as HTMLElement;
-        if (sidecart && sidecart.style.display === 'none') {
-          window.location.reload();
-          return;
-        }
-
-        const itemList = document.querySelector('#item_list');
-        if (itemList) {
-          itemList.append(cartItem);
-        }
-      });
-    }
-  });
-  pair.classList.add('one-click-button-container');
-
-  return pair;
+  return createAddToCartButton({ price, currency, tralbumId, itemTitle, type, log });
 }
 
 let activeKeyHandlers: KeyHandlers = {};

@@ -41,6 +41,7 @@ describe('Feed', () => {
       expect(tralbumTypeToIdType('t')).toBe('track');
       expect(tralbumTypeToIdType('x')).toBeNull();
       expect(tralbumTypeToIdType('')).toBeNull();
+      expect(tralbumTypeToIdType(undefined)).toBeNull();
     });
   });
 

@@ -261,7 +261,7 @@ describe('DownloadHelper', () => {
       });
 
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
-      await messageListener({ type: 'downloadComplete', success: true });
+      await messageListener({ type: 'downloadComplete', success: true, completed: 1, failed: 0 });
       await downloadPromise;
     });
   });

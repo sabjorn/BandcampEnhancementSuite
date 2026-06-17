@@ -80,6 +80,8 @@ describe('Download Backend', () => {
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadComplete',
         success: true,
+        completed: 2,
+        failed: 0,
         message: undefined
       });
     });
@@ -103,6 +105,8 @@ describe('Download Backend', () => {
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadComplete',
         success: false,
+        completed: 0,
+        failed: 1,
         message: '1 files failed to download'
       });
     });
@@ -140,6 +144,8 @@ describe('Download Backend', () => {
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadComplete',
         success: true,
+        completed: 1,
+        failed: 1,
         message: '1 files failed to download'
       });
     });
@@ -171,6 +177,8 @@ describe('Download Backend', () => {
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadComplete',
         success: false,
+        completed: 0,
+        failed: 1,
         message: '1 files failed to download'
       });
     });

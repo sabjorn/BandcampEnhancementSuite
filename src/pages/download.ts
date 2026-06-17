@@ -280,8 +280,7 @@ export async function downloadAllFiles(): Promise<void> {
 
   try {
     const port = chrome.runtime.connect({ name: 'bes' });
-    let completed = 0;
-    let failed = 0;
+    let savedCount = 0;
 
     port.onMessage.addListener(async message => {
       if (message.type === 'fileDownloaded') {
@@ -293,11 +292,10 @@ export async function downloadAllFiles(): Promise<void> {
           } else {
             await downloadFileViaAnchor(filename, data);
           }
-          completed++;
-          updatePersistentNotification('bes-download-progress', `Downloaded ${completed} of ${urls.length} files...`);
+          savedCount++;
+          updatePersistentNotification('bes-download-progress', `Downloaded ${savedCount} of ${urls.length} files...`);
         } catch (error) {
           log.error(`Failed to save ${filename}: ${error}`);
-          failed++;
         }
       }
 
@@ -306,6 +304,7 @@ export async function downloadAllFiles(): Promise<void> {
         removePersistentNotification('bes-download-progress');
 
         if (message.success) {
+          const { completed, failed } = message;
           const failedCount = failed > 0 ? ` (${failed} failed)` : '';
           showSuccessMessage(`Successfully downloaded ${completed} of ${urls.length} files${failedCount}`);
         } else {

@@ -18,6 +18,8 @@ interface FileDownloaded {
 interface DownloadComplete {
   type: 'downloadComplete';
   success: boolean;
+  completed: number;
+  failed: number;
   message?: string;
 }
 
@@ -76,6 +78,8 @@ async function handleDownloadFiles(urls: string[], port: chrome.runtime.Port): P
   port.postMessage({
     type: 'downloadComplete',
     success: completed > 0,
+    completed,
+    failed,
     message: failed > 0 ? `${failed} files failed to download` : undefined
   } as DownloadComplete);
 }

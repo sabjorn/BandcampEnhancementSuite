@@ -3,12 +3,13 @@ interface ShoppingCartItemOptions {
   itemName: string;
   itemPrice: number;
   itemCurrency: string;
+  onDelete?: (event: Event) => void;
 }
 
 export function createShoppingCartItem(
   options: ShoppingCartItemOptions = {} as ShoppingCartItemOptions
 ): HTMLDivElement {
-  const { itemId, itemName, itemPrice, itemCurrency } = options;
+  const { itemId, itemName, itemPrice, itemCurrency, onDelete } = options;
 
   const itemContainer = document.createElement('div');
   itemContainer.id = `sidecart_item_${itemId}`;
@@ -28,10 +29,21 @@ export function createShoppingCartItem(
 
   const deleteLink = document.createElement('a');
   deleteLink.className = 'delete notSkinnable';
-  deleteLink.style.pointerEvents = 'none';
   const deleteSpan = document.createElement('span');
-  deleteSpan.textContent = '⊘';
   deleteLink.appendChild(deleteSpan);
+
+  if (onDelete) {
+    deleteSpan.textContent = '×';
+    deleteLink.href = '#';
+    deleteLink.title = 'Remove from cart';
+    deleteLink.addEventListener('click', event => {
+      event.preventDefault();
+      onDelete(event);
+    });
+  } else {
+    deleteSpan.textContent = '⊘';
+    deleteLink.style.pointerEvents = 'none';
+  }
 
   const priceSpan = document.createElement('span');
   priceSpan.className = 'price';

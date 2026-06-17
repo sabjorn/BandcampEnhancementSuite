@@ -78,6 +78,8 @@ This will download the files into the same directory the terminal session is in.
 
 Adds buttons on track and album pages to easily add an item to your cart with a single click.
 
+When clicked, the button bounces and turns into a green check to confirm the item was added. Items already in your cart show the check on page load, and hovering it reveals a red ✕ that removes the item from the cart — without opening the cart.
+
 ## Installation
 
 Available from the [Chrome webstore](https://chrome.google.com/webstore/detail/bandcamp-label-view/padcfdpdlnpdojcihidkgjnmleeingep) and [Firefox Addons](https://addons.mozilla.org/en-US/firefox/addon/bandcamp-enhancement-suite)

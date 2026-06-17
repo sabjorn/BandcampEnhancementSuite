@@ -4,14 +4,15 @@ import { createShoppingCartItem } from '../src/components/shoppingCart';
 const base = { itemId: '123', itemName: 'Test Album', itemPrice: 5, itemCurrency: 'USD' };
 
 describe('createShoppingCartItem', () => {
-  it('renders an × delete glyph', () => {
-    const row = createShoppingCartItem(base);
+  it('renders an × delete glyph when onDelete is provided', () => {
+    const row = createShoppingCartItem({ ...base, onDelete: vi.fn() });
     expect(row.querySelector('.delete span')?.textContent).toBe('×');
   });
 
-  it('disables the delete control when no onDelete is provided', () => {
+  it('renders the original ⊘ glyph and disables the control when no onDelete is provided', () => {
     const row = createShoppingCartItem(base);
     const del = row.querySelector('.delete') as HTMLElement;
+    expect(row.querySelector('.delete span')?.textContent).toBe('⊘');
     expect(del.style.pointerEvents).toBe('none');
   });
 

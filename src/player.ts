@@ -168,17 +168,6 @@ export function volumeSliderCallback(e: Event): void {
   audio.volume = parseFloat(volume);
 }
 
-export function createOneClickBuyButton(
-  price: number,
-  currency: string,
-  tralbumId: string,
-  itemTitle: string,
-  type: string,
-  log: Logger
-): HTMLElement {
-  return createAddToCartButton({ price, currency, tralbumId, itemTitle, type, log });
-}
-
 let activeKeyHandlers: KeyHandlers = {};
 
 export function updateKeyboardHandlers(settings: KeyboardSettings): void {
@@ -240,7 +229,14 @@ export async function initPlayer(
       const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
       if (!minimumPrice) return;
 
-      const oneClick = createOneClickBuyButton(minimumPrice, currency, String(trackId), itemTitle, type, log);
+      const oneClick = createAddToCartButton({
+        price: minimumPrice,
+        currency,
+        tralbumId: String(trackId),
+        itemTitle,
+        type,
+        log
+      });
 
       const downloadCol = row.querySelector('.download-col');
       downloadCol.innerHTML = '';
@@ -253,7 +249,14 @@ export async function initPlayer(
     const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
     if (!minimumPrice) return;
 
-    const oneClick = createOneClickBuyButton(minimumPrice, currency, String(albumId), itemTitle, type, log);
+    const oneClick = createAddToCartButton({
+      price: minimumPrice,
+      currency,
+      tralbumId: String(albumId),
+      itemTitle,
+      type,
+      log
+    });
 
     const buyItemElement = document.querySelector('ul.tralbumCommands .buyItem.digital h3.hd');
     if (buyItemElement) {

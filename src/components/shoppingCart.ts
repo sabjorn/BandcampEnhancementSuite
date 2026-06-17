@@ -30,10 +30,10 @@ export function createShoppingCartItem(
   const deleteLink = document.createElement('a');
   deleteLink.className = 'delete notSkinnable';
   const deleteSpan = document.createElement('span');
-  deleteSpan.textContent = '×';
   deleteLink.appendChild(deleteSpan);
 
   if (onDelete) {
+    deleteSpan.textContent = '×';
     deleteLink.href = '#';
     deleteLink.title = 'Remove from cart';
     deleteLink.addEventListener('click', event => {
@@ -41,6 +41,7 @@ export function createShoppingCartItem(
       onDelete(event);
     });
   } else {
+    deleteSpan.textContent = '⊘';
     deleteLink.style.pointerEvents = 'none';
   }
 

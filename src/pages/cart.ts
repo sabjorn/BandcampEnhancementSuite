@@ -594,7 +594,14 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       return;
     }
 
-    const oneClick = createBesSupportButton(minimumPrice, currency, String(tralbumId), itemTitle, type, log);
+    const oneClick = createAddToCartButton({
+      price: minimumPrice,
+      currency,
+      tralbumId: String(tralbumId),
+      itemTitle,
+      type,
+      log
+    });
 
     const besSupportText = document.createElement('div');
     besSupportText.innerText = 'Support BES';
@@ -611,15 +618,4 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   } catch (error) {
     log.error(error);
   }
-}
-
-export function createBesSupportButton(
-  price: number,
-  currency: string,
-  tralbumId: string,
-  itemTitle: string,
-  type: string,
-  log: Logger
-): HTMLElement {
-  return createAddToCartButton({ price, currency, tralbumId, itemTitle, type, log });
 }

@@ -16,8 +16,8 @@ interface CartItem {
 }
 
 function removeSidecartRow(lineItemId: string | number | null, tralbumId: string, itemUrl?: string): void {
-  if (lineItemId !== null) document.getElementById(`sidecart_item_${lineItemId}`)?.remove();
-  document.getElementById(`sidecart_item_${tralbumId}`)?.remove();
+  const idsToRemove = lineItemId !== null ? [lineItemId, tralbumId] : [tralbumId];
+  idsToRemove.forEach(id => document.getElementById(`sidecart_item_${id}`)?.remove());
 
   const itemList = document.getElementById('item_list');
   if (!itemList || !itemUrl) return;
@@ -29,14 +29,6 @@ function removeSidecartRow(lineItemId: string | number | null, tralbumId: string
     while (row.parentElement && row.parentElement !== itemList) row = row.parentElement;
     if (row.parentElement === itemList) row.remove();
   });
-}
-
-function parseCartData(element: Element): any {
-  try {
-    return JSON.parse(element.getAttribute('data-cart') || 'null');
-  } catch {
-    return null;
-  }
 }
 
 function extractCartItems(value: any): CartItem[] {
@@ -54,7 +46,14 @@ function extractCartItems(value: any): CartItem[] {
 export function getCartItems(): CartItem[] {
   let fallback: CartItem[] = [];
   for (const element of Array.from(document.querySelectorAll('[data-cart]'))) {
-    const items = extractCartItems(parseCartData(element));
+    let cartData: any;
+    try {
+      cartData = JSON.parse(element.getAttribute('data-cart') || 'null');
+    } catch {
+      continue;
+    }
+    if (!cartData) continue;
+    const items = extractCartItems(cartData);
     if (items.length === 0) continue;
     if (items.some(item => item.id !== undefined && item.id !== null)) return items;
     if (fallback.length === 0) fallback = items;

@@ -1,16 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
-import {
-  createCurlButton,
-  createZipDownloadButton,
-  createStatusElement,
-  mutationCallback,
-  initDownload,
-  generateDownloadList,
-  getDownloadPreamble,
-  getDownloadPostamble,
-  downloadAllFiles
-} from '../src/pages/download';
 
 vi.mock('../src/logger', () => {
   const mockLogMethods = {
@@ -64,16 +53,47 @@ Object.assign(global, {
         disconnect: vi.fn()
       }))
     }
-  }
+  },
+  URL: {
+    createObjectURL: vi.fn(() => 'blob:test-url'),
+    revokeObjectURL: vi.fn()
+  },
+  atob: vi.fn(str => str),
+  Blob: vi.fn()
 });
 
+import {
+  initDownload,
+  createCurlButton,
+  createZipDownloadButton,
+  createStatusElement,
+  mutationCallback,
+  generateDownloadList,
+  getDownloadPreamble,
+  getDownloadPostamble,
+  downloadAllFiles
+} from '../src/pages/download';
+import Logger from '../src/logger';
+import { createButton } from '../src/components/buttons';
+import {
+  showPersistentNotification,
+  updatePersistentNotification,
+  removePersistentNotification,
+  showErrorMessage,
+  showSuccessMessage
+} from '../src/components/notifications';
+import { downloadFile, dateString } from '../src/utilities';
+
 describe('DownloadHelper', () => {
+  let mockLog: any;
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockLog = vi.mocked(new Logger());
   });
 
   afterEach(() => {
     cleanupTestNodes();
+    vi.restoreAllMocks();
   });
 
   describe('createCurlButton()', () => {
@@ -81,8 +101,55 @@ describe('DownloadHelper', () => {
       createDomNodes('<div class="download-titles"></div>');
       const button = createCurlButton();
 
-      expect(button).toBeDefined();
-      expect(button?.className).toBe('');
+      expect(button).toBeTruthy();
+      expect(createButton).toHaveBeenCalledWith({
+        className: 'bes-downloadall',
+        innerText: 'Download cURL File',
+        buttonClicked: expect.any(Function)
+      });
+      expect(document.querySelector('.download-titles')).toBeTruthy();
+    });
+
+    it('should execute curl download when button is clicked', () => {
+      createDomNodes('<div class="download-titles"></div>');
+      createCurlButton();
+
+      const createButtonCall = vi.mocked(createButton).mock.calls[0][0];
+      const buttonClickedCallback = createButtonCall.buttonClicked;
+
+      expect(buttonClickedCallback).toBeDefined();
+      buttonClickedCallback!();
+
+      expect(vi.mocked(dateString)).toHaveBeenCalled();
+      expect(vi.mocked(downloadFile)).toHaveBeenCalledWith(
+        'bandcamp_2023-01-01.txt',
+        expect.stringContaining('#!/usr/bin/env bash')
+      );
+      expect(vi.mocked(downloadFile)).toHaveBeenCalledWith(
+        'bandcamp_2023-01-01.txt',
+        expect.stringContaining('URLS=(')
+      );
+    });
+
+    it('should create complete curl script when button is clicked with DOM elements', () => {
+      createDomNodes(`
+        <div class="download-titles"></div>
+        <a class="item-button" href="http://example.com/track1.flac"></a>
+        <a class="item-button" href="http://example.com/track2.flac"></a>
+      `);
+
+      createCurlButton();
+
+      const createButtonCall = vi.mocked(createButton).mock.calls[0][0];
+      const buttonClickedCallback = createButtonCall.buttonClicked;
+
+      buttonClickedCallback!();
+
+      expect(vi.mocked(downloadFile)).toHaveBeenCalledWith('bandcamp_2023-01-01.txt', expect.stringMatching(/^#!/));
+      expect(vi.mocked(downloadFile)).toHaveBeenCalledWith(
+        'bandcamp_2023-01-01.txt',
+        expect.stringContaining('download_file()')
+      );
     });
 
     it('should return undefined when div.download-titles does not exist', () => {
@@ -98,8 +165,62 @@ describe('DownloadHelper', () => {
       createDomNodes('<div class="download-titles"></div>');
       const button = createZipDownloadButton();
 
-      expect(button).toBeDefined();
-      expect(button?.className).toBe('');
+      expect(button).toBeTruthy();
+      expect(createButton).toHaveBeenCalledWith({
+        className: 'bes-downloadall-files',
+        innerText: 'Download All Files',
+        buttonClicked: expect.any(Function)
+      });
+    });
+
+    it('should execute file download when button is clicked', async () => {
+      createDomNodes(`
+        <div class="download-titles"></div>
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+        </div>
+      `);
+
+      const mockPort = {
+        onMessage: { addListener: vi.fn() },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
+      };
+      vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
+
+      createZipDownloadButton();
+
+      const createButtonCall = vi.mocked(createButton).mock.calls[0][0];
+      const buttonClickedCallback = createButtonCall.buttonClicked;
+
+      expect(buttonClickedCallback).toBeDefined();
+      const downloadPromise = buttonClickedCallback!();
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(global.chrome.runtime.connect).toHaveBeenCalledWith({ name: 'bes' });
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        type: 'downloadFiles',
+        urls: ['http://example.com/file1.flac']
+      });
+
+      const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
+      await messageListener({ type: 'downloadComplete', success: true, completed: 1, failed: 0 });
+      await downloadPromise;
+    });
+
+    it('should show error when zip button is clicked with no download links', async () => {
+      createDomNodes('<div class="download-titles"></div>');
+
+      createZipDownloadButton();
+
+      const createButtonCall = vi.mocked(createButton).mock.calls[0][0];
+      const buttonClickedCallback = createButtonCall.buttonClicked;
+
+      await buttonClickedCallback!();
+
+      expect(vi.mocked(showErrorMessage)).toHaveBeenCalledWith('No download links found');
+      expect(global.chrome.runtime.connect).not.toHaveBeenCalled();
     });
 
     it('should return undefined when div.download-titles does not exist', () => {
@@ -115,8 +236,11 @@ describe('DownloadHelper', () => {
       createDomNodes('<div class="download-titles"></div>');
       const statusElement = createStatusElement();
 
-      expect(statusElement).toBeDefined();
+      expect(statusElement).toBeTruthy();
       expect(statusElement?.className).toBe('bes-download-status');
+      expect(statusElement?.textContent).toBe('preparing download...');
+      expect(statusElement?.getAttribute('disabled')).toBe('true');
+      expect(statusElement?.style.display).toBe('block');
     });
 
     it('should return undefined when div.download-titles does not exist', () => {
@@ -128,109 +252,147 @@ describe('DownloadHelper', () => {
   });
 
   describe('mutationCallback()', () => {
-    it('should enable buttons when all links are ready', () => {
-      createDomNodes(`
-        <div class="download-title">
-          <a class="item-button" style="display: block;">Link 1</a>
-        </div>
-        <div class="download-title">
-          <a class="item-button" style="display: block;">Link 2</a>
-        </div>
-      `);
+    let curlButton: any;
+    let zipButton: any;
+    let statusElement: any;
 
-      const curl = { enable: vi.fn(), disable: vi.fn() } as any;
-      const zip = { enable: vi.fn(), disable: vi.fn() } as any;
-      const status = { style: { display: '' } } as any;
-
-      mutationCallback({ curl, zip }, status);
-
-      expect(curl.enable).toHaveBeenCalled();
-      expect(zip.enable).toHaveBeenCalled();
-      expect(status.style.display).toBe('none');
-    });
-
-    it('should disable buttons when links are not ready', () => {
-      createDomNodes(`
-        <div class="download-title">
-          <a class="item-button" style="display: none;">Link 1</a>
-        </div>
-      `);
-
-      const curl = { enable: vi.fn(), disable: vi.fn() } as any;
-      const zip = { enable: vi.fn(), disable: vi.fn() } as any;
-      const status = { style: { display: '' } } as any;
-
-      mutationCallback({ curl, zip }, status);
-
-      expect(curl.disable).toHaveBeenCalled();
-      expect(zip.disable).toHaveBeenCalled();
-      expect(status.style.display).toBe('block');
-    });
-  });
-
-  describe('initDownload()', () => {
-    it('should initialize download helper functionality', async () => {
+    beforeEach(() => {
       createDomNodes(`
         <div class="download-titles"></div>
         <div class="download-title">
-          <a class="item-button" href="/download/123">Download</a>
+          <a class="item-button" style="display: none">Link 1</a>
+        </div>
+        <div class="download-title">
+          <a class="item-button" style="display: none">Link 2</a>
         </div>
       `);
 
-      await expect(initDownload()).resolves.not.toThrow();
+      curlButton = { enable: vi.fn(), disable: vi.fn(), style: { display: '' } };
+      zipButton = { enable: vi.fn(), disable: vi.fn(), style: { display: '' } };
+      statusElement = { style: { display: '' } };
+    });
+
+    it('should hide buttons and show status when links are not ready', () => {
+      statusElement.style.display = 'none';
+
+      mutationCallback({ curl: curlButton, zip: zipButton }, statusElement);
+
+      expect(curlButton.disable).toHaveBeenCalled();
+      expect(zipButton.disable).toHaveBeenCalled();
+      expect(curlButton.style.display).toBe('none');
+      expect(zipButton.style.display).toBe('none');
+      expect(statusElement.style.display).toBe('block');
+    });
+
+    it('should show and enable buttons and hide status when all links are ready', () => {
+      const links = document.querySelectorAll('.item-button');
+      links.forEach(link => {
+        (link as HTMLElement).style.display = 'block';
+      });
+
+      mutationCallback({ curl: curlButton, zip: zipButton }, statusElement);
+
+      expect(curlButton.enable).toHaveBeenCalled();
+      expect(zipButton.enable).toHaveBeenCalled();
+      expect(curlButton.style.display).toBe('inline-block');
+      expect(zipButton.style.display).toBe('inline-block');
+      expect(statusElement.style.display).toBe('none');
+    });
+
+    it('should keep buttons hidden and status visible when not all links are ready', () => {
+      const link = document.querySelectorAll('.item-button')[0];
+      (link as HTMLElement).style.display = 'block';
+
+      mutationCallback({ curl: curlButton, zip: zipButton }, statusElement);
+
+      expect(curlButton.enable).not.toHaveBeenCalled();
+      expect(zipButton.enable).not.toHaveBeenCalled();
+      expect(curlButton.style.display).toBe('none');
+      expect(zipButton.style.display).toBe('none');
+      expect(statusElement.style.display).toBe('block');
     });
   });
 
   describe('generateDownloadList()', () => {
-    it('should generate download list from links', () => {
+    it('should generate bash array with download URLs', () => {
       createDomNodes(`
         <a class="item-button" href="http://example.com/file1.flac"></a>
         <a class="item-button" href="http://example.com/file2.flac"></a>
+        <a class="item-button" href="http://example.com/file1.flac"></a>
       `);
 
-      const list = generateDownloadList();
+      const result = generateDownloadList();
 
-      expect(list).toContain('http://example.com/file1.flac');
-      expect(list).toContain('http://example.com/file2.flac');
+      expect(result).toContain('URLS=(');
+      expect(result).toContain('"http://example.com/file1.flac"');
+      expect(result).toContain('"http://example.com/file2.flac"');
+      expect(result.split('file1.flac').length, 'Should deduplicate URLs -- Original + 1 occurrence').toBe(2);
     });
 
-    it('should return empty URLS array when no links found', () => {
+    it('should return empty array when no links found', () => {
       createDomNodes('<div></div>');
 
-      const list = generateDownloadList();
+      const result = generateDownloadList();
 
-      expect(list).toBe('URLS=()\n');
+      expect(result).toBe('URLS=()\n');
     });
   });
 
-  describe('getDownloadPreamble()', () => {
-    it('should return bash preamble', () => {
+  describe('getDownloadPreamble() and getDownloadPostamble()', () => {
+    it('should return bash script components', () => {
       const preamble = getDownloadPreamble();
-
-      expect(preamble).toContain('#!/usr/bin/env bash');
-    });
-  });
-
-  describe('getDownloadPostamble()', () => {
-    it('should return bash postamble', () => {
       const postamble = getDownloadPostamble();
 
-      expect(postamble).toContain('DEFAULT_BATCH_SIZE');
+      expect(preamble).toContain('#!/usr/bin/env bash');
+      expect(postamble).toContain('download_file()');
+      expect(postamble).toContain('curl -L --fail -OJ');
+      expect(postamble).toContain('BATCH_SIZE');
     });
   });
 
   describe('downloadAllFiles()', () => {
     it('should show error when no download links found', async () => {
-      const { showErrorMessage } = await import('../src/components/notifications');
-      createDomNodes('<div></div>');
+      createDomNodes('<div class="download-titles"></div>');
 
       await downloadAllFiles();
 
-      expect(showErrorMessage).toHaveBeenCalledWith('No download links found');
+      expect(vi.mocked(showErrorMessage)).toHaveBeenCalledWith('No download links found');
+      expect(global.chrome.runtime.connect).not.toHaveBeenCalled();
     });
 
-    it('should connect to background script and request file downloads', async () => {
-      const { showPersistentNotification } = await import('../src/components/notifications');
+    it('should connect to background script and send download request', async () => {
+      createDomNodes(`
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+        </div>
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file2.flac"></a>
+        </div>
+      `);
+
+      const mockPort = {
+        onMessage: { addListener: vi.fn() },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
+      };
+      vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
+
+      const downloadPromise = downloadAllFiles();
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(global.chrome.runtime.connect).toHaveBeenCalledWith({ name: 'bes' });
+      expect(mockPort.postMessage).toHaveBeenCalledWith({
+        type: 'downloadFiles',
+        urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac']
+      });
+
+      const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
+      await messageListener({ type: 'downloadComplete', success: true, completed: 2, failed: 0 });
+      await downloadPromise;
+    });
+
+    it('should show progress notification when downloading starts', async () => {
       createDomNodes(`
         <div class="download-title">
           <a class="item-button" href="http://example.com/file1.flac"></a>
@@ -242,19 +404,13 @@ describe('DownloadHelper', () => {
         postMessage: vi.fn(),
         disconnect: vi.fn()
       };
-
       vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
 
       const downloadPromise = downloadAllFiles();
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(global.chrome.runtime.connect).toHaveBeenCalledWith({ name: 'bes' });
-      expect(mockPort.postMessage).toHaveBeenCalledWith({
-        type: 'downloadFiles',
-        urls: ['http://example.com/file1.flac']
-      });
-      expect(showPersistentNotification).toHaveBeenCalledWith({
+      expect(vi.mocked(showPersistentNotification)).toHaveBeenCalledWith({
         id: 'bes-download-progress',
         message: 'Downloading 0 of 1 files...',
         type: 'info'
@@ -263,6 +419,178 @@ describe('DownloadHelper', () => {
       const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
       await messageListener({ type: 'downloadComplete', success: true, completed: 1, failed: 0 });
       await downloadPromise;
+    });
+
+    it('should update progress as files are downloaded', async () => {
+      createDomNodes(`
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+        </div>
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file2.flac"></a>
+        </div>
+      `);
+
+      const mockPort = {
+        onMessage: { addListener: vi.fn() },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
+      };
+      vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
+
+      const downloadPromise = downloadAllFiles();
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageListener({
+        type: 'fileDownloaded',
+        filename: 'file1.flac',
+        data: new ArrayBuffer(1024)
+      });
+
+      expect(vi.mocked(updatePersistentNotification)).toHaveBeenCalledWith(
+        'bes-download-progress',
+        'Downloaded 1 of 2 files...'
+      );
+
+      await messageListener({ type: 'downloadComplete', success: true, completed: 2, failed: 0 });
+      await downloadPromise;
+    });
+
+    it('should show success message when all files downloaded', async () => {
+      createDomNodes(`
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+        </div>
+      `);
+
+      const mockPort = {
+        onMessage: { addListener: vi.fn() },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
+      };
+      vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
+
+      const downloadPromise = downloadAllFiles();
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageListener({ type: 'downloadComplete', success: true, completed: 1, failed: 0 });
+      await downloadPromise;
+
+      expect(vi.mocked(removePersistentNotification)).toHaveBeenCalledWith('bes-download-progress');
+      expect(vi.mocked(showSuccessMessage)).toHaveBeenCalledWith('Successfully downloaded 1 of 1 files');
+    });
+
+    it('should show failure count in success message if some files failed', async () => {
+      createDomNodes(`
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+        </div>
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file2.flac"></a>
+        </div>
+      `);
+
+      const mockPort = {
+        onMessage: { addListener: vi.fn() },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
+      };
+      vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
+
+      const downloadPromise = downloadAllFiles();
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageListener({ type: 'downloadComplete', success: true, completed: 1, failed: 1 });
+      await downloadPromise;
+
+      expect(vi.mocked(showSuccessMessage)).toHaveBeenCalledWith('Successfully downloaded 1 of 2 files (1 failed)');
+    });
+
+    it('should show error message when download fails completely', async () => {
+      createDomNodes(`
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+        </div>
+      `);
+
+      const mockPort = {
+        onMessage: { addListener: vi.fn() },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
+      };
+      vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
+
+      const downloadPromise = downloadAllFiles();
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageListener({ type: 'downloadComplete', success: false, message: 'All files failed' });
+      await downloadPromise;
+
+      expect(vi.mocked(removePersistentNotification)).toHaveBeenCalledWith('bes-download-progress');
+      expect(vi.mocked(showErrorMessage)).toHaveBeenCalledWith('All files failed');
+    });
+
+    it('should disconnect port when download completes', async () => {
+      createDomNodes(`
+        <div class="download-title">
+          <a class="item-button" href="http://example.com/file1.flac"></a>
+        </div>
+      `);
+
+      const mockPort = {
+        onMessage: { addListener: vi.fn() },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
+      };
+      vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
+
+      const downloadPromise = downloadAllFiles();
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const messageListener = mockPort.onMessage.addListener.mock.calls[0][0];
+
+      await messageListener({ type: 'downloadComplete', success: true, completed: 1, failed: 0 });
+      await downloadPromise;
+
+      expect(mockPort.disconnect).toHaveBeenCalled();
+    });
+  });
+
+  describe('initDownload()', () => {
+    beforeEach(() => {
+      createDomNodes(`
+        <div class="download-titles"></div>
+        <div class="download-title">
+          <a class="item-button" href="/download/123">Download</a>
+        </div>
+      `);
+    });
+
+    it('should initialize download helper functionality', async () => {
+      await expect(initDownload()).resolves.not.toThrow();
+
+      expect(createButton).toHaveBeenCalledTimes(2); // curl and zip buttons
+    });
+
+    it('should set up mutation observers for download links', async () => {
+      const observeSpy = vi.spyOn(MutationObserver.prototype, 'observe');
+
+      await initDownload();
+
+      expect(observeSpy).toHaveBeenCalled();
     });
   });
 });

@@ -65,7 +65,7 @@ Object.assign(global, {
 import {
   initDownload,
   createCurlButton,
-  createZipDownloadButton,
+  createDownloadAllButton,
   createStatusElement,
   mutationCallback,
   generateDownloadList,
@@ -160,10 +160,10 @@ describe('DownloadHelper', () => {
     });
   });
 
-  describe('createZipDownloadButton()', () => {
+  describe('createDownloadAllButton()', () => {
     it('should create download all files button when div.download-titles exists', () => {
       createDomNodes('<div class="download-titles"></div>');
-      const button = createZipDownloadButton();
+      const button = createDownloadAllButton();
 
       expect(button).toBeTruthy();
       expect(createButton).toHaveBeenCalledWith({
@@ -188,7 +188,7 @@ describe('DownloadHelper', () => {
       };
       vi.mocked(global.chrome.runtime.connect).mockReturnValue(mockPort as any);
 
-      createZipDownloadButton();
+      createDownloadAllButton();
 
       const createButtonCall = vi.mocked(createButton).mock.calls[0][0];
       const buttonClickedCallback = createButtonCall.buttonClicked;
@@ -212,7 +212,7 @@ describe('DownloadHelper', () => {
     it('should show error when download all button is clicked with no download links', async () => {
       createDomNodes('<div class="download-titles"></div>');
 
-      createZipDownloadButton();
+      createDownloadAllButton();
 
       const createButtonCall = vi.mocked(createButton).mock.calls[0][0];
       const buttonClickedCallback = createButtonCall.buttonClicked;
@@ -225,7 +225,7 @@ describe('DownloadHelper', () => {
 
     it('should return undefined when div.download-titles does not exist', () => {
       createDomNodes('<div></div>');
-      const button = createZipDownloadButton();
+      const button = createDownloadAllButton();
 
       expect(button).toBeUndefined();
     });

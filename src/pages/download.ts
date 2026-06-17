@@ -68,7 +68,7 @@ export function createCurlButton(): (HTMLAnchorElement & { disable: () => void; 
   return curlDownloadButton;
 }
 
-export function createZipDownloadButton():
+export function createDownloadAllButton():
   | (HTMLAnchorElement & { disable: () => void; enable: () => void })
   | undefined {
   const downloadTitlesLocation = document.querySelector('div.download-titles');
@@ -118,7 +118,7 @@ export async function initDownload(): Promise<void> {
 
   const statusElement = createStatusElement();
   const curlButton = createCurlButton();
-  const downloadAllButton = createZipDownloadButton();
+  const downloadAllButton = createDownloadAllButton();
   const buttons = { curl: curlButton, downloadAll: downloadAllButton };
 
   const callback = () => mutationCallback(buttons, statusElement);

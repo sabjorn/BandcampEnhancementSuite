@@ -14,7 +14,7 @@ const log = new Logger();
 export function mutationCallback(
   buttons: {
     curl?: HTMLAnchorElement & { disable: () => void; enable: () => void };
-    zip?: HTMLAnchorElement & { disable: () => void; enable: () => void };
+    downloadAll?: HTMLAnchorElement & { disable: () => void; enable: () => void };
   },
   statusElement: HTMLElement | undefined
 ): void {
@@ -25,17 +25,17 @@ export function mutationCallback(
   log.info(`linksReady: ${linksReady}`);
   if (linksReady) {
     buttons.curl?.enable();
-    buttons.zip?.enable();
+    buttons.downloadAll?.enable();
     if (buttons.curl) buttons.curl.style.display = 'inline-block';
-    if (buttons.zip) buttons.zip.style.display = 'inline-block';
+    if (buttons.downloadAll) buttons.downloadAll.style.display = 'inline-block';
     if (statusElement) statusElement.style.display = 'none';
     return;
   }
 
   buttons.curl?.disable();
-  buttons.zip?.disable();
+  buttons.downloadAll?.disable();
   if (buttons.curl) buttons.curl.style.display = 'none';
-  if (buttons.zip) buttons.zip.style.display = 'none';
+  if (buttons.downloadAll) buttons.downloadAll.style.display = 'none';
   if (statusElement) statusElement.style.display = 'block';
 }
 
@@ -118,8 +118,8 @@ export async function initDownload(): Promise<void> {
 
   const statusElement = createStatusElement();
   const curlButton = createCurlButton();
-  const zipButton = createZipDownloadButton();
-  const buttons = { curl: curlButton, zip: zipButton };
+  const downloadAllButton = createZipDownloadButton();
+  const buttons = { curl: curlButton, downloadAll: downloadAllButton };
 
   const callback = () => mutationCallback(buttons, statusElement);
   const observer = new MutationObserver(callback);

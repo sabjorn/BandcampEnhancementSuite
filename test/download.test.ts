@@ -209,7 +209,7 @@ describe('DownloadHelper', () => {
       await downloadPromise;
     });
 
-    it('should show error when zip button is clicked with no download links', async () => {
+    it('should show error when download all button is clicked with no download links', async () => {
       createDomNodes('<div class="download-titles"></div>');
 
       createZipDownloadButton();
@@ -253,7 +253,7 @@ describe('DownloadHelper', () => {
 
   describe('mutationCallback()', () => {
     let curlButton: any;
-    let zipButton: any;
+    let downloadAllButton: any;
     let statusElement: any;
 
     beforeEach(() => {
@@ -268,19 +268,19 @@ describe('DownloadHelper', () => {
       `);
 
       curlButton = { enable: vi.fn(), disable: vi.fn(), style: { display: '' } };
-      zipButton = { enable: vi.fn(), disable: vi.fn(), style: { display: '' } };
+      downloadAllButton = { enable: vi.fn(), disable: vi.fn(), style: { display: '' } };
       statusElement = { style: { display: '' } };
     });
 
     it('should hide buttons and show status when links are not ready', () => {
       statusElement.style.display = 'none';
 
-      mutationCallback({ curl: curlButton, zip: zipButton }, statusElement);
+      mutationCallback({ curl: curlButton, downloadAll: downloadAllButton }, statusElement);
 
       expect(curlButton.disable).toHaveBeenCalled();
-      expect(zipButton.disable).toHaveBeenCalled();
+      expect(downloadAllButton.disable).toHaveBeenCalled();
       expect(curlButton.style.display).toBe('none');
-      expect(zipButton.style.display).toBe('none');
+      expect(downloadAllButton.style.display).toBe('none');
       expect(statusElement.style.display).toBe('block');
     });
 
@@ -290,12 +290,12 @@ describe('DownloadHelper', () => {
         (link as HTMLElement).style.display = 'block';
       });
 
-      mutationCallback({ curl: curlButton, zip: zipButton }, statusElement);
+      mutationCallback({ curl: curlButton, downloadAll: downloadAllButton }, statusElement);
 
       expect(curlButton.enable).toHaveBeenCalled();
-      expect(zipButton.enable).toHaveBeenCalled();
+      expect(downloadAllButton.enable).toHaveBeenCalled();
       expect(curlButton.style.display).toBe('inline-block');
-      expect(zipButton.style.display).toBe('inline-block');
+      expect(downloadAllButton.style.display).toBe('inline-block');
       expect(statusElement.style.display).toBe('none');
     });
 
@@ -303,12 +303,12 @@ describe('DownloadHelper', () => {
       const link = document.querySelectorAll('.item-button')[0];
       (link as HTMLElement).style.display = 'block';
 
-      mutationCallback({ curl: curlButton, zip: zipButton }, statusElement);
+      mutationCallback({ curl: curlButton, downloadAll: downloadAllButton }, statusElement);
 
       expect(curlButton.enable).not.toHaveBeenCalled();
-      expect(zipButton.enable).not.toHaveBeenCalled();
+      expect(downloadAllButton.enable).not.toHaveBeenCalled();
       expect(curlButton.style.display).toBe('none');
-      expect(zipButton.style.display).toBe('none');
+      expect(downloadAllButton.style.display).toBe('none');
       expect(statusElement.style.display).toBe('block');
     });
   });
@@ -582,7 +582,7 @@ describe('DownloadHelper', () => {
     it('should initialize download helper functionality', async () => {
       await expect(initDownload()).resolves.not.toThrow();
 
-      expect(createButton).toHaveBeenCalledTimes(2); // curl and zip buttons
+      expect(createButton).toHaveBeenCalledTimes(2); // curl and download all buttons
     });
 
     it('should set up mutation observers for download links', async () => {

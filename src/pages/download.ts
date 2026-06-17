@@ -14,7 +14,7 @@ const log = new Logger();
 export function mutationCallback(
   buttons: {
     curl?: HTMLAnchorElement & { disable: () => void; enable: () => void };
-    zip?: HTMLAnchorElement & { disable: () => void; enable: () => void };
+    downloadAll?: HTMLAnchorElement & { disable: () => void; enable: () => void };
   },
   statusElement: HTMLElement | undefined
 ): void {
@@ -25,13 +25,17 @@ export function mutationCallback(
   log.info(`linksReady: ${linksReady}`);
   if (linksReady) {
     buttons.curl?.enable();
-    buttons.zip?.enable();
+    buttons.downloadAll?.enable();
+    if (buttons.curl) buttons.curl.style.display = 'inline-block';
+    if (buttons.downloadAll) buttons.downloadAll.style.display = 'inline-block';
     if (statusElement) statusElement.style.display = 'none';
     return;
   }
 
   buttons.curl?.disable();
-  buttons.zip?.disable();
+  buttons.downloadAll?.disable();
+  if (buttons.curl) buttons.curl.style.display = 'none';
+  if (buttons.downloadAll) buttons.downloadAll.style.display = 'none';
   if (statusElement) statusElement.style.display = 'block';
 }
 
@@ -58,32 +62,34 @@ export function createCurlButton(): (HTMLAnchorElement & { disable: () => void; 
 
   curlDownloadButton.title = "Generates a file for automating downloads using 'cURL'";
   curlDownloadButton.disable();
+  curlDownloadButton.style.display = 'none';
 
   downloadTitlesLocation.append(curlDownloadButton);
   return curlDownloadButton;
 }
 
-export function createZipDownloadButton():
+export function createDownloadAllButton():
   | (HTMLAnchorElement & { disable: () => void; enable: () => void })
   | undefined {
   const downloadTitlesLocation = document.querySelector('div.download-titles');
   if (!downloadTitlesLocation) {
-    log.warn('Cannot create zip download button: div.download-titles element not found');
+    log.warn('Cannot create download all button: div.download-titles element not found');
     return undefined;
   }
 
-  const zipDownloadButton = createButton({
-    className: 'bes-downloadzip',
-    innerText: 'Download ZIP',
-    buttonClicked: downloadAsZip
+  const downloadAllButton = createButton({
+    className: 'bes-downloadall-files',
+    innerText: 'Download All Files',
+    buttonClicked: downloadAllFiles
   });
 
-  zipDownloadButton.title = 'Downloads all files directly to a zip archive';
-  zipDownloadButton.style.marginLeft = '10px';
-  zipDownloadButton.disable();
+  downloadAllButton.title = 'Downloads all files to a folder of your choice';
+  downloadAllButton.style.marginLeft = '10px';
+  downloadAllButton.disable();
+  downloadAllButton.style.display = 'none';
 
-  downloadTitlesLocation.append(zipDownloadButton);
-  return zipDownloadButton;
+  downloadTitlesLocation.append(downloadAllButton);
+  return downloadAllButton;
 }
 
 export function createStatusElement(): HTMLElement | undefined {
@@ -95,9 +101,9 @@ export function createStatusElement(): HTMLElement | undefined {
 
   const statusElement = document.createElement('div');
   statusElement.className = 'bes-download-status';
-  statusElement.textContent = 'preparing download';
+  statusElement.textContent = 'preparing download...';
   statusElement.setAttribute('disabled', 'true');
-  statusElement.style.display = 'none';
+  statusElement.style.display = 'block';
   statusElement.style.marginBottom = '10px';
   statusElement.style.marginTop = '10px';
   statusElement.style.fontSize = '13px';
@@ -112,8 +118,8 @@ export async function initDownload(): Promise<void> {
 
   const statusElement = createStatusElement();
   const curlButton = createCurlButton();
-  const zipButton = createZipDownloadButton();
-  const buttons = { curl: curlButton, zip: zipButton };
+  const downloadAllButton = createDownloadAllButton();
+  const buttons = { curl: curlButton, downloadAll: downloadAllButton };
 
   const callback = () => mutationCallback(buttons, statusElement);
   const observer = new MutationObserver(callback);
@@ -208,137 +214,55 @@ export function getDownloadPostamble(): string {
   return postamble;
 }
 
-function handleProgressMessage(message: any): void {
-  if (!document.getElementById('bes-download-progress')) {
-    showPersistentNotification({
-      id: 'bes-download-progress',
-      message: message.message,
-      type: 'info'
+async function selectDownloadDirectory(): Promise<FileSystemDirectoryHandle | null> {
+  if (!('showDirectoryPicker' in window)) {
+    log.info('File System Access API not available, using default downloads folder');
+    return null;
+  }
+
+  try {
+    const dirHandle = await (window as any).showDirectoryPicker({
+      mode: 'readwrite',
+      startIn: 'downloads'
     });
-  } else {
-    updatePersistentNotification('bes-download-progress', message.message);
+    return dirHandle;
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') {
+      log.info('User cancelled directory selection');
+      return null;
+    }
+    throw error;
   }
 }
 
-function convertBase64ChunksToBinary(zipChunks: string[]): Uint8Array {
-  log.info('Converting base64 chunks to binary...');
-  const binaryChunks: Uint8Array[] = [];
-  let totalLength = 0;
-
-  for (let i = 0; i < zipChunks.length; i++) {
-    const chunk = zipChunks[i];
-    if (!chunk) {
-      throw new Error(`Missing chunk at index ${i}`);
-    }
-
-    const binaryString = atob(chunk);
-    const chunkBytes = new Uint8Array(binaryString.length);
-    for (let j = 0; j < binaryString.length; j++) {
-      chunkBytes[j] = binaryString.charCodeAt(j);
-    }
-
-    binaryChunks.push(chunkBytes);
-    totalLength += chunkBytes.length;
-
-    if ((i + 1) % 10 === 0) {
-      log.info(`Processed chunk ${i + 1}/${zipChunks.length}`);
-    }
-  }
-
-  log.info(`Converting ${binaryChunks.length} chunks to single array (${totalLength} bytes)...`);
-
-  const bytes = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const chunk of binaryChunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  log.info(`Assembled zip file: ${bytes.length} bytes`);
-  return bytes;
+async function writeFileToDirectory(
+  dirHandle: FileSystemDirectoryHandle,
+  filename: string,
+  data: ArrayBuffer
+): Promise<void> {
+  const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(new Blob([data]));
+  await writable.close();
+  log.info(`Wrote ${filename} to directory`);
 }
 
-function triggerZipDownload(bytes: Uint8Array, filename: string): void {
-  log.info('Creating blob...');
-  const blob = new Blob([bytes as BlobPart], { type: 'application/zip' });
-  log.info(`Blob created, size: ${blob.size} bytes`);
-
-  log.info('Creating download URL...');
-  const downloadUrl = URL.createObjectURL(blob);
-
-  log.info('Triggering download...');
-  const a = document.createElement('a');
-  a.href = downloadUrl;
-  a.download = filename;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(downloadUrl);
-
-  removePersistentNotification('bes-download-progress');
-  showSuccessMessage(`Successfully downloaded ${filename}`);
+async function downloadFileViaAnchor(filename: string, data: ArrayBuffer): Promise<void> {
+  const blob = new Blob([data]);
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+  log.info(`Downloaded ${filename} via anchor`);
 }
 
-function createZipMessageHandler(): {
-  zipChunks: string[];
-  expectedChunks: number;
-  zipFilename: string;
-  handleMessage: (message: any) => Promise<void>;
-} {
-  let zipChunks: string[] = [];
-  let expectedChunks = 0;
-  let zipFilename = '';
-
-  const handleMessage = async (message: any) => {
-    if (message.type === 'downloadProgress') {
-      handleProgressMessage(message);
-      return;
-    }
-
-    if (message.type === 'zipChunk') {
-      if (message.chunkIndex === 0) {
-        zipChunks = Array.from({ length: message.totalChunks });
-        expectedChunks = message.totalChunks;
-        zipFilename = message.filename;
-        log.info(`Receiving zip in ${expectedChunks} chunks`);
-        updatePersistentNotification('bes-download-progress', 'Downloading... 0%');
-      }
-
-      zipChunks[message.chunkIndex] = message.data;
-      log.info(`Received chunk ${message.chunkIndex + 1}/${expectedChunks}`);
-
-      const receivedSoFar = message.chunkIndex + 1;
-      const percentage = Math.round((receivedSoFar / expectedChunks) * 100);
-      updatePersistentNotification('bes-download-progress', `Downloading... ${percentage}%`);
-
-      const receivedChunks = zipChunks.filter(chunk => chunk !== undefined).length;
-      if (receivedChunks !== expectedChunks) return;
-
-      log.info('All chunks received, assembling zip file...');
-
-      try {
-        const bytes = convertBase64ChunksToBinary(zipChunks);
-        triggerZipDownload(bytes, zipFilename);
-      } catch (error) {
-        log.error(`Error assembling zip file: ${error}`);
-        removePersistentNotification('bes-download-progress');
-        showErrorMessage('Failed to assemble zip file');
-      }
-      return;
-    }
-
-    if (message.type === 'downloadComplete' && !message.success) {
-      removePersistentNotification('bes-download-progress');
-      showErrorMessage(message.message);
-    }
-  };
-
-  return { zipChunks, expectedChunks, zipFilename, handleMessage };
-}
-
-export async function downloadAsZip(): Promise<void> {
-  const urls = [...document.querySelectorAll('a.item-button')]
+export async function downloadAllFiles(): Promise<void> {
+  const urls = [...document.querySelectorAll('.download-title .item-button')]
     .map(item => item.getAttribute('href'))
     .filter((url): url is string => url !== null);
 
@@ -347,25 +271,62 @@ export async function downloadAsZip(): Promise<void> {
     return;
   }
 
-  log.info(`Starting zip download for ${urls.length} files via background script`);
+  log.info(`Starting download of ${urls.length} files`);
+
+  const dirHandle = await selectDownloadDirectory();
+  const folderPickerCancelled = dirHandle === null && 'showDirectoryPicker' in window;
+  if (folderPickerCancelled) {
+    return;
+  }
+
+  showPersistentNotification({
+    id: 'bes-download-progress',
+    message: `Downloading 0 of ${urls.length} files...`,
+    type: 'info'
+  });
 
   try {
     const port = chrome.runtime.connect({ name: 'bes' });
-    const { handleMessage } = createZipMessageHandler();
+    let savedCount = 0;
 
     port.onMessage.addListener(async message => {
-      await handleMessage(message);
+      if (message.type === 'fileDownloaded') {
+        const { filename, data } = message;
+
+        try {
+          if (dirHandle) {
+            await writeFileToDirectory(dirHandle, filename, data);
+          } else {
+            await downloadFileViaAnchor(filename, data);
+          }
+          savedCount++;
+          updatePersistentNotification('bes-download-progress', `Downloaded ${savedCount} of ${urls.length} files...`);
+        } catch (error) {
+          log.error(`Failed to save ${filename}: ${error}`);
+        }
+      }
+
       if (message.type === 'downloadComplete') {
         port.disconnect();
+        removePersistentNotification('bes-download-progress');
+
+        if (message.success) {
+          const { completed, failed } = message;
+          const failedCount = failed > 0 ? ` (${failed} failed)` : '';
+          showSuccessMessage(`Successfully downloaded ${completed} of ${urls.length} files${failedCount}`);
+        } else {
+          showErrorMessage(message.message || 'Download failed');
+        }
       }
     });
 
     port.postMessage({
-      type: 'downloadZip',
-      urls: urls
+      type: 'downloadFiles',
+      urls
     });
   } catch (error) {
-    log.error(`Error connecting to background script: ${error}`);
-    showErrorMessage('Failed to connect to background script for downloading');
+    log.error(`Error during download: ${error}`);
+    removePersistentNotification('bes-download-progress');
+    showErrorMessage('Download failed. Check console for details.');
   }
 }

@@ -14,12 +14,6 @@ vi.mock('../src/utilities', () => ({
   createFetchFunction: vi.fn(() => globalThis.fetch)
 }));
 
-vi.mock('client-zip', () => ({
-  downloadZip: vi.fn(() => ({
-    blob: vi.fn(() => Promise.resolve(new Blob(['fake zip data'], { type: 'application/zip' })))
-  }))
-}));
-
 const mockOnConnect = vi.fn();
 
 Object.assign(global, {
@@ -93,44 +87,27 @@ describe('Download Backend', () => {
       onMessageListener = mockPort.onMessage.addListener.mock.calls[0][0];
     });
 
-    it('should handle successful downloads and send progress messages', async () => {
+    it('should handle successful downloads and send fileDownloaded messages', async () => {
       const downloadRequest = {
-        type: 'downloadZip',
+        type: 'downloadFiles',
         urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac']
       };
 
       await onMessageListener(downloadRequest);
 
-      expect(mockPort.postMessage).toHaveBeenCalledWith({
-        type: 'downloadProgress',
-        completed: 0,
-        failed: 0,
-        total: 2,
-        message: 'Starting download of 2 files...'
-      });
-
       expect(mockPort.postMessage).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'downloadProgress',
-          message: 'Creating zip file...'
-        })
-      );
-
-      expect(mockPort.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'zipChunk',
-          chunkIndex: 0,
-          totalChunks: expect.any(Number),
-          data: expect.any(String),
-          filename: 'bandcamp_2023-01-01.zip'
+          type: 'fileDownloaded',
+          filename: 'track.flac',
+          data: expect.any(ArrayBuffer)
         })
       );
 
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadComplete',
         success: true,
-        filename: 'bandcamp_2023-01-01.zip',
-        message: 'Successfully downloaded 2 files as bandcamp_2023-01-01.zip'
+        completed: 2,
+        failed: 0
       });
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
@@ -143,7 +120,7 @@ describe('Download Backend', () => {
       } as any);
 
       const downloadRequest = {
-        type: 'downloadZip',
+        type: 'downloadFiles',
         urls: ['http://example.com/file404.flac']
       };
 
@@ -152,7 +129,9 @@ describe('Download Backend', () => {
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadComplete',
         success: false,
-        message: 'No files could be downloaded'
+        completed: 0,
+        failed: 1,
+        message: '1 files failed to download'
       });
     });
 
@@ -170,7 +149,7 @@ describe('Download Backend', () => {
         } as any);
 
       const downloadRequest = {
-        type: 'downloadZip',
+        type: 'downloadFiles',
         urls: ['http://example.com/success.flac', 'http://example.com/fail.flac']
       };
 
@@ -180,6 +159,8 @@ describe('Download Backend', () => {
         expect.objectContaining({
           type: 'downloadComplete',
           success: true,
+          completed: 1,
+          failed: 1,
           message: expect.stringContaining('1 files failed to download')
         })
       );
@@ -196,7 +177,7 @@ describe('Download Backend', () => {
         } as any);
 
       const downloadRequest = {
-        type: 'downloadZip',
+        type: 'downloadFiles',
         urls: ['http://example.com/error.flac', 'http://example.com/success.flac']
       };
 
@@ -206,62 +187,32 @@ describe('Download Backend', () => {
         expect.objectContaining({
           type: 'downloadComplete',
           success: true,
+          completed: 1,
+          failed: 1,
           message: expect.stringContaining('1 files failed to download')
         })
       );
     });
 
-    it('should handle zip creation failures', async () => {
-      const { downloadZip } = await import('client-zip');
-
-      vi.mocked(downloadZip).mockImplementationOnce(() => {
-        throw new Error('Zip creation failed');
-      });
-
+    it('should send fileDownloaded messages for each successful download', async () => {
       const downloadRequest = {
-        type: 'downloadZip',
-        urls: ['http://example.com/file1.flac']
-      };
-
-      await onMessageListener(downloadRequest);
-
-      expect(mockPort.postMessage).toHaveBeenCalledWith({
-        type: 'downloadComplete',
-        success: false,
-        message: 'Failed to create or download zip file'
-      });
-    });
-
-    it('should send progress updates after each file download', async () => {
-      const downloadRequest = {
-        type: 'downloadZip',
+        type: 'downloadFiles',
         urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac']
       };
 
       await onMessageListener(downloadRequest);
 
-      expect(mockPort.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'downloadProgress',
-          completed: 1,
-          failed: 0,
-          total: 2,
-          message: 'Downloaded 1 of 2 files (0 failed)'
-        })
-      );
+      const fileDownloadedCalls = mockPort.postMessage.mock.calls.filter(call => call[0].type === 'fileDownloaded');
 
-      expect(mockPort.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'downloadProgress',
-          completed: 2,
-          failed: 0,
-          total: 2,
-          message: 'Downloaded 2 of 2 files (0 failed)'
-        })
-      );
+      expect(fileDownloadedCalls).toHaveLength(2);
+      expect(fileDownloadedCalls[0][0]).toMatchObject({
+        type: 'fileDownloaded',
+        filename: 'track.flac',
+        data: expect.any(ArrayBuffer)
+      });
     });
 
-    it('should ignore non-downloadZip message types', async () => {
+    it('should ignore non-downloadFiles message types', async () => {
       const invalidRequest = {
         type: 'invalidType',
         data: 'test'
@@ -284,7 +235,7 @@ describe('Download Backend', () => {
       } as any);
 
       const downloadRequest = {
-        type: 'downloadZip',
+        type: 'downloadFiles',
         urls: ['http://example.com/empty.flac']
       };
 
@@ -293,7 +244,9 @@ describe('Download Backend', () => {
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadComplete',
         success: false,
-        message: 'No files could be downloaded'
+        completed: 0,
+        failed: 1,
+        message: '1 files failed to download'
       });
     });
 
@@ -308,7 +261,7 @@ describe('Download Backend', () => {
       } as any);
 
       const downloadRequest = {
-        type: 'downloadZip',
+        type: 'downloadFiles',
         urls: ['http://no-extension-no-header']
       };
 
@@ -317,45 +270,10 @@ describe('Download Backend', () => {
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadComplete',
         success: false,
-        message: 'No files could be downloaded'
+        completed: 0,
+        failed: 1,
+        message: '1 files failed to download'
       });
-    });
-
-    it('should handle chunked zip transfer correctly', async () => {
-      const testPattern = 'TestData123';
-      const largeBlobData = testPattern.repeat(200000);
-      const { downloadZip } = await import('client-zip');
-
-      vi.mocked(downloadZip).mockReturnValueOnce({
-        blob: vi.fn(() => Promise.resolve(new Blob([largeBlobData], { type: 'application/zip' })))
-      } as any);
-
-      const downloadRequest = {
-        type: 'downloadZip',
-        urls: ['http://example.com/file1.flac']
-      };
-
-      await onMessageListener(downloadRequest);
-
-      const zipChunkCalls = mockPort.postMessage.mock.calls.filter(call => call[0].type === 'zipChunk');
-
-      expect(zipChunkCalls.length, 'Large data should be split into multiple chunks').toBeGreaterThan(1);
-
-      expect(zipChunkCalls[0][0]).toMatchObject({
-        type: 'zipChunk',
-        chunkIndex: 0,
-        totalChunks: expect.any(Number),
-        data: expect.any(String),
-        filename: 'bandcamp_2023-01-01.zip'
-      });
-
-      const allChunks = zipChunkCalls.map(call => call[0].data);
-      const decodedChunks = allChunks.map(chunk => atob(chunk));
-      const reconstructedData = decodedChunks.join('');
-
-      expect(reconstructedData, 'Reconstructed data should match original test pattern').toBe(largeBlobData);
-      expect(reconstructedData.startsWith(testPattern), 'Data should start with test pattern').toBe(true);
-      expect(reconstructedData.endsWith(testPattern), 'Data should end with test pattern').toBe(true);
     });
   });
 

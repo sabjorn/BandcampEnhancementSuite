@@ -236,7 +236,7 @@ async function writeFileToDirectory(
 ): Promise<void> {
   const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
   const writable = await fileHandle.createWritable();
-  await writable.write(data);
+  await writable.write(new Blob([data]));
   await writable.close();
   log.info(`Wrote ${filename} to directory`);
 }

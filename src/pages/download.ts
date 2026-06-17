@@ -268,7 +268,8 @@ export async function downloadAllFiles(): Promise<void> {
   log.info(`Starting download of ${urls.length} files`);
 
   const dirHandle = await selectDownloadDirectory();
-  if (dirHandle === null && 'showDirectoryPicker' in window) {
+  const folderPickerCancelled = dirHandle === null && 'showDirectoryPicker' in window;
+  if (folderPickerCancelled) {
     return;
   }
 

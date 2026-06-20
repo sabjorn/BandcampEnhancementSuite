@@ -83,7 +83,8 @@ export function createDownloadAllButton():
     buttonClicked: downloadAllFiles
   });
 
-  downloadAllButton.title = 'Downloads all files to a folder of your choice';
+  downloadAllButton.title =
+    'Downloads all files to a folder of your choice. On macOS, select a subfolder within Downloads.';
   downloadAllButton.style.marginLeft = '10px';
   downloadAllButton.disable();
   downloadAllButton.style.display = 'none';
@@ -222,13 +223,19 @@ async function selectDownloadDirectory(): Promise<FileSystemDirectoryHandle | nu
 
   try {
     const dirHandle = await (window as any).showDirectoryPicker({
-      mode: 'readwrite',
-      startIn: 'downloads'
+      mode: 'readwrite'
     });
     return dirHandle;
   } catch (error) {
     if ((error as Error).name === 'AbortError') {
       log.info('User cancelled directory selection');
+      return null;
+    }
+    if ((error as Error).name === 'NotAllowedError' || (error as Error).name === 'SecurityError') {
+      log.warn('Permission denied for selected folder');
+      showErrorMessage(
+        'Cannot access this folder. On macOS, create a subfolder inside Downloads (e.g., Downloads/Bandcamp) and select that instead.'
+      );
       return null;
     }
     throw error;

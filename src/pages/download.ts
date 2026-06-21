@@ -26,12 +26,16 @@ export function mutationCallback(
   if (linksReady) {
     buttons.curl?.enable();
     buttons.zip?.enable();
+    if (buttons.curl) buttons.curl.style.display = 'inline-block';
+    if (buttons.zip) buttons.zip.style.display = 'inline-block';
     if (statusElement) statusElement.style.display = 'none';
     return;
   }
 
   buttons.curl?.disable();
   buttons.zip?.disable();
+  if (buttons.curl) buttons.curl.style.display = 'none';
+  if (buttons.zip) buttons.zip.style.display = 'none';
   if (statusElement) statusElement.style.display = 'block';
 }
 
@@ -58,6 +62,7 @@ export function createCurlButton(): (HTMLAnchorElement & { disable: () => void; 
 
   curlDownloadButton.title = "Generates a file for automating downloads using 'cURL'";
   curlDownloadButton.disable();
+  curlDownloadButton.style.display = 'none';
 
   downloadTitlesLocation.append(curlDownloadButton);
   return curlDownloadButton;
@@ -81,6 +86,7 @@ export function createZipDownloadButton():
   zipDownloadButton.title = 'Downloads all files directly to a zip archive';
   zipDownloadButton.style.marginLeft = '10px';
   zipDownloadButton.disable();
+  zipDownloadButton.style.display = 'none';
 
   downloadTitlesLocation.append(zipDownloadButton);
   return zipDownloadButton;
@@ -95,9 +101,9 @@ export function createStatusElement(): HTMLElement | undefined {
 
   const statusElement = document.createElement('div');
   statusElement.className = 'bes-download-status';
-  statusElement.textContent = 'preparing download';
+  statusElement.textContent = 'preparing download...';
   statusElement.setAttribute('disabled', 'true');
-  statusElement.style.display = 'none';
+  statusElement.style.display = 'block';
   statusElement.style.marginBottom = '10px';
   statusElement.style.marginTop = '10px';
   statusElement.style.fontSize = '13px';

@@ -232,8 +232,9 @@ describe('DownloadHelper', () => {
 
       expect(statusElement).toBeTruthy();
       expect(statusElement?.className).toBe('bes-download-status');
-      expect(statusElement?.textContent).toBe('preparing download');
+      expect(statusElement?.textContent).toBe('preparing download...');
       expect(statusElement?.getAttribute('disabled')).toBe('true');
+      expect(statusElement?.style.display).toBe('block');
     });
 
     it('should return undefined when div.download-titles does not exist', () => {
@@ -260,8 +261,8 @@ describe('DownloadHelper', () => {
         </div>
       `);
 
-      curlButton = { enable: vi.fn(), disable: vi.fn() };
-      zipButton = { enable: vi.fn(), disable: vi.fn() };
+      curlButton = { enable: vi.fn(), disable: vi.fn(), style: { display: '' } };
+      zipButton = { enable: vi.fn(), disable: vi.fn(), style: { display: '' } };
       statusElement = { style: { display: '' } };
     });
 
@@ -272,6 +273,8 @@ describe('DownloadHelper', () => {
 
       expect(curlButton.disable).toHaveBeenCalled();
       expect(zipButton.disable).toHaveBeenCalled();
+      expect(curlButton.style.display).toBe('none');
+      expect(zipButton.style.display).toBe('none');
       expect(statusElement.style.display).toBe('block');
     });
 
@@ -285,6 +288,8 @@ describe('DownloadHelper', () => {
 
       expect(curlButton.enable).toHaveBeenCalled();
       expect(zipButton.enable).toHaveBeenCalled();
+      expect(curlButton.style.display).toBe('inline-block');
+      expect(zipButton.style.display).toBe('inline-block');
       expect(statusElement.style.display).toBe('none');
     });
 
@@ -296,6 +301,8 @@ describe('DownloadHelper', () => {
 
       expect(curlButton.enable).not.toHaveBeenCalled();
       expect(zipButton.enable).not.toHaveBeenCalled();
+      expect(curlButton.style.display).toBe('none');
+      expect(zipButton.style.display).toBe('none');
       expect(statusElement.style.display).toBe('block');
     });
   });

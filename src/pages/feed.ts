@@ -34,7 +34,7 @@ export function renderFeedPreviews(
       : container;
     anchor.appendChild(preview);
 
-    attachPreviewListeners(preview, port, previewState);
+    attachPreviewListeners(preview, port, previewState, false);
   });
 }
 

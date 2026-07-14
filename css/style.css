@@ -74,8 +74,8 @@ canvas.waveform {
   width: 100%;
   height: 30px;
   padding-bottom: 5px;
-  cursor: 'pointer';
-  display: 'none';
+  cursor: pointer;
+  display: none; /* Hidden by default for main player, toggled via JS */
 }
 
 div.controls {
@@ -982,4 +982,867 @@ button.bes-downloadall[disabled]::after {
 #sidecart {
   position: relative !important;
   overflow: visible !important;
+}
+
+/* Player Drawer Styles */
+.bes-player-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 67%;
+  height: 100%;
+  background: transparent;
+  z-index: 10003;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
+}
+
+.bes-player-drawer-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.bes-player-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 33vw;
+  min-width: 400px;
+  max-width: 600px;
+  height: 100%;
+  background: #fff;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
+  z-index: 10004;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.bes-player-drawer.open {
+  transform: translateX(0);
+}
+
+.bes-player-drawer.minimized {
+  width: 60px;
+  min-width: 60px;
+}
+
+.bes-player-drawer.minimized .bes-player-drawer-header,
+.bes-player-drawer.minimized .bes-player-drawer-content {
+  display: none;
+}
+
+.bes-player-drawer.minimized .bes-player-drawer-minimized-bar {
+  display: flex;
+}
+
+.bes-player-drawer-header {
+  padding: 22px 24px;
+  border-bottom: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+/* Main player container - 3 columns */
+.bes-player-drawer-main {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* LEFT COLUMN: Album art + transport controls */
+.bes-player-drawer-left {
+  width: 96px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+.bes-player-drawer-album-art {
+  width: 96px;
+  height: 96px;
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 1px rgba(24, 24, 27, 0.06);
+  object-fit: cover;
+}
+
+.bes-player-drawer-transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* CENTER COLUMN: Track info + player */
+.bes-player-drawer-center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  justify-content: center;
+}
+
+.bes-player-drawer-info-row {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+
+.bes-player-drawer-track-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bes-player-drawer-album-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.bes-player-drawer-artist-name {
+  font-size: 21px;
+  font-weight: 800;
+  color: #18181b;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.bes-player-drawer-bpm-badge {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 11px;
+  background: #f4f4f5;
+  border: 1px solid #ececef;
+}
+
+/* RIGHT COLUMN: Volume controls */
+.bes-player-drawer-right {
+  width: 46px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-left: 4px;
+  border-left: 1px solid #f0f0f2;
+}
+
+/* Header actions - minimize/close */
+.bes-player-drawer-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.bes-player-drawer-minimize,
+.bes-player-drawer-close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #52525b;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+}
+
+.bes-player-drawer-minimize:hover,
+.bes-player-drawer-close:hover {
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+.bes-player-drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bes-player-drawer-player {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.bes-player-drawer-player .inline_player {
+  width: 100%;
+}
+
+.bes-player-drawer-tracklist {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.bes-tracklist {
+  width: 100%;
+}
+
+.bes-tracklist ol {
+  list-style: decimal;
+  padding: 0 0 0 30px;
+  margin: 0;
+}
+
+.bes-tracklist li {
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e0e0;
+  color: #333;
+  font-size: 14px;
+}
+
+.bes-tracklist li:last-child {
+  border-bottom: none;
+}
+
+/* Ensure inline_player is visible */
+.bes-player-drawer-player .inline_player {
+  display: block !important;
+  width: 100%;
+}
+
+/* Volume slider - vertical in right column */
+.bes-drawer-volume-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  padding: 8px 0;
+}
+
+.bes-drawer-volume-column input.volume {
+  writing-mode: bt-lr;
+  -webkit-appearance: slider-vertical;
+  width: 6px;
+  height: 100%;
+  cursor: pointer;
+  background: #ececef;
+  border-radius: 6px;
+  outline: none;
+}
+
+.bes-drawer-volume-column input.volume::-webkit-slider-runnable-track {
+  background: transparent;
+}
+
+.bes-drawer-volume-column input.volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  background: #ffffff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow:
+    0 1px 4px rgba(24, 24, 27, 0.28),
+    inset 0 0 0 4px #18181b;
+}
+
+.bes-drawer-volume-column input.volume::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  background: #ffffff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow:
+    0 1px 4px rgba(24, 24, 27, 0.28),
+    inset 0 0 0 4px #18181b;
+}
+
+/* Controls row with toggle tabs and time */
+.bes-player-drawer-player .controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.bes-player-drawer-player .controls > div:last-child {
+  margin-left: auto;
+}
+
+/* Waveform toggle - tab style */
+.bes-player-drawer-player .controls > div:has(.bes-toggle) {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  background: #f4f4f5;
+  border-radius: 9px;
+  border: 1px solid #ececef;
+}
+
+.bes-player-drawer-player .controls > div:has(.bes-toggle):before {
+  display: none;
+}
+
+.bes-player-drawer-player input[type='checkbox'].bes-toggle {
+  height: 0;
+  width: 0;
+  visibility: hidden;
+  position: absolute;
+}
+
+/* Style the label as a tab button */
+.bes-player-drawer-player label.bes-toggle {
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  color: #71717a;
+}
+
+.bes-player-drawer-player label.bes-toggle:after {
+  display: none;
+}
+
+.bes-player-drawer-player input:checked + label.bes-toggle {
+  background: #ffffff;
+  color: #18181b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Transport controls styling */
+.bes-player-drawer-transport .prev,
+.bes-player-drawer-transport .next,
+.bes-player-drawer-transport .play_cell {
+  display: flex;
+}
+
+.bes-player-drawer-transport .prevbutton,
+.bes-player-drawer-transport .nextbutton {
+  /* Inline HTML provides SVG icons, no need for CSS masks */
+  transition: background-color 0.2s ease;
+}
+
+.bes-player-drawer-transport .prevbutton:hover,
+.bes-player-drawer-transport .nextbutton:hover {
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+.bes-player-drawer-transport .prevbutton {
+  /* Removed CSS mask - using inline SVG from HTML */
+}
+
+.bes-player-drawer-transport .nextbutton {
+  /* Removed CSS mask - using inline SVG from HTML */
+}
+
+.bes-player-drawer-transport .prevbutton.hiddenelem,
+.bes-player-drawer-transport .nextbutton.hiddenelem {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Play button - large circular */
+.bes-player-drawer-transport .playbutton {
+  /* Inline HTML provides styles and SVG icon, removed conflicting CSS */
+  transition: background-color 0.2s ease;
+}
+
+.bes-player-drawer-transport .playbutton:hover {
+  background: #000000 !important;
+}
+
+/* Toggle play/pause icons based on playing state */
+.bes-player-drawer-transport .playbutton .play-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.bes-player-drawer-transport .playbutton .pause-icon {
+  display: none;
+  flex-shrink: 0;
+}
+
+.bes-player-drawer-transport .playbutton.playing .play-icon {
+  display: none;
+}
+
+.bes-player-drawer-transport .playbutton.playing .pause-icon {
+  display: block;
+}
+
+.bes-player-drawer-transport .playbutton svg {
+  pointer-events: none;
+}
+
+.bes-player-drawer-transport .playbutton svg path,
+.bes-player-drawer-transport .playbutton svg rect {
+  fill: #ffffff;
+}
+
+/* Ensure table takes full width */
+.bes-player-drawer-player table {
+  width: 100%;
+}
+
+/* Track info styling - show time only */
+.bes-player-drawer-player .track_info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.bes-player-drawer-player .title-section {
+  display: none;
+}
+
+.bes-player-drawer-player .time {
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* Progress bar styling */
+.bes-player-drawer-player .progbar {
+  position: relative;
+  height: 5px;
+  background: #ececef;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 0;
+}
+
+.bes-player-drawer-player .progbar_empty {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.bes-player-drawer-player .progbar_fill {
+  background: #1da0c3;
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.1s linear;
+}
+
+.bes-player-drawer-player .progbar_empty .thumb {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translate(-50%, -50%);
+  width: 15px;
+  height: 15px;
+  background: #ffffff;
+  border: none;
+  border-radius: 50%;
+  box-shadow:
+    0 1px 4px rgba(24, 24, 27, 0.28),
+    inset 0 0 0 4px #1da0c3;
+  cursor: pointer;
+}
+
+/* Waveform styling */
+.bes-player-drawer-player .progbar.waveform {
+  position: relative;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+  margin-top: 0;
+}
+
+.bes-player-drawer-player .progbar.waveform > div:first-child {
+  position: relative;
+  width: 100%;
+  height: 40px;
+}
+
+.bes-player-drawer-player canvas.waveform {
+  width: 100%;
+  height: 40px;
+  cursor: pointer;
+  display: block;
+}
+
+/* BPM display in progbar area - hidden, using badge instead */
+.bes-player-drawer-player .bpm {
+  display: none;
+}
+
+/* Time display */
+.bes-player-drawer-player .time {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bes-player-drawer-player .time_elapsed {
+  color: #18181b;
+}
+
+.bes-player-drawer-player .time_total {
+  color: #a1a1aa;
+}
+
+/* Buy button styling */
+.bes-player-drawer-tracklist .one-click-button {
+  margin-left: 8px;
+}
+
+.bes-player-drawer-tracklist .track_table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bes-player-drawer-tracklist .track_row_view {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.bes-player-drawer .track_row_view:hover {
+  background-color: #f7f7f7;
+}
+
+.bes-player-drawer .track_row_view.playing {
+  background-color: #e8f4f8;
+  font-weight: 500;
+}
+
+.bes-player-drawer .track-number-col {
+  width: 40px;
+  text-align: right;
+  padding-right: 12px;
+}
+
+.bes-player-drawer .title-col {
+  padding: 8px 12px;
+}
+
+.bes-player-drawer .track-title {
+  color: #333;
+  font-weight: 500;
+}
+
+.bes-player-drawer .time {
+  color: #999;
+  margin-left: 8px;
+}
+
+.bes-player-drawer .track-link-icon {
+  display: inline-block;
+  color: #0687f5;
+  text-decoration: none;
+  font-size: 14px;
+  margin-left: 8px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
+.bes-player-drawer .track-link-icon:hover {
+  opacity: 1;
+  text-decoration: none;
+}
+
+.bes-player-drawer .track_row_view:hover .track-link-icon {
+  opacity: 0.8;
+}
+
+/* Play status icons in track list */
+.bes-player-drawer .play_status {
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 2px;
+  min-height: 16px;
+  min-width: 17px;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.bes-player-drawer .play_status.disabled {
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.bes-player-drawer .play_status:after {
+  content: '';
+  display: block;
+  width: 0;
+  height: 0;
+  border-top: 4px inset transparent;
+  border-bottom: 4px inset transparent;
+  border-left: 7px solid #222;
+  border-right: 0;
+  margin: 4px 0 0 5px;
+}
+
+.bes-player-drawer .play_status.playing:after {
+  content: '';
+  border: 0;
+  border-left: 3px solid #2d2d2d;
+  border-right: 3px solid #2d2d2d;
+  height: 8px;
+  width: 1px;
+  margin: 4px auto;
+}
+
+.bes-player-drawer .play_status.disabled:after {
+  border: none;
+}
+
+/* Volume slider */
+.bes-player-drawer input.volume {
+  flex-shrink: 0;
+  width: 80px;
+  height: 8px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  background: #e0e0e0;
+  border-radius: 4px;
+  outline: none;
+}
+
+.bes-player-drawer input.volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #000;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.bes-player-drawer input.volume::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #000;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* Waveform toggle */
+.bes-player-drawer .controls > div:last-child {
+  margin-left: auto;
+}
+
+.bes-player-drawer-minimized-bar {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 16px 8px;
+  height: 100%;
+  cursor: pointer;
+  background: #1da0c3;
+}
+
+.bes-player-drawer-minimized-art {
+  width: 44px;
+  height: 44px;
+  border-radius: 4px;
+  object-fit: cover;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.bes-player-drawer-minimized-play {
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #1da0c3;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.bes-player-drawer-minimized-play:hover {
+  background: white;
+  transform: scale(1.05);
+}
+
+.bes-player-drawer-minimized-play:active {
+  transform: scale(0.95);
+}
+
+.bes-player-drawer-minimized-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.bes-player-drawer-minimized-prev,
+.bes-player-drawer-minimized-next {
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #1da0c3;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.bes-player-drawer-minimized-prev:hover,
+.bes-player-drawer-minimized-next:hover {
+  background: white;
+  transform: scale(1.05);
+}
+
+.bes-player-drawer-minimized-prev:active,
+.bes-player-drawer-minimized-next:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 1400px) {
+  .bes-player-drawer {
+    width: 40vw;
+  }
+  .bes-player-drawer-overlay {
+    width: 60%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .bes-player-drawer {
+    width: 50vw;
+    min-width: 350px;
+  }
+  .bes-player-drawer-overlay {
+    width: 50%;
+  }
+}
+
+@media (max-width: 768px) {
+  .bes-player-drawer {
+    width: 85vw;
+    min-width: unset;
+  }
+  .bes-player-drawer-overlay {
+    width: 15%;
+  }
+}
+/* Drawer Player Volume Slider Styling */
+.bes-player-drawer input.volume {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 6px;
+  background: transparent;
+  outline: none;
+}
+
+/* Track */
+.bes-player-drawer input.volume::-webkit-slider-runnable-track {
+  width: 6px;
+  height: 100%;
+  background: #ececef;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.bes-player-drawer input.volume::-moz-range-track {
+  width: 6px;
+  height: 100%;
+  background: #ececef;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Thumb */
+.bes-player-drawer input.volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow:
+    0 1px 4px rgba(24, 24, 27, 0.28),
+    inset 0 0 0 4px #1da0c3;
+  cursor: pointer;
+  margin-left: -4.5px;
+}
+
+.bes-player-drawer input.volume::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow:
+    0 1px 4px rgba(24, 24, 27, 0.28),
+    inset 0 0 0 4px #1da0c3;
+  cursor: pointer;
+  border: none;
+}
+
+/* Progress fill effect - use gradient on track */
+.bes-player-drawer input.volume::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to top,
+    #1da0c3 0%,
+    #1da0c3 var(--volume-percent, 100%),
+    #ececef var(--volume-percent, 100%),
+    #ececef 100%
+  );
+}
+
+.bes-player-drawer input.volume::-moz-range-track {
+  background: linear-gradient(
+    to top,
+    #1da0c3 0%,
+    #1da0c3 var(--volume-percent, 100%),
+    #ececef var(--volume-percent, 100%),
+    #ececef 100%
+  );
 }

@@ -71,7 +71,7 @@ async function postCacheToFindMusic(
     const token = await getFindMusicToken();
 
     if (!token) {
-      log.warn(`No token available for cache post despite permissions being granted`);
+      log.debug(`No token available for cache post - FindMusic.club integration not enabled`);
       return;
     }
 

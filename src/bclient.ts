@@ -54,6 +54,12 @@ export interface TralbumDetailsResponse {
     price: number;
     currency: string;
     is_purchasable: boolean;
+    duration?: number;
+    streaming_url?: {
+      'mp3-128': string;
+    };
+    track_url?: string;
+    track_num?: number;
   }>;
 }
 

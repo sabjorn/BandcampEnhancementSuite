@@ -1,6 +1,6 @@
 import { openDB, IDBPDatabase } from 'idb';
 import Logger from './logger';
-import { fillFrame, previewClicked } from './label_view.js';
+import { fillFrame } from './label_view.js';
 
 interface MouseEventWithOffset extends MouseEvent {
   offsetX: number;
@@ -10,12 +10,12 @@ interface MouseEventWithOffset extends MouseEvent {
 export function attachPreviewListeners(
   root: Document | HTMLElement,
   port: chrome.runtime.Port,
-  previewState: { previewOpen: boolean; previewId?: string }
+  previewState: { previewOpen: boolean; previewId?: string },
+  enableFetchCaching: boolean = false
 ): void {
   root.querySelectorAll('.open-iframe').forEach(button => {
     button.addEventListener('click', event => {
-      fillFrame(event, previewState);
-      previewClicked(event, port);
+      fillFrame(event, previewState, enableFetchCaching, port);
     });
   });
 }

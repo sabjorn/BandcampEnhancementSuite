@@ -1,5 +1,9 @@
 import Logger from './logger';
 import { attachPreviewListeners } from './utilities.js';
+import { createPlayerDrawer } from './components/playerDrawer';
+import { loadAlbumIntoDrawer, updateDiscographyOrder } from './playerLoader';
+import { initContinuousPlay } from './continuousPlay';
+import { DEFAULT_KEYBOARD_SETTINGS } from './types/keyboard';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -28,13 +32,14 @@ export function previewClicked(event: Event, port: chrome.runtime.Port): void {
   setPreviewed(id, port);
 }
 
-export function fillFrame(event: Event, previewState: { previewOpen: boolean; previewId?: string }): void {
-  document.querySelectorAll('.preview-frame').forEach(item => {
-    while (item.firstChild) {
-      item.removeChild(item.firstChild);
-    }
-  });
+let drawerController: ReturnType<typeof createPlayerDrawer> | null = null;
 
+export function fillFrame(
+  event: Event,
+  previewState: { previewOpen: boolean; previewId?: string },
+  enableFetchCaching: boolean = false,
+  port?: chrome.runtime.Port
+): void {
   const preview = (event.target as HTMLElement).closest('.preview')?.querySelector('.preview-frame');
   if (!preview) return;
 
@@ -44,29 +49,35 @@ export function fillFrame(event: Event, previewState: { previewOpen: boolean; pr
   const id = idAndType.split('-')[1];
   const idType = idAndType.split('-')[0];
 
-  if (previewState.previewOpen === true && previewState.previewId === id) {
+  if (!drawerController) {
+    drawerController = createPlayerDrawer();
+    document.body.appendChild(drawerController.drawer);
+  }
+
+  if (drawerController.getState().isOpen && previewState.previewId === id) {
+    drawerController.closeDrawer();
     previewState.previewOpen = false;
-  } else {
-    previewState.previewId = id;
-    previewState.previewOpen = true;
+    return;
   }
 
-  if (previewState.previewOpen) {
-    let url = `https://bandcamp.com/EmbeddedPlayer/${idType}=${id}`;
-    url += '/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=none/transparent=true/"';
+  previewState.previewId = id;
+  previewState.previewOpen = true;
 
-    const iframe_style =
-      'margin: 6px 0px 0px 0px; border: 0; width: 150%; height: 300px; position:relative; z-index:1;';
-
-    const iframe = document.createElement('iframe');
-    iframe.setAttribute('style', iframe_style);
-    iframe.setAttribute('src', url);
-    iframe.setAttribute('seamless', '');
-    preview.appendChild(iframe);
+  if (!drawerController.getState().isOpen) {
+    drawerController.openDrawer();
   }
+
+  if (port) {
+    setPreviewed(id, port);
+  }
+
+  loadAlbumIntoDrawer(id, idType, enableFetchCaching, DEFAULT_KEYBOARD_SETTINGS, port).catch(error => {
+    const log = new Logger();
+    log.error(`Failed to load album into drawer: ${error}`);
+  });
 }
 
-export async function initLabelView(port: chrome.runtime.Port): Promise<void> {
+export async function initLabelView(port: chrome.runtime.Port, enableFetchCaching: boolean = false): Promise<void> {
   const log = new Logger();
   const previewState = { previewOpen: false, previewId: undefined };
 
@@ -75,7 +86,17 @@ export async function initLabelView(port: chrome.runtime.Port): Promise<void> {
   });
 
   log.info('Rendering BES...');
-  renderDom(port, previewState);
+  renderDom(port, previewState, enableFetchCaching);
+
+  updateDiscographyOrder();
+  initContinuousPlay(enableFetchCaching);
+
+  const observer = new MutationObserver(() => {
+    updateDiscographyOrder();
+  });
+
+  const discographyContainer = document.querySelector('ol.music-grid') || document.body;
+  observer.observe(discographyContainer, { childList: true, subtree: true });
 }
 
 export function generatePreview(id: string, idType: string): HTMLDivElement {
@@ -107,7 +128,8 @@ export function generatePreview(id: string, idType: string): HTMLDivElement {
 
 export function renderDom(
   port: chrome.runtime.Port,
-  previewState: { previewOpen: boolean; previewId?: string }
+  previewState: { previewOpen: boolean; previewId?: string },
+  enableFetchCaching: boolean = false
 ): void {
   document.querySelectorAll('li.music-grid-item[data-item-id]').forEach(item => {
     const idAndType = (item as HTMLElement).dataset.itemId;
@@ -139,9 +161,9 @@ export function renderDom(
     setPreviewed(id, port);
   }
 
-  attachPreviewListeners(document, port, previewState);
+  attachPreviewListeners(document, port, previewState, enableFetchCaching);
 
-  const _historybox = document.querySelectorAll('.historybox').forEach(item => {
+  document.querySelectorAll('.historybox').forEach(item => {
     item.addEventListener('click', event => {
       boxClicked(event, port);
     });

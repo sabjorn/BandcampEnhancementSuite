@@ -363,32 +363,33 @@ const main = async (): Promise<void> => {
     }
   })();
 
-  initLabelView(config_port);
+  let keyboardSettings: KeyboardSettings | undefined;
+  let enableFetchCaching = false;
+
+  const getConfigPromise = new Promise<void>(resolve => {
+    const listener = (msg: any) => {
+      if (msg.config && msg.config.keyboardSettings) {
+        keyboardSettings = msg.config.keyboardSettings;
+        enableFetchCaching = msg.config.enableFetchCaching ?? false;
+        config_port.onMessage.removeListener(listener);
+        resolve();
+      }
+    };
+    config_port.onMessage.addListener(listener);
+    config_port.postMessage({ requestConfig: {} });
+
+    setTimeout(() => {
+      config_port.onMessage.removeListener(listener);
+      resolve();
+    }, 1000);
+  });
+
+  await getConfigPromise;
+
+  initLabelView(config_port, enableFetchCaching);
 
   const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
   if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
-    let keyboardSettings: KeyboardSettings | undefined;
-    let enableFetchCaching = false;
-
-    const getConfigPromise = new Promise<void>(resolve => {
-      const listener = (msg: any) => {
-        if (msg.config && msg.config.keyboardSettings) {
-          keyboardSettings = msg.config.keyboardSettings;
-          enableFetchCaching = msg.config.enableFetchCaching ?? false;
-          config_port.onMessage.removeListener(listener);
-          resolve();
-        }
-      };
-      config_port.onMessage.addListener(listener);
-      config_port.postMessage({ requestConfig: {} });
-
-      setTimeout(() => {
-        config_port.onMessage.removeListener(listener);
-        resolve();
-      }, 1000);
-    });
-
-    await getConfigPromise;
     await initPlayer(keyboardSettings, enableFetchCaching);
 
     config_port.onMessage.addListener((msg: any) => {

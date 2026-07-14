@@ -46,7 +46,7 @@ export function applyAudioConfig(
   msg: AudioFeaturesConfig,
   canvas: HTMLCanvasElement,
   canvasDisplayToggle: HTMLInputElement,
-  log: Logger
+  _log: Logger
 ): void {
   if (!msg.config) {
     return;
@@ -118,12 +118,17 @@ export async function generateAudioFeatures(
   }
 
   const ctx = new AudioContext();
-  const src = audio.src.split('stream/')[1];
+
+  // Main player always gets direct stream URLs from the page
+  const stream = {
+    type: 'direct-path' as const,
+    path: audio.src.split('stream/')[1]
+  };
 
   chrome.runtime.sendMessage(
     {
       contentScriptQuery: 'renderBuffer',
-      url: src
+      stream
     },
     audioData => {
       const audioBuffer_ = new Uint8Array(audioData.data).buffer;

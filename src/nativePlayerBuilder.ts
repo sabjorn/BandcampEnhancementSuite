@@ -24,6 +24,7 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
   centerElement: HTMLElement;
   volumeElement: HTMLElement;
   tracklistElement: HTMLElement;
+  albumBuyButton: HTMLElement | null;
 } {
   // LEFT COLUMN: Transport buttons only (drawer already has the column wrapper and art)
   const transport = document.createElement('div');
@@ -129,13 +130,38 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
 
   const trackTable = buildTrackTable(tralbumDetails);
 
+  // Create album buy button if album is purchasable
+  let albumBuyButton: HTMLElement | null = null;
+  if (tralbumDetails.is_purchasable && tralbumDetails.price !== undefined) {
+    const { price, currency, id, title, type } = tralbumDetails;
+    const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency] || 0.5;
+
+    const buyButtonElement = createAddToCartButton({
+      price: minimumPrice,
+      currency: currency,
+      tralbumId: String(id),
+      itemTitle: title,
+      type: type,
+      log
+    });
+
+    // Wrap in container for styling
+    const container = document.createElement('div');
+    container.className = 'album-buy-button-container';
+    container.style.cssText = 'margin-bottom: 16px; display: flex; justify-content: flex-start;';
+    container.appendChild(buyButtonElement);
+
+    albumBuyButton = container;
+  }
+
   log.info('Drawer player built successfully');
 
   return {
     transportElement: transport,
     centerElement: center,
     volumeElement: volumeCol,
-    tracklistElement: trackTable
+    tracklistElement: trackTable,
+    albumBuyButton: albumBuyButton
   };
 }
 
@@ -613,6 +639,9 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
     row.className = 'track_row_view linked';
     row.setAttribute('rel', `tracknum=${index + 1}`);
 
+    // Check if track is playable (same logic as in playerLoader.ts)
+    const isPlayable = Boolean(track?.streaming_url?.['mp3-128']);
+
     const trackNumCol = document.createElement('td');
     trackNumCol.className = 'track-number-col';
 
@@ -659,6 +688,15 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
 
     row.appendChild(trackNumCol);
     row.appendChild(titleCol);
+
+    // Apply visual indication for unplayable tracks
+    if (!isPlayable) {
+      row.classList.add('unplayable-track');
+      row.style.opacity = '0.5';
+      row.style.cursor = 'not-allowed';
+      trackNumDiv.style.color = '#a1a1aa'; // grey color
+      titleSpan.style.color = '#a1a1aa'; // grey color
+    }
 
     // Add buy button if track is purchasable
     if (track.is_purchasable && track.track_id) {

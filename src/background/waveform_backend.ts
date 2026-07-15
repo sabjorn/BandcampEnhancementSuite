@@ -12,7 +12,8 @@ type StreamUrl = { type: 'direct-path'; path: string } | { type: 'full-url'; url
 
 interface RenderBufferRequest {
   contentScriptQuery: 'renderBuffer';
-  stream: StreamUrl;
+  stream?: StreamUrl;
+  url?: string; // Legacy format for backward compatibility
 }
 
 export function processRequest(
@@ -48,11 +49,22 @@ export function processRequest(
 
   const renderRequest = request as RenderBufferRequest;
 
-  // Type-safe URL construction based on stream type
-  const url =
-    renderRequest.stream.type === 'direct-path'
-      ? `https://t4.bcbits.com/stream/${renderRequest.stream.path}`
-      : renderRequest.stream.url;
+  // Type-safe URL construction - support both new stream format and legacy url format
+  let url: string;
+  if (renderRequest.stream) {
+    // New format with stream object
+    url =
+      renderRequest.stream.type === 'direct-path'
+        ? `https://t4.bcbits.com/stream/${renderRequest.stream.path}`
+        : renderRequest.stream.url;
+  } else if (renderRequest.url) {
+    // Legacy format with simple url string
+    url = `https://t4.bcbits.com/stream/${renderRequest.url}`;
+  } else {
+    log.error('renderBuffer request missing both stream and url parameters');
+    sendResponse(null);
+    return true;
+  }
 
   log.debug(`Fetching audio buffer from: ${url.substring(0, 60)}...`);
 

@@ -53,20 +53,18 @@ async function checkAndHandleBoundary(enableFetchCaching: boolean): Promise<void
 }
 
 function shouldLoadPrevious(): boolean {
-  const audio = document.querySelector('audio') as HTMLAudioElement;
-  if (!audio) return false;
-
-  return audio.currentTime < 1;
+  // When on first track and prev button clicked, always load previous album if available
+  // Time checks should ONLY apply to automatic playback (audio ended)
+  const currentIndex = getCurrentAlbumIndex();
+  return currentIndex > 0;
 }
 
 function shouldLoadNext(): boolean {
-  const audio = document.querySelector('audio') as HTMLAudioElement;
-  if (!audio) return false;
-
-  const duration = audio.duration;
-  const remaining = duration - audio.currentTime;
-
-  return remaining < 1;
+  // When on last track and next button clicked, always load next album if available
+  // Time checks should ONLY apply to automatic playback (audio ended)
+  const currentIndex = getCurrentAlbumIndex();
+  const totalAlbums = getDiscographyLength();
+  return currentIndex < totalAlbums - 1;
 }
 
 async function handleBoundaryLoad(direction: 'next' | 'previous', enableFetchCaching: boolean): Promise<void> {

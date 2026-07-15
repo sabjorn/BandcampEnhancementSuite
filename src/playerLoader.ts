@@ -1,18 +1,17 @@
-import { createLogger } from './logger';
-import { getTralbumDetails, TralbumDetailsResponse } from './bclient';
+import Logger from './logger';
+import { getTralbumDetails, TralbumDetailsResponse, CURRENCY_MINIMUMS } from './bclient';
 import { getPlayerDrawerElements, updatePlayerDrawerInfo, updateMinimizedPlayButton } from './components/playerDrawer';
 import { createFetchFunction } from './utilities';
 import { buildDrawerPlayer, buildTrackTable } from './nativePlayerBuilder';
 import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS, keyBindingToString } from './types/keyboard';
-import { analyze } from 'web-audio-beat-detector';
+import { drawOverlay, generateAudioFeatures } from './audioFeatures';
+import { createAddToCartButton } from './components/cartButton';
 
-const log = createLogger();
+const log = new Logger();
 
 interface KeyHandlers {
   [key: string]: () => void;
 }
-
-const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
 
 interface DiscographyItem {
   id: string;
@@ -30,6 +29,7 @@ let keyboardListenerAttached = false;
 let activeKeyHandlers: KeyHandlers = {};
 let configPort: chrome.runtime.Port | null = null;
 let drawerPlayerCreated = false;
+let previousVolume = 1.0;
 
 // Create persistent audio element once
 function ensureAudioElement(): HTMLAudioElement {
@@ -117,181 +117,6 @@ function attachGlobalKeyboardHandlers(settings: KeyboardSettings): void {
   log.info('Drawer keyboard handlers attached');
 }
 
-function extractTrackId(audioSrc: string): number | null {
-  const match = audioSrc.match(/stream\/[^/]+\/[^/]+\/(\d+)/);
-  if (!match) return null;
-
-  const trackId = parseInt(match[1], 10);
-  return isNaN(trackId) ? null : trackId;
-}
-
-async function fetchCachedMetadata(trackId: number): Promise<{ waveform: number[]; bpm: number } | null> {
-  const memoryCached = metadataCache.get(trackId);
-  if (memoryCached) {
-    return memoryCached;
-  }
-
-  const apiMetadata = await chrome.runtime
-    .sendMessage({
-      contentScriptQuery: 'fetchTrackMetadata',
-      trackId: trackId
-    })
-    .catch((error: Error) => {
-      log.warn(`Failed to fetch cached metadata: ${error.message}`);
-      return null;
-    });
-
-  if (apiMetadata && apiMetadata.waveform && apiMetadata.bpm) {
-    metadataCache.set(trackId, apiMetadata);
-  }
-
-  return apiMetadata;
-}
-
-function fillBar(
-  canvas: HTMLCanvasElement,
-  amplitude: number,
-  index: number,
-  numElements: number,
-  colour: string = 'white'
-): void {
-  const ctx = canvas.getContext('2d')!;
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = colour;
-
-  const graphHeight = canvas.height * amplitude;
-  const barWidth = canvas.width / numElements;
-  const position = index * barWidth;
-  ctx.fillRect(position, canvas.height, barWidth, -graphHeight);
-}
-
-function drawOverlay(
-  canvas: HTMLCanvasElement,
-  progress: number,
-  colour: string = 'red',
-  clearColour: string = 'black'
-): void {
-  const ctx = canvas.getContext('2d')!;
-  ctx.globalCompositeOperation = 'source-atop';
-  ctx.fillStyle = clearColour;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = colour;
-  ctx.fillRect(0, 0, canvas.width * progress, canvas.height);
-}
-
-async function generateDrawerWaveform(
-  canvas: HTMLCanvasElement,
-  bpmDisplay: HTMLSpanElement | HTMLDivElement,
-  waveformColour: string,
-  currentTarget: { value?: string }
-): Promise<void> {
-  const datapoints = 100;
-
-  if (!audioElement) {
-    log.warn('No audio element for waveform generation');
-    return;
-  }
-  if (currentTarget.value === audioElement.src) {
-    log.info('Waveform already generated for this track');
-    return;
-  }
-
-  log.info(`Generating waveform for: ${audioElement.src}`);
-  currentTarget.value = audioElement.src;
-  bpmDisplay.textContent = '';
-  canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
-
-  const trackId = extractTrackId(audioElement.src);
-  if (trackId) {
-    const cachedMetadata = await fetchCachedMetadata(trackId);
-    if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
-      updateDrawerBpmBadge(cachedMetadata.bpm);
-
-      const max = cachedMetadata.waveform.reduce((a: number, b: number) => Math.max(a, b));
-      for (let i = 0; i < cachedMetadata.waveform.length; i++) {
-        const amplitude = cachedMetadata.waveform[i] / max;
-        fillBar(canvas, amplitude, i, cachedMetadata.waveform.length, waveformColour);
-      }
-      return;
-    }
-  }
-
-  const ctx = new AudioContext();
-
-  // Determine stream URL type for type-safe backend request
-  const stream = audioElement.src.includes('t4.bcbits.com/stream/')
-    ? { type: 'direct-path' as const, path: audioElement.src.split('stream/')[1] }
-    : { type: 'full-url' as const, url: audioElement.src };
-
-  log.info(`Requesting audio data for waveform generation (${stream.type})`);
-
-  chrome.runtime.sendMessage(
-    {
-      contentScriptQuery: 'renderBuffer',
-      stream
-    },
-    audioData => {
-      const audioBuffer_ = new Uint8Array(audioData.data).buffer;
-      const decodePromise = ctx.decodeAudioData(audioBuffer_);
-
-      const bpmPromise = decodePromise.then(decodedAudio =>
-        analyze(decodedAudio)
-          .then(bpm => {
-            updateDrawerBpmBadge(bpm);
-            return bpm;
-          })
-          .catch(err => {
-            log.error(`error finding bpm for track: ${err}`);
-            updateDrawerBpmBadge(null);
-            return null;
-          })
-      );
-
-      const waveformPromise = decodePromise.then(decodedAudio => {
-        const leftChannel = decodedAudio.getChannelData(0);
-
-        const stepSize = Math.round(decodedAudio.length / datapoints);
-
-        const rmsSize = Math.min(stepSize, 128);
-        const subStepSize = Math.round(stepSize / rmsSize);
-        const rmsBuffer = [];
-        for (let i = 0; i < datapoints; i++) {
-          let rms = 0.0;
-          for (let sample = 0; sample < rmsSize; sample++) {
-            const sampleIndex = i * stepSize + sample * subStepSize;
-            const audioSample = leftChannel[sampleIndex];
-            rms += audioSample ** 2;
-          }
-          rmsBuffer.push(Math.sqrt(rms / rmsSize));
-        }
-
-        const max = rmsBuffer.reduce((a, b) => Math.max(a, b));
-        for (let i = 0; i < rmsBuffer.length; i++) {
-          const amplitude = rmsBuffer[i] / max;
-          fillBar(canvas, amplitude, i, datapoints, waveformColour);
-        }
-
-        return rmsBuffer;
-      });
-
-      Promise.all([bpmPromise, waveformPromise]).then(([bpm, waveform]) => {
-        if (trackId && bpm !== null && waveform !== null) {
-          chrome.runtime
-            .sendMessage({
-              contentScriptQuery: 'postTrackMetadata',
-              trackId: trackId,
-              waveform: waveform,
-              bpm: bpm
-            })
-            .catch((error: Error) => {
-              log.warn(`Failed to cache track metadata: ${error.message}`);
-            });
-        }
-      });
-    }
-  );
-}
-
 export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
   // Store port for later use
   if (!configPort) {
@@ -314,7 +139,18 @@ export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
   // Set up audio event listeners for waveform
   audio.addEventListener('canplay', () => {
     if (currentTarget.value !== audio.src) {
-      generateDrawerWaveform(canvas, bpmDisplay, waveformColour, currentTarget);
+      generateAudioFeatures(
+        () => audioElement,
+        canvas,
+        bpm => updateDrawerBpmBadge(bpm),
+        waveformColour,
+        log,
+        currentTarget,
+        audioSrc =>
+          audioSrc.includes('t4.bcbits.com/stream/')
+            ? { stream: { type: 'direct-path' as const, path: audioSrc.split('stream/')[1] } }
+            : { stream: { type: 'full-url' as const, url: audioSrc } }
+      );
     }
   });
 
@@ -357,7 +193,8 @@ export async function loadAlbumIntoDrawer(
 
     // Create player controls ONCE on first load
     if (!drawerPlayerCreated) {
-      const { transportElement, centerElement, volumeElement, tracklistElement } = buildDrawerPlayer(tralbumDetails);
+      const { transportElement, centerElement, volumeElement, tracklistElement, albumBuyButton } =
+        buildDrawerPlayer(tralbumDetails);
 
       // Populate the three columns
       if (elements.transportControls) {
@@ -380,6 +217,10 @@ export async function loadAlbumIntoDrawer(
 
       if (elements.tracklistContainer) {
         elements.tracklistContainer.innerHTML = '';
+        // Add album buy button ABOVE tracklist if it exists
+        if (albumBuyButton) {
+          elements.tracklistContainer.appendChild(albumBuyButton);
+        }
         elements.tracklistContainer.appendChild(tracklistElement);
       }
 
@@ -405,8 +246,36 @@ export async function loadAlbumIntoDrawer(
     } else {
       // Just update the tracklist for subsequent albums
       const tracklistElement = buildTrackTable(tralbumDetails);
+
+      // Rebuild album buy button if album is purchasable
+      let albumBuyButton: HTMLElement | null = null;
+      if (tralbumDetails.is_purchasable && tralbumDetails.price !== undefined) {
+        const { price, currency, id, title, type } = tralbumDetails;
+        const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency] || 0.5;
+
+        const buyButtonElement = createAddToCartButton({
+          price: minimumPrice,
+          currency: currency,
+          tralbumId: String(id),
+          itemTitle: title,
+          type: type,
+          log
+        });
+
+        const container = document.createElement('div');
+        container.className = 'album-buy-button-container';
+        container.style.cssText = 'margin-bottom: 16px; display: flex; justify-content: flex-start;';
+        container.appendChild(buyButtonElement);
+
+        albumBuyButton = container;
+      }
+
       if (elements.tracklistContainer) {
         elements.tracklistContainer.innerHTML = '';
+        // Add album buy button ABOVE tracklist if it exists
+        if (albumBuyButton) {
+          elements.tracklistContainer.appendChild(albumBuyButton);
+        }
         elements.tracklistContainer.appendChild(tracklistElement);
       }
     }
@@ -424,6 +293,10 @@ export async function loadAlbumIntoDrawer(
   }
 }
 
+function isTrackPlayable(track: any): boolean {
+  return Boolean(track?.streaming_url?.['mp3-128']);
+}
+
 function loadTrack(index: number): void {
   if (!currentAlbumData?.tracks || !audioElement) {
     log.warn('No album data or audio element available');
@@ -438,16 +311,19 @@ function loadTrack(index: number): void {
 
   const track = tracks[index];
 
+  log.debug(`loadTrack(${index}): ${track.title}, isPlayable=${isTrackPlayable(track)}`);
+
   currentTrackIndex = index;
 
   // Set audio source - DO NOT call .play() here
-  if (track.streaming_url?.['mp3-128']) {
+  if (isTrackPlayable(track)) {
     log.info(`Loading track ${index}: ${track.title}`);
-    audioElement.src = track.streaming_url['mp3-128'];
+    audioElement.src = track.streaming_url!['mp3-128'];
   } else {
-    log.warn(`No streaming URL for track: ${track.title}`);
+    log.warn(`No streaming URL for track: ${track.title} (pre-order or disabled)`);
     // Try to find next track with streaming URL
     const nextIndex = findNextPlayableTrack(index);
+    log.debug(`Track ${index} unplayable, findNextPlayableTrack returned ${nextIndex}`);
     if (nextIndex !== -1 && nextIndex !== index) {
       log.info(`Skipping to next playable track: ${nextIndex}`);
       loadTrack(nextIndex);
@@ -468,14 +344,35 @@ function findNextPlayableTrack(startIndex: number): number {
   const tracks = currentAlbumData.tracks;
   // Search forward
   for (let i = startIndex + 1; i < tracks.length; i++) {
-    if (tracks[i].streaming_url?.['mp3-128']) {
+    if (isTrackPlayable(tracks[i])) {
       return i;
     }
   }
 
+  // Search backward (fallback if no forward playable track)
+  for (let i = startIndex - 1; i >= 0; i--) {
+    if (isTrackPlayable(tracks[i])) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+function findPrevPlayableTrack(startIndex: number): number {
+  if (!currentAlbumData?.tracks) return -1;
+
+  const tracks = currentAlbumData.tracks;
   // Search backward
   for (let i = startIndex - 1; i >= 0; i--) {
-    if (tracks[i].streaming_url?.['mp3-128']) {
+    if (isTrackPlayable(tracks[i])) {
+      return i;
+    }
+  }
+
+  // Search forward (fallback if no backward playable track)
+  for (let i = startIndex + 1; i < tracks.length; i++) {
+    if (isTrackPlayable(tracks[i])) {
       return i;
     }
   }
@@ -521,6 +418,123 @@ function updatePrevNextButtons(index: number, totalTracks: number): void {
   // Next button: hide only if at last track AND no next album available
   const canGoNext = index < totalTracks - 1 || currentAlbumIndex < discographyOrder.length - 1;
   nextButton?.classList.toggle('hiddenelem', !canGoNext);
+}
+
+// Core player control functions - shared by button clicks and keyboard shortcuts
+function playPause(): void {
+  if (!audioElement) return;
+
+  if (audioElement.paused) {
+    audioElement.play().catch(error => {
+      log.error(`Failed to play: ${error}`);
+    });
+  } else {
+    audioElement.pause();
+  }
+}
+
+async function nextTrack(): Promise<void> {
+  if (!audioElement) return;
+
+  log.debug(`Next track: currentTrackIndex=${currentTrackIndex}, totalTracks=${currentAlbumData?.tracks?.length}`);
+
+  if (currentAlbumData?.tracks && currentTrackIndex < currentAlbumData.tracks.length - 1) {
+    // Not on last track - find next playable track within same album
+    const nextIndex = findNextPlayableTrack(currentTrackIndex);
+    log.debug(`findNextPlayableTrack(${currentTrackIndex}) returned ${nextIndex}`);
+
+    if (nextIndex !== -1) {
+      const wasPlaying = !audioElement.paused;
+      log.debug(`Loading next track ${nextIndex}, wasPlaying=${wasPlaying}`);
+      loadTrack(nextIndex);
+      if (wasPlaying) {
+        audioElement.play().catch(error => {
+          log.error(`Failed to play: ${error}`);
+        });
+      }
+    } else {
+      log.debug(`No playable track found, staying on track ${currentTrackIndex}`);
+    }
+  } else if (currentAlbumData?.tracks && currentTrackIndex === currentAlbumData.tracks.length - 1) {
+    // On last track - load next album if available (AC-N2)
+    if (currentAlbumIndex < discographyOrder.length - 1) {
+      const wasPlaying = !audioElement.paused;
+      log.info('Next button on last track: loading next album in discography');
+      await loadNextAlbum();
+      // Load and play first track of next album
+      setTimeout(() => {
+        loadTrack(0);
+        if (wasPlaying) {
+          audioElement?.play().catch(error => {
+            log.error(`Failed to play: ${error}`);
+          });
+        }
+      }, 300);
+    } else {
+      log.debug(`Already on last track of last album, doing nothing`);
+    }
+  }
+}
+
+async function prevTrack(): Promise<void> {
+  if (!audioElement) return;
+
+  log.debug(`Prev track: currentTrackIndex=${currentTrackIndex}`);
+
+  if (currentTrackIndex > 0) {
+    // Not on first track - find previous playable track within same album
+    const prevIndex = findPrevPlayableTrack(currentTrackIndex);
+    log.debug(`findPrevPlayableTrack(${currentTrackIndex}) returned ${prevIndex}`);
+
+    if (prevIndex !== -1) {
+      const wasPlaying = !audioElement.paused;
+      log.debug(`Loading prev track ${prevIndex}, wasPlaying=${wasPlaying}`);
+      loadTrack(prevIndex);
+      if (wasPlaying) {
+        audioElement.play().catch(error => {
+          log.error(`Failed to play: ${error}`);
+        });
+      }
+    } else {
+      log.debug(`No playable track found, staying on track ${currentTrackIndex}`);
+    }
+  } else if (currentTrackIndex === 0) {
+    // On first track - load previous album if available (AC-N1)
+    if (currentAlbumIndex > 0) {
+      const wasPlaying = !audioElement.paused;
+      log.info('Prev button on first track: loading previous album in discography');
+      await loadPreviousAlbum();
+      // Load and play last track of previous album
+      setTimeout(() => {
+        if (currentAlbumData?.tracks) {
+          const lastTrackIndex = currentAlbumData.tracks.length - 1;
+          loadTrack(lastTrackIndex);
+          if (wasPlaying) {
+            audioElement?.play().catch(error => {
+              log.error(`Failed to play: ${error}`);
+            });
+          }
+        }
+      }, 300);
+    } else {
+      log.debug(`Already on first track of first album, doing nothing`);
+    }
+  }
+}
+
+function toggleMute(): void {
+  if (!audioElement) return;
+
+  if (audioElement.volume > 0) {
+    previousVolume = audioElement.volume;
+    audioElement.volume = 0;
+    updateVolumeDisplay(0);
+    updateMuteButton(true);
+  } else {
+    audioElement.volume = previousVolume;
+    updateVolumeDisplay(previousVolume);
+    updateMuteButton(false);
+  }
 }
 
 function updateTimeDisplay(currentTime: number, duration: number): void {
@@ -638,72 +652,17 @@ function initializePlayer(): void {
   audio.volume = 1.0;
   updateVolumeDisplay(1.0);
 
-  // Play/pause
-  playButton.onclick = () => {
-    if (audio.paused) {
-      audio.play().catch(error => {
-        log.error(`Failed to play: ${error}`);
-      });
-    } else {
-      audio.pause();
-    }
-  };
+  // Play/pause button
+  playButton.onclick = playPause;
 
-  // Prev
+  // Prev button
   if (prevButton) {
-    prevButton.onclick = async () => {
-      if (currentTrackIndex > 0) {
-        loadTrack(currentTrackIndex - 1);
-        audio.play().catch(error => {
-          log.error(`Failed to play: ${error}`);
-        });
-      } else if (currentTrackIndex === 0 && audio.currentTime < 1) {
-        // At first track and near beginning - load previous album
-        if (currentAlbumIndex > 0) {
-          log.info('Loading previous album in discography');
-          await loadPreviousAlbum();
-          // Load and play last track of previous album
-          setTimeout(() => {
-            if (currentAlbumData?.tracks) {
-              const lastTrackIndex = currentAlbumData.tracks.length - 1;
-              loadTrack(lastTrackIndex);
-              audio.play().catch(error => {
-                log.error(`Failed to play: ${error}`);
-              });
-            }
-          }, 300);
-        }
-      }
-    };
+    prevButton.onclick = prevTrack;
   }
 
-  // Next
+  // Next button
   if (nextButton) {
-    nextButton.onclick = async () => {
-      if (currentAlbumData?.tracks && currentTrackIndex < currentAlbumData.tracks.length - 1) {
-        loadTrack(currentTrackIndex + 1);
-        audio.play().catch(error => {
-          log.error(`Failed to play: ${error}`);
-        });
-      } else if (currentAlbumData?.tracks && currentTrackIndex === currentAlbumData.tracks.length - 1) {
-        // At last track - check if near end, then load next album
-        const duration = audio.duration;
-        const remaining = duration - audio.currentTime;
-        if (remaining < 1 || isNaN(remaining)) {
-          if (currentAlbumIndex < discographyOrder.length - 1) {
-            log.info('Loading next album in discography');
-            await loadNextAlbum();
-            // Load and play first track of next album
-            setTimeout(() => {
-              loadTrack(0);
-              audio.play().catch(error => {
-                log.error(`Failed to play: ${error}`);
-              });
-            }, 300);
-          }
-        }
-      }
-    };
+    nextButton.onclick = nextTrack;
   }
 
   // Progress bar seek
@@ -746,20 +705,8 @@ function initializePlayer(): void {
   }
 
   // Mute button
-  let previousVolume = 1.0;
   if (volumeMuteButton) {
-    volumeMuteButton.onclick = () => {
-      if (audio.volume > 0) {
-        previousVolume = audio.volume;
-        audio.volume = 0;
-        updateVolumeDisplay(0);
-        updateMuteButton(true);
-      } else {
-        audio.volume = previousVolume;
-        updateVolumeDisplay(previousVolume);
-        updateMuteButton(false);
-      }
-    };
+    volumeMuteButton.onclick = toggleMute;
   }
 
   // Audio events
@@ -772,16 +719,34 @@ function initializePlayer(): void {
     updateMinimizedPlayButton(false);
   };
   audio.onended = async () => {
+    log.debug(`Track ended: currentTrackIndex=${currentTrackIndex}, totalTracks=${currentAlbumData?.tracks?.length}`);
+
     if (currentAlbumData?.tracks && currentTrackIndex < currentAlbumData.tracks.length - 1) {
-      // Not at last track - advance to next track
-      loadTrack(currentTrackIndex + 1);
-      audio.play().catch(error => {
-        log.error(`Failed to play: ${error}`);
-      });
+      // Not at last track - advance to next playable track
+      const nextIndex = findNextPlayableTrack(currentTrackIndex);
+      log.debug(`Auto-advance: findNextPlayableTrack(${currentTrackIndex}) returned ${nextIndex}`);
+
+      if (nextIndex !== -1) {
+        log.debug(`Auto-advancing to track ${nextIndex}`);
+        loadTrack(nextIndex);
+        audio.play().catch(error => {
+          log.error(`Failed to play: ${error}`);
+        });
+      } else if (currentAlbumIndex < discographyOrder.length - 1) {
+        // No more playable tracks in this album, load next album
+        log.info('No more playable tracks, loading next album in discography (auto-advance)');
+        await loadNextAlbum();
+        setTimeout(() => {
+          loadTrack(0);
+          audio.play().catch(error => {
+            log.error(`Failed to play: ${error}`);
+          });
+        }, 300);
+      }
     } else if (currentAlbumData?.tracks && currentTrackIndex === currentAlbumData.tracks.length - 1) {
       // At last track - load next album if available
       if (currentAlbumIndex < discographyOrder.length - 1) {
-        log.info('Loading next album in discography (auto-advance)');
+        log.info('Loading next album in discography (auto-advance from last track)');
         await loadNextAlbum();
         setTimeout(() => {
           loadTrack(0);
@@ -826,27 +791,15 @@ function buildKeyHandlersFromSettings(settings: KeyboardSettings): KeyHandlers {
     switch (control.action) {
       case KeyboardAction.PLAY_PAUSE:
       case KeyboardAction.PLAY_PAUSE_ALT:
-        handlers[bindingKey] = () => {
-          const playButton = document.querySelector('.bes-player-drawer .playbutton');
-          if (!playButton) return;
-          (playButton as HTMLElement).click();
-        };
+        handlers[bindingKey] = playPause;
         break;
 
       case KeyboardAction.PREV_TRACK:
-        handlers[bindingKey] = () => {
-          const prevButton = document.querySelector('.bes-player-drawer .prevbutton');
-          if (!prevButton) return;
-          (prevButton as HTMLElement).click();
-        };
+        handlers[bindingKey] = prevTrack;
         break;
 
       case KeyboardAction.NEXT_TRACK:
-        handlers[bindingKey] = () => {
-          const nextButton = document.querySelector('.bes-player-drawer .nextbutton');
-          if (!nextButton) return;
-          (nextButton as HTMLElement).click();
-        };
+        handlers[bindingKey] = nextTrack;
         break;
 
       case KeyboardAction.SEEK_FORWARD:
@@ -986,6 +939,10 @@ export function getCurrentAlbumData(): TralbumDetailsResponse | null {
 
 export function getCurrentAlbumIndex(): number {
   return currentAlbumIndex;
+}
+
+export function getCurrentTrackIndex(): number {
+  return currentTrackIndex;
 }
 
 export function getDiscographyLength(): number {

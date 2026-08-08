@@ -113,6 +113,35 @@ export function createStatusElement(): HTMLElement | undefined {
   return statusElement;
 }
 
+async function triggerFindMusicCollectionUpdate(): Promise<void> {
+  try {
+    const permissionResponse = await chrome.runtime.sendMessage({
+      contentScriptQuery: 'checkFindMusicPermissions'
+    });
+
+    if (!permissionResponse.granted) {
+      log.info('FindMusic.club permissions not granted, skipping collection update');
+      return;
+    }
+
+    log.info('Triggering FindMusic.club collection update');
+    const loginResponse = await chrome.runtime.sendMessage({
+      contentScriptQuery: 'autoLoginFindMusic'
+    });
+
+    if (!loginResponse.success) {
+      log.warn(`FindMusic.club collection update failed: ${loginResponse.error || 'Unknown error'}`);
+      return;
+    }
+
+    log.info('FindMusic.club collection update triggered successfully');
+  } catch (error) {
+    log.warn(
+      `Error triggering FindMusic.club collection update: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
 export async function initDownload(): Promise<void> {
   log.info('Initiating BES Download Helper');
 
@@ -132,6 +161,8 @@ export async function initDownload(): Promise<void> {
   for (const node of targetNodes) {
     observer.observe(node, config);
   }
+
+  void triggerFindMusicCollectionUpdate();
 }
 
 export function generateDownloadList(): string {

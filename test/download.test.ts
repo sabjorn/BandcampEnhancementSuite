@@ -51,7 +51,8 @@ Object.assign(global, {
         },
         postMessage: vi.fn(),
         disconnect: vi.fn()
-      }))
+      })),
+      sendMessage: vi.fn()
     }
   },
   URL: {
@@ -862,20 +863,71 @@ describe('DownloadHelper', () => {
           <a class="item-button" href="/download/123">Download</a>
         </div>
       `);
+      vi.mocked(global.chrome.runtime.sendMessage).mockReset();
     });
 
     it('should initialize download helper functionality', async () => {
+      vi.mocked(global.chrome.runtime.sendMessage).mockResolvedValue({ granted: false });
+
       await expect(initDownload()).resolves.not.toThrow();
 
       expect(createButton).toHaveBeenCalledTimes(2); // curl and zip buttons
     });
 
     it('should set up mutation observers for download links', async () => {
+      vi.mocked(global.chrome.runtime.sendMessage).mockResolvedValue({ granted: false });
       const observeSpy = vi.spyOn(MutationObserver.prototype, 'observe');
 
       await initDownload();
 
       expect(observeSpy).toHaveBeenCalled();
+    });
+
+    it('should trigger FMC collection update when permissions are granted', async () => {
+      vi.mocked(global.chrome.runtime.sendMessage)
+        .mockResolvedValueOnce({ granted: true })
+        .mockResolvedValueOnce({ success: true, token: 'test-token' });
+
+      await initDownload();
+
+      await vi.waitFor(() => {
+        expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith({
+          contentScriptQuery: 'checkFindMusicPermissions'
+        });
+        expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith({
+          contentScriptQuery: 'autoLoginFindMusic'
+        });
+      });
+    });
+
+    it('should skip FMC collection update when permissions are not granted', async () => {
+      vi.mocked(global.chrome.runtime.sendMessage).mockResolvedValue({ granted: false });
+
+      await initDownload();
+
+      await vi.waitFor(() => {
+        expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith({
+          contentScriptQuery: 'checkFindMusicPermissions'
+        });
+      });
+
+      expect(global.chrome.runtime.sendMessage).not.toHaveBeenCalledWith({
+        contentScriptQuery: 'autoLoginFindMusic'
+      });
+    });
+
+    it('should handle FMC login failure gracefully', async () => {
+      vi.mocked(global.chrome.runtime.sendMessage)
+        .mockResolvedValueOnce({ granted: true })
+        .mockResolvedValueOnce({ success: false, error: 'Token exchange failed' });
+
+      await expect(initDownload()).resolves.not.toThrow();
+    });
+
+    it('should handle FMC permission check errors gracefully', async () => {
+      vi.mocked(global.chrome.runtime.sendMessage).mockRejectedValue(new Error('Extension error'));
+
+      await expect(initDownload()).resolves.not.toThrow();
     });
   });
 });

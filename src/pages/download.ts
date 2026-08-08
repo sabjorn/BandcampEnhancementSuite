@@ -129,11 +129,12 @@ async function triggerFindMusicCollectionUpdate(): Promise<void> {
       contentScriptQuery: 'autoLoginFindMusic'
     });
 
-    if (loginResponse.success) {
-      log.info('FindMusic.club collection update triggered successfully');
-    } else {
+    if (!loginResponse.success) {
       log.warn(`FindMusic.club collection update failed: ${loginResponse.error || 'Unknown error'}`);
+      return;
     }
+
+    log.info('FindMusic.club collection update triggered successfully');
   } catch (error) {
     log.warn(
       `Error triggering FindMusic.club collection update: ${error instanceof Error ? error.message : 'Unknown error'}`

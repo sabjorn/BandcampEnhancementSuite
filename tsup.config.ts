@@ -39,10 +39,10 @@ export default defineConfig(options => ({
       ...esbuildOpts.define,
       global: 'globalThis',
       'process.env.FINDMUSIC_BASE_URL': JSON.stringify(
-        isProduction ? 'https://findmusic.club' : 'http://localhost:3000'
+        isProduction ? 'https://findmusic.club' : 'http://trackr.nasty.local'
       ),
       'process.env.FINDMUSIC_ORIGIN_PATTERN': JSON.stringify(
-        isProduction ? 'https://*.findmusic.club/*' : 'http://localhost:3000/*'
+        isProduction ? 'https://*.findmusic.club/*' : 'http://trackr.nasty.local/*'
       )
     };
     esbuildOpts.inject = esbuildOpts.inject || [];

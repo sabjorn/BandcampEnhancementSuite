@@ -855,14 +855,32 @@ function buildKeyHandlersFromSettings(settings: KeyboardSettings): KeyHandlers {
   return handlers;
 }
 
+function shouldIgnoreKeyboardEvent(target: EventTarget | null): boolean {
+  if (!target || !(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName.toLowerCase();
+  if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
+    return true;
+  }
+
+  if (target.isContentEditable) {
+    return true;
+  }
+
+  return false;
+}
+
 function keydownCallback(e: KeyboardEvent, keyHandlers: KeyHandlers, preventDefault: boolean): void {
-  // Only respond to keypresses when drawer is open and focus is on body
+  // Only respond to keypresses when drawer is open
   const drawer = document.querySelector('.bes-player-drawer');
   if (!drawer || !(drawer as HTMLElement).classList.contains('open')) {
     return;
   }
 
-  if (e.target !== document.body) {
+  // Ignore keyboard events when focused on input elements (e.g., search bar)
+  if (shouldIgnoreKeyboardEvent(e.target)) {
     return;
   }
 

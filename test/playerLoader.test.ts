@@ -608,7 +608,7 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
       // Handler should exit early if drawer not open
     });
 
-    it('should only respond when target is document.body', () => {
+    it('should ignore keyboard events when focused on input elements', () => {
       const input = document.createElement('input');
       document.body.appendChild(input);
 
@@ -617,7 +617,66 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
 
       document.dispatchEvent(event);
 
-      // Handler should exit early if target is not body
+      // Handler should exit early if target is an input element
+    });
+
+    it('should ignore keyboard events when focused on textarea elements', () => {
+      const textarea = document.createElement('textarea');
+      document.body.appendChild(textarea);
+
+      const event = new KeyboardEvent('keydown', { key: 'p' });
+      Object.defineProperty(event, 'target', { value: textarea });
+
+      document.dispatchEvent(event);
+
+      // Handler should exit early if target is a textarea element
+    });
+
+    it('should ignore keyboard events when focused on select elements', () => {
+      const select = document.createElement('select');
+      document.body.appendChild(select);
+
+      const event = new KeyboardEvent('keydown', { key: 'p' });
+      Object.defineProperty(event, 'target', { value: select });
+
+      document.dispatchEvent(event);
+
+      // Handler should exit early if target is a select element
+    });
+
+    it('should ignore keyboard events when focused on contentEditable elements', () => {
+      const div = document.createElement('div');
+      div.contentEditable = 'true';
+      document.body.appendChild(div);
+
+      const event = new KeyboardEvent('keydown', { key: 'p' });
+      Object.defineProperty(event, 'target', { value: div });
+
+      document.dispatchEvent(event);
+
+      // Handler should exit early if target is contentEditable
+    });
+
+    it('should respond to keyboard events when focused on buttons', () => {
+      const button = document.createElement('button');
+      button.className = 'playbutton';
+      document.body.appendChild(button);
+
+      const event = new KeyboardEvent('keydown', { key: 'p' });
+      Object.defineProperty(event, 'target', { value: button });
+
+      document.dispatchEvent(event);
+
+      // Handler should NOT exit early if target is a button (player controls)
+    });
+
+    it('should respond to keyboard events when focused on body', () => {
+      const event = new KeyboardEvent('keydown', { key: 'p' });
+      Object.defineProperty(event, 'target', { value: document.body });
+
+      document.dispatchEvent(event);
+
+      // Handler should NOT exit early if target is body
     });
 
     it('should ignore bare Meta key press', () => {

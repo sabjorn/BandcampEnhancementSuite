@@ -305,8 +305,6 @@ export function createPlayerDrawer(): {
     }
   });
 
-  initCartInteractionHandler(minimizeDrawer);
-
   return {
     drawer,
     overlay,
@@ -349,34 +347,4 @@ export function updateMinimizedPlayButton(isPlaying: boolean) {
     button.innerHTML = isPlaying ? '⏸' : '▶';
     button.setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
   }
-}
-
-export function initCartInteractionHandler(minimizeCallback: () => void): void {
-  log.info('Initializing cart interaction handler');
-
-  document.addEventListener(
-    'click',
-    e => {
-      const target = e.target as HTMLElement;
-      const cartButton = target.closest('.one-click-button');
-
-      if (!cartButton) {
-        return;
-      }
-
-      const drawer = document.querySelector('.bes-player-drawer');
-      if (!drawer || !drawer.classList.contains('open')) {
-        return;
-      }
-
-      const isInDrawer = drawer.contains(cartButton);
-      if (isInDrawer) {
-        log.info('Cart button clicked in drawer, minimizing');
-        setTimeout(() => {
-          minimizeCallback();
-        }, 1000);
-      }
-    },
-    true
-  );
 }

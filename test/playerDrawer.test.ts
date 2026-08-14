@@ -4,8 +4,7 @@ import {
   createPlayerDrawer,
   getPlayerDrawerElements,
   updatePlayerDrawerInfo,
-  updateMinimizedPlayButton,
-  initCartInteractionHandler
+  updateMinimizedPlayButton
 } from '../src/components/playerDrawer';
 
 vi.mock('../src/logger', () => ({
@@ -205,70 +204,6 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
 
       expect(fullArt.src).toBe(testUrl);
       expect(minimizedArt.src).toBe(testUrl);
-    });
-  });
-
-  describe('AC-S5: Cart interaction triggers minimize', () => {
-    it('should minimize drawer when cart button clicked inside drawer', async () => {
-      const minimizeSpy = vi.fn();
-
-      const { drawer } = createPlayerDrawer();
-      document.body.appendChild(drawer);
-      drawer.classList.add('open');
-
-      const cartButton = document.createElement('button');
-      cartButton.className = 'one-click-button';
-      drawer.appendChild(cartButton);
-
-      initCartInteractionHandler(minimizeSpy);
-
-      cartButton.click();
-
-      // Wait for setTimeout in handler
-      await new Promise(resolve => setTimeout(resolve, 1100));
-
-      expect(minimizeSpy).toHaveBeenCalled();
-    });
-
-    it('should NOT minimize when cart button outside drawer clicked', async () => {
-      const minimizeSpy = vi.fn();
-
-      const { drawer } = createPlayerDrawer();
-      document.body.appendChild(drawer);
-      drawer.classList.add('open');
-
-      // Cart button outside drawer
-      const cartButton = document.createElement('button');
-      cartButton.className = 'one-click-button';
-      document.body.appendChild(cartButton);
-
-      initCartInteractionHandler(minimizeSpy);
-
-      cartButton.click();
-
-      await new Promise(resolve => setTimeout(resolve, 1100));
-
-      expect(minimizeSpy).not.toHaveBeenCalled();
-    });
-
-    it('should NOT minimize when drawer is closed', async () => {
-      const minimizeSpy = vi.fn();
-
-      const { drawer } = createPlayerDrawer();
-      document.body.appendChild(drawer);
-      // drawer NOT open
-
-      const cartButton = document.createElement('button');
-      cartButton.className = 'one-click-button';
-      drawer.appendChild(cartButton);
-
-      initCartInteractionHandler(minimizeSpy);
-
-      cartButton.click();
-
-      await new Promise(resolve => setTimeout(resolve, 1100));
-
-      expect(minimizeSpy).not.toHaveBeenCalled();
     });
   });
 

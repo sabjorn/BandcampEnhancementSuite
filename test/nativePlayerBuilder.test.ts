@@ -290,13 +290,15 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       expect(buyButton).toBeDefined();
     });
 
-    it('should NOT include buy button for non-purchasable tracks', () => {
+    it('should have empty download column for non-purchasable tracks', () => {
       const trackTable = buildTrackTable(mockTralbumDetails);
 
       const secondRow = trackTable.querySelectorAll('.track_row_view')[1] as HTMLElement;
-      const buyButton = secondRow.querySelector('.download-col');
+      const buyCol = secondRow.querySelector('.download-col') as HTMLElement;
 
-      expect(buyButton).toBeNull();
+      // Column exists but is empty (no cart button inside)
+      expect(buyCol).toBeDefined();
+      expect(buyCol.querySelector('.one-click-button-container')).toBeNull();
     });
 
     it('should include track link icon when track_url exists', () => {

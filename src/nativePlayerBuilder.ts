@@ -636,6 +636,7 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
   const table = document.createElement('table');
   table.className = 'track_list track_table';
   table.id = 'track_table';
+  table.style.cssText = 'width: 100%; border-collapse: collapse;';
 
   if (!tralbumDetails.tracks || tralbumDetails.tracks.length === 0) {
     return table;
@@ -649,37 +650,49 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
     // Check if track is playable (same logic as in playerLoader.ts)
     const isPlayable = Boolean(track?.streaming_url?.['mp3-128']);
 
+    // Column 1: Track number
     const trackNumCol = document.createElement('td');
     trackNumCol.className = 'track-number-col';
+    trackNumCol.style.cssText = 'width: 28px; text-align: right; padding: 8px 8px 8px 0; vertical-align: middle;';
 
     const trackNumDiv = document.createElement('div');
     trackNumDiv.className = 'track_number secondaryText';
     trackNumDiv.textContent = `${index + 1}.`;
-    trackNumDiv.style.color = '#71717a';
+    trackNumDiv.style.cssText = 'color: #71717a; font-size: 13px;';
 
     trackNumCol.appendChild(trackNumDiv);
 
+    // Column 2: Track title (flexible width)
     const titleCol = document.createElement('td');
     titleCol.className = 'title-col';
-
-    const titleDiv = document.createElement('div');
-    titleDiv.className = 'title';
+    titleCol.style.cssText =
+      'padding: 8px 8px; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
 
     const titleSpan = document.createElement('span');
     titleSpan.className = 'track-title';
     titleSpan.textContent = track.title;
+    titleSpan.style.cssText = 'color: #333; font-weight: 500; font-size: 14px;';
 
-    titleDiv.appendChild(titleSpan);
+    titleCol.appendChild(titleSpan);
+
+    // Column 3: Duration
+    const durationCol = document.createElement('td');
+    durationCol.className = 'duration-col';
+    durationCol.style.cssText = 'width: 45px; text-align: right; padding: 8px 8px; vertical-align: middle;';
 
     if (track.duration) {
       const timeSpan = document.createElement('span');
       timeSpan.className = 'time secondaryText';
       timeSpan.textContent = formatDuration(track.duration);
-      titleDiv.appendChild(document.createTextNode(' '));
-      titleDiv.appendChild(timeSpan);
+      timeSpan.style.cssText = 'color: #999; font-size: 13px;';
+      durationCol.appendChild(timeSpan);
     }
 
-    // Add track link icon if URL exists
+    // Column 4: Link icon
+    const linkCol = document.createElement('td');
+    linkCol.className = 'link-col';
+    linkCol.style.cssText = 'width: 28px; text-align: center; padding: 8px 4px; vertical-align: middle;';
+
     if (track.track_url) {
       const linkIcon = document.createElement('a');
       linkIcon.className = 'track-link-icon';
@@ -688,31 +701,19 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
       linkIcon.setAttribute('aria-label', `Open ${track.title} in new tab`);
       linkIcon.setAttribute('title', 'Open track page');
       linkIcon.innerHTML = '↗';
-      titleDiv.appendChild(document.createTextNode(' '));
-      titleDiv.appendChild(linkIcon);
+      linkIcon.style.cssText =
+        'display: inline-block; color: #0687f5; text-decoration: none; font-size: 14px; opacity: 0.6; transition: opacity 0.15s ease; padding: 4px;';
+      linkCol.appendChild(linkIcon);
     }
 
-    titleCol.appendChild(titleDiv);
+    // Column 5: Buy button (if purchasable)
+    const buyCol = document.createElement('td');
+    buyCol.className = 'download-col';
+    buyCol.style.cssText = 'width: 70px; text-align: right; padding: 8px 0 8px 4px; vertical-align: middle;';
 
-    row.appendChild(trackNumCol);
-    row.appendChild(titleCol);
-
-    // Apply visual indication for unplayable tracks
-    if (!isPlayable) {
-      row.classList.add('unplayable-track');
-      row.style.opacity = '0.5';
-      row.style.cursor = 'not-allowed';
-      trackNumDiv.style.color = '#a1a1aa'; // grey color
-      titleSpan.style.color = '#a1a1aa'; // grey color
-    }
-
-    // Add buy button if track is purchasable
     if (track.is_purchasable && track.track_id) {
       const { price, currency, track_id: trackId, title: trackTitle } = track;
       const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency] || 0.5;
-
-      const downloadCol = document.createElement('td');
-      downloadCol.className = 'download-col';
 
       const buyButton = createAddToCartButton({
         price: minimumPrice,
@@ -723,8 +724,22 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
         log
       });
 
-      downloadCol.appendChild(buyButton);
-      row.appendChild(downloadCol);
+      buyCol.appendChild(buyButton);
+    }
+
+    row.appendChild(trackNumCol);
+    row.appendChild(titleCol);
+    row.appendChild(durationCol);
+    row.appendChild(linkCol);
+    row.appendChild(buyCol);
+
+    // Apply visual indication for unplayable tracks
+    if (!isPlayable) {
+      row.classList.add('unplayable-track');
+      row.style.opacity = '0.5';
+      row.style.cursor = 'not-allowed';
+      trackNumDiv.style.color = '#a1a1aa';
+      titleSpan.style.color = '#a1a1aa';
     }
 
     table.appendChild(row);

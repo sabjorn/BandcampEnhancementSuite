@@ -648,6 +648,7 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
     const trackNumDiv = document.createElement('div');
     trackNumDiv.className = 'track_number secondaryText';
     trackNumDiv.textContent = `${index + 1}.`;
+    trackNumDiv.style.color = '#71717a';
 
     trackNumCol.appendChild(trackNumDiv);
 

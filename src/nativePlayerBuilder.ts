@@ -49,9 +49,9 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
   center.innerHTML = `
     <div style="display: flex; gap: 15px; align-items: flex-start;">
       <div class="track_info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; align-items: flex-start !important;">
-        <div class="album-label" style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: rgb(161, 161, 170); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
-        <div class="track-title" style="font-size: 21px; font-weight: 800; color: rgb(24, 24, 27); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
-        <div class="artist-name" style="font-size: 14px; font-weight: 500; color: rgb(113, 113, 122); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+        <div class="album-label" style="width: 100%; font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: rgb(161, 161, 170); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+        <div class="track-title" style="width: 100%; font-size: 21px; font-weight: 800; color: rgb(24, 24, 27); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+        <div class="artist-name" style="width: 100%; font-size: 14px; font-weight: 500; color: rgb(113, 113, 122); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
       </div>
       <div class="bpm-badge" style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 6px 12px; border-radius: 11px; background: rgb(244, 244, 245); border: 1px solid rgb(236, 236, 239);">
         <span class="bpm-number" style="font-family: 'Space Grotesk', monospace; font-size: 18px; font-weight: 600; color: rgb(24, 24, 27); line-height: 1;"></span>

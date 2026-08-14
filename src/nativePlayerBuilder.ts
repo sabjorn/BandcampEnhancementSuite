@@ -27,18 +27,19 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
   albumBuyButton: HTMLElement | null;
 } {
   // LEFT COLUMN: Transport buttons only (drawer already has the column wrapper and art)
+  // Buttons should be centered under 96px album art with play button as center point
   const transport = document.createElement('div');
-  transport.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 12px;';
+  transport.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 4px; width: 96px;';
   transport.innerHTML = `
-    <button class="prevbutton hiddenelem" style="border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; background: transparent; padding: 4px; cursor: pointer; color: rgb(82, 82, 91); display: flex; border-radius: 8px;">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path></svg>
+    <button class="prevbutton hiddenelem" style="border: none; background: transparent; padding: 4px; cursor: pointer; color: rgb(82, 82, 91); display: flex; border-radius: 8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path></svg>
     </button>
-    <button class="playbutton" style="border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; width: 42px; height: 42px; border-radius: 50%; background: rgb(24, 24, 27); color: rgb(255, 255, 255); cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: rgba(24, 24, 27, 0.5) 0px 5px 13px -5px;">
-      <svg class="play-icon" width="17" height="17" viewBox="0 0 24 24" style="margin-left: 2px;"><path d="M8 5v14l11-7z" fill="#ffffff"></path></svg>
-      <svg class="pause-icon" width="17" height="17" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1" fill="#ffffff"></rect><rect x="14" y="5" width="4" height="14" rx="1" fill="#ffffff"></rect></svg>
+    <button class="playbutton" style="border: none; width: 40px; height: 40px; border-radius: 50%; background: rgb(24, 24, 27); color: rgb(255, 255, 255); cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: rgba(24, 24, 27, 0.5) 0px 5px 13px -5px;">
+      <svg class="play-icon" width="16" height="16" viewBox="0 0 24 24" style="margin-left: 2px;"><path d="M8 5v14l11-7z" fill="#ffffff"></path></svg>
+      <svg class="pause-icon" width="16" height="16" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1" fill="#ffffff"></rect><rect x="14" y="5" width="4" height="14" rx="1" fill="#ffffff"></rect></svg>
     </button>
-    <button class="nextbutton" style="border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; background: transparent; padding: 4px; cursor: pointer; color: rgb(82, 82, 91); display: flex; border-radius: 8px;">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"></path></svg>
+    <button class="nextbutton" style="border: none; background: transparent; padding: 4px; cursor: pointer; color: rgb(82, 82, 91); display: flex; border-radius: 8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"></path></svg>
     </button>
   `;
 

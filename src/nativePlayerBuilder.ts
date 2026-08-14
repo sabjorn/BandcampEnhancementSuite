@@ -145,10 +145,17 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
       log
     });
 
-    // Wrap in container for styling
+    // Wrap in container with label for styling
     const container = document.createElement('div');
     container.className = 'album-buy-button-container';
-    container.style.cssText = 'margin-bottom: 16px; display: flex; justify-content: flex-start;';
+    container.style.cssText = 'margin-bottom: 16px; display: flex; align-items: center; gap: 8px;';
+
+    const label = document.createElement('span');
+    label.className = 'album-buy-label';
+    label.textContent = 'Buy Album';
+    label.style.cssText = 'font-size: 13px; font-weight: 500; color: #333;';
+
+    container.appendChild(label);
     container.appendChild(buyButtonElement);
 
     albumBuyButton = container;

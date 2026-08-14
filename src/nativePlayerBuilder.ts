@@ -688,10 +688,10 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
       durationCol.appendChild(timeSpan);
     }
 
-    // Column 4: Link icon
+    // Column 4: Link icon (with visual separation)
     const linkCol = document.createElement('td');
     linkCol.className = 'link-col';
-    linkCol.style.cssText = 'width: 28px; text-align: center; padding: 8px 4px; vertical-align: middle;';
+    linkCol.style.cssText = 'width: 32px; text-align: center; padding: 8px 4px; vertical-align: middle;';
 
     if (track.track_url) {
       const linkIcon = document.createElement('a');
@@ -702,7 +702,15 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
       linkIcon.setAttribute('title', 'Open track page');
       linkIcon.innerHTML = '↗';
       linkIcon.style.cssText =
-        'display: inline-block; color: #0687f5; text-decoration: none; font-size: 14px; opacity: 0.6; transition: opacity 0.15s ease; padding: 4px;';
+        'display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: #0687f5; text-decoration: none; font-size: 14px; border-radius: 4px; border: 1px solid transparent; transition: all 0.15s ease;';
+      linkIcon.onmouseenter = () => {
+        linkIcon.style.backgroundColor = '#f0f7ff';
+        linkIcon.style.borderColor = '#0687f5';
+      };
+      linkIcon.onmouseleave = () => {
+        linkIcon.style.backgroundColor = 'transparent';
+        linkIcon.style.borderColor = 'transparent';
+      };
       linkCol.appendChild(linkIcon);
     }
 

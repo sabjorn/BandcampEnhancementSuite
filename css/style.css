@@ -1153,13 +1153,12 @@ button.bes-downloadall[disabled]::after {
 
 /* RIGHT COLUMN: Volume controls */
 .bes-player-drawer-right {
-  width: 46px;
+  width: 54px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding-left: 4px;
+  gap: 4px;
   border-left: 1px solid #f0f0f2;
 }
 
@@ -1167,7 +1166,7 @@ button.bes-downloadall[disabled]::after {
 .bes-player-drawer-header-actions {
   display: flex;
   justify-content: center;
-  gap: 2px;
+  gap: 4px;
   width: 100%;
   flex-shrink: 0;
   align-self: flex-start;
@@ -1177,12 +1176,13 @@ button.bes-downloadall[disabled]::after {
 .bes-player-drawer-close {
   background: transparent;
   border: none;
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1;
   cursor: pointer;
   padding: 0;
-  width: 20px;
-  height: 20px;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -1221,7 +1221,7 @@ button.bes-downloadall[disabled]::after {
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 4px 16px 16px;
+  padding: 4px 0 16px;
 }
 
 .bes-tracklist {
@@ -1256,18 +1256,20 @@ button.bes-downloadall[disabled]::after {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
   flex: 1;
-  width: 34px;
-  padding: 8px 0;
+  width: 100%;
+  min-height: 0;
+  padding: 0 0 2px;
 }
 
 .bes-drawer-volume-column .volume-mute {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 27px;
+  flex: 0 0 auto;
+  width: 100%;
+  height: 22px;
   padding: 0;
   border: none;
   background: transparent;
@@ -1280,8 +1282,9 @@ button.bes-downloadall[disabled]::after {
   align-items: flex-end;
   justify-content: center;
   flex: 1;
-  width: 34px;
-  padding: 8px 0;
+  width: 100%;
+  min-height: 0;
+  padding: 2px 0;
   cursor: pointer;
   touch-action: none;
 }
@@ -1320,8 +1323,10 @@ button.bes-downloadall[disabled]::after {
 
 .bes-drawer-volume-column .volume-percent {
   font-family: 'Space Grotesk', monospace;
-  font-size: 11px;
+  font-size: 10px;
+  line-height: 1;
   font-weight: 500;
+  flex: 0 0 auto;
   color: #a1a1aa;
   font-variant-numeric: tabular-nums;
 }
@@ -1641,10 +1646,14 @@ button.bes-downloadall[disabled]::after {
   font-weight: 500;
 }
 
+.bes-player-drawer-tracklist td {
+  box-sizing: border-box;
+}
+
 .bes-player-drawer .track-number-col {
-  width: 28px;
+  width: 48px;
   text-align: right;
-  padding: 8px 8px 8px 0;
+  padding: 8px 8px 8px 20px;
   vertical-align: middle;
 }
 
@@ -1687,13 +1696,13 @@ button.bes-downloadall[disabled]::after {
 }
 
 .bes-player-drawer .download-col {
-  width: 106px;
-  padding: 8px 0 8px 4px;
+  width: 122px;
+  padding: 8px 16px 8px 4px;
   vertical-align: middle;
 }
 
 .bes-player-drawer .download-col .one-click-button-container {
-  width: 100%;
+  width: 102px;
 }
 
 .bes-player-drawer .unplayable-track {
@@ -1729,8 +1738,10 @@ button.bes-downloadall[disabled]::after {
 .album-buy-button-container {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   margin-bottom: 12px;
+  padding: 0 16px 0 20px;
 }
 
 .album-buy-label {
@@ -1740,7 +1751,8 @@ button.bes-downloadall[disabled]::after {
 }
 
 .album-buy-button-container .one-click-button-container {
-  width: 106px;
+  width: 102px;
+  flex: 0 0 auto;
 }
 
 /* Play status icons in track list */

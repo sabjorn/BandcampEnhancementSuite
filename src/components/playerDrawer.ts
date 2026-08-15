@@ -94,16 +94,6 @@ export function createPlayerDrawer(): {
   // RIGHT COLUMN: Action buttons + Volume controls
   const rightColumn = document.createElement('div');
   rightColumn.className = 'bes-player-drawer-right';
-  rightColumn.style.cssText = `
-    width: 46px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding-left: 4px;
-    border-left: 1px solid #f0f0f2;
-  `;
 
   // Header actions (minimize/close) - at top of right column
   const headerActions = document.createElement('div');

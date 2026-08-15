@@ -1153,12 +1153,14 @@ button.bes-downloadall[disabled]::after {
 
 /* RIGHT COLUMN: Volume controls */
 .bes-player-drawer-right {
-  width: 54px;
+  box-sizing: border-box;
+  width: 62px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  padding: 0 5px;
   border-left: 1px solid #f0f0f2;
 }
 
@@ -1179,8 +1181,8 @@ button.bes-downloadall[disabled]::after {
   cursor: pointer;
   padding: 0;
   box-sizing: border-box;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -1447,8 +1449,9 @@ button.bes-downloadall[disabled]::after {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
   padding: 0;
   border: none;
   border-radius: 8px;
@@ -1709,7 +1712,8 @@ button.bes-downloadall[disabled]::after {
 }
 
 .bes-player-drawer .download-col .one-click-button-container {
-  width: 102px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .bes-player-drawer .unplayable-track {
@@ -1758,6 +1762,7 @@ button.bes-downloadall[disabled]::after {
 }
 
 .album-buy-button-container .one-click-button-container {
+  box-sizing: border-box;
   width: 102px;
   flex: 0 0 auto;
 }

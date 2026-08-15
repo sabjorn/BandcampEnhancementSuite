@@ -59,20 +59,20 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should create transport element with prev/play/next buttons', () => {
       const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const prevButton = transportElement.querySelector('.prevbutton');
+      const prevButton = transportElement.querySelector('.bes-transport-prev');
       expect(prevButton).toBeDefined();
 
-      const playButton = transportElement.querySelector('.playbutton');
+      const playButton = transportElement.querySelector('.bes-transport-play');
       expect(playButton).toBeDefined();
 
-      const nextButton = transportElement.querySelector('.nextbutton');
+      const nextButton = transportElement.querySelector('.bes-transport-next');
       expect(nextButton).toBeDefined();
     });
 
     it('should create play button with play and pause icons', () => {
       const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const playButton = transportElement.querySelector('.playbutton') as HTMLElement;
+      const playButton = transportElement.querySelector('.bes-transport-play') as HTMLElement;
       const playIcon = playButton.querySelector('.play-icon');
       const pauseIcon = playButton.querySelector('.pause-icon');
 
@@ -85,22 +85,22 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should create track info elements', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const albumLabel = centerElement.querySelector('.album-label');
+      const albumLabel = centerElement.querySelector('.bes-album-label');
       expect(albumLabel).toBeDefined();
 
-      const trackTitle = centerElement.querySelector('.track-title');
+      const trackTitle = centerElement.querySelector('.bes-now-playing-title');
       expect(trackTitle).toBeDefined();
 
-      const artistName = centerElement.querySelector('.artist-name');
+      const artistName = centerElement.querySelector('.bes-artist-name');
       expect(artistName).toBeDefined();
     });
 
     it('should have empty text content initially', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const albumLabel = centerElement.querySelector('.album-label') as HTMLElement;
-      const trackTitle = centerElement.querySelector('.track-title') as HTMLElement;
-      const artistName = centerElement.querySelector('.artist-name') as HTMLElement;
+      const albumLabel = centerElement.querySelector('.bes-album-label') as HTMLElement;
+      const trackTitle = centerElement.querySelector('.bes-now-playing-title') as HTMLElement;
+      const artistName = centerElement.querySelector('.bes-artist-name') as HTMLElement;
 
       // Should be empty until track is loaded
       expect(albumLabel.textContent).toBe('');
@@ -113,13 +113,13 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should create BPM badge with number and label', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const bpmBadge = centerElement.querySelector('.bpm-badge');
+      const bpmBadge = centerElement.querySelector('.bes-bpm-badge');
       expect(bpmBadge).toBeDefined();
 
-      const bpmNumber = centerElement.querySelector('.bpm-number');
+      const bpmNumber = centerElement.querySelector('.bes-bpm-number');
       expect(bpmNumber).toBeDefined();
 
-      const bpmLabel = bpmBadge?.querySelector('span:last-child') as HTMLElement;
+      const bpmLabel = bpmBadge?.querySelector('.bes-bpm-unit') as HTMLElement;
       expect(bpmLabel?.textContent).toBe('BPM');
     });
   });
@@ -128,7 +128,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should create waveform canvas element', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const canvas = centerElement.querySelector('canvas.waveform') as HTMLCanvasElement;
+      const canvas = centerElement.querySelector('canvas.bes-waveform') as HTMLCanvasElement;
       expect(canvas).toBeDefined();
       expect(canvas.width).toBe(600);
       expect(canvas.height).toBe(30);
@@ -137,7 +137,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should create slider container with progress bar', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const sliderContainer = centerElement.querySelector('.slider-container');
+      const sliderContainer = centerElement.querySelector('.bes-slider-container');
       expect(sliderContainer).toBeDefined();
 
       const progbarFill = centerElement.querySelector('.progbar_fill');
@@ -150,8 +150,8 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should create toggle buttons for waveform and slider modes', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const toggleSlider = centerElement.querySelector('.toggle-slider') as HTMLButtonElement;
-      const toggleWaveform = centerElement.querySelector('.toggle-waveform') as HTMLButtonElement;
+      const toggleSlider = centerElement.querySelector('.bes-toggle-slider') as HTMLButtonElement;
+      const toggleWaveform = centerElement.querySelector('.bes-toggle-waveform') as HTMLButtonElement;
 
       expect(toggleSlider).toBeDefined();
       expect(toggleWaveform).toBeDefined();
@@ -160,35 +160,35 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should show waveform by default, hide slider', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const sliderContainer = centerElement.querySelector('.slider-container') as HTMLElement;
-      const waveformContainer = centerElement.querySelector('.waveform-container') as HTMLElement;
+      const sliderContainer = centerElement.querySelector('.bes-slider-container') as HTMLElement;
+      const waveformContainer = centerElement.querySelector('.bes-waveform-container') as HTMLElement;
 
-      expect(sliderContainer.style.display).toBe('none');
-      expect(waveformContainer.style.display).not.toBe('none');
+      expect(sliderContainer.classList.contains('bes-visible')).toBe(false);
+      expect(waveformContainer.classList.contains('bes-visible')).toBe(true);
     });
 
     it('should toggle to slider mode when slider button clicked', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
       document.body.appendChild(centerElement);
 
-      const toggleSlider = centerElement.querySelector('.toggle-slider') as HTMLButtonElement;
-      const sliderContainer = centerElement.querySelector('.slider-container') as HTMLElement;
-      const waveformContainer = centerElement.querySelector('.waveform-container') as HTMLElement;
+      const toggleSlider = centerElement.querySelector('.bes-toggle-slider') as HTMLButtonElement;
+      const sliderContainer = centerElement.querySelector('.bes-slider-container') as HTMLElement;
+      const waveformContainer = centerElement.querySelector('.bes-waveform-container') as HTMLElement;
 
       toggleSlider.click();
 
-      expect(sliderContainer.style.display).toBe('block');
-      expect(waveformContainer.style.display).toBe('none');
+      expect(sliderContainer.classList.contains('bes-visible')).toBe(true);
+      expect(waveformContainer.classList.contains('bes-visible')).toBe(false);
     });
 
     it('should toggle back to waveform mode when waveform button clicked', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
       document.body.appendChild(centerElement);
 
-      const toggleSlider = centerElement.querySelector('.toggle-slider') as HTMLButtonElement;
-      const toggleWaveform = centerElement.querySelector('.toggle-waveform') as HTMLButtonElement;
-      const sliderContainer = centerElement.querySelector('.slider-container') as HTMLElement;
-      const waveformContainer = centerElement.querySelector('.waveform-container') as HTMLElement;
+      const toggleSlider = centerElement.querySelector('.bes-toggle-slider') as HTMLButtonElement;
+      const toggleWaveform = centerElement.querySelector('.bes-toggle-waveform') as HTMLButtonElement;
+      const sliderContainer = centerElement.querySelector('.bes-slider-container') as HTMLElement;
+      const waveformContainer = centerElement.querySelector('.bes-waveform-container') as HTMLElement;
 
       // First switch to slider
       toggleSlider.click();
@@ -196,8 +196,8 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       // Then switch back to waveform
       toggleWaveform.click();
 
-      expect(waveformContainer.style.display).toBe('block');
-      expect(sliderContainer.style.display).toBe('none');
+      expect(waveformContainer.classList.contains('bes-visible')).toBe(true);
+      expect(sliderContainer.classList.contains('bes-visible')).toBe(false);
     });
   });
 
@@ -205,20 +205,20 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should create volume container with vertical slider', () => {
       const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const volumeContainer = volumeElement.querySelector('.volume');
+      const volumeContainer = volumeElement.querySelector('.bes-volume');
       expect(volumeContainer).toBeDefined();
 
-      const volumeFill = volumeElement.querySelector('.volume-fill');
+      const volumeFill = volumeElement.querySelector('.bes-volume-fill');
       expect(volumeFill).toBeDefined();
 
-      const volumeThumb = volumeElement.querySelector('.volume-thumb');
+      const volumeThumb = volumeElement.querySelector('.bes-volume-thumb');
       expect(volumeThumb).toBeDefined();
     });
 
     it('should create volume percentage display', () => {
       const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const volumePercent = volumeElement.querySelector('.volume-percent') as HTMLElement;
+      const volumePercent = volumeElement.querySelector('.bes-volume-percent') as HTMLElement;
       expect(volumePercent).toBeDefined();
       expect(volumePercent.textContent).toBe('100%');
     });
@@ -228,7 +228,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should create mute button with icon', () => {
       const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const muteButton = volumeElement.querySelector('.volume-mute') as HTMLButtonElement;
+      const muteButton = volumeElement.querySelector('.bes-volume-mute') as HTMLButtonElement;
       expect(muteButton).toBeDefined();
 
       // Should have SVG icon
@@ -241,8 +241,8 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should create time display elements', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const timeElapsed = centerElement.querySelector('.time_elapsed') as HTMLElement;
-      const timeTotal = centerElement.querySelector('.time_total') as HTMLElement;
+      const timeElapsed = centerElement.querySelector('.bes-time-elapsed') as HTMLElement;
+      const timeTotal = centerElement.querySelector('.bes-time-total') as HTMLElement;
 
       expect(timeElapsed).toBeDefined();
       expect(timeTotal).toBeDefined();
@@ -257,16 +257,16 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should build track table with correct number of rows', () => {
       const trackTable = buildTrackTable(mockTralbumDetails);
 
-      const rows = trackTable.querySelectorAll('.track_row_view');
+      const rows = trackTable.querySelectorAll('.bes-track-row');
       expect(rows.length).toBe(2);
     });
 
     it('should display track numbers and titles', () => {
       const trackTable = buildTrackTable(mockTralbumDetails);
 
-      const firstRow = trackTable.querySelector('.track_row_view:first-child') as HTMLElement;
-      const trackNumber = firstRow.querySelector('.track_number') as HTMLElement;
-      const trackTitle = firstRow.querySelector('.track-title') as HTMLElement;
+      const firstRow = trackTable.querySelector('.bes-track-row:first-child') as HTMLElement;
+      const trackNumber = firstRow.querySelector('.bes-track-num') as HTMLElement;
+      const trackTitle = firstRow.querySelector('.bes-track-title') as HTMLElement;
 
       expect(trackNumber.textContent).toBe('1.');
       expect(trackTitle.textContent).toBe('Track 1');
@@ -275,8 +275,8 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should display track duration', () => {
       const trackTable = buildTrackTable(mockTralbumDetails);
 
-      const firstRow = trackTable.querySelector('.track_row_view:first-child') as HTMLElement;
-      const time = firstRow.querySelector('.time') as HTMLElement;
+      const firstRow = trackTable.querySelector('.bes-track-row:first-child') as HTMLElement;
+      const time = firstRow.querySelector('.bes-track-duration') as HTMLElement;
 
       expect(time.textContent).toBe('3:00');
     });
@@ -284,8 +284,8 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should include buy button for purchasable tracks', () => {
       const trackTable = buildTrackTable(mockTralbumDetails);
 
-      const firstRow = trackTable.querySelector('.track_row_view:first-child') as HTMLElement;
-      const buyButton = firstRow.querySelector('.download-col');
+      const firstRow = trackTable.querySelector('.bes-track-row:first-child') as HTMLElement;
+      const buyButton = firstRow.querySelector('.bes-track-buy-col');
 
       expect(buyButton).toBeDefined();
     });
@@ -293,8 +293,8 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should have empty download column for non-purchasable tracks', () => {
       const trackTable = buildTrackTable(mockTralbumDetails);
 
-      const secondRow = trackTable.querySelectorAll('.track_row_view')[1] as HTMLElement;
-      const buyCol = secondRow.querySelector('.download-col') as HTMLElement;
+      const secondRow = trackTable.querySelectorAll('.bes-track-row')[1] as HTMLElement;
+      const buyCol = secondRow.querySelector('.bes-track-buy-col') as HTMLElement;
 
       // Column exists but is empty (no cart button inside)
       expect(buyCol).toBeDefined();
@@ -304,21 +304,21 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should give every row the same column structure', () => {
       const trackTable = buildTrackTable(mockTralbumDetails);
 
-      const rows = trackTable.querySelectorAll('.track_row_view');
+      const rows = trackTable.querySelectorAll('.bes-track-row');
       rows.forEach(row => {
-        expect(row.querySelector('.track-number-col')).toBeTruthy();
-        expect(row.querySelector('.title-col')).toBeTruthy();
-        expect(row.querySelector('.duration-col')).toBeTruthy();
-        expect(row.querySelector('.link-col')).toBeTruthy();
-        expect(row.querySelector('.download-col')).toBeTruthy();
+        expect(row.querySelector('.bes-track-num-col')).toBeTruthy();
+        expect(row.querySelector('.bes-track-title-col')).toBeTruthy();
+        expect(row.querySelector('.bes-track-duration-col')).toBeTruthy();
+        expect(row.querySelector('.bes-track-link-col')).toBeTruthy();
+        expect(row.querySelector('.bes-track-buy-col')).toBeTruthy();
       });
     });
 
     it('should include track link icon when track_url exists', () => {
       const trackTable = buildTrackTable(mockTralbumDetails);
 
-      const firstRow = trackTable.querySelector('.track_row_view:first-child') as HTMLElement;
-      const trackLink = firstRow.querySelector('.track-link-icon') as HTMLAnchorElement;
+      const firstRow = trackTable.querySelector('.bes-track-row:first-child') as HTMLElement;
+      const trackLink = firstRow.querySelector('.bes-track-link') as HTMLAnchorElement;
 
       expect(trackLink).toBeDefined();
       expect(trackLink.href).toContain('/track/track-1');
@@ -327,20 +327,17 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
   });
 
   describe('AC-W5: Grey base with purple accent colors', () => {
-    it('should use correct colors for waveform progress bar', () => {
+    it('should expose progress bar parts by class', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const progbarFill = centerElement.querySelector('.progbar_fill') as HTMLElement;
-      // Purple accent #5b53e8 (rgb(91, 83, 232))
-      expect(progbarFill.style.background).toBe('rgb(91, 83, 232)');
+      expect(centerElement.querySelector('.bes-progbar-fill')).toBeTruthy();
+      expect(centerElement.querySelector('.bes-progbar-thumb')).toBeTruthy();
     });
 
-    it('should use grey background for slider container', () => {
+    it('should expose slider container by class', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const sliderContainer = centerElement.querySelector('.slider-container') as HTMLElement;
-      // Grey base #ececef (rgb(236, 236, 239))
-      expect(sliderContainer.style.background).toBe('rgb(236, 236, 239)');
+      expect(centerElement.querySelector('.bes-slider-container')).toBeTruthy();
     });
   });
 
@@ -348,27 +345,27 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should expose transport buttons by class', () => {
       const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      expect(transportElement.querySelector('.prevbutton')).toBeTruthy();
-      expect(transportElement.querySelector('.playbutton')).toBeTruthy();
-      expect(transportElement.querySelector('.nextbutton')).toBeTruthy();
+      expect(transportElement.querySelector('.bes-transport-prev')).toBeTruthy();
+      expect(transportElement.querySelector('.bes-transport-play')).toBeTruthy();
+      expect(transportElement.querySelector('.bes-transport-next')).toBeTruthy();
     });
 
-    it('should use inline styles on player controls', () => {
+    it('should expose player controls by class', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const trackInfo = centerElement.querySelector('.track_info') as HTMLElement;
-      expect(trackInfo.style.cssText).toBeTruthy();
-      expect(trackInfo.style.cssText.length).toBeGreaterThan(0);
+      expect(centerElement.querySelector('.bes-track-info')).toBeTruthy();
+      expect(centerElement.querySelector('.bes-player-controls')).toBeTruthy();
+      expect(centerElement.querySelector('.bes-progbar')).toBeTruthy();
     });
 
     it('should expose volume controls by class', () => {
       const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
 
       expect(volumeElement.classList.contains('bes-drawer-volume-column')).toBe(true);
-      expect(volumeElement.querySelector('.volume-mute')).toBeTruthy();
-      expect(volumeElement.querySelector('.volume-track')).toBeTruthy();
-      expect(volumeElement.querySelector('.volume-fill')).toBeTruthy();
-      expect(volumeElement.querySelector('.volume-thumb')).toBeTruthy();
+      expect(volumeElement.querySelector('.bes-volume-mute')).toBeTruthy();
+      expect(volumeElement.querySelector('.bes-volume-track')).toBeTruthy();
+      expect(volumeElement.querySelector('.bes-volume-fill')).toBeTruthy();
+      expect(volumeElement.querySelector('.bes-volume-thumb')).toBeTruthy();
     });
   });
 
@@ -456,7 +453,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
       // Album buy button should have styling that positions it above tracklist
       // (In actual DOM integration, this is verified by placement order)
-      expect(albumBuyButton?.className).toContain('album-buy-button-container');
+      expect(albumBuyButton?.className).toContain('bes-album-buy');
     });
   });
 
@@ -491,7 +488,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
             is_purchasable: true,
             duration: 240,
             // No streaming_url - this track is unplayable
-            track_url: '/track/unplayable-track'
+            track_url: '/track/bes-track-unplayable'
           },
           {
             track_id: 1003,
@@ -507,45 +504,45 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       } as TralbumDetailsResponse;
     });
 
-    it('should add unplayable-track class to unplayable track rows', () => {
+    it('should add bes-track-unplayable class to unplayable track rows', () => {
       const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
 
-      const rows = trackTable.querySelectorAll('.track_row_view');
+      const rows = trackTable.querySelectorAll('.bes-track-row');
       expect(rows.length).toBe(3);
 
       // First track is playable - should NOT have class
-      expect(rows[0].classList.contains('unplayable-track')).toBe(false);
+      expect(rows[0].classList.contains('bes-track-unplayable')).toBe(false);
 
       // Second track is unplayable - should have class
-      expect(rows[1].classList.contains('unplayable-track')).toBe(true);
+      expect(rows[1].classList.contains('bes-track-unplayable')).toBe(true);
 
       // Third track is playable - should NOT have class
-      expect(rows[2].classList.contains('unplayable-track')).toBe(false);
+      expect(rows[2].classList.contains('bes-track-unplayable')).toBe(false);
     });
 
-    it('should not add unplayable-track class to playable track rows', () => {
+    it('should not add bes-track-unplayable class to playable track rows', () => {
       const trackTable = buildTrackTable(mockTralbumDetails);
 
-      const rows = trackTable.querySelectorAll('.track_row_view');
+      const rows = trackTable.querySelectorAll('.bes-track-row');
       rows.forEach(row => {
-        expect(row.classList.contains('unplayable-track')).toBe(false);
+        expect(row.classList.contains('bes-track-unplayable')).toBe(false);
       });
     });
 
     it('should keep track number and title in the row for unplayable tracks', () => {
       const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
 
-      const secondRow = trackTable.querySelectorAll('.track_row_view')[1] as HTMLElement;
+      const secondRow = trackTable.querySelectorAll('.bes-track-row')[1] as HTMLElement;
 
-      expect(secondRow.querySelector('.track_number')).toBeTruthy();
-      expect(secondRow.querySelector('.track-title')).toBeTruthy();
+      expect(secondRow.querySelector('.bes-track-num')).toBeTruthy();
+      expect(secondRow.querySelector('.bes-track-title')).toBeTruthy();
     });
 
     it('should keep buy button visible for unplayable tracks', () => {
       const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
 
-      const secondRow = trackTable.querySelectorAll('.track_row_view')[1] as HTMLElement;
-      const buyButton = secondRow.querySelector('.download-col');
+      const secondRow = trackTable.querySelectorAll('.bes-track-row')[1] as HTMLElement;
+      const buyButton = secondRow.querySelector('.bes-track-buy-col');
 
       // Buy button should still be present and visible
       expect(buyButton).toBeDefined();
@@ -555,9 +552,9 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should not mark playable tracks as unplayable', () => {
       const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
 
-      const firstRow = trackTable.querySelectorAll('.track_row_view')[0] as HTMLElement;
+      const firstRow = trackTable.querySelectorAll('.bes-track-row')[0] as HTMLElement;
 
-      expect(firstRow.classList.contains('unplayable-track')).toBe(false);
+      expect(firstRow.classList.contains('bes-track-unplayable')).toBe(false);
     });
   });
 });

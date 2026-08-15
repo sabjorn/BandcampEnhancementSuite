@@ -45,9 +45,9 @@ function ensureAudioElement(): HTMLAudioElement {
 
 // Update track info inside drawer player
 function updateDrawerTrackInfo(albumName: string, artistName: string, trackTitle: string): void {
-  const albumLabel = document.querySelector('.album-label') as HTMLDivElement;
-  const trackTitleEl = document.querySelector('.track-title') as HTMLDivElement;
-  const artistNameEl = document.querySelector('.artist-name') as HTMLDivElement;
+  const albumLabel = document.querySelector('.bes-album-label') as HTMLDivElement;
+  const trackTitleEl = document.querySelector('.bes-now-playing-title') as HTMLDivElement;
+  const artistNameEl = document.querySelector('.bes-artist-name') as HTMLDivElement;
 
   if (albumLabel) albumLabel.textContent = albumName;
   if (trackTitleEl) trackTitleEl.textContent = trackTitle;
@@ -56,7 +56,7 @@ function updateDrawerTrackInfo(albumName: string, artistName: string, trackTitle
 
 // Update BPM badge inside drawer player
 function updateDrawerBpmBadge(bpm: number | null): void {
-  const bpmNumber = document.querySelector('.bpm-number') as HTMLSpanElement;
+  const bpmNumber = document.querySelector('.bes-bpm-number') as HTMLSpanElement;
   if (bpmNumber) {
     if (bpm) {
       bpmNumber.textContent = bpm.toFixed(0);
@@ -123,8 +123,8 @@ export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
     configPort = port;
   }
 
-  const canvas = document.querySelector('.bes-player-drawer canvas.waveform') as HTMLCanvasElement;
-  const bpmDisplay = document.querySelector('.bes-player-drawer .bpm-number') as HTMLSpanElement;
+  const canvas = document.querySelector('.bes-player-drawer canvas.bes-waveform') as HTMLCanvasElement;
+  const bpmDisplay = document.querySelector('.bes-player-drawer .bes-bpm-number') as HTMLSpanElement;
 
   if (!canvas || !bpmDisplay) {
     log.warn('Drawer audio feature elements not found');
@@ -263,10 +263,10 @@ export async function loadAlbumIntoDrawer(
         });
 
         const container = document.createElement('div');
-        container.className = 'album-buy-button-container';
+        container.className = 'bes-album-buy';
 
         const label = document.createElement('span');
-        label.className = 'album-buy-label';
+        label.className = 'bes-album-buy-label';
         label.textContent = 'Buy Album';
 
         container.appendChild(label);
@@ -387,9 +387,9 @@ function findPrevPlayableTrack(startIndex: number): number {
 
 function updateTrackInfo(title: string): void {
   // Update track title, album, and artist in new player structure
-  const trackTitleEl = document.querySelector('.bes-player-drawer .track-title') as HTMLDivElement;
-  const albumLabel = document.querySelector('.bes-player-drawer .album-label') as HTMLDivElement;
-  const artistName = document.querySelector('.bes-player-drawer .artist-name') as HTMLDivElement;
+  const trackTitleEl = document.querySelector('.bes-player-drawer .bes-now-playing-title') as HTMLDivElement;
+  const albumLabel = document.querySelector('.bes-player-drawer .bes-album-label') as HTMLDivElement;
+  const artistName = document.querySelector('.bes-player-drawer .bes-artist-name') as HTMLDivElement;
 
   if (trackTitleEl) {
     trackTitleEl.textContent = title;
@@ -406,23 +406,23 @@ function updateTrackInfo(title: string): void {
 }
 
 function updateTrackRows(index: number): void {
-  const trackRows = document.querySelectorAll('.bes-player-drawer .track_row_view');
+  const trackRows = document.querySelectorAll('.bes-player-drawer .bes-track-row');
   trackRows.forEach((row, i) => {
-    row.classList.toggle('playing', i === index);
+    row.classList.toggle('bes-track-playing', i === index);
   });
 }
 
 function updatePrevNextButtons(index: number, totalTracks: number): void {
-  const prevButton = document.querySelector('.bes-player-drawer .prevbutton');
-  const nextButton = document.querySelector('.bes-player-drawer .nextbutton');
+  const prevButton = document.querySelector('.bes-player-drawer .bes-transport-prev');
+  const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next');
 
   // Prev button: hide only if at first track AND no previous album available
   const canGoPrev = index > 0 || currentAlbumIndex > 0;
-  prevButton?.classList.toggle('hiddenelem', !canGoPrev);
+  prevButton?.classList.toggle('bes-hidden', !canGoPrev);
 
   // Next button: hide only if at last track AND no next album available
   const canGoNext = index < totalTracks - 1 || currentAlbumIndex < discographyOrder.length - 1;
-  nextButton?.classList.toggle('hiddenelem', !canGoNext);
+  nextButton?.classList.toggle('bes-hidden', !canGoNext);
 }
 
 // Core player control functions - shared by button clicks and keyboard shortcuts
@@ -543,19 +543,19 @@ function toggleMute(): void {
 }
 
 function updateTimeDisplay(currentTime: number, duration: number): void {
-  const timeElapsed = document.querySelector('.bes-player-drawer .time_elapsed');
+  const timeElapsed = document.querySelector('.bes-player-drawer .bes-time-elapsed');
   if (timeElapsed) {
     timeElapsed.textContent = formatTime(currentTime);
   }
 
-  const timeTotal = document.querySelector('.bes-player-drawer .time_total');
+  const timeTotal = document.querySelector('.bes-player-drawer .bes-time-total');
   if (timeTotal && !isNaN(duration)) {
     timeTotal.textContent = formatTime(duration);
   }
 
-  const timeSection = document.querySelector('.bes-player-drawer .time');
+  const timeSection = document.querySelector('.bes-player-drawer .bes-time-elapsed');
   if (timeSection) {
-    timeSection.classList.remove('hiddenelem');
+    timeSection.classList.remove('bes-hidden');
   }
 }
 
@@ -564,12 +564,12 @@ function updateProgressBar(): void {
 
   const percent = (audioElement.currentTime / audioElement.duration) * 100;
 
-  const progbarFill = document.querySelector('.bes-player-drawer .progbar_fill') as HTMLElement;
+  const progbarFill = document.querySelector('.bes-player-drawer .bes-progbar-fill') as HTMLElement;
   if (progbarFill) {
     progbarFill.style.width = `${percent}%`;
   }
 
-  const thumb = document.querySelector('.bes-player-drawer .slider-container .thumb') as HTMLElement;
+  const thumb = document.querySelector('.bes-player-drawer .bes-slider-container .bes-progbar-thumb') as HTMLElement;
   if (thumb) {
     thumb.style.left = `${percent}%`;
   }
@@ -578,14 +578,14 @@ function updateProgressBar(): void {
 }
 
 function attachTrackListHandlers(): void {
-  const trackRows = document.querySelectorAll('.bes-player-drawer .track_row_view');
+  const trackRows = document.querySelectorAll('.bes-player-drawer .bes-track-row');
 
   trackRows.forEach((row, index) => {
     // Make entire row clickable
     row.addEventListener('click', (e: Event) => {
       const target = e.target as HTMLElement;
       // Don't trigger if clicking the track link icon
-      if (target.closest('.track-link-icon')) {
+      if (target.closest('.bes-track-link')) {
         return;
       }
 
@@ -608,9 +608,9 @@ function attachTrackListHandlers(): void {
 }
 
 function updateVolumeDisplay(volume: number): void {
-  const volumeFill = document.querySelector('.bes-player-drawer .volume-fill') as HTMLElement;
-  const volumeThumb = document.querySelector('.bes-player-drawer .volume-thumb') as HTMLElement;
-  const volumePercent = document.querySelector('.bes-player-drawer .volume-percent') as HTMLElement;
+  const volumeFill = document.querySelector('.bes-player-drawer .bes-volume-fill') as HTMLElement;
+  const volumeThumb = document.querySelector('.bes-player-drawer .bes-volume-thumb') as HTMLElement;
+  const volumePercent = document.querySelector('.bes-player-drawer .bes-volume-percent') as HTMLElement;
 
   const percent = volume * 100;
 
@@ -628,7 +628,7 @@ function updateVolumeDisplay(volume: number): void {
 }
 
 function updateMuteButton(isMuted: boolean): void {
-  const muteButton = document.querySelector('.bes-player-drawer .volume-mute') as HTMLElement;
+  const muteButton = document.querySelector('.bes-player-drawer .bes-volume-mute') as HTMLElement;
   if (!muteButton) return;
 
   const muteIcon = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
@@ -641,12 +641,12 @@ function initializePlayer(): void {
   log.info('Initializing player');
 
   const audio = audioElement;
-  const playButton = document.querySelector('.bes-player-drawer .playbutton') as HTMLElement;
-  const prevButton = document.querySelector('.bes-player-drawer .prevbutton') as HTMLElement;
-  const nextButton = document.querySelector('.bes-player-drawer .nextbutton') as HTMLElement;
-  const progbar = document.querySelector('.bes-player-drawer .progbar') as HTMLElement;
-  const volumeContainer = document.querySelector('.bes-player-drawer .volume') as HTMLElement;
-  const volumeMuteButton = document.querySelector('.bes-player-drawer .volume-mute') as HTMLElement;
+  const playButton = document.querySelector('.bes-player-drawer .bes-transport-play') as HTMLElement;
+  const prevButton = document.querySelector('.bes-player-drawer .bes-transport-prev') as HTMLElement;
+  const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLElement;
+  const progbar = document.querySelector('.bes-player-drawer .bes-progbar') as HTMLElement;
+  const volumeContainer = document.querySelector('.bes-player-drawer .bes-volume') as HTMLElement;
+  const volumeMuteButton = document.querySelector('.bes-player-drawer .bes-volume-mute') as HTMLElement;
 
   if (!audio || !playButton) {
     log.error('Required player elements not found');

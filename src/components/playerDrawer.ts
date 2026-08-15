@@ -231,7 +231,7 @@ export function createPlayerDrawer(): {
 
   minimizedPlayButton.addEventListener('click', e => {
     e.stopPropagation();
-    const playButton = drawer.querySelector('.playbutton') as HTMLElement;
+    const playButton = drawer.querySelector('.bes-transport-play') as HTMLElement;
     if (playButton) {
       playButton.click();
     }
@@ -239,7 +239,7 @@ export function createPlayerDrawer(): {
 
   minimizedPrevButton.addEventListener('click', e => {
     e.stopPropagation();
-    const prevButton = drawer.querySelector('.prevbutton') as HTMLElement;
+    const prevButton = drawer.querySelector('.bes-transport-prev') as HTMLElement;
     if (prevButton) {
       prevButton.click();
     }
@@ -247,7 +247,7 @@ export function createPlayerDrawer(): {
 
   minimizedNextButton.addEventListener('click', e => {
     e.stopPropagation();
-    const nextButton = drawer.querySelector('.nextbutton') as HTMLElement;
+    const nextButton = drawer.querySelector('.bes-transport-next') as HTMLElement;
     if (nextButton) {
       nextButton.click();
     }

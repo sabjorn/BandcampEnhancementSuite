@@ -75,11 +75,11 @@ vi.mock('../src/nativePlayerBuilder', () => ({
     // Create transport with actual buttons
     const transportElement = document.createElement('div');
     const prevButton = document.createElement('button');
-    prevButton.className = 'prevbutton';
+    prevButton.className = 'bes-transport-prev';
     const playButton = document.createElement('button');
-    playButton.className = 'playbutton';
+    playButton.className = 'bes-transport-play';
     const nextButton = document.createElement('button');
-    nextButton.className = 'nextbutton';
+    nextButton.className = 'bes-transport-next';
     transportElement.appendChild(prevButton);
     transportElement.appendChild(playButton);
     transportElement.appendChild(nextButton);
@@ -87,21 +87,21 @@ vi.mock('../src/nativePlayerBuilder', () => ({
     // Create center element with necessary structure
     const centerElement = document.createElement('div');
     const progbar = document.createElement('div');
-    progbar.className = 'progbar';
+    progbar.className = 'bes-progbar';
     centerElement.appendChild(progbar);
 
     // Create volume element with mute button and slider
     const volumeElement = document.createElement('div');
     const volumeMute = document.createElement('button');
-    volumeMute.className = 'volume-mute';
+    volumeMute.className = 'bes-volume-mute';
     const volumeContainer = document.createElement('div');
-    volumeContainer.className = 'volume';
+    volumeContainer.className = 'bes-volume';
     volumeElement.appendChild(volumeMute);
     volumeElement.appendChild(volumeContainer);
 
     // Create album buy button
     const buyButtonContainer = document.createElement('div');
-    buyButtonContainer.className = 'album-buy-button-container';
+    buyButtonContainer.className = 'bes-album-buy';
     const buyButton = document.createElement('button');
     buyButton.className = 'one-click-button';
     buyButtonContainer.appendChild(buyButton);
@@ -240,13 +240,13 @@ describe('PlayerLoader - Main Player Logic', () => {
 
       // Check buy button exists after first load
       const tracklistContainer = document.querySelector('.bes-player-drawer-tracklist');
-      expect(tracklistContainer?.querySelector('.album-buy-button-container')).toBeTruthy();
+      expect(tracklistContainer?.querySelector('.bes-album-buy')).toBeTruthy();
 
       // Navigate to next album
       await loadNextAlbum(false);
 
       // Buy button should still exist
-      expect(tracklistContainer?.querySelector('.album-buy-button-container')).toBeTruthy();
+      expect(tracklistContainer?.querySelector('.bes-album-buy')).toBeTruthy();
     });
   });
 
@@ -299,8 +299,8 @@ describe('PlayerLoader - Main Player Logic', () => {
           <div class="bes-player-drawer-tracklist"></div>
           <img class="bes-player-drawer-album-art" />
           <div class="bes-player-drawer-transport">
-            <button class="prevbutton"></button>
-            <button class="nextbutton"></button>
+            <button class="bes-transport-prev"></button>
+            <button class="bes-transport-next"></button>
           </div>
           <div class="bes-player-drawer-right"></div>
         </div>
@@ -317,8 +317,8 @@ describe('PlayerLoader - Main Player Logic', () => {
       await loadAlbumIntoDrawer('123', 'album', false);
 
       // Re-query buttons after loadAlbumIntoDrawer replaces them
-      nextButton = document.querySelector('.bes-player-drawer .nextbutton') as HTMLButtonElement;
-      prevButton = document.querySelector('.bes-player-drawer .prevbutton') as HTMLButtonElement;
+      nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
+      prevButton = document.querySelector('.bes-player-drawer .bes-transport-prev') as HTMLButtonElement;
       audio = document.querySelector('audio') as HTMLAudioElement;
 
       // Mock audio properties and methods
@@ -431,9 +431,9 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
   beforeEach(() => {
     createDomNodes(`
       <div class="bes-player-drawer open">
-        <button class="playbutton"></button>
-        <button class="prevbutton"></button>
-        <button class="nextbutton"></button>
+        <button class="bes-transport-play"></button>
+        <button class="bes-transport-prev"></button>
+        <button class="bes-transport-next"></button>
       </div>
       <audio></audio>
     `);
@@ -454,7 +454,7 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
 
   describe('Space/p: Play/Pause', () => {
     it('should trigger play button on Space key', () => {
-      const playButton = document.querySelector('.playbutton') as HTMLButtonElement;
+      const playButton = document.querySelector('.bes-transport-play') as HTMLButtonElement;
       const clickSpy = vi.spyOn(playButton, 'click');
 
       const event = new KeyboardEvent('keydown', { key: ' ' });
@@ -467,7 +467,7 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
     });
 
     it('should trigger play button on p key', () => {
-      const playButton = document.querySelector('.playbutton') as HTMLButtonElement;
+      const playButton = document.querySelector('.bes-transport-play') as HTMLButtonElement;
       const clickSpy = vi.spyOn(playButton, 'click');
 
       const event = new KeyboardEvent('keydown', { key: 'p' });
@@ -481,7 +481,7 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
 
   describe('↑/↓: Previous/Next track', () => {
     it('should trigger prev button on ArrowUp key', () => {
-      const prevButton = document.querySelector('.prevbutton') as HTMLButtonElement;
+      const prevButton = document.querySelector('.bes-transport-prev') as HTMLButtonElement;
       const clickSpy = vi.spyOn(prevButton, 'click');
 
       const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
@@ -493,7 +493,7 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
     });
 
     it('should trigger next button on ArrowDown key', () => {
-      const nextButton = document.querySelector('.nextbutton') as HTMLButtonElement;
+      const nextButton = document.querySelector('.bes-transport-next') as HTMLButtonElement;
       const clickSpy = vi.spyOn(nextButton, 'click');
 
       const event = new KeyboardEvent('keydown', { key: 'ArrowDown' });
@@ -659,7 +659,7 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
 
     it('should respond to keyboard events when focused on buttons', () => {
       const button = document.createElement('button');
-      button.className = 'playbutton';
+      button.className = 'bes-transport-play';
       document.body.appendChild(button);
 
       const event = new KeyboardEvent('keydown', { key: 'p' });
@@ -698,10 +698,10 @@ describe('PlayerLoader - Player Interactions', () => {
     createDomNodes(`
       <div class="bes-player-drawer open">
         <audio></audio>
-        <button class="playbutton"></button>
-        <div class="progbar" style="width: 600px;"></div>
-        <div class="volume" style="height: 200px;"></div>
-        <button class="volume-mute"></button>
+        <button class="bes-transport-play"></button>
+        <div class="bes-progbar" style="width: 600px;"></div>
+        <div class="bes-volume" style="height: 200px;"></div>
+        <button class="bes-volume-mute"></button>
       </div>
     `);
   });
@@ -713,7 +713,7 @@ describe('PlayerLoader - Player Interactions', () => {
   describe('Play/pause with icon state toggle', () => {
     it('should toggle play/pause on button click', () => {
       const audio = document.querySelector('audio') as HTMLAudioElement;
-      const playButton = document.querySelector('.playbutton') as HTMLElement;
+      const playButton = document.querySelector('.bes-transport-play') as HTMLElement;
 
       audio.play = vi.fn().mockResolvedValue(undefined);
       audio.pause = vi.fn();
@@ -728,7 +728,7 @@ describe('PlayerLoader - Player Interactions', () => {
 
     it('should add playing class when audio plays', () => {
       const audio = document.querySelector('audio') as HTMLAudioElement;
-      const playButton = document.querySelector('.playbutton') as HTMLElement;
+      const playButton = document.querySelector('.bes-transport-play') as HTMLElement;
 
       audio.dispatchEvent(new Event('play'));
 
@@ -737,7 +737,7 @@ describe('PlayerLoader - Player Interactions', () => {
 
     it('should remove playing class when audio pauses', () => {
       const audio = document.querySelector('audio') as HTMLAudioElement;
-      const playButton = document.querySelector('.playbutton') as HTMLElement;
+      const playButton = document.querySelector('.bes-transport-play') as HTMLElement;
 
       playButton.classList.add('playing');
 
@@ -750,7 +750,7 @@ describe('PlayerLoader - Player Interactions', () => {
   describe('Seek by clicking waveform/slider', () => {
     it('should seek to position when clicking progress bar', () => {
       const audio = document.querySelector('audio') as HTMLAudioElement;
-      const progbar = document.querySelector('.progbar') as HTMLElement;
+      const progbar = document.querySelector('.bes-progbar') as HTMLElement;
 
       Object.defineProperty(audio, 'duration', { value: 180, writable: true });
       Object.defineProperty(audio, 'currentTime', { value: 0, writable: true });
@@ -773,7 +773,7 @@ describe('PlayerLoader - Player Interactions', () => {
   describe('Volume control with pointer capture dragging', () => {
     it('should change volume when dragging volume slider', () => {
       const audio = document.querySelector('audio') as HTMLAudioElement;
-      const volumeContainer = document.querySelector('.volume') as HTMLElement;
+      const volumeContainer = document.querySelector('.bes-volume') as HTMLElement;
 
       audio.volume = 1.0;
 
@@ -795,7 +795,7 @@ describe('PlayerLoader - Player Interactions', () => {
     });
 
     it('should use pointer capture during volume drag', () => {
-      const volumeContainer = document.querySelector('.volume') as HTMLElement;
+      const volumeContainer = document.querySelector('.bes-volume') as HTMLElement;
       const setPointerCaptureSpy = vi.spyOn(volumeContainer, 'setPointerCapture');
 
       volumeContainer.getBoundingClientRect = vi.fn().mockReturnValue({
@@ -814,7 +814,7 @@ describe('PlayerLoader - Player Interactions', () => {
     });
 
     it('should release pointer capture on pointerup', () => {
-      const volumeContainer = document.querySelector('.volume') as HTMLElement;
+      const volumeContainer = document.querySelector('.bes-volume') as HTMLElement;
       const releasePointerCaptureSpy = vi.spyOn(volumeContainer, 'releasePointerCapture');
 
       const pointerEvent = new PointerEvent('pointerup', {
@@ -830,7 +830,7 @@ describe('PlayerLoader - Player Interactions', () => {
   describe('Mute/unmute with icon toggle', () => {
     it('should mute when unmuted', () => {
       const audio = document.querySelector('audio') as HTMLAudioElement;
-      const muteButton = document.querySelector('.volume-mute') as HTMLElement;
+      const muteButton = document.querySelector('.bes-volume-mute') as HTMLElement;
 
       Object.defineProperty(audio, 'volume', { value: 0.5, writable: true });
 
@@ -841,7 +841,7 @@ describe('PlayerLoader - Player Interactions', () => {
 
     it('should unmute to previous volume', () => {
       const audio = document.querySelector('audio') as HTMLAudioElement;
-      const muteButton = document.querySelector('.volume-mute') as HTMLElement;
+      const muteButton = document.querySelector('.bes-volume-mute') as HTMLElement;
 
       // First mute (volume was 0.5)
       Object.defineProperty(audio, 'volume', { value: 0.5, writable: true });
@@ -860,14 +860,14 @@ describe('PlayerLoader - Player Interactions', () => {
       createDomNodes(`
         <div class="bes-player-drawer-tracklist">
           <table>
-            <tr class="track_row_view">Track 1</tr>
-            <tr class="track_row_view">Track 2</tr>
+            <tr class="bes-track-row">Track 1</tr>
+            <tr class="bes-track-row">Track 2</tr>
           </table>
         </div>
         <audio></audio>
       `);
 
-      const trackRows = document.querySelectorAll('.track_row_view');
+      const trackRows = document.querySelectorAll('.bes-track-row');
       const audio = document.querySelector('audio') as HTMLAudioElement;
 
       audio.play = vi.fn().mockResolvedValue(undefined);
@@ -879,14 +879,14 @@ describe('PlayerLoader - Player Interactions', () => {
       createDomNodes(`
         <div class="bes-player-drawer-tracklist">
           <table>
-            <tr class="track_row_view playing">Track 1</tr>
-            <tr class="track_row_view">Track 2</tr>
+            <tr class="bes-track-row bes-track-playing">Track 1</tr>
+            <tr class="bes-track-row">Track 2</tr>
           </table>
         </div>
         <audio></audio>
       `);
 
-      const currentTrack = document.querySelector('.track_row_view.playing') as HTMLElement;
+      const currentTrack = document.querySelector('.bes-track-row.playing') as HTMLElement;
       const audio = document.querySelector('audio') as HTMLAudioElement;
 
       Object.defineProperty(audio, 'paused', { value: true, writable: true });
@@ -899,7 +899,7 @@ describe('PlayerLoader - Player Interactions', () => {
       createDomNodes(`
         <div class="bes-player-drawer-tracklist">
           <table>
-            <tr class="track_row_view">
+            <tr class="bes-track-row">
               <td>
                 <a class="track-link-icon" href="/track/1">↗</a>
               </td>
@@ -908,9 +908,9 @@ describe('PlayerLoader - Player Interactions', () => {
         </div>
       `);
 
-      const trackLink = document.querySelector('.track-link-icon') as HTMLElement;
+      const trackLink = document.querySelector('.bes-track-link') as HTMLElement;
 
-      // Handler: if (target.closest('.track-link-icon')) return;
+      // Handler: if (target.closest('.bes-track-link')) return;
     });
   });
 

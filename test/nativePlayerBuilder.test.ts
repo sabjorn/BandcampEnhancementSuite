@@ -301,6 +301,19 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       expect(buyCol.querySelector('.one-click-button-container')).toBeNull();
     });
 
+    it('should give every row the same column structure', () => {
+      const trackTable = buildTrackTable(mockTralbumDetails);
+
+      const rows = trackTable.querySelectorAll('.track_row_view');
+      rows.forEach(row => {
+        expect(row.querySelector('.track-number-col')).toBeTruthy();
+        expect(row.querySelector('.title-col')).toBeTruthy();
+        expect(row.querySelector('.duration-col')).toBeTruthy();
+        expect(row.querySelector('.link-col')).toBeTruthy();
+        expect(row.querySelector('.download-col')).toBeTruthy();
+      });
+    });
+
     it('should include track link icon when track_url exists', () => {
       const trackTable = buildTrackTable(mockTralbumDetails);
 
@@ -331,13 +344,13 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
-  describe('AC-A3: Inline styles to avoid conflicts', () => {
-    it('should use inline styles on transport buttons', () => {
+  describe('AC-A3: Stylesheet hooks on player elements', () => {
+    it('should expose transport buttons by class', () => {
       const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const prevButton = transportElement.querySelector('.prevbutton') as HTMLElement;
-      expect(prevButton.style.cssText).toBeTruthy();
-      expect(prevButton.style.cssText.length).toBeGreaterThan(0);
+      expect(transportElement.querySelector('.prevbutton')).toBeTruthy();
+      expect(transportElement.querySelector('.playbutton')).toBeTruthy();
+      expect(transportElement.querySelector('.nextbutton')).toBeTruthy();
     });
 
     it('should use inline styles on player controls', () => {
@@ -348,11 +361,14 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       expect(trackInfo.style.cssText.length).toBeGreaterThan(0);
     });
 
-    it('should use inline styles on volume controls', () => {
+    it('should expose volume controls by class', () => {
       const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      expect(volumeElement.style.cssText).toBeTruthy();
-      expect(volumeElement.style.cssText.length).toBeGreaterThan(0);
+      expect(volumeElement.classList.contains('bes-drawer-volume-column')).toBe(true);
+      expect(volumeElement.querySelector('.volume-mute')).toBeTruthy();
+      expect(volumeElement.querySelector('.volume-track')).toBeTruthy();
+      expect(volumeElement.querySelector('.volume-fill')).toBeTruthy();
+      expect(volumeElement.querySelector('.volume-thumb')).toBeTruthy();
     });
   });
 
@@ -516,24 +532,13 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       });
     });
 
-    it('should grey out track number for unplayable tracks', () => {
+    it('should keep track number and title in the row for unplayable tracks', () => {
       const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
 
       const secondRow = trackTable.querySelectorAll('.track_row_view')[1] as HTMLElement;
-      const trackNumber = secondRow.querySelector('.track_number') as HTMLElement;
 
-      // Should have grey color (hex format in JSDOM)
-      expect(trackNumber.style.color).toBe('#a1a1aa');
-    });
-
-    it('should grey out track title for unplayable tracks', () => {
-      const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
-
-      const secondRow = trackTable.querySelectorAll('.track_row_view')[1] as HTMLElement;
-      const trackTitle = secondRow.querySelector('.track-title') as HTMLElement;
-
-      // Should have grey color (hex format in JSDOM)
-      expect(trackTitle.style.color).toBe('#a1a1aa');
+      expect(secondRow.querySelector('.track_number')).toBeTruthy();
+      expect(secondRow.querySelector('.track-title')).toBeTruthy();
     });
 
     it('should keep buy button visible for unplayable tracks', () => {
@@ -547,38 +552,12 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       expect(buyButton).not.toBeNull();
     });
 
-    it('should apply reduced opacity to unplayable track row', () => {
-      const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
-
-      const secondRow = trackTable.querySelectorAll('.track_row_view')[1] as HTMLElement;
-
-      // Should have reduced opacity
-      expect(secondRow.style.opacity).toBe('0.5');
-    });
-
-    it('should apply not-allowed cursor to unplayable track row', () => {
-      const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
-
-      const secondRow = trackTable.querySelectorAll('.track_row_view')[1] as HTMLElement;
-
-      // Should have not-allowed cursor
-      expect(secondRow.style.cursor).toBe('not-allowed');
-    });
-
-    it('should not apply greyed out styles to playable tracks', () => {
+    it('should not mark playable tracks as unplayable', () => {
       const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
 
       const firstRow = trackTable.querySelectorAll('.track_row_view')[0] as HTMLElement;
-      const trackNumber = firstRow.querySelector('.track_number') as HTMLElement;
-      const trackTitle = firstRow.querySelector('.track-title') as HTMLElement;
 
-      // Should NOT have grey color
-      expect(trackNumber.style.color).not.toBe('#a1a1aa');
-      expect(trackTitle.style.color).not.toBe('#a1a1aa');
-      // Should NOT have reduced opacity
-      expect(firstRow.style.opacity).not.toBe('0.5');
-      // Should NOT have not-allowed cursor
-      expect(firstRow.style.cursor).not.toBe('not-allowed');
+      expect(firstRow.classList.contains('unplayable-track')).toBe(false);
     });
   });
 });

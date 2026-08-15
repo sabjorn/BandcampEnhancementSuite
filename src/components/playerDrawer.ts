@@ -28,12 +28,6 @@ export function createPlayerDrawer(): {
 
   const header = document.createElement('div');
   header.className = 'bes-player-drawer-header';
-  header.style.cssText = `
-    padding: 22px 24px;
-    border-bottom: none;
-    background: #fff;
-    flex-shrink: 0;
-  `;
 
   // Main player container (3 columns: left+center+right)
   const playerMain = document.createElement('div');
@@ -71,12 +65,6 @@ export function createPlayerDrawer(): {
 
   const transportControls = document.createElement('div');
   transportControls.className = 'bes-player-drawer-transport';
-  transportControls.style.cssText = `
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-  `;
 
   leftColumn.appendChild(albumArt);
   leftColumn.appendChild(transportControls);
@@ -120,56 +108,18 @@ export function createPlayerDrawer(): {
   // Header actions (minimize/close) - at top of right column
   const headerActions = document.createElement('div');
   headerActions.className = 'bes-player-drawer-header-actions';
-  headerActions.style.cssText = `
-    display: flex;
-    flex-direction: row;
-    gap: 4px;
-    flex-shrink: 0;
-  `;
 
   const minimizeButton = document.createElement('button');
   minimizeButton.className = 'bes-player-drawer-minimize';
   minimizeButton.innerHTML = '−';
   minimizeButton.setAttribute('aria-label', 'Minimize player');
   minimizeButton.setAttribute('title', 'Minimize player');
-  minimizeButton.style.cssText = `
-    background: transparent;
-    border: none;
-    font-size: 18px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 2px;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #52525b;
-    transition: all 0.2s ease;
-    border-radius: 6px;
-  `;
 
   const closeButton = document.createElement('button');
   closeButton.className = 'bes-player-drawer-close';
   closeButton.innerHTML = '×';
   closeButton.setAttribute('aria-label', 'Close player');
   closeButton.setAttribute('title', 'Close player');
-  closeButton.style.cssText = `
-    background: transparent;
-    border: none;
-    font-size: 18px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 2px;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #52525b;
-    transition: all 0.2s ease;
-    border-radius: 6px;
-  `;
 
   headerActions.appendChild(minimizeButton);
   headerActions.appendChild(closeButton);

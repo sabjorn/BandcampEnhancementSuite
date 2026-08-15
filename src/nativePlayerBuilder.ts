@@ -26,19 +26,16 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
   tracklistElement: HTMLElement;
   albumBuyButton: HTMLElement | null;
 } {
-  // LEFT COLUMN: Transport buttons only (drawer already has the column wrapper and art)
-  // Buttons should be centered under 96px album art with play button as center point
   const transport = document.createElement('div');
-  transport.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 4px; width: 96px;';
   transport.innerHTML = `
-    <button class="prevbutton hiddenelem" style="border: none; background: transparent; padding: 4px; cursor: pointer; color: rgb(82, 82, 91); display: flex; border-radius: 8px;">
+    <button class="prevbutton hiddenelem">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path></svg>
     </button>
-    <button class="playbutton" style="border: none; width: 40px; height: 40px; border-radius: 50%; background: rgb(24, 24, 27); color: rgb(255, 255, 255); cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: rgba(24, 24, 27, 0.5) 0px 5px 13px -5px;">
-      <svg class="play-icon" width="16" height="16" viewBox="0 0 24 24" style="margin-left: 2px;"><path d="M8 5v14l11-7z" fill="#ffffff"></path></svg>
+    <button class="playbutton">
+      <svg class="play-icon" width="16" height="16" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#ffffff"></path></svg>
       <svg class="pause-icon" width="16" height="16" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1" fill="#ffffff"></rect><rect x="14" y="5" width="4" height="14" rx="1" fill="#ffffff"></rect></svg>
     </button>
-    <button class="nextbutton" style="border: none; background: transparent; padding: 4px; cursor: pointer; color: rgb(82, 82, 91); display: flex; border-radius: 8px;">
+    <button class="nextbutton">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"></path></svg>
     </button>
   `;
@@ -113,20 +110,19 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
     };
   }
 
-  // VOLUME COLUMN - content only (drawer already has the column wrapper)
   const volumeCol = document.createElement('div');
-  volumeCol.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 1;';
+  volumeCol.className = 'bes-drawer-volume-column';
   volumeCol.innerHTML = `
-    <button class="volume-mute" style="border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; background: transparent; padding: 4px; cursor: pointer; color: rgb(82, 82, 91); display: flex;">
+    <button class="volume-mute">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
     </button>
-    <div class="volume" style="flex: 1; width: 34px; display: flex; align-items: flex-end; justify-content: center; cursor: pointer; touch-action: none; padding: 8px 0px;">
-      <div style="position: relative; width: 6px; height: 100%; border-radius: 6px; background: rgb(236, 236, 239);">
-        <div class="volume-fill" style="position: absolute; left: 0px; right: 0px; bottom: 0px; border-radius: 6px; background: rgb(24, 24, 27); height: 100%;"></div>
-        <div class="volume-thumb" style="position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, 50%); width: 15px; height: 15px; border-radius: 50%; background: rgb(255, 255, 255); box-shadow: rgba(24, 24, 27, 0.28) 0px 1px 4px 0px, rgb(24, 24, 27) 0px 0px 0px 4px inset;"></div>
+    <div class="volume">
+      <div class="volume-track">
+        <div class="volume-fill"></div>
+        <div class="volume-thumb"></div>
       </div>
     </div>
-    <span class="volume-percent" style="font-family: 'Space Grotesk', monospace; font-size: 11px; font-weight: 500; color: rgb(161, 161, 170); font-variant-numeric: tabular-nums;">100%</span>
+    <span class="volume-percent">100%</span>
   `;
 
   const trackTable = buildTrackTable(tralbumDetails);
@@ -146,15 +142,12 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
       log
     });
 
-    // Wrap in container with label for styling
     const container = document.createElement('div');
     container.className = 'album-buy-button-container';
-    container.style.cssText = 'margin-bottom: 16px; display: flex; align-items: center; gap: 8px;';
 
     const label = document.createElement('span');
     label.className = 'album-buy-label';
     label.textContent = 'Buy Album';
-    label.style.cssText = 'font-size: 13px; font-weight: 500; color: #333;';
 
     container.appendChild(label);
     container.appendChild(buyButtonElement);
@@ -637,8 +630,6 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
   const table = document.createElement('table');
   table.className = 'track_list track_table';
   table.id = 'track_table';
-  table.style.cssText = 'width: 100%; border-collapse: collapse;';
-
   if (!tralbumDetails.tracks || tralbumDetails.tracks.length === 0) {
     return table;
   }
@@ -648,51 +639,38 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
     row.className = 'track_row_view linked';
     row.setAttribute('rel', `tracknum=${index + 1}`);
 
-    // Check if track is playable (same logic as in playerLoader.ts)
     const isPlayable = Boolean(track?.streaming_url?.['mp3-128']);
 
-    // Column 1: Track number
     const trackNumCol = document.createElement('td');
     trackNumCol.className = 'track-number-col';
-    trackNumCol.style.cssText = 'width: 28px; text-align: right; padding: 8px 8px 8px 0; vertical-align: middle;';
 
     const trackNumDiv = document.createElement('div');
     trackNumDiv.className = 'track_number secondaryText';
     trackNumDiv.textContent = `${index + 1}.`;
-    trackNumDiv.style.cssText = 'color: #71717a; font-size: 13px;';
 
     trackNumCol.appendChild(trackNumDiv);
 
-    // Column 2: Track title (flexible width)
     const titleCol = document.createElement('td');
     titleCol.className = 'title-col';
-    titleCol.style.cssText =
-      'padding: 8px 8px; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
 
     const titleSpan = document.createElement('span');
     titleSpan.className = 'track-title';
     titleSpan.textContent = track.title;
-    titleSpan.style.cssText = 'color: #333; font-weight: 500; font-size: 14px;';
 
     titleCol.appendChild(titleSpan);
 
-    // Column 3: Duration
     const durationCol = document.createElement('td');
     durationCol.className = 'duration-col';
-    durationCol.style.cssText = 'width: 45px; text-align: right; padding: 8px 8px; vertical-align: middle;';
 
     if (track.duration) {
       const timeSpan = document.createElement('span');
       timeSpan.className = 'time secondaryText';
       timeSpan.textContent = formatDuration(track.duration);
-      timeSpan.style.cssText = 'color: #999; font-size: 13px;';
       durationCol.appendChild(timeSpan);
     }
 
-    // Column 4: Link icon (with visual separation)
     const linkCol = document.createElement('td');
     linkCol.className = 'link-col';
-    linkCol.style.cssText = 'width: 32px; text-align: center; padding: 8px 4px; vertical-align: middle;';
 
     if (track.track_url) {
       const linkIcon = document.createElement('a');
@@ -702,23 +680,11 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
       linkIcon.setAttribute('aria-label', `Open ${track.title} in new tab`);
       linkIcon.setAttribute('title', 'Open track page');
       linkIcon.innerHTML = '↗';
-      linkIcon.style.cssText =
-        'display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: #0687f5; text-decoration: none; font-size: 14px; border-radius: 4px; border: 1px solid transparent; transition: all 0.15s ease;';
-      linkIcon.onmouseenter = () => {
-        linkIcon.style.backgroundColor = '#f0f7ff';
-        linkIcon.style.borderColor = '#0687f5';
-      };
-      linkIcon.onmouseleave = () => {
-        linkIcon.style.backgroundColor = 'transparent';
-        linkIcon.style.borderColor = 'transparent';
-      };
       linkCol.appendChild(linkIcon);
     }
 
-    // Column 5: Buy button (if purchasable)
     const buyCol = document.createElement('td');
     buyCol.className = 'download-col';
-    buyCol.style.cssText = 'width: 70px; text-align: right; padding: 8px 0 8px 4px; vertical-align: middle;';
 
     if (track.is_purchasable && track.track_id) {
       const { price, currency, track_id: trackId, title: trackTitle } = track;
@@ -742,13 +708,8 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
     row.appendChild(linkCol);
     row.appendChild(buyCol);
 
-    // Apply visual indication for unplayable tracks
     if (!isPlayable) {
       row.classList.add('unplayable-track');
-      row.style.opacity = '0.5';
-      row.style.cursor = 'not-allowed';
-      trackNumDiv.style.color = '#a1a1aa';
-      titleSpan.style.color = '#a1a1aa';
     }
 
     table.appendChild(row);

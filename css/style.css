@@ -1082,15 +1082,15 @@ button.bes-downloadall[disabled]::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
   width: 96px;
 }
 
-.bes-player-drawer-transport > div {
+.bes-transport {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  width: 96px;
 }
 
 /* CENTER COLUMN: Track info + player */

@@ -1166,23 +1166,21 @@ button.bes-downloadall[disabled]::after {
 .bes-player-drawer-header-actions {
   display: flex;
   justify-content: center;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
   width: 100%;
   flex-shrink: 0;
-  align-self: flex-start;
 }
 
 .bes-player-drawer-minimize,
 .bes-player-drawer-close {
   background: transparent;
   border: none;
-  font-size: 17px;
-  line-height: 1;
   cursor: pointer;
   padding: 0;
   box-sizing: border-box;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -1190,6 +1188,11 @@ button.bes-downloadall[disabled]::after {
   color: #52525b;
   transition: all 0.2s ease;
   border-radius: 6px;
+}
+
+.bes-player-drawer-minimize svg,
+.bes-player-drawer-close svg {
+  display: block;
 }
 
 .bes-player-drawer-minimize:hover,
@@ -1256,11 +1259,11 @@ button.bes-downloadall[disabled]::after {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
   width: 100%;
   min-height: 0;
-  padding: 0 0 2px;
+  padding: 0;
 }
 
 .bes-drawer-volume-column .volume-mute {
@@ -1269,12 +1272,16 @@ button.bes-downloadall[disabled]::after {
   justify-content: center;
   flex: 0 0 auto;
   width: 100%;
-  height: 22px;
+  height: 20px;
   padding: 0;
   border: none;
   background: transparent;
   color: #52525b;
   cursor: pointer;
+}
+
+.bes-drawer-volume-column .volume-mute svg {
+  display: block;
 }
 
 .bes-drawer-volume-column .volume {
@@ -1284,7 +1291,7 @@ button.bes-downloadall[disabled]::after {
   flex: 1;
   width: 100%;
   min-height: 0;
-  padding: 2px 0;
+  padding: 10px 0 2px;
   cursor: pointer;
   touch-action: none;
 }

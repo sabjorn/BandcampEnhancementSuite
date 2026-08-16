@@ -577,15 +577,18 @@ function updateProgressBar(): void {
   updateTimeDisplay(audioElement.currentTime, audioElement.duration);
 }
 
+export function isPlaybackClick(target: HTMLElement | null): boolean {
+  if (!target) return false;
+  return !target.closest('.bes-track-link, .bes-track-buy-col');
+}
+
 function attachTrackListHandlers(): void {
   const trackRows = document.querySelectorAll('.bes-player-drawer .bes-track-row');
 
   trackRows.forEach((row, index) => {
     // Make entire row clickable
     row.addEventListener('click', (e: Event) => {
-      const target = e.target as HTMLElement;
-      // Don't trigger if clicking the track link icon
-      if (target.closest('.bes-track-link')) {
+      if (!isPlaybackClick(e.target as HTMLElement)) {
         return;
       }
 

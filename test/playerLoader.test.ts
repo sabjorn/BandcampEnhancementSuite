@@ -10,7 +10,8 @@ import {
   getCurrentAlbumData,
   getCurrentAlbumIndex,
   getCurrentTrackIndex,
-  getDiscographyLength
+  getDiscographyLength,
+  isPlaybackClick
 } from '../src/playerLoader';
 import { KeyboardSettings, KeyboardAction } from '../src/types/keyboard';
 import { getTralbumDetails } from '../src/bclient';
@@ -690,6 +691,59 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
 
       // Handler should return early for bare Meta key
     });
+  });
+});
+
+describe('PlayerLoader - Track row click targets', () => {
+  beforeEach(() => {
+    createDomNodes(`
+      <table>
+        <tr class="bes-track-row">
+          <td class="bes-track-num-col"><div class="bes-track-num">1.</div></td>
+          <td class="bes-track-title-col"><span class="bes-track-title">Track 1</span></td>
+          <td class="bes-track-duration-col"><span class="bes-track-duration">3:00</span></td>
+          <td class="bes-track-link-col"><a class="bes-track-link" href="/track/1">arrow</a></td>
+          <td class="bes-track-buy-col">
+            <div class="one-click-button-container">
+              <div class="currency-input-wrapper"><input class="currency-input" /></div>
+              <button class="one-click-button"><span class="bes-cart-icons"></span></button>
+            </div>
+          </td>
+        </tr>
+      </table>
+    `);
+  });
+
+  afterEach(() => {
+    cleanupTestNodes();
+  });
+
+  it('should treat a click on the track title as a playback click', () => {
+    expect(isPlaybackClick(document.querySelector('.bes-track-title'))).toBe(true);
+  });
+
+  it('should treat a click on the row itself as a playback click', () => {
+    expect(isPlaybackClick(document.querySelector('.bes-track-num'))).toBe(true);
+  });
+
+  it('should NOT play when clicking the add to cart button', () => {
+    expect(isPlaybackClick(document.querySelector('.one-click-button'))).toBe(false);
+  });
+
+  it('should NOT play when clicking an icon inside the add to cart button', () => {
+    expect(isPlaybackClick(document.querySelector('.bes-cart-icons'))).toBe(false);
+  });
+
+  it('should NOT play when clicking the price input', () => {
+    expect(isPlaybackClick(document.querySelector('.currency-input'))).toBe(false);
+  });
+
+  it('should NOT play when clicking anywhere in the buy column', () => {
+    expect(isPlaybackClick(document.querySelector('.bes-track-buy-col'))).toBe(false);
+  });
+
+  it('should NOT play when clicking the track link icon', () => {
+    expect(isPlaybackClick(document.querySelector('.bes-track-link'))).toBe(false);
   });
 });
 

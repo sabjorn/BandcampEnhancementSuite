@@ -1024,6 +1024,10 @@ button.bes-downloadall[disabled]::after {
   overflow: hidden;
 }
 
+.bes-player-drawer button {
+  margin: 0;
+}
+
 .bes-player-drawer.open {
   transform: translateX(0);
 }

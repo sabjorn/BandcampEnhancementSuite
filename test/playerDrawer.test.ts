@@ -182,12 +182,45 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       updateMinimizedPlayButton(true);
 
       const button = document.querySelector('.bes-player-drawer-minimized-play') as HTMLButtonElement;
-      expect(button.innerHTML).toBe('⏸');
+      expect(button.classList.contains('playing')).toBe(true);
       expect(button.getAttribute('aria-label')).toBe('Pause');
 
       updateMinimizedPlayButton(false);
-      expect(button.innerHTML).toBe('▶');
+      expect(button.classList.contains('playing')).toBe(false);
       expect(button.getAttribute('aria-label')).toBe('Play');
+    });
+  });
+
+  describe('Wedge player icons match the expanded player', () => {
+    it('should use the same prev and next icon paths as the transport controls', () => {
+      const { drawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      const wedgePrev = drawer.querySelector('.bes-player-drawer-minimized-prev svg path');
+      const wedgeNext = drawer.querySelector('.bes-player-drawer-minimized-next svg path');
+
+      expect(wedgePrev?.getAttribute('d')).toBe('M6 6h2v12H6zm3.5 6l8.5 6V6z');
+      expect(wedgeNext?.getAttribute('d')).toBe('M16 6h2v12h-2zM6 18l8.5-6L6 6z');
+    });
+
+    it('should carry both play and pause icons so state toggles by class', () => {
+      const { drawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      const play = drawer.querySelector('.bes-player-drawer-minimized-play');
+      expect(play?.querySelector('.bes-play-icon')).toBeTruthy();
+      expect(play?.querySelector('.bes-pause-icon')).toBeTruthy();
+    });
+
+    it('should render icons as svg rather than text glyphs', () => {
+      const { drawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      ['prev', 'play', 'next'].forEach(name => {
+        const btn = drawer.querySelector(`.bes-player-drawer-minimized-${name}`) as HTMLElement;
+        expect(btn.querySelector('svg')).toBeTruthy();
+        expect(btn.textContent?.trim()).toBe('');
+      });
     });
   });
 

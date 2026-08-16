@@ -1,6 +1,7 @@
 import Logger from './logger';
 import { TralbumDetailsResponse, CURRENCY_MINIMUMS } from './bclient';
 import { createAddToCartButton } from './components/cartButton';
+import { prevIcon, nextIcon, playIcon, pauseIcon } from './components/playerIcons';
 
 const log = new Logger();
 
@@ -14,16 +15,9 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
   const transport = document.createElement('div');
   transport.className = 'bes-transport';
   transport.innerHTML = `
-    <button class="bes-transport-prev bes-hidden">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path></svg>
-    </button>
-    <button class="bes-transport-play">
-      <svg class="bes-play-icon" width="16" height="16" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#ffffff"></path></svg>
-      <svg class="bes-pause-icon" width="16" height="16" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1" fill="#ffffff"></rect><rect x="14" y="5" width="4" height="14" rx="1" fill="#ffffff"></rect></svg>
-    </button>
-    <button class="bes-transport-next">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"></path></svg>
-    </button>
+    <button class="bes-transport-prev bes-hidden">${prevIcon(18)}</button>
+    <button class="bes-transport-play">${playIcon(16)}${pauseIcon(16)}</button>
+    <button class="bes-transport-next">${nextIcon(18)}</button>
   `;
 
   const center = document.createElement('div');

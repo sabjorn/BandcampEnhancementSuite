@@ -1,4 +1,5 @@
 import { createLogger } from '../logger';
+import { prevIcon, nextIcon, playIcon, pauseIcon } from './playerIcons';
 
 const log = createLogger();
 
@@ -151,17 +152,17 @@ export function createPlayerDrawer(): {
   const minimizedPrevButton = document.createElement('button');
   minimizedPrevButton.className = 'bes-player-drawer-minimized-prev';
   minimizedPrevButton.setAttribute('aria-label', 'Previous track');
-  minimizedPrevButton.innerHTML = '⏮';
+  minimizedPrevButton.innerHTML = prevIcon(14);
 
   const minimizedPlayButton = document.createElement('button');
   minimizedPlayButton.className = 'bes-player-drawer-minimized-play';
   minimizedPlayButton.setAttribute('aria-label', 'Play/Pause');
-  minimizedPlayButton.innerHTML = '▶';
+  minimizedPlayButton.innerHTML = `${playIcon(16)}${pauseIcon(16)}`;
 
   const minimizedNextButton = document.createElement('button');
   minimizedNextButton.className = 'bes-player-drawer-minimized-next';
   minimizedNextButton.setAttribute('aria-label', 'Next track');
-  minimizedNextButton.innerHTML = '⏭';
+  minimizedNextButton.innerHTML = nextIcon(14);
 
   minimizedControls.appendChild(minimizedPrevButton);
   minimizedControls.appendChild(minimizedPlayButton);
@@ -292,7 +293,7 @@ export function updatePlayerDrawerInfo(albumArtUrl: string) {
 export function updateMinimizedPlayButton(isPlaying: boolean) {
   const button = document.querySelector('.bes-player-drawer-minimized-play') as HTMLButtonElement;
   if (button) {
-    button.innerHTML = isPlaying ? '⏸' : '▶';
+    button.classList.toggle('playing', isPlaying);
     button.setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
   }
 }

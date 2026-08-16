@@ -1921,6 +1921,25 @@ button.bes-downloadall[disabled]::after {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
+.bes-player-drawer-minimized-prev svg,
+.bes-player-drawer-minimized-next svg,
+.bes-player-drawer-minimized-play svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.bes-player-drawer-minimized-play .bes-pause-icon {
+  display: none;
+}
+
+.bes-player-drawer-minimized-play.playing .bes-play-icon {
+  display: none;
+}
+
+.bes-player-drawer-minimized-play.playing .bes-pause-icon {
+  display: block;
+}
+
 .bes-player-drawer-minimized-play:hover {
   background: white;
   transform: scale(1.05);

@@ -1164,7 +1164,7 @@ button.bes-downloadall[disabled]::after {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 0 5px;
+  padding: 0 2px 0 8px;
   border-left: 1px solid #f0f0f2;
 }
 
@@ -1173,7 +1173,7 @@ button.bes-downloadall[disabled]::after {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   width: 100%;
   flex-shrink: 0;
 }

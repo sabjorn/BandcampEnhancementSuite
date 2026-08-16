@@ -27,38 +27,38 @@ vi.mock('../src/logger', () => ({
   }
 }));
 
-vi.mock('../src/bclient', () => ({
-  getTralbumDetails: vi.fn(async (albumId: string | number) => ({
-    id: Number(albumId),
-    type: 'a',
-    title: `Test Album ${albumId}`,
-    tralbum_artist: 'Test Artist',
-    is_purchasable: true,
-    price: 10.0,
-    currency: 'USD',
-    tracks: [
-      {
-        id: 1,
-        title: 'Track 1',
-        duration: 180,
-        streaming_url: { 'mp3-128': 'https://example.com/track1.mp3' }
-      },
-      {
-        id: 2,
-        title: 'Track 2',
-        duration: 240,
-        streaming_url: { 'mp3-128': 'https://example.com/track2.mp3' }
-      },
-      {
-        id: 3,
-        title: 'Track 3',
-        duration: 200,
-        streaming_url: { 'mp3-128': 'https://example.com/track3.mp3' }
-      }
-    ]
-  })),
-  CURRENCY_MINIMUMS: { USD: 0.5 }
-}));
+vi.mock('../src/bclient', () => {
+  const playableTrack = (n: number) => ({
+    id: n,
+    title: `Track ${n}`,
+    duration: 180,
+    streaming_url: { 'mp3-128': `https://example.com/track${n}.mp3` }
+  });
+  const unplayableTrack = (n: number) => ({ id: n, title: `Track ${n} (pre-order)`, duration: 180 });
+
+  return {
+    getTralbumDetails: vi.fn(async (albumId: string | number) => {
+      const id = Number(albumId);
+      // Album 456 has a playable first track and nothing playable after it
+      const tracks =
+        id === 456
+          ? [playableTrack(1), unplayableTrack(2), unplayableTrack(3)]
+          : [playableTrack(1), playableTrack(2), playableTrack(3)];
+
+      return {
+        id,
+        type: 'a',
+        title: `Test Album ${id}`,
+        tralbum_artist: 'Test Artist',
+        is_purchasable: true,
+        price: 10.0,
+        currency: 'USD',
+        tracks
+      };
+    }),
+    CURRENCY_MINIMUMS: { USD: 0.5 }
+  };
+});
 
 vi.mock('../src/components/playerDrawer', () => ({
   getPlayerDrawerElements: vi.fn(() => ({
@@ -293,6 +293,73 @@ describe('PlayerLoader - Main Player Logic', () => {
 
       const audio = document.querySelector('audio') as HTMLAudioElement;
       expect(audio.style.display).toBe('none');
+    });
+  });
+
+  describe('Skipping a fully unplayable remainder', () => {
+    const startPlaying = () => {
+      const audio = document.querySelector('audio') as HTMLAudioElement;
+      audio.play = vi.fn().mockResolvedValue(undefined);
+      audio.pause = vi.fn();
+      Object.defineProperty(audio, 'paused', { value: false, writable: true, configurable: true });
+      return audio;
+    };
+
+    it('should advance to the next album when nothing after the current track can play', async () => {
+      player.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('456', 'album', false);
+
+      expect(player.getCurrentTrackIndex()).toBe(0);
+      expect(player.getCurrentAlbumData()?.id).toBe(456);
+
+      startPlaying();
+      const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
+      nextButton.click();
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      expect(player.getCurrentAlbumData()?.id).toBe(789);
+    });
+
+    it('should keep playing through the album change', async () => {
+      player.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('456', 'album', false);
+
+      const audio = startPlaying();
+      const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
+      nextButton.click();
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      expect(audio.play).toHaveBeenCalled();
+    });
+
+    it('should land on a playable track in the album it moves to', async () => {
+      player.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('456', 'album', false);
+
+      startPlaying();
+      const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
+      nextButton.click();
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      expect(player.getCurrentAlbumData()?.id).toBe(789);
+
+      const tracks = player.getCurrentAlbumData()?.tracks;
+      const landedOn = tracks?.[player.getCurrentTrackIndex()];
+      expect(landedOn?.streaming_url?.['mp3-128']).toBeTruthy();
+    });
+
+    it('should stay put when there is no next album to fall through to', async () => {
+      player.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('789', 'album', false);
+
+      startPlaying();
+      const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
+      nextButton.click();
+      nextButton.click();
+      nextButton.click();
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      expect(player.getCurrentAlbumData()?.id).toBe(789);
     });
   });
 

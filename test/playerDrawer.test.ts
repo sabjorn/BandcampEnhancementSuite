@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
+import { prevIcon, nextIcon } from '../src/components/playerIcons';
 import {
   createPlayerDrawer,
   getPlayerDrawerElements,
@@ -29,7 +30,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     it('should create drawer with correct initial state', () => {
       const { drawer, getState } = createPlayerDrawer();
 
-      expect(drawer).toBeDefined();
+      expect(drawer).toBeTruthy();
       expect(drawer.classList.contains('bes-player-drawer')).toBe(true);
 
       const state = getState();
@@ -91,7 +92,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       openDrawer();
 
       const minimizeButton = drawer.querySelector('.bes-player-drawer-minimize') as HTMLButtonElement;
-      expect(minimizeButton).toBeDefined();
+      expect(minimizeButton).toBeTruthy();
 
       minimizeButton.click();
       expect(getState().isMinimized).toBe(true);
@@ -106,7 +107,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       openDrawer();
 
       const closeButton = drawer.querySelector('.bes-player-drawer-close') as HTMLButtonElement;
-      expect(closeButton).toBeDefined();
+      expect(closeButton).toBeTruthy();
 
       closeButton.click();
       expect(getState().isOpen).toBe(false);
@@ -136,13 +137,13 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       document.body.appendChild(drawer);
 
       const minimizedBar = drawer.querySelector('.bes-player-drawer-minimized-bar');
-      expect(minimizedBar).toBeDefined();
+      expect(minimizedBar).toBeTruthy();
 
       const minimizedArt = drawer.querySelector('.bes-player-drawer-minimized-art');
-      expect(minimizedArt).toBeDefined();
+      expect(minimizedArt).toBeTruthy();
 
       const minimizedControls = drawer.querySelector('.bes-player-drawer-minimized-controls');
-      expect(minimizedControls).toBeDefined();
+      expect(minimizedControls).toBeTruthy();
     });
 
     it('should maximize drawer when clicking minimized bar', () => {
@@ -192,15 +193,21 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
   });
 
   describe('Wedge player icons match the expanded player', () => {
-    it('should use the same prev and next icon paths as the transport controls', () => {
+    it('should draw its prev and next from the shared icon source', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
+
+      const pathOf = (markup: string) => {
+        const holder = document.createElement('div');
+        holder.innerHTML = markup;
+        return holder.querySelector('path')?.getAttribute('d');
+      };
 
       const wedgePrev = drawer.querySelector('.bes-player-drawer-minimized-prev svg path');
       const wedgeNext = drawer.querySelector('.bes-player-drawer-minimized-next svg path');
 
-      expect(wedgePrev?.getAttribute('d')).toBe('M6 6h2v12H6zm3.5 6l8.5 6V6z');
-      expect(wedgeNext?.getAttribute('d')).toBe('M16 6h2v12h-2zM6 18l8.5-6L6 6z');
+      expect(wedgePrev?.getAttribute('d')).toBe(pathOf(prevIcon(14)));
+      expect(wedgeNext?.getAttribute('d')).toBe(pathOf(nextIcon(14)));
     });
 
     it('should carry both play and pause icons so state toggles by class', () => {
@@ -270,13 +277,13 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       document.body.appendChild(drawer);
 
       const leftColumn = drawer.querySelector('.bes-player-drawer-left') as HTMLElement;
-      expect(leftColumn).toBeDefined();
+      expect(leftColumn).toBeTruthy();
 
       const albumArt = leftColumn.querySelector('.bes-player-drawer-album-art');
-      expect(albumArt).toBeDefined();
+      expect(albumArt).toBeTruthy();
 
       const transport = leftColumn.querySelector('.bes-player-drawer-transport');
-      expect(transport).toBeDefined();
+      expect(transport).toBeTruthy();
     });
 
     it('should create center column for player controls', () => {
@@ -284,10 +291,10 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       document.body.appendChild(drawer);
 
       const centerColumn = drawer.querySelector('.bes-player-drawer-center') as HTMLElement;
-      expect(centerColumn).toBeDefined();
+      expect(centerColumn).toBeTruthy();
 
       const playerContainer = drawer.querySelector('.bes-player-drawer-player');
-      expect(playerContainer).toBeDefined();
+      expect(playerContainer).toBeTruthy();
     });
 
     it('should create right column with header actions', () => {
@@ -295,10 +302,10 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       document.body.appendChild(drawer);
 
       const rightColumn = drawer.querySelector('.bes-player-drawer-right') as HTMLElement;
-      expect(rightColumn).toBeDefined();
+      expect(rightColumn).toBeTruthy();
 
       const headerActions = rightColumn.querySelector('.bes-player-drawer-header-actions');
-      expect(headerActions).toBeDefined();
+      expect(headerActions).toBeTruthy();
     });
   });
 

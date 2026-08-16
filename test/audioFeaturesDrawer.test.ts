@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 import { generateAudioFeatures, drawOverlay } from '../src/audioFeatures';
+import { analyze } from 'web-audio-beat-detector';
+
+vi.mock('web-audio-beat-detector', () => ({
+  analyze: vi.fn()
+}));
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -8,13 +13,20 @@ vi.mock('../src/logger', () => ({
     error = vi.fn();
     debug = vi.fn();
     warn = vi.fn();
-  }
+  },
+  createLogger: vi.fn(() => ({
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn()
+  }))
 }));
 
 describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
   let canvas: HTMLCanvasElement;
   let audio: HTMLAudioElement;
   let mockContext: any;
+  let originalChromeRuntime: any;
 
   beforeEach(() => {
     createDomNodes(`
@@ -38,6 +50,16 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
     };
 
     canvas.getContext = vi.fn().mockReturnValue(mockContext);
+
+    vi.mocked(analyze).mockResolvedValue(120);
+
+    originalChromeRuntime = (globalThis as any).chrome.runtime;
+    (globalThis as any).chrome.runtime = {
+      ...originalChromeRuntime,
+      sendMessage: vi.fn((_message: unknown, callback: (data: { data: number[] }) => void) => {
+        callback({ data: Array.from(new Uint8Array(1024)) });
+      })
+    };
 
     // Mock AudioContext
     globalThis.AudioContext = vi.fn().mockImplementation(() => ({
@@ -67,6 +89,7 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
     cleanupTestNodes();
     vi.restoreAllMocks();
     delete (globalThis as any).AudioContext;
+    (globalThis as any).chrome.runtime = originalChromeRuntime;
   });
 
   describe('AC-W1: Canvas-based waveform with RMS analysis', () => {
@@ -153,13 +176,12 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
 
   describe('AC-W3: BPM detection using web-audio-beat-detector', () => {
     it('should call BPM callback with detected tempo', async () => {
+      vi.mocked(analyze).mockResolvedValue(128);
+
       const bpmCallback = vi.fn();
       const currentTarget = { value: undefined as string | undefined };
 
       audio.src = 'https://t4.bcbits.com/stream/test-audio.mp3';
-
-      // Mock web-audio-beat-detector (analyze function)
-      const mockAnalyze = vi.fn().mockResolvedValue({ tempo: 128 });
 
       await generateAudioFeatures(
         () => audio,
@@ -171,27 +193,33 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
         () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
       );
 
-      // BPM callback should be called with detected tempo
-      // Note: actual implementation uses web-audio-beat-detector's analyze()
+      await vi.waitFor(() => expect(bpmCallback).toHaveBeenCalledWith(128));
     });
 
     it('should handle BPM detection errors gracefully', async () => {
+      vi.mocked(analyze).mockRejectedValue(new Error('no beats found'));
+
       const bpmCallback = vi.fn();
       const currentTarget = { value: undefined as string | undefined };
 
-      audio.src = 'https://invalid-audio.mp3';
+      audio.src = 'https://t4.bcbits.com/stream/test-audio.mp3';
 
-      await generateAudioFeatures(
-        () => audio,
-        canvas,
-        bpmCallback,
-        '#e2e2e6',
-        console as any,
-        currentTarget,
-        () => ({ stream: { type: 'direct-path' as const, path: 'invalid-audio.mp3' } })
-      );
+      await expect(
+        generateAudioFeatures(
+          () => audio,
+          canvas,
+          bpmCallback,
+          '#e2e2e6',
+          console as any,
+          currentTarget,
+          () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
+        )
+      ).resolves.not.toThrow();
 
-      // Should not throw, may call callback with null
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(bpmCallback).toHaveBeenCalledWith(null);
+      expect(bpmCallback).toHaveBeenCalledTimes(1);
     });
   });
 

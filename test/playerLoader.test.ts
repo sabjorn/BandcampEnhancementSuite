@@ -28,10 +28,10 @@ vi.mock('../src/logger', () => ({
 }));
 
 vi.mock('../src/bclient', () => ({
-  getTralbumDetails: vi.fn().mockResolvedValue({
-    id: 123,
+  getTralbumDetails: vi.fn(async (albumId: string | number) => ({
+    id: Number(albumId),
     type: 'a',
-    title: 'Test Album',
+    title: `Test Album ${albumId}`,
     tralbum_artist: 'Test Artist',
     is_purchasable: true,
     price: 10.0,
@@ -56,7 +56,7 @@ vi.mock('../src/bclient', () => ({
         streaming_url: { 'mp3-128': 'https://example.com/track3.mp3' }
       }
     ]
-  }),
+  })),
   CURRENCY_MINIMUMS: { USD: 0.5 }
 }));
 
@@ -134,7 +134,10 @@ vi.mock('../src/audioFeatures', () => ({
 }));
 
 describe('PlayerLoader - Main Player Logic', () => {
-  beforeEach(() => {
+  let player: typeof import('../src/playerLoader');
+
+  beforeEach(async () => {
+    vi.resetModules();
     createDomNodes(`
       <div class="bes-player-drawer">
         <div class="bes-player-drawer-player"></div>
@@ -153,6 +156,8 @@ describe('PlayerLoader - Main Player Logic', () => {
         <img src="https://example.com/album789.jpg" />
       </li>
     `);
+
+    player = await import('../src/playerLoader');
   });
 
   afterEach(() => {
@@ -162,7 +167,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
   describe('Continuous play across albums', () => {
     it('should extract discography order from page', () => {
-      const items = extractDiscographyOrder();
+      const items = player.extractDiscographyOrder();
 
       expect(items.length).toBe(3);
       expect(items[0].id).toBe('123');
@@ -171,83 +176,83 @@ describe('PlayerLoader - Main Player Logic', () => {
     });
 
     it('should update discography order', () => {
-      updateDiscographyOrder();
-      const length = getDiscographyLength();
+      player.updateDiscographyOrder();
+      const length = player.getDiscographyLength();
 
       expect(length).toBe(3);
     });
 
     it('should find album index by ID', () => {
-      updateDiscographyOrder();
-      const index = findAlbumIndexById('456');
+      player.updateDiscographyOrder();
+      const index = player.findAlbumIndexById('456');
 
       expect(index).toBe(1);
     });
 
     it('should return current album index', () => {
-      expect(() => getCurrentAlbumIndex()).not.toThrow();
+      expect(() => player.getCurrentAlbumIndex()).not.toThrow();
     });
 
     it('should return discography length', () => {
-      updateDiscographyOrder();
-      expect(getDiscographyLength()).toBe(3);
+      player.updateDiscographyOrder();
+      expect(player.getDiscographyLength()).toBe(3);
     });
   });
 
   describe('Album navigation (prev/next in discography)', () => {
     it('should load next album when available', async () => {
-      updateDiscographyOrder();
+      player.updateDiscographyOrder();
       // Load first album first
-      await loadAlbumIntoDrawer('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
-      const result = await loadNextAlbum(false);
+      const result = await player.loadNextAlbum(false);
 
       expect(result).toBe(true);
-      expect(getCurrentAlbumIndex()).toBe(1);
+      expect(player.getCurrentAlbumIndex()).toBe(1);
     });
 
     it('should load previous album when available', async () => {
-      updateDiscographyOrder();
+      player.updateDiscographyOrder();
       // Load second album first
-      await loadAlbumIntoDrawer('456', 'album', false);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
 
-      const result = await loadPreviousAlbum(false);
+      const result = await player.loadPreviousAlbum(false);
 
       expect(result).toBe(true);
-      expect(getCurrentAlbumIndex()).toBe(0);
+      expect(player.getCurrentAlbumIndex()).toBe(0);
     });
 
     it('should return false when trying to load next album at end', async () => {
-      updateDiscographyOrder();
+      player.updateDiscographyOrder();
       // Load last album
-      await loadAlbumIntoDrawer('789', 'album', false);
+      await player.loadAlbumIntoDrawer('789', 'album', false);
 
-      const result = await loadNextAlbum(false);
+      const result = await player.loadNextAlbum(false);
 
       expect(result).toBe(false);
     });
 
     it('should return false when trying to load previous album at start', async () => {
-      updateDiscographyOrder();
+      player.updateDiscographyOrder();
       // Load first album
-      await loadAlbumIntoDrawer('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
-      const result = await loadPreviousAlbum(false);
+      const result = await player.loadPreviousAlbum(false);
 
       expect(result).toBe(false);
     });
 
     it('should preserve album buy button when navigating to next album', async () => {
-      updateDiscographyOrder();
+      player.updateDiscographyOrder();
       // Load first album
-      await loadAlbumIntoDrawer('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
       // Check buy button exists after first load
       const tracklistContainer = document.querySelector('.bes-player-drawer-tracklist');
       expect(tracklistContainer?.querySelector('.bes-album-buy')).toBeTruthy();
 
       // Navigate to next album
-      await loadNextAlbum(false);
+      await player.loadNextAlbum(false);
 
       // Buy button should still exist
       expect(tracklistContainer?.querySelector('.bes-album-buy')).toBeTruthy();
@@ -256,35 +261,35 @@ describe('PlayerLoader - Main Player Logic', () => {
 
   describe('Album art extracted from discography grid', () => {
     it('should extract album art URL from grid item', async () => {
-      updateDiscographyOrder();
+      player.updateDiscographyOrder();
 
-      await loadAlbumIntoDrawer('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
       // Album art extraction is verified by the function call
       // The actual URL is extracted in extractAlbumArtFromPage
-      expect(getCurrentAlbumData()).toBeDefined();
+      expect(player.getCurrentAlbumData()).toBeDefined();
     });
   });
 
   describe('Persistent audio element with state management', () => {
     it('should create persistent audio element only once', async () => {
-      updateDiscographyOrder();
+      player.updateDiscographyOrder();
 
-      await loadAlbumIntoDrawer('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
       const firstAudio = document.querySelector('audio');
       expect(firstAudio).toBeDefined();
 
-      await loadAlbumIntoDrawer('456', 'album', false);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
 
       const secondAudio = document.querySelector('audio');
       expect(secondAudio).toBe(firstAudio); // Same element
     });
 
     it('should have audio element hidden from view', async () => {
-      updateDiscographyOrder();
+      player.updateDiscographyOrder();
 
-      await loadAlbumIntoDrawer('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
       const audio = document.querySelector('audio') as HTMLAudioElement;
       expect(audio.style.display).toBe('none');
@@ -314,11 +319,10 @@ describe('PlayerLoader - Main Player Logic', () => {
         <li class="music-grid-item" data-item-id="album-456">
           <img src="https://example.com/album456.jpg" />
         </li>
-        <audio></audio>
       `);
 
-      updateDiscographyOrder();
-      await loadAlbumIntoDrawer('123', 'album', false);
+      player.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
       // Re-query buttons after loadAlbumIntoDrawer replaces them
       nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
@@ -335,29 +339,29 @@ describe('PlayerLoader - Main Player Logic', () => {
 
     it('should advance from first track to second track when next clicked', async () => {
       // Load first track (index 0)
-      expect(getCurrentTrackIndex()).toBe(0);
+      expect(player.getCurrentTrackIndex()).toBe(0);
 
       nextButton.click();
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(getCurrentTrackIndex()).toBe(1);
+      expect(player.getCurrentTrackIndex()).toBe(1);
     });
 
     it('should advance from second-to-last track to last track (not next album)', async () => {
       // First click next to get to track 1 (second track, second-to-last of 3)
       nextButton.click();
       await new Promise(resolve => setTimeout(resolve, 10));
-      expect(getCurrentTrackIndex()).toBe(1);
+      expect(player.getCurrentTrackIndex()).toBe(1);
 
-      const initialAlbumId = getCurrentAlbumData()?.id;
+      const initialAlbumId = player.getCurrentAlbumData()?.id;
 
       // Click next again - should go to track 2 (last track), NOT next album
       nextButton.click();
       await new Promise(resolve => setTimeout(resolve, 10));
 
       // Should advance to last track (index 2), NOT next album
-      expect(getCurrentAlbumData()?.id).toBe(initialAlbumId);
-      expect(getCurrentTrackIndex()).toBe(2);
+      expect(player.getCurrentAlbumData()?.id).toBe(initialAlbumId);
+      expect(player.getCurrentTrackIndex()).toBe(2);
     });
 
     it('should load next album when next button clicked on last track', async () => {
@@ -366,17 +370,17 @@ describe('PlayerLoader - Main Player Logic', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
       nextButton.click();
       await new Promise(resolve => setTimeout(resolve, 10));
-      expect(getCurrentTrackIndex()).toBe(2); // Last track
+      expect(player.getCurrentTrackIndex()).toBe(2); // Last track
 
-      const initialAlbumId = getCurrentAlbumData()?.id;
+      const initialAlbumId = player.getCurrentAlbumData()?.id;
 
       nextButton.click();
       await new Promise(resolve => setTimeout(resolve, 350)); // Wait for album load + setTimeout
 
       // Should load next album (456) and play first track
-      expect(getCurrentAlbumData()?.id).not.toBe(initialAlbumId);
-      expect(getCurrentAlbumData()?.id).toBe(456);
-      expect(getCurrentTrackIndex()).toBe(0); // First track of new album
+      expect(player.getCurrentAlbumData()?.id).not.toBe(initialAlbumId);
+      expect(player.getCurrentAlbumData()?.id).toBe(456);
+      expect(player.getCurrentTrackIndex()).toBe(0); // First track of new album
     });
 
     it('should preserve playing state when navigating to next track', async () => {
@@ -405,26 +409,26 @@ describe('PlayerLoader - Main Player Logic', () => {
       // Navigate to second track
       nextButton.click();
       await new Promise(resolve => setTimeout(resolve, 10));
-      expect(getCurrentTrackIndex()).toBe(1);
+      expect(player.getCurrentTrackIndex()).toBe(1);
 
       prevButton.click();
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(getCurrentTrackIndex()).toBe(0);
+      expect(player.getCurrentTrackIndex()).toBe(0);
     });
 
     it('should load previous album when prev button clicked on first track', async () => {
       // Load second album first
-      await loadAlbumIntoDrawer('456', 'album', false);
-      expect(getCurrentTrackIndex()).toBe(0); // First track
-      expect(getCurrentAlbumData()?.id).toBe(456);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
+      expect(player.getCurrentTrackIndex()).toBe(0); // First track
+      expect(player.getCurrentAlbumData()?.id).toBe(456);
 
       prevButton.click();
       await new Promise(resolve => setTimeout(resolve, 350)); // Wait for album load + setTimeout
 
       // Should load previous album (123) and play last track
-      expect(getCurrentAlbumData()?.id).toBe(123);
-      expect(getCurrentTrackIndex()).toBe(2); // Last track of previous album (3 tracks total)
+      expect(player.getCurrentAlbumData()?.id).toBe(123);
+      expect(player.getCurrentTrackIndex()).toBe(2); // Last track of previous album (3 tracks total)
     });
   });
 });

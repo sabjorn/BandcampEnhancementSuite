@@ -327,8 +327,8 @@ function loadTrack(index: number): void {
   } else {
     log.warn(`No streaming URL for track: ${track.title} (pre-order or disabled)`);
     // Try to find next track with streaming URL
-    const nextIndex = findNextPlayableTrack(index);
-    log.debug(`Track ${index} unplayable, findNextPlayableTrack returned ${nextIndex}`);
+    const nextIndex = findAnyPlayableTrack(index);
+    log.debug(`Track ${index} unplayable, findAnyPlayableTrack returned ${nextIndex}`);
     if (nextIndex !== -1 && nextIndex !== index) {
       log.info(`Skipping to next playable track: ${nextIndex}`);
       loadTrack(nextIndex);
@@ -343,19 +343,10 @@ function loadTrack(index: number): void {
   updatePrevNextButtons(index, tracks.length);
 }
 
-function findNextPlayableTrack(startIndex: number): number {
-  if (!currentAlbumData?.tracks) return -1;
+export function findPlayableTrackAfter(tracks: any[] | undefined, startIndex: number): number {
+  if (!tracks) return -1;
 
-  const tracks = currentAlbumData.tracks;
-  // Search forward
   for (let i = startIndex + 1; i < tracks.length; i++) {
-    if (isTrackPlayable(tracks[i])) {
-      return i;
-    }
-  }
-
-  // Search backward (fallback if no forward playable track)
-  for (let i = startIndex - 1; i >= 0; i--) {
     if (isTrackPlayable(tracks[i])) {
       return i;
     }
@@ -364,25 +355,22 @@ function findNextPlayableTrack(startIndex: number): number {
   return -1;
 }
 
-function findPrevPlayableTrack(startIndex: number): number {
-  if (!currentAlbumData?.tracks) return -1;
+export function findPlayableTrackBefore(tracks: any[] | undefined, startIndex: number): number {
+  if (!tracks) return -1;
 
-  const tracks = currentAlbumData.tracks;
-  // Search backward
-  for (let i = startIndex - 1; i >= 0; i--) {
-    if (isTrackPlayable(tracks[i])) {
-      return i;
-    }
-  }
-
-  // Search forward (fallback if no backward playable track)
-  for (let i = startIndex + 1; i < tracks.length; i++) {
+  for (let i = Math.min(startIndex, tracks.length) - 1; i >= 0; i--) {
     if (isTrackPlayable(tracks[i])) {
       return i;
     }
   }
 
   return -1;
+}
+
+function findAnyPlayableTrack(startIndex: number): number {
+  const tracks = currentAlbumData?.tracks;
+  const after = findPlayableTrackAfter(tracks, startIndex);
+  return after !== -1 ? after : findPlayableTrackBefore(tracks, startIndex);
 }
 
 function updateTrackInfo(title: string): void {
@@ -441,90 +429,74 @@ function playPause(): void {
 async function nextTrack(): Promise<void> {
   if (!audioElement) return;
 
-  log.debug(`Next track: currentTrackIndex=${currentTrackIndex}, totalTracks=${currentAlbumData?.tracks?.length}`);
+  const wasPlaying = !audioElement.paused;
+  const nextIndex = findPlayableTrackAfter(currentAlbumData?.tracks, currentTrackIndex);
+  log.debug(`Next track: from ${currentTrackIndex}, next playable is ${nextIndex}`);
 
-  if (currentAlbumData?.tracks && currentTrackIndex < currentAlbumData.tracks.length - 1) {
-    // Not on last track - find next playable track within same album
-    const nextIndex = findNextPlayableTrack(currentTrackIndex);
-    log.debug(`findNextPlayableTrack(${currentTrackIndex}) returned ${nextIndex}`);
-
-    if (nextIndex !== -1) {
-      const wasPlaying = !audioElement.paused;
-      log.debug(`Loading next track ${nextIndex}, wasPlaying=${wasPlaying}`);
-      loadTrack(nextIndex);
-      if (wasPlaying) {
-        audioElement.play().catch(error => {
-          log.error(`Failed to play: ${error}`);
-        });
-      }
-    } else {
-      log.debug(`No playable track found, staying on track ${currentTrackIndex}`);
+  if (nextIndex !== -1) {
+    loadTrack(nextIndex);
+    if (wasPlaying) {
+      audioElement.play().catch(error => log.error(`Failed to play: ${error}`));
     }
-  } else if (currentAlbumData?.tracks && currentTrackIndex === currentAlbumData.tracks.length - 1) {
-    // On last track - load next album if available (AC-N2)
-    if (currentAlbumIndex < discographyOrder.length - 1) {
-      const wasPlaying = !audioElement.paused;
-      log.info('Next button on last track: loading next album in discography');
-      await loadNextAlbum();
-      // Load and play first track of next album
-      setTimeout(() => {
-        loadTrack(0);
-        if (wasPlaying) {
-          audioElement?.play().catch(error => {
-            log.error(`Failed to play: ${error}`);
-          });
-        }
-      }, 300);
-    } else {
-      log.debug(`Already on last track of last album, doing nothing`);
-    }
+    return;
   }
+
+  if (currentAlbumIndex >= discographyOrder.length - 1) {
+    log.debug('No playable track ahead and no next album');
+    return;
+  }
+
+  log.info('No playable track ahead: loading next album in discography');
+  await loadNextAlbum();
+
+  setTimeout(() => {
+    const firstPlayable = findPlayableTrackAfter(currentAlbumData?.tracks, -1);
+    if (firstPlayable === -1) {
+      log.warn('Next album has no playable tracks');
+      return;
+    }
+    loadTrack(firstPlayable);
+    if (wasPlaying) {
+      audioElement?.play().catch(error => log.error(`Failed to play: ${error}`));
+    }
+  }, 300);
 }
 
 async function prevTrack(): Promise<void> {
   if (!audioElement) return;
 
-  log.debug(`Prev track: currentTrackIndex=${currentTrackIndex}`);
+  const wasPlaying = !audioElement.paused;
+  const prevIndex = findPlayableTrackBefore(currentAlbumData?.tracks, currentTrackIndex);
+  log.debug(`Prev track: from ${currentTrackIndex}, previous playable is ${prevIndex}`);
 
-  if (currentTrackIndex > 0) {
-    // Not on first track - find previous playable track within same album
-    const prevIndex = findPrevPlayableTrack(currentTrackIndex);
-    log.debug(`findPrevPlayableTrack(${currentTrackIndex}) returned ${prevIndex}`);
-
-    if (prevIndex !== -1) {
-      const wasPlaying = !audioElement.paused;
-      log.debug(`Loading prev track ${prevIndex}, wasPlaying=${wasPlaying}`);
-      loadTrack(prevIndex);
-      if (wasPlaying) {
-        audioElement.play().catch(error => {
-          log.error(`Failed to play: ${error}`);
-        });
-      }
-    } else {
-      log.debug(`No playable track found, staying on track ${currentTrackIndex}`);
+  if (prevIndex !== -1) {
+    loadTrack(prevIndex);
+    if (wasPlaying) {
+      audioElement.play().catch(error => log.error(`Failed to play: ${error}`));
     }
-  } else if (currentTrackIndex === 0) {
-    // On first track - load previous album if available (AC-N1)
-    if (currentAlbumIndex > 0) {
-      const wasPlaying = !audioElement.paused;
-      log.info('Prev button on first track: loading previous album in discography');
-      await loadPreviousAlbum();
-      // Load and play last track of previous album
-      setTimeout(() => {
-        if (currentAlbumData?.tracks) {
-          const lastTrackIndex = currentAlbumData.tracks.length - 1;
-          loadTrack(lastTrackIndex);
-          if (wasPlaying) {
-            audioElement?.play().catch(error => {
-              log.error(`Failed to play: ${error}`);
-            });
-          }
-        }
-      }, 300);
-    } else {
-      log.debug(`Already on first track of first album, doing nothing`);
-    }
+    return;
   }
+
+  if (currentAlbumIndex <= 0) {
+    log.debug('No playable track behind and no previous album');
+    return;
+  }
+
+  log.info('No playable track behind: loading previous album in discography');
+  await loadPreviousAlbum();
+
+  setTimeout(() => {
+    const tracks = currentAlbumData?.tracks;
+    const lastPlayable = findPlayableTrackBefore(tracks, tracks ? tracks.length : 0);
+    if (lastPlayable === -1) {
+      log.warn('Previous album has no playable tracks');
+      return;
+    }
+    loadTrack(lastPlayable);
+    if (wasPlaying) {
+      audioElement?.play().catch(error => log.error(`Failed to play: ${error}`));
+    }
+  }, 300);
 }
 
 function toggleMute(): void {
@@ -727,43 +699,32 @@ function initializePlayer(): void {
     updateMinimizedPlayButton(false);
   };
   audio.onended = async () => {
-    log.debug(`Track ended: currentTrackIndex=${currentTrackIndex}, totalTracks=${currentAlbumData?.tracks?.length}`);
+    log.debug(`Track ended at index ${currentTrackIndex}`);
 
-    if (currentAlbumData?.tracks && currentTrackIndex < currentAlbumData.tracks.length - 1) {
-      // Not at last track - advance to next playable track
-      const nextIndex = findNextPlayableTrack(currentTrackIndex);
-      log.debug(`Auto-advance: findNextPlayableTrack(${currentTrackIndex}) returned ${nextIndex}`);
-
-      if (nextIndex !== -1) {
-        log.debug(`Auto-advancing to track ${nextIndex}`);
-        loadTrack(nextIndex);
-        audio.play().catch(error => {
-          log.error(`Failed to play: ${error}`);
-        });
-      } else if (currentAlbumIndex < discographyOrder.length - 1) {
-        // No more playable tracks in this album, load next album
-        log.info('No more playable tracks, loading next album in discography (auto-advance)');
-        await loadNextAlbum();
-        setTimeout(() => {
-          loadTrack(0);
-          audio.play().catch(error => {
-            log.error(`Failed to play: ${error}`);
-          });
-        }, 300);
-      }
-    } else if (currentAlbumData?.tracks && currentTrackIndex === currentAlbumData.tracks.length - 1) {
-      // At last track - load next album if available
-      if (currentAlbumIndex < discographyOrder.length - 1) {
-        log.info('Loading next album in discography (auto-advance from last track)');
-        await loadNextAlbum();
-        setTimeout(() => {
-          loadTrack(0);
-          audio.play().catch(error => {
-            log.error(`Failed to play: ${error}`);
-          });
-        }, 300);
-      }
+    const nextIndex = findPlayableTrackAfter(currentAlbumData?.tracks, currentTrackIndex);
+    if (nextIndex !== -1) {
+      loadTrack(nextIndex);
+      audio.play().catch(error => log.error(`Failed to play: ${error}`));
+      return;
     }
+
+    if (currentAlbumIndex >= discographyOrder.length - 1) {
+      log.debug('Album finished and no next album to advance to');
+      return;
+    }
+
+    log.info('Album finished: loading next album in discography');
+    await loadNextAlbum();
+
+    setTimeout(() => {
+      const firstPlayable = findPlayableTrackAfter(currentAlbumData?.tracks, -1);
+      if (firstPlayable === -1) {
+        log.warn('Next album has no playable tracks');
+        return;
+      }
+      loadTrack(firstPlayable);
+      audio.play().catch(error => log.error(`Failed to play: ${error}`));
+    }, 300);
   };
   audio.ontimeupdate = () => {
     updateProgressBar();

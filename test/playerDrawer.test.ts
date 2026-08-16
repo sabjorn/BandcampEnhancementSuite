@@ -224,6 +224,30 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     });
   });
 
+  describe('Keyboard shortcuts survive clicking player controls', () => {
+    it('should stop drawer buttons taking focus so focus stays on the body', () => {
+      const { drawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      const button = drawer.querySelector('.bes-player-drawer-minimized-play') as HTMLElement;
+      const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+      button.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('should not block focus for non-button targets', () => {
+      const { drawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      const tracklist = drawer.querySelector('.bes-player-drawer-tracklist') as HTMLElement;
+      const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+      tracklist.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
+    });
+  });
+
   describe('AC-S2: Album art extraction', () => {
     it('should update album art in both full and minimized views', () => {
       const { drawer } = createPlayerDrawer();

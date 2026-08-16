@@ -1,7 +1,7 @@
 import Logger from './logger';
 import { getTralbumDetails, TralbumDetailsResponse, CURRENCY_MINIMUMS } from './bclient';
 import { getPlayerDrawerElements, updatePlayerDrawerInfo, updateMinimizedPlayButton } from './components/playerDrawer';
-import { createFetchFunction } from './utilities';
+import { createFetchFunction, shouldHandleShortcut } from './utilities';
 import { buildDrawerPlayer, buildTrackTable } from './nativePlayerBuilder';
 import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS, keyBindingToString } from './types/keyboard';
 import { drawOverlay, generateAudioFeatures } from './audioFeatures';
@@ -824,23 +824,6 @@ function buildKeyHandlersFromSettings(settings: KeyboardSettings): KeyHandlers {
   return handlers;
 }
 
-function shouldIgnoreKeyboardEvent(target: EventTarget | null): boolean {
-  if (!target || !(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  const tagName = target.tagName.toLowerCase();
-  if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
-    return true;
-  }
-
-  if (target.isContentEditable) {
-    return true;
-  }
-
-  return false;
-}
-
 function keydownCallback(e: KeyboardEvent, keyHandlers: KeyHandlers, preventDefault: boolean): void {
   // Only respond to keypresses when drawer is open
   const drawer = document.querySelector('.bes-player-drawer');
@@ -848,8 +831,7 @@ function keydownCallback(e: KeyboardEvent, keyHandlers: KeyHandlers, preventDefa
     return;
   }
 
-  // Ignore keyboard events when focused on input elements (e.g., search bar)
-  if (shouldIgnoreKeyboardEvent(e.target)) {
+  if (!shouldHandleShortcut(e.target)) {
     return;
   }
 

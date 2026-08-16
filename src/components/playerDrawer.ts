@@ -230,6 +230,14 @@ export function createPlayerDrawer(): {
     }
   });
 
+  const keepFocusOnBody = (event: MouseEvent) => {
+    if ((event.target as HTMLElement).closest('button')) {
+      event.preventDefault();
+    }
+  };
+
+  drawer.addEventListener('mousedown', keepFocusOnBody);
+
   minimizedPlayButton.addEventListener('click', e => {
     e.stopPropagation();
     const playButton = drawer.querySelector('.bes-transport-play') as HTMLElement;

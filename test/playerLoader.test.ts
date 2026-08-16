@@ -124,7 +124,8 @@ vi.mock('../src/nativePlayerBuilder', () => ({
 }));
 
 vi.mock('../src/utilities', () => ({
-  createFetchFunction: vi.fn(() => fetch)
+  createFetchFunction: vi.fn(() => fetch),
+  shouldHandleShortcut: (target: EventTarget | null) => target === document.body
 }));
 
 vi.mock('../src/audioFeatures', () => ({
@@ -607,12 +608,11 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
       Object.defineProperty(event, 'target', { value: document.body });
 
       document.dispatchEvent(event);
-
-      // Handler should exit early if drawer not open
     });
 
-    it('should ignore keyboard events when focused on input elements', () => {
+    it('should ignore keys while the page search bar has focus', () => {
       const input = document.createElement('input');
+      input.className = 'search-bar';
       document.body.appendChild(input);
 
       const event = new KeyboardEvent('keydown', { key: 'p' });
@@ -620,66 +620,31 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
 
       document.dispatchEvent(event);
 
-      // Handler should exit early if target is an input element
+      expect(event.defaultPrevented).toBe(false);
     });
 
-    it('should ignore keyboard events when focused on textarea elements', () => {
-      const textarea = document.createElement('textarea');
-      document.body.appendChild(textarea);
+    it('should ignore arrow keys while a search suggestion has focus', () => {
+      const suggestion = document.createElement('a');
+      document.body.appendChild(suggestion);
 
-      const event = new KeyboardEvent('keydown', { key: 'p' });
-      Object.defineProperty(event, 'target', { value: textarea });
+      const event = new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true });
+      Object.defineProperty(event, 'target', { value: suggestion });
 
       document.dispatchEvent(event);
 
-      // Handler should exit early if target is a textarea element
+      expect(event.defaultPrevented).toBe(false);
     });
 
-    it('should ignore keyboard events when focused on select elements', () => {
-      const select = document.createElement('select');
-      document.body.appendChild(select);
-
-      const event = new KeyboardEvent('keydown', { key: 'p' });
-      Object.defineProperty(event, 'target', { value: select });
-
-      document.dispatchEvent(event);
-
-      // Handler should exit early if target is a select element
-    });
-
-    it('should ignore keyboard events when focused on contentEditable elements', () => {
-      const div = document.createElement('div');
-      div.contentEditable = 'true';
-      document.body.appendChild(div);
-
-      const event = new KeyboardEvent('keydown', { key: 'p' });
-      Object.defineProperty(event, 'target', { value: div });
-
-      document.dispatchEvent(event);
-
-      // Handler should exit early if target is contentEditable
-    });
-
-    it('should respond to keyboard events when focused on buttons', () => {
+    it('should ignore keys while any focusable page element has focus', () => {
       const button = document.createElement('button');
-      button.className = 'bes-transport-play';
       document.body.appendChild(button);
 
-      const event = new KeyboardEvent('keydown', { key: 'p' });
+      const event = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
       Object.defineProperty(event, 'target', { value: button });
 
       document.dispatchEvent(event);
 
-      // Handler should NOT exit early if target is a button (player controls)
-    });
-
-    it('should respond to keyboard events when focused on body', () => {
-      const event = new KeyboardEvent('keydown', { key: 'p' });
-      Object.defineProperty(event, 'target', { value: document.body });
-
-      document.dispatchEvent(event);
-
-      // Handler should NOT exit early if target is body
+      expect(event.defaultPrevented).toBe(false);
     });
 
     it('should ignore bare Meta key press', () => {

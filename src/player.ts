@@ -1,5 +1,11 @@
 import Logger from './logger';
-import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, createFetchFunction } from './utilities.js';
+import {
+  mousedownCallback,
+  extractBandFollowInfo,
+  extractFanTralbumData,
+  createFetchFunction,
+  shouldHandleShortcut
+} from './utilities.js';
 import { CURRENCY_MINIMUMS, getTralbumDetails, TralbumDetailsResponse } from './bclient';
 import { createAddToCartButton } from './components/cartButton';
 import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS, keyBindingToString } from './types/keyboard.js';
@@ -127,7 +133,7 @@ export function keydownCallback(
   preventDefault: boolean,
   log: Logger
 ): void {
-  if (e.target !== document.body) {
+  if (!shouldHandleShortcut(e.target)) {
     return;
   }
 

@@ -55,8 +55,11 @@ export function fillFrame(
   }
 
   if (drawerController.getState().isOpen && previewState.previewId === id) {
-    drawerController.closeDrawer();
-    previewState.previewOpen = false;
+    if (drawerController.getState().isMinimized) {
+      drawerController.maximizeDrawer();
+    } else {
+      drawerController.minimizeDrawer();
+    }
     return;
   }
 
@@ -65,6 +68,8 @@ export function fillFrame(
 
   if (!drawerController.getState().isOpen) {
     drawerController.openDrawer();
+  } else if (drawerController.getState().isMinimized) {
+    drawerController.maximizeDrawer();
   }
 
   if (port) {

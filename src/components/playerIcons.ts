@@ -32,3 +32,11 @@ export function mutedVolumeIcon(size: number): string {
     `${speakerBody}<line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>`
   );
 }
+
+export function minimizeIcon(size: number): string {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="2" rx="1" fill="currentColor"></rect></svg>`;
+}
+
+export function closeIcon(size: number): string {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 18 18 M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path></svg>`;
+}

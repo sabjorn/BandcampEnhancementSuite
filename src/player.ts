@@ -10,22 +10,8 @@ import { CURRENCY_MINIMUMS, getTralbumDetails, TralbumDetailsResponse } from './
 import { createAddToCartButton } from './components/cartButton';
 import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS, keyBindingToString } from './types/keyboard.js';
 
-interface KeyCombo {
-  key: string;
-  alt?: boolean;
-  ctrl?: boolean;
-  shift?: boolean;
-  meta?: boolean;
-}
-
 interface KeyHandlers {
   [key: string]: () => void;
-}
-
-function keyComboToString(combo: KeyCombo): string {
-  const { key, alt = false, ctrl = false, shift = false, meta = false } = combo;
-  const keyDisplay = key === ' ' ? 'Space' : key;
-  return `${alt ? 'Alt+' : ''}${ctrl ? 'Ctrl+' : ''}${shift ? 'Shift+' : ''}${meta ? 'Meta+' : ''}${keyDisplay}`;
 }
 
 export function buildKeyHandlersFromSettings(settings: KeyboardSettings): KeyHandlers {
@@ -141,7 +127,7 @@ export function keydownCallback(
     return;
   }
 
-  const currentCombo = keyComboToString({
+  const currentCombo = keyBindingToString({
     key: e.key,
     alt: e.altKey,
     ctrl: e.ctrlKey,

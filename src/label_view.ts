@@ -32,7 +32,32 @@ export function previewClicked(event: Event, port: chrome.runtime.Port): void {
   setPreviewed(id, port);
 }
 
+const log = new Logger();
+
 let drawerController: ReturnType<typeof createPlayerDrawer> | null = null;
+
+interface PreviewTarget {
+  id: string;
+  idType: string;
+}
+
+function previewTargetFrom(event: Event): PreviewTarget | null {
+  const frame = (event.target as HTMLElement).closest('.preview')?.querySelector('.preview-frame');
+  const idAndType = frame?.getAttribute('id');
+  if (!idAndType) return null;
+
+  const [idType, id] = idAndType.split('-');
+  return { id, idType };
+}
+
+function drawer(): ReturnType<typeof createPlayerDrawer> {
+  if (!drawerController) {
+    drawerController = createPlayerDrawer();
+    document.body.appendChild(drawerController.drawer);
+  }
+
+  return drawerController;
+}
 
 export function fillFrame(
   event: Event,
@@ -40,50 +65,30 @@ export function fillFrame(
   enableFetchCaching: boolean = false,
   port?: chrome.runtime.Port
 ): void {
-  const preview = (event.target as HTMLElement).closest('.preview')?.querySelector('.preview-frame');
-  if (!preview) return;
+  const target = previewTargetFrom(event);
+  if (!target) return;
 
-  const idAndType = preview.getAttribute('id');
-  if (!idAndType) return;
+  const player = drawer();
+  const { isOpen, isMinimized } = player.getState();
 
-  const id = idAndType.split('-')[1];
-  const idType = idAndType.split('-')[0];
-
-  if (!drawerController) {
-    drawerController = createPlayerDrawer();
-    document.body.appendChild(drawerController.drawer);
-  }
-
-  if (drawerController.getState().isOpen && previewState.previewId === id) {
-    if (drawerController.getState().isMinimized) {
-      drawerController.maximizeDrawer();
-    } else {
-      drawerController.minimizeDrawer();
-    }
+  if (isOpen && previewState.previewId === target.id) {
+    if (isMinimized) player.maximizeDrawer();
+    else player.minimizeDrawer();
     return;
   }
 
-  previewState.previewId = id;
+  previewState.previewId = target.id;
   previewState.previewOpen = true;
+  player.openDrawer();
 
-  if (!drawerController.getState().isOpen) {
-    drawerController.openDrawer();
-  } else if (drawerController.getState().isMinimized) {
-    drawerController.maximizeDrawer();
-  }
+  if (port) setPreviewed(target.id, port);
 
-  if (port) {
-    setPreviewed(id, port);
-  }
-
-  loadAlbumIntoDrawer(id, idType, enableFetchCaching, DEFAULT_KEYBOARD_SETTINGS, port).catch(error => {
-    const log = new Logger();
-    log.error(`Failed to load album into drawer: ${error}`);
-  });
+  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, DEFAULT_KEYBOARD_SETTINGS, port).catch(error =>
+    log.error(`Failed to load album into drawer: ${error}`)
+  );
 }
 
 export async function initLabelView(port: chrome.runtime.Port, enableFetchCaching: boolean = false): Promise<void> {
-  const log = new Logger();
   const previewState = { previewOpen: false, previewId: undefined };
 
   port.onMessage.addListener(msg => {

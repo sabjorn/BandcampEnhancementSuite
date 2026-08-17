@@ -6,6 +6,7 @@ import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from './nativ
 import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS, keyBindingToString } from './types/keyboard';
 import { drawOverlay, generateAudioFeatures } from './audioFeatures';
 import { volumeIcon, mutedVolumeIcon } from './components/playerIcons';
+import { replaceChildren } from './components/dom';
 
 const log = new Logger();
 
@@ -167,13 +168,6 @@ export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
 
 type DrawerPlayerParts = ReturnType<typeof buildDrawerPlayer>;
 type DrawerElements = ReturnType<typeof getPlayerDrawerElements>;
-
-function replaceChildren(container: HTMLElement | null, ...children: (HTMLElement | null)[]): void {
-  if (!container) return;
-
-  container.innerHTML = '';
-  children.filter((child): child is HTMLElement => child !== null).forEach(child => container.appendChild(child));
-}
 
 function mountDrawerPlayer(elements: DrawerElements, parts: DrawerPlayerParts): void {
   const headerActions = elements.rightColumn?.querySelector<HTMLElement>('.bes-player-drawer-header-actions') ?? null;
@@ -588,91 +582,44 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-function keyComboToString(combo: {
-  key: string;
-  alt?: boolean;
-  ctrl?: boolean;
-  shift?: boolean;
-  meta?: boolean;
-}): string {
-  const { key, alt = false, ctrl = false, shift = false, meta = false } = combo;
-  const keyDisplay = key === ' ' ? 'Space' : key;
-  return `${alt ? 'Alt+' : ''}${ctrl ? 'Ctrl+' : ''}${shift ? 'Shift+' : ''}${meta ? 'Meta+' : ''}${keyDisplay}`;
+function seekBy(seconds: number): void {
+  if (!audioElement) return;
+
+  audioElement.currentTime += seconds;
+}
+
+function adjustVolumeBy(delta: number): void {
+  if (!audioElement) return;
+
+  audioElement.volume = Math.min(1, Math.max(0, audioElement.volume + delta));
+  updateVolumeDisplay(audioElement.volume);
+  updateMuteButton(audioElement.volume === 0);
+}
+
+function handlerForEachAction(settings: KeyboardSettings): Record<KeyboardAction, () => void> {
+  return {
+    [KeyboardAction.PLAY_PAUSE]: playPause,
+    [KeyboardAction.PLAY_PAUSE_ALT]: playPause,
+    [KeyboardAction.PREV_TRACK]: prevTrack,
+    [KeyboardAction.NEXT_TRACK]: nextTrack,
+    [KeyboardAction.SEEK_FORWARD]: () => seekBy(settings.seekStepSize),
+    [KeyboardAction.SEEK_BACKWARD]: () => seekBy(-settings.seekStepSize),
+    [KeyboardAction.SEEK_FORWARD_LARGE]: () => seekBy(settings.largeSeekStepSize),
+    [KeyboardAction.SEEK_BACKWARD_LARGE]: () => seekBy(-settings.largeSeekStepSize),
+    [KeyboardAction.VOLUME_UP]: () => adjustVolumeBy(settings.volumeStep),
+    [KeyboardAction.VOLUME_DOWN]: () => adjustVolumeBy(-settings.volumeStep)
+  };
 }
 
 function buildKeyHandlersFromSettings(settings: KeyboardSettings): KeyHandlers {
-  const handlers: KeyHandlers = {};
+  const byAction = handlerForEachAction(settings);
 
-  settings.controls.forEach(control => {
-    if (!control.enabled) return;
-
-    const bindingKey = keyBindingToString(control.binding);
-
-    switch (control.action) {
-      case KeyboardAction.PLAY_PAUSE:
-      case KeyboardAction.PLAY_PAUSE_ALT:
-        handlers[bindingKey] = playPause;
-        break;
-
-      case KeyboardAction.PREV_TRACK:
-        handlers[bindingKey] = prevTrack;
-        break;
-
-      case KeyboardAction.NEXT_TRACK:
-        handlers[bindingKey] = nextTrack;
-        break;
-
-      case KeyboardAction.SEEK_FORWARD:
-        handlers[bindingKey] = () => {
-          if (!audioElement) return;
-          audioElement.currentTime = audioElement.currentTime + settings.seekStepSize;
-        };
-        break;
-
-      case KeyboardAction.SEEK_BACKWARD:
-        handlers[bindingKey] = () => {
-          if (!audioElement) return;
-          audioElement.currentTime = audioElement.currentTime - settings.seekStepSize;
-        };
-        break;
-
-      case KeyboardAction.SEEK_FORWARD_LARGE:
-        handlers[bindingKey] = () => {
-          if (!audioElement) return;
-          audioElement.currentTime = audioElement.currentTime + settings.largeSeekStepSize;
-        };
-        break;
-
-      case KeyboardAction.SEEK_BACKWARD_LARGE:
-        handlers[bindingKey] = () => {
-          if (!audioElement) return;
-          audioElement.currentTime = audioElement.currentTime - settings.largeSeekStepSize;
-        };
-        break;
-
-      case KeyboardAction.VOLUME_UP:
-        handlers[bindingKey] = () => {
-          if (!audioElement) return;
-          const newVolume = audioElement.volume + settings.volumeStep;
-          audioElement.volume = newVolume > 1.0 ? 1.0 : newVolume;
-          updateVolumeDisplay(audioElement.volume);
-          updateMuteButton(audioElement.volume === 0);
-        };
-        break;
-
-      case KeyboardAction.VOLUME_DOWN:
-        handlers[bindingKey] = () => {
-          if (!audioElement) return;
-          const newVolume = audioElement.volume - settings.volumeStep;
-          audioElement.volume = newVolume < 0.0 ? 0.0 : newVolume;
-          updateVolumeDisplay(audioElement.volume);
-          updateMuteButton(audioElement.volume === 0);
-        };
-        break;
-    }
-  });
-
-  return handlers;
+  return settings.controls
+    .filter(control => control.enabled)
+    .reduce<KeyHandlers>((handlers, control) => {
+      handlers[keyBindingToString(control.binding)] = byAction[control.action];
+      return handlers;
+    }, {});
 }
 
 function keydownCallback(e: KeyboardEvent, keyHandlers: KeyHandlers, preventDefault: boolean): void {
@@ -689,7 +636,7 @@ function keydownCallback(e: KeyboardEvent, keyHandlers: KeyHandlers, preventDefa
     return;
   }
 
-  const currentCombo = keyComboToString({
+  const currentCombo = keyBindingToString({
     key: e.key,
     alt: e.altKey,
     ctrl: e.ctrlKey,

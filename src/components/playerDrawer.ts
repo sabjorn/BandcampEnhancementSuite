@@ -1,5 +1,6 @@
 import { createLogger } from '../logger';
-import { prevIcon, nextIcon, playIcon, pauseIcon } from './playerIcons';
+import { prevIcon, nextIcon, playIcon, pauseIcon, minimizeIcon, closeIcon } from './playerIcons';
+import { element } from './dom';
 
 const log = createLogger();
 
@@ -24,163 +25,97 @@ export function createPlayerDrawer(): {
   maximizeDrawer: () => void;
   getState: () => PlayerDrawerState;
 } {
-  const drawer = document.createElement('div');
-  drawer.className = 'bes-player-drawer';
+  const albumArt = element('img', {
+    className: 'bes-player-drawer-album-art',
+    attributes: { alt: 'Album artwork' }
+  });
+  const transportControls = element('div', { className: 'bes-player-drawer-transport' });
+  const playerContainer = element('div', { className: 'bes-player-drawer-player' });
+  const tracklistContainer = element('div', { className: 'bes-player-drawer-tracklist' });
 
-  const header = document.createElement('div');
-  header.className = 'bes-player-drawer-header';
+  const minimizeButton = element('button', {
+    className: 'bes-player-drawer-minimize',
+    html: minimizeIcon(14),
+    attributes: { 'aria-label': 'Minimize player', title: 'Minimize player' }
+  });
+  const closeButton = element('button', {
+    className: 'bes-player-drawer-close',
+    html: closeIcon(14),
+    attributes: { 'aria-label': 'Close player', title: 'Close player' }
+  });
 
-  // Main player container (3 columns: left+center+right)
-  const playerMain = document.createElement('div');
-  playerMain.className = 'bes-player-drawer-main';
-  playerMain.style.cssText = `
-    display: flex;
-    gap: 20px;
-    min-width: 0;
-    max-width: 624px;
-    width: 100%;
-  `;
+  const minimizedArt = element('img', {
+    className: 'bes-player-drawer-minimized-art',
+    attributes: { alt: 'Album artwork' }
+  });
+  const minimizedPrevButton = element('button', {
+    className: 'bes-player-drawer-minimized-prev',
+    html: prevIcon(14),
+    attributes: { 'aria-label': 'Previous track' }
+  });
+  const minimizedPlayButton = element('button', {
+    className: 'bes-player-drawer-minimized-play',
+    html: `${playIcon(16)}${pauseIcon(16)}`,
+    attributes: { 'aria-label': 'Play/Pause' }
+  });
+  const minimizedNextButton = element('button', {
+    className: 'bes-player-drawer-minimized-next',
+    html: nextIcon(14),
+    attributes: { 'aria-label': 'Next track' }
+  });
 
-  // LEFT COLUMN: Album art + transport controls
-  const leftColumn = document.createElement('div');
-  leftColumn.className = 'bes-player-drawer-left';
-  leftColumn.style.cssText = `
-    width: 96px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    align-items: center;
-  `;
+  const minimizedBar = element('div', {
+    className: 'bes-player-drawer-minimized-bar',
+    children: [
+      minimizedArt,
+      element('div', {
+        className: 'bes-player-drawer-minimized-controls',
+        children: [minimizedPrevButton, minimizedPlayButton, minimizedNextButton]
+      })
+    ]
+  });
 
-  const albumArt = document.createElement('img');
-  albumArt.className = 'bes-player-drawer-album-art';
-  albumArt.alt = 'Album artwork';
-  albumArt.style.cssText = `
-    width: 96px;
-    height: 96px;
-    border-radius: 16px;
-    box-shadow: inset 0 0 0 1px rgba(24, 24, 27, 0.06);
-    object-fit: cover;
-  `;
+  const drawer = element('div', {
+    className: 'bes-player-drawer',
+    children: [
+      element('div', {
+        className: 'bes-player-drawer-header',
+        children: [
+          element('div', {
+            className: 'bes-player-drawer-main',
+            children: [
+              element('div', {
+                className: 'bes-player-drawer-left',
+                children: [albumArt, transportControls]
+              }),
+              element('div', {
+                className: 'bes-player-drawer-center',
+                children: [playerContainer]
+              }),
+              element('div', {
+                className: 'bes-player-drawer-right',
+                children: [
+                  element('div', {
+                    className: 'bes-player-drawer-header-actions',
+                    children: [minimizeButton, closeButton]
+                  })
+                ]
+              })
+            ]
+          })
+        ]
+      }),
+      element('div', { className: 'bes-player-drawer-content', children: [tracklistContainer] }),
+      minimizedBar
+    ]
+  });
 
-  const transportControls = document.createElement('div');
-  transportControls.className = 'bes-player-drawer-transport';
-
-  leftColumn.appendChild(albumArt);
-  leftColumn.appendChild(transportControls);
-
-  // CENTER COLUMN: Player controls container (will be populated by nativePlayerBuilder)
-  const centerColumn = document.createElement('div');
-  centerColumn.className = 'bes-player-drawer-center';
-  centerColumn.style.cssText = `
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  `;
-
-  // Player controls container (track info + waveform/progress area - populated by nativePlayerBuilder)
-  const playerContainer = document.createElement('div');
-  playerContainer.className = 'bes-player-drawer-player';
-  playerContainer.style.cssText = `
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  `;
-
-  centerColumn.appendChild(playerContainer);
-
-  // RIGHT COLUMN: Action buttons + Volume controls
-  const rightColumn = document.createElement('div');
-  rightColumn.className = 'bes-player-drawer-right';
-
-  // Header actions (minimize/close) - at top of right column
-  const headerActions = document.createElement('div');
-  headerActions.className = 'bes-player-drawer-header-actions';
-
-  const minimizeButton = document.createElement('button');
-  minimizeButton.className = 'bes-player-drawer-minimize';
-  minimizeButton.innerHTML = `
-    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="5" y="11" width="14" height="2" rx="1" fill="currentColor"></rect>
-    </svg>
-  `;
-  minimizeButton.setAttribute('aria-label', 'Minimize player');
-  minimizeButton.setAttribute('title', 'Minimize player');
-
-  const closeButton = document.createElement('button');
-  closeButton.className = 'bes-player-drawer-close';
-  closeButton.innerHTML = `
-    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6 6 18 18 M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path>
-    </svg>
-  `;
-  closeButton.setAttribute('aria-label', 'Close player');
-  closeButton.setAttribute('title', 'Close player');
-
-  headerActions.appendChild(minimizeButton);
-  headerActions.appendChild(closeButton);
-
-  rightColumn.appendChild(headerActions);
-
-  playerMain.appendChild(leftColumn);
-  playerMain.appendChild(centerColumn);
-  playerMain.appendChild(rightColumn);
-
-  header.appendChild(playerMain);
-
-  const content = document.createElement('div');
-  content.className = 'bes-player-drawer-content';
-
-  const tracklistContainer = document.createElement('div');
-  tracklistContainer.className = 'bes-player-drawer-tracklist';
-
-  content.appendChild(tracklistContainer);
-
-  const minimizedBar = document.createElement('div');
-  minimizedBar.className = 'bes-player-drawer-minimized-bar';
-
-  const minimizedArt = document.createElement('img');
-  minimizedArt.className = 'bes-player-drawer-minimized-art';
-  minimizedArt.alt = 'Album artwork';
-
-  const minimizedControls = document.createElement('div');
-  minimizedControls.className = 'bes-player-drawer-minimized-controls';
-
-  const minimizedPrevButton = document.createElement('button');
-  minimizedPrevButton.className = 'bes-player-drawer-minimized-prev';
-  minimizedPrevButton.setAttribute('aria-label', 'Previous track');
-  minimizedPrevButton.innerHTML = prevIcon(14);
-
-  const minimizedPlayButton = document.createElement('button');
-  minimizedPlayButton.className = 'bes-player-drawer-minimized-play';
-  minimizedPlayButton.setAttribute('aria-label', 'Play/Pause');
-  minimizedPlayButton.innerHTML = `${playIcon(16)}${pauseIcon(16)}`;
-
-  const minimizedNextButton = document.createElement('button');
-  minimizedNextButton.className = 'bes-player-drawer-minimized-next';
-  minimizedNextButton.setAttribute('aria-label', 'Next track');
-  minimizedNextButton.innerHTML = nextIcon(14);
-
-  minimizedControls.appendChild(minimizedPrevButton);
-  minimizedControls.appendChild(minimizedPlayButton);
-  minimizedControls.appendChild(minimizedNextButton);
-
-  minimizedBar.appendChild(minimizedArt);
-  minimizedBar.appendChild(minimizedControls);
-
-  drawer.appendChild(header);
-  drawer.appendChild(content);
-  drawer.appendChild(minimizedBar);
-
-  const overlay = document.createElement('div');
-  overlay.className = 'bes-player-drawer-overlay';
+  const overlay = element('div', { className: 'bes-player-drawer-overlay' });
 
   const openDrawer = () => {
     log.info('Opening player drawer');
     drawer.classList.add('open');
+    drawer.classList.remove('minimized');
     drawerState.isOpen = true;
     drawerState.isMinimized = false;
   };
@@ -192,7 +127,6 @@ export function createPlayerDrawer(): {
     drawerState.isOpen = false;
     drawerState.isMinimized = false;
 
-    // Pause audio when closing drawer
     const audio = document.querySelector('audio');
     if (audio && !audio.paused) {
       audio.pause();

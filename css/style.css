@@ -1065,6 +1065,8 @@ button.bes-downloadall[disabled]::after {
   display: flex;
   gap: 20px;
   min-width: 0;
+  width: 100%;
+  max-width: 624px;
 }
 
 /* LEFT COLUMN: Album art + transport controls */
@@ -1221,7 +1223,7 @@ button.bes-downloadall[disabled]::after {
 .bes-player-drawer-player {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 18px;
 }
 
 .bes-player-drawer-tracklist {

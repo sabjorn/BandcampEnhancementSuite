@@ -44,6 +44,18 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       expect(getState().isMinimized).toBe(false);
     });
 
+    it('should expand a minimized drawer when opened again', () => {
+      const { drawer, openDrawer, minimizeDrawer, getState } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      openDrawer();
+      minimizeDrawer();
+      openDrawer();
+
+      expect(drawer.classList.contains('minimized')).toBe(false);
+      expect(getState().isMinimized).toBe(false);
+    });
+
     it('should close drawer correctly', () => {
       const { drawer, openDrawer, closeDrawer, getState } = createPlayerDrawer();
       document.body.appendChild(drawer);
@@ -305,20 +317,24 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
   });
 
   describe('AC-A2: Layout structure validation', () => {
-    it('should have correct container max-width (624px)', () => {
+    it('should nest the three columns inside the main container', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
 
-      const playerMain = drawer.querySelector('.bes-player-drawer-main') as HTMLElement;
-      expect(playerMain.style.maxWidth).toBe('624px');
+      const main = drawer.querySelector('.bes-player-drawer-main') as HTMLElement;
+
+      expect(main.querySelector('.bes-player-drawer-left')).toBeTruthy();
+      expect(main.querySelector('.bes-player-drawer-center')).toBeTruthy();
+      expect(main.querySelector('.bes-player-drawer-right')).toBeTruthy();
     });
 
-    it('should use flexbox display for main container', () => {
+    it('should leave layout to the stylesheet rather than inline styles', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
 
-      const playerMain = drawer.querySelector('.bes-player-drawer-main') as HTMLElement;
-      expect(playerMain.style.display).toBe('flex');
+      const styled = Array.from(drawer.querySelectorAll<HTMLElement>('[style]')).map(node => node.className);
+
+      expect(styled).toEqual([]);
     });
   });
 });

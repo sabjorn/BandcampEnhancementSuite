@@ -167,18 +167,13 @@ export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
   audio.addEventListener('canplay', () => {
     if (!waveformEnabled || currentTarget.value === audio.src) return;
 
-    generateAudioFeatures(
-      () => audioElement,
-      canvas,
-      updateDrawerBpmBadge,
-      waveformColour,
-      log,
-      currentTarget,
-      audioSrc =>
+    generateAudioFeatures(() => audioElement, canvas, updateDrawerBpmBadge, waveformColour, log, currentTarget, {
+      trackId: currentTrack()?.track_id,
+      urlFormatter: audioSrc =>
         audioSrc.includes('t4.bcbits.com/stream/')
           ? { stream: { type: 'direct-path' as const, path: audioSrc.split('stream/')[1] } }
           : { stream: { type: 'full-url' as const, url: audioSrc } }
-    );
+    });
   });
 
   audio.addEventListener('timeupdate', () => {
@@ -270,6 +265,10 @@ export async function loadAlbumIntoDrawer(
     log.error(`Failed to load album: ${error}`);
     throw error;
   }
+}
+
+function currentTrack(): TralbumTrack | undefined {
+  return currentAlbumData?.tracks?.[currentTrackIndex];
 }
 
 function streamUrlOf(track: TralbumTrack | undefined): string | undefined {

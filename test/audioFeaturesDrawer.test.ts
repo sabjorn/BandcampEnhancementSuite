@@ -104,15 +104,9 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
 
       audio.src = 'https://t4.bcbits.com/stream/test-audio.mp3';
 
-      await generateAudioFeatures(
-        () => audio,
-        canvas,
-        bpmCallback,
-        '#e2e2e6',
-        console as any,
-        currentTarget,
-        () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
-      );
+      await generateAudioFeatures(() => audio, canvas, bpmCallback, '#e2e2e6', console as any, currentTarget, {
+        urlFormatter: () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
+      });
 
       await vi.waitFor(() => expect(mockContext.fillRect).toHaveBeenCalled());
     });
@@ -123,15 +117,9 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
 
       audio.src = 'https://t4.bcbits.com/stream/test-audio.mp3';
 
-      await generateAudioFeatures(
-        () => audio,
-        canvas,
-        bpmCallback,
-        '#e2e2e6',
-        console as any,
-        currentTarget,
-        () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
-      );
+      await generateAudioFeatures(() => audio, canvas, bpmCallback, '#e2e2e6', console as any, currentTarget, {
+        urlFormatter: () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
+      });
 
       await vi.waitFor(() => expect(mockContext.fillRect).toHaveBeenCalledTimes(100));
     });
@@ -186,15 +174,9 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
 
       audio.src = 'https://t4.bcbits.com/stream/test-audio.mp3';
 
-      await generateAudioFeatures(
-        () => audio,
-        canvas,
-        bpmCallback,
-        '#e2e2e6',
-        console as any,
-        currentTarget,
-        () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
-      );
+      await generateAudioFeatures(() => audio, canvas, bpmCallback, '#e2e2e6', console as any, currentTarget, {
+        urlFormatter: () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
+      });
 
       await vi.waitFor(() => expect(bpmCallback).toHaveBeenCalledWith(128));
     });
@@ -208,15 +190,9 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
       audio.src = 'https://t4.bcbits.com/stream/test-audio.mp3';
 
       await expect(
-        generateAudioFeatures(
-          () => audio,
-          canvas,
-          bpmCallback,
-          '#e2e2e6',
-          console as any,
-          currentTarget,
-          () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
-        )
+        generateAudioFeatures(() => audio, canvas, bpmCallback, '#e2e2e6', console as any, currentTarget, {
+          urlFormatter: () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
+        })
       ).resolves.not.toThrow();
 
       await new Promise(resolve => setTimeout(resolve, 0));
@@ -242,7 +218,9 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
         '#e2e2e6',
         console as any,
         { value: undefined as string | undefined },
-        audioSrc => ({ stream: { type: 'direct-path' as const, path: audioSrc.split('stream/')[1] } })
+        {
+          urlFormatter: audioSrc => ({ stream: { type: 'direct-path' as const, path: audioSrc.split('stream/')[1] } })
+        }
       );
 
     it('should look the track up in the cache before analysing it', async () => {
@@ -302,15 +280,9 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
 
       audio.src = 'https://t4.bcbits.com/stream/test-audio.mp3';
 
-      await generateAudioFeatures(
-        () => audio,
-        canvas,
-        bpmCallback,
-        waveformColour,
-        console as any,
-        currentTarget,
-        () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
-      );
+      await generateAudioFeatures(() => audio, canvas, bpmCallback, waveformColour, console as any, currentTarget, {
+        urlFormatter: () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
+      });
 
       await vi.waitFor(() => expect(mockContext.fillStyle).toBe(waveformColour));
     });

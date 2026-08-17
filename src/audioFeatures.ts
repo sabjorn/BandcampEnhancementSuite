@@ -89,6 +89,14 @@ export async function fetchCachedMetadata(
   return apiMetadata;
 }
 
+export interface AudioFeatureOptions {
+  urlFormatter?: (audioSrc: string) => {
+    url?: string;
+    stream?: { type: 'direct-path' | 'full-url'; path?: string; url?: string };
+  };
+  trackId?: number | null;
+}
+
 export async function generateAudioFeatures(
   audioElementOrGetter: HTMLAudioElement | (() => HTMLAudioElement | null),
   canvas: HTMLCanvasElement,
@@ -96,10 +104,7 @@ export async function generateAudioFeatures(
   waveformColour: string,
   log: Logger,
   currentTarget: { value?: string },
-  urlFormatter?: (audioSrc: string) => {
-    url?: string;
-    stream?: { type: 'direct-path' | 'full-url'; path?: string; url?: string };
-  }
+  options: AudioFeatureOptions = {}
 ): Promise<void> {
   const datapoints = 100;
   const audio = typeof audioElementOrGetter === 'function' ? audioElementOrGetter() : audioElementOrGetter;
@@ -110,7 +115,11 @@ export async function generateAudioFeatures(
   onBpmUpdate(null);
   canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
 
-  const trackId = extractTrackId(audio.src);
+  const trackId = options.trackId ?? extractTrackId(audio.src);
+  if (!trackId) {
+    log.warn(`Track id unknown for ${audio.src}, metadata will be neither read from nor written to the cache`);
+  }
+
   if (trackId) {
     const cachedMetadata = await fetchCachedMetadata(trackId, log);
     if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
@@ -128,7 +137,9 @@ export async function generateAudioFeatures(
   const ctx = new AudioContext();
 
   // Use custom URL formatter if provided, otherwise use default direct-path format
-  const requestParams = urlFormatter ? urlFormatter(audio.src) : { url: audio.src.split('stream/')[1] };
+  const requestParams = options.urlFormatter
+    ? options.urlFormatter(audio.src)
+    : { url: audio.src.split('stream/')[1] };
 
   chrome.runtime.sendMessage(
     {

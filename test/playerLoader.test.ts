@@ -13,13 +13,19 @@ vi.mock('../src/logger', () => ({
 }));
 
 vi.mock('../src/bclient', () => {
-  const playableTrack = (n: number) => ({
-    id: n,
+  const track = (n: number) => ({
+    track_id: n,
     title: `Track ${n}`,
-    duration: 180,
+    price: 1,
+    currency: 'USD',
+    is_purchasable: true,
+    duration: 180
+  });
+  const playableTrack = (n: number) => ({
+    ...track(n),
     streaming_url: { 'mp3-128': `https://example.com/track${n}.mp3` }
   });
-  const unplayableTrack = (n: number) => ({ id: n, title: `Track ${n} (pre-order)`, duration: 180 });
+  const unplayableTrack = (n: number) => ({ ...track(n), title: `Track ${n} (pre-order)` });
 
   return {
     getTralbumDetails: vi.fn(async (albumId: string | number) => {
@@ -1097,16 +1103,32 @@ describe('PlayerLoader - Waveform config from the extension', () => {
     expect(analysisRuns()).toBe(before);
   });
 
-  it('should request the audio buffer by stream path so the backend can identify the track', () => {
+  const lastAnalysisOptions = () => {
+    const calls = vi.mocked(audioFeatures.generateAudioFeatures).mock.calls;
+    return calls[calls.length - 1][6] as {
+      trackId?: number | null;
+      urlFormatter?: (src: string) => { stream: { type: string; path?: string } };
+    };
+  };
+
+  it('should request the audio buffer by stream path so the backend can find the audio', () => {
     const audio = document.querySelector('audio') as HTMLAudioElement;
     audio.src = 'https://t4.bcbits.com/stream/hash/mp3-128/12345';
 
     audio.dispatchEvent(new Event('canplay'));
 
-    const urlFormatter = vi.mocked(audioFeatures.generateAudioFeatures).mock.calls[0][6] as (src: string) => {
-      stream: { type: string; path?: string };
-    };
+    expect(lastAnalysisOptions().urlFormatter?.(audio.src).stream).toEqual({
+      type: 'direct-path',
+      path: 'hash/mp3-128/12345'
+    });
+  });
 
-    expect(urlFormatter(audio.src).stream).toEqual({ type: 'direct-path', path: 'hash/mp3-128/12345' });
+  it('should identify the track from the api rather than by parsing its url', () => {
+    const audio = document.querySelector('audio') as HTMLAudioElement;
+    audio.src = 'https://audio.example.com/a-url-no-regex-would-recognise';
+
+    audio.dispatchEvent(new Event('canplay'));
+
+    expect(lastAnalysisOptions().trackId).toBe(1);
   });
 });

@@ -28,9 +28,10 @@ let currentTrackIndex = 0;
 let audioElement: HTMLAudioElement | null = null;
 let keyboardListenerAttached = false;
 let activeKeyHandlers: KeyHandlers = {};
-let configPort: chrome.runtime.Port | null = null;
 let drawerPlayerCreated = false;
 let previousVolume = 1.0;
+let configPort: chrome.runtime.Port | null = null;
+let waveformEnabled = true;
 
 const ALBUM_LOAD_SETTLE_MS = 300;
 
@@ -123,11 +124,31 @@ function attachGlobalKeyboardHandlers(settings: KeyboardSettings): void {
   log.info('Drawer keyboard handlers attached');
 }
 
-export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
-  if (!configPort) {
-    configPort = port;
-  }
+function showWaveform(enabled: boolean): void {
+  waveformEnabled = enabled;
 
+  inDrawer('.bes-waveform-container')?.classList.toggle('bes-visible', enabled);
+  inDrawer('.bes-slider-container')?.classList.toggle('bes-visible', !enabled);
+  inDrawer('.bes-toggle-waveform')?.classList.toggle('bes-toggle-active', enabled);
+  inDrawer('.bes-toggle-slider')?.classList.toggle('bes-toggle-active', !enabled);
+}
+
+function bindViewToggle(): void {
+  const requestWaveform = (enabled: boolean) => () => {
+    if (enabled === waveformEnabled) return;
+
+    showWaveform(enabled);
+    configPort?.postMessage({ toggleWaveformDisplay: {} });
+  };
+
+  const waveformButton = inDrawer('.bes-toggle-waveform');
+  const sliderButton = inDrawer('.bes-toggle-slider');
+
+  if (waveformButton) waveformButton.onclick = requestWaveform(true);
+  if (sliderButton) sliderButton.onclick = requestWaveform(false);
+}
+
+export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
   const canvas = inDrawer<HTMLCanvasElement>('canvas.bes-waveform');
   const bpmDisplay = inDrawer<HTMLSpanElement>('.bes-bpm-number');
 
@@ -136,34 +157,44 @@ export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
     return;
   }
 
+  configPort = port;
+
   const audio = ensureAudioElement();
   const currentTarget = { value: undefined as string | undefined };
-  const waveformColour = '#e2e2e6'; // Grey base waveform (unplayed)
-  const waveformOverlayColour = '#5b53e8'; // Purple accent (played portion)
+  const waveformColour = '#e2e2e6';
+  const waveformOverlayColour = '#5b53e8';
 
   audio.addEventListener('canplay', () => {
-    if (currentTarget.value !== audio.src) {
-      generateAudioFeatures(
-        () => audioElement,
-        canvas,
-        bpm => updateDrawerBpmBadge(bpm),
-        waveformColour,
-        log,
-        currentTarget,
-        audioSrc =>
-          audioSrc.includes('t4.bcbits.com/stream/')
-            ? { stream: { type: 'direct-path' as const, path: audioSrc.split('stream/')[1] } }
-            : { stream: { type: 'full-url' as const, url: audioSrc } }
-      );
-    }
+    if (!waveformEnabled || currentTarget.value === audio.src) return;
+
+    generateAudioFeatures(
+      () => audioElement,
+      canvas,
+      updateDrawerBpmBadge,
+      waveformColour,
+      log,
+      currentTarget,
+      audioSrc =>
+        audioSrc.includes('t4.bcbits.com/stream/')
+          ? { stream: { type: 'direct-path' as const, path: audioSrc.split('stream/')[1] } }
+          : { stream: { type: 'full-url' as const, url: audioSrc } }
+    );
   });
 
   audio.addEventListener('timeupdate', () => {
-    if (audio.duration) {
-      const progress = audio.currentTime / audio.duration;
-      drawOverlay(canvas, progress, waveformOverlayColour, waveformColour);
-    }
+    if (!waveformEnabled || !audio.duration) return;
+
+    drawOverlay(canvas, audio.currentTime / audio.duration, waveformOverlayColour, waveformColour);
   });
+
+  bindViewToggle();
+
+  port.onMessage.addListener((message: { config?: { displayWaveform?: boolean } }) => {
+    if (typeof message?.config?.displayWaveform !== 'boolean') return;
+
+    showWaveform(message.config.displayWaveform);
+  });
+  port.postMessage({ requestConfig: {} });
 }
 
 type DrawerPlayerParts = ReturnType<typeof buildDrawerPlayer>;

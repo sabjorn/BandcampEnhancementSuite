@@ -61,29 +61,6 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
     </div>
   `;
 
-  const sliderButton = center.querySelector('.bes-toggle-slider') as HTMLButtonElement;
-  const waveformButton = center.querySelector('.bes-toggle-waveform') as HTMLButtonElement;
-  const sliderContainer = center.querySelector('.bes-slider-container') as HTMLDivElement;
-  const waveformContainer = center.querySelector('.bes-waveform-container') as HTMLDivElement;
-
-  if (sliderButton && waveformButton) {
-    sliderButton.onclick = () => {
-      sliderButton.classList.add('bes-toggle-active');
-      waveformButton.classList.remove('bes-toggle-active');
-      if (sliderContainer) sliderContainer.classList.add('bes-visible');
-      if (waveformContainer) waveformContainer.classList.remove('bes-visible');
-    };
-
-    waveformButton.onclick = () => {
-      waveformButton.classList.add('bes-toggle-active');
-      sliderButton.classList.remove('bes-toggle-active');
-      if (waveformContainer) waveformContainer.classList.add('bes-visible');
-      if (sliderContainer) sliderContainer.classList.remove('bes-visible');
-    };
-  }
-
-  if (waveformContainer) waveformContainer.classList.add('bes-visible');
-
   const volumeCol = document.createElement('div');
   volumeCol.className = 'bes-drawer-volume-column';
   volumeCol.innerHTML = `

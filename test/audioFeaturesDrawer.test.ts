@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
-import { generateAudioFeatures, drawOverlay } from '../src/audioFeatures';
+import { generateAudioFeatures, drawOverlay, extractTrackId } from '../src/audioFeatures';
 import { analyze } from 'web-audio-beat-detector';
 
 vi.mock('web-audio-beat-detector', () => ({
@@ -27,6 +27,7 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
   let audio: HTMLAudioElement;
   let mockContext: any;
   let originalChromeRuntime: any;
+  let cachedMetadata: { waveform: number[]; bpm: number } | null;
 
   beforeEach(() => {
     createDomNodes(`
@@ -53,11 +54,15 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
 
     vi.mocked(analyze).mockResolvedValue(120);
 
+    cachedMetadata = null;
     originalChromeRuntime = (globalThis as any).chrome.runtime;
     (globalThis as any).chrome.runtime = {
       ...originalChromeRuntime,
-      sendMessage: vi.fn((_message: unknown, callback: (data: { data: number[] }) => void) => {
-        callback({ data: Array.from(new Uint8Array(1024)) });
+      sendMessage: vi.fn((message: any, callback?: (data: { data: number[] }) => void) => {
+        if (message.contentScriptQuery === 'fetchTrackMetadata') return Promise.resolve(cachedMetadata);
+
+        callback?.({ data: Array.from(new Uint8Array(1024)) });
+        return Promise.resolve();
       })
     };
 
@@ -221,12 +226,71 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
     });
   });
 
-  describe('AC-W4: Metadata caching via chrome.runtime messaging', () => {
-    it('should be tested in integration with playerLoader', () => {
-      // AC-W4 is implemented via initDrawerAudioFeatures in playerLoader
-      // which sends messages through the port for caching
-      // This is an integration test covered by playerLoader tests
-      expect(true).toBe(true);
+  describe('AC-W4: Metadata caching through the Find Music Club integration', () => {
+    const streamUrl = (trackId: number) => `https://t4.bcbits.com/stream/somehash/mp3-128/${trackId}?p=0&ts=1`;
+
+    const messagesFor = (query: string) =>
+      vi
+        .mocked((globalThis as any).chrome.runtime.sendMessage)
+        .mock.calls.filter(([message]: [any]) => message.contentScriptQuery === query);
+
+    const analyse = (trackId: number, bpmCallback = vi.fn()) =>
+      generateAudioFeatures(
+        () => audio,
+        canvas,
+        bpmCallback,
+        '#e2e2e6',
+        console as any,
+        { value: undefined as string | undefined },
+        audioSrc => ({ stream: { type: 'direct-path' as const, path: audioSrc.split('stream/')[1] } })
+      );
+
+    it('should look the track up in the cache before analysing it', async () => {
+      audio.src = streamUrl(1001);
+
+      await analyse(1001);
+
+      expect(messagesFor('fetchTrackMetadata')[0][0]).toMatchObject({ trackId: 1001 });
+    });
+
+    it('should use cached metadata instead of downloading and analysing the audio', async () => {
+      cachedMetadata = { waveform: [0.1, 0.5, 1], bpm: 128 };
+      audio.src = streamUrl(1002);
+      const bpmCallback = vi.fn();
+
+      await analyse(1002, bpmCallback);
+
+      expect(bpmCallback).toHaveBeenCalledWith(128);
+      expect(messagesFor('renderBuffer')).toEqual([]);
+    });
+
+    it('should draw the cached waveform', async () => {
+      cachedMetadata = { waveform: [0.1, 0.5, 1], bpm: 128 };
+      audio.src = streamUrl(1003);
+
+      await analyse(1003);
+
+      expect(mockContext.fillRect).toHaveBeenCalledTimes(3);
+    });
+
+    it('should send freshly analysed metadata back to the cache', async () => {
+      audio.src = streamUrl(1004);
+
+      await analyse(1004);
+
+      await vi.waitFor(() => expect(messagesFor('postTrackMetadata').length).toBe(1));
+      const [message] = messagesFor('postTrackMetadata')[0];
+      expect(message).toMatchObject({ trackId: 1004, bpm: 120 });
+      expect(message.waveform).toHaveLength(100);
+    });
+
+    it('should not cache anything for a track it cannot identify', async () => {
+      audio.src = 'https://example.com/not-a-bandcamp-stream.mp3';
+
+      await analyse(0);
+
+      expect(messagesFor('fetchTrackMetadata')).toEqual([]);
+      await vi.waitFor(() => expect(messagesFor('postTrackMetadata')).toEqual([]));
     });
   });
 
@@ -268,5 +332,27 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
       // and tested in nativePlayerBuilder.test.ts
       expect(true).toBe(true);
     });
+  });
+});
+
+describe('extractTrackId', () => {
+  it('should read the track id from a Bandcamp stream url', () => {
+    expect(extractTrackId('https://t4.bcbits.com/stream/somehash/mp3-128/3877359137?p=0&ts=1&t=abc')).toBe(3877359137);
+  });
+
+  it('should read the track id when the url carries no query string', () => {
+    expect(extractTrackId('https://t4.bcbits.com/stream/somehash/mp3-128/1234')).toBe(1234);
+  });
+
+  it('should return nothing for a url that is not a stream', () => {
+    expect(extractTrackId('https://example.com/audio.mp3')).toBeNull();
+  });
+
+  it('should return nothing when the stream path is too short to hold an id', () => {
+    expect(extractTrackId('https://t4.bcbits.com/stream/test-audio.mp3')).toBeNull();
+  });
+
+  it('should return nothing when the final segment is not a number', () => {
+    expect(extractTrackId('https://t4.bcbits.com/stream/somehash/mp3-128/notanid')).toBeNull();
   });
 });

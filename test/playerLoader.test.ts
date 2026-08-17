@@ -89,7 +89,15 @@ vi.mock('../src/nativePlayerBuilder', () => {
 
   const buildCenter = (): HTMLElement => {
     const center = element('div', 'bes-drawer-player-center');
-    center.appendChild(element('div', 'bes-progbar'));
+    const progbar = element('div', 'bes-progbar');
+    const waveformView = element('div', 'bes-waveform-container bes-visible');
+    waveformView.appendChild(element('canvas', 'bes-waveform'));
+    progbar.appendChild(waveformView);
+    progbar.appendChild(element('div', 'bes-slider-container'));
+    center.appendChild(progbar);
+    center.appendChild(element('span', 'bes-bpm-number'));
+    center.appendChild(element('button', 'bes-toggle-waveform bes-toggle-active'));
+    center.appendChild(element('button', 'bes-toggle-slider'));
     return center;
   };
 
@@ -990,5 +998,115 @@ describe('PlayerLoader - Player Interactions', () => {
 
       expect(player.getCurrentTrackIndex()).toBe(0);
     });
+  });
+});
+
+describe('PlayerLoader - Waveform config from the extension', () => {
+  let player: typeof import('../src/playerLoader');
+  let audioFeatures: typeof import('../src/audioFeatures');
+  let port: { postMessage: ReturnType<typeof vi.fn>; onMessage: { addListener: ReturnType<typeof vi.fn> } };
+
+  const broadcastConfig = (displayWaveform: boolean) => {
+    port.onMessage.addListener.mock.calls.forEach(([listener]) => listener({ config: { displayWaveform } }));
+  };
+
+  const view = (selector: string) => document.querySelector(selector) as HTMLElement;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    createDomNodes(`
+      <div class="bes-player-drawer open">
+        <div class="bes-player-drawer-player"></div>
+        <div class="bes-player-drawer-tracklist"></div>
+        <img class="bes-player-drawer-album-art" />
+        <div class="bes-player-drawer-transport"></div>
+        <div class="bes-player-drawer-right"></div>
+      </div>
+      <li class="music-grid-item" data-item-id="album-123"></li>
+    `);
+
+    port = { postMessage: vi.fn(), onMessage: { addListener: vi.fn() } };
+
+    player = await import('../src/playerLoader');
+    audioFeatures = await import('../src/audioFeatures');
+    player.updateDiscographyOrder();
+    await player.loadAlbumIntoDrawer('123', 'album', false, undefined, port as never);
+  });
+
+  afterEach(() => {
+    cleanupTestNodes();
+  });
+
+  it('should ask the extension for the current config on startup', () => {
+    expect(port.postMessage).toHaveBeenCalledWith({ requestConfig: {} });
+  });
+
+  it('should show the slider instead of the waveform when the config disables it', () => {
+    broadcastConfig(false);
+
+    expect(view('.bes-slider-container').classList.contains('bes-visible')).toBe(true);
+    expect(view('.bes-waveform-container').classList.contains('bes-visible')).toBe(false);
+  });
+
+  it('should mark the matching toggle button as active', () => {
+    broadcastConfig(false);
+
+    expect(view('.bes-toggle-slider').classList.contains('bes-toggle-active')).toBe(true);
+    expect(view('.bes-toggle-waveform').classList.contains('bes-toggle-active')).toBe(false);
+  });
+
+  it('should restore the waveform when the config enables it again', () => {
+    broadcastConfig(false);
+    broadcastConfig(true);
+
+    expect(view('.bes-waveform-container').classList.contains('bes-visible')).toBe(true);
+  });
+
+  it('should persist the choice when the user switches view', () => {
+    view('.bes-toggle-slider').click();
+
+    expect(port.postMessage).toHaveBeenCalledWith({ toggleWaveformDisplay: {} });
+  });
+
+  it('should not persist anything when the chosen view is already showing', () => {
+    view('.bes-toggle-waveform').click();
+
+    expect(port.postMessage).not.toHaveBeenCalledWith({ toggleWaveformDisplay: {} });
+  });
+
+  const analysisRuns = () => vi.mocked(audioFeatures.generateAudioFeatures).mock.calls.length;
+
+  it('should analyse the track so bpm and waveform reach the cache', () => {
+    const audio = document.querySelector('audio') as HTMLAudioElement;
+    audio.src = 'https://t4.bcbits.com/stream/hash/mp3-128/12345';
+    const before = analysisRuns();
+
+    audio.dispatchEvent(new Event('canplay'));
+
+    expect(analysisRuns()).toBeGreaterThan(before);
+  });
+
+  it('should skip analysis while the waveform is switched off', () => {
+    broadcastConfig(false);
+    const audio = document.querySelector('audio') as HTMLAudioElement;
+    audio.src = 'https://t4.bcbits.com/stream/hash/mp3-128/12345';
+    const before = analysisRuns();
+
+    audio.dispatchEvent(new Event('canplay'));
+
+    expect(analysisRuns()).toBe(before);
+  });
+
+  it('should request the audio buffer by stream path so the backend can identify the track', () => {
+    const audio = document.querySelector('audio') as HTMLAudioElement;
+    audio.src = 'https://t4.bcbits.com/stream/hash/mp3-128/12345';
+
+    audio.dispatchEvent(new Event('canplay'));
+
+    const urlFormatter = vi.mocked(audioFeatures.generateAudioFeatures).mock.calls[0][6] as (src: string) => {
+      stream: { type: string; path?: string };
+    };
+
+    expect(urlFormatter(audio.src).stream).toEqual({ type: 'direct-path', path: 'hash/mp3-128/12345' });
   });
 });

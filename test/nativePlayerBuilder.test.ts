@@ -158,47 +158,13 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       expect(toggleWaveform).toBeTruthy();
     });
 
-    it('should show waveform by default, hide slider', () => {
+    it('should provide both progress views for the player to switch between', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
-      const sliderContainer = centerElement.querySelector('.bes-slider-container') as HTMLElement;
-      const waveformContainer = centerElement.querySelector('.bes-waveform-container') as HTMLElement;
-
-      expect(sliderContainer.classList.contains('bes-visible')).toBe(false);
-      expect(waveformContainer.classList.contains('bes-visible')).toBe(true);
-    });
-
-    it('should toggle to slider mode when slider button clicked', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
-      document.body.appendChild(centerElement);
-
-      const toggleSlider = centerElement.querySelector('.bes-toggle-slider') as HTMLButtonElement;
-      const sliderContainer = centerElement.querySelector('.bes-slider-container') as HTMLElement;
-      const waveformContainer = centerElement.querySelector('.bes-waveform-container') as HTMLElement;
-
-      toggleSlider.click();
-
-      expect(sliderContainer.classList.contains('bes-visible')).toBe(true);
-      expect(waveformContainer.classList.contains('bes-visible')).toBe(false);
-    });
-
-    it('should toggle back to waveform mode when waveform button clicked', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
-      document.body.appendChild(centerElement);
-
-      const toggleSlider = centerElement.querySelector('.bes-toggle-slider') as HTMLButtonElement;
-      const toggleWaveform = centerElement.querySelector('.bes-toggle-waveform') as HTMLButtonElement;
-      const sliderContainer = centerElement.querySelector('.bes-slider-container') as HTMLElement;
-      const waveformContainer = centerElement.querySelector('.bes-waveform-container') as HTMLElement;
-
-      // First switch to slider
-      toggleSlider.click();
-
-      // Then switch back to waveform
-      toggleWaveform.click();
-
-      expect(waveformContainer.classList.contains('bes-visible')).toBe(true);
-      expect(sliderContainer.classList.contains('bes-visible')).toBe(false);
+      expect(centerElement.querySelector('.bes-waveform-container')).toBeTruthy();
+      expect(centerElement.querySelector('.bes-slider-container')).toBeTruthy();
+      expect(centerElement.querySelector('.bes-toggle-waveform')).toBeTruthy();
+      expect(centerElement.querySelector('.bes-toggle-slider')).toBeTruthy();
     });
   });
 

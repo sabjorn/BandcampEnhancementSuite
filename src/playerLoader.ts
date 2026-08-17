@@ -1,18 +1,15 @@
 import Logger from './logger';
 import { getTralbumDetails, TralbumDetailsResponse, TralbumTrack } from './bclient';
 import { getPlayerDrawerElements, updatePlayerDrawerInfo, updateMinimizedPlayButton } from './components/playerDrawer';
-import { createFetchFunction, shouldHandleShortcut } from './utilities';
+import { createFetchFunction } from './utilities';
 import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from './nativePlayerBuilder';
-import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS, keyBindingToString } from './types/keyboard';
+import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS } from './types/keyboard';
+import { PlayerCommands, registerPlayerShortcuts, updateKeyboardSettings } from './keyboardShortcuts';
 import { drawOverlay, generateAudioFeatures } from './audioFeatures';
 import { volumeIcon, mutedVolumeIcon } from './components/playerIcons';
 import { replaceChildren } from './components/dom';
 
 const log = new Logger();
-
-interface KeyHandlers {
-  [key: string]: () => void;
-}
 
 interface DiscographyItem {
   id: string;
@@ -26,8 +23,7 @@ let currentAlbumData: TralbumDetailsResponse | null = null;
 let playerInitialized = false;
 let currentTrackIndex = 0;
 let audioElement: HTMLAudioElement | null = null;
-let keyboardListenerAttached = false;
-let activeKeyHandlers: KeyHandlers = {};
+let drawerShortcutsRegistered = false;
 let drawerPlayerCreated = false;
 let previousVolume = 1.0;
 let configPort: chrome.runtime.Port | null = null;
@@ -112,18 +108,6 @@ function convertToApiType(type: string): string {
   return type;
 }
 
-function attachGlobalKeyboardHandlers(settings: KeyboardSettings): void {
-  if (keyboardListenerAttached) return;
-
-  activeKeyHandlers = buildKeyHandlersFromSettings(settings);
-  const preventDefault = true;
-
-  document.addEventListener('keydown', (e: KeyboardEvent) => keydownCallback(e, activeKeyHandlers, preventDefault));
-
-  keyboardListenerAttached = true;
-  log.info('Drawer keyboard handlers attached');
-}
-
 function showWaveform(enabled: boolean): void {
   waveformEnabled = enabled;
 
@@ -146,6 +130,27 @@ function bindViewToggle(): void {
 
   if (waveformButton) waveformButton.onclick = requestWaveform(true);
   if (sliderButton) sliderButton.onclick = requestWaveform(false);
+}
+
+const drawerCommands: PlayerCommands = {
+  playPause,
+  prevTrack,
+  nextTrack,
+  seekBy,
+  adjustVolumeBy
+};
+
+function drawerIsOpen(): boolean {
+  return Boolean(document.querySelector('.bes-player-drawer.open'));
+}
+
+function registerDrawerShortcuts(settings: KeyboardSettings): void {
+  updateKeyboardSettings(settings);
+
+  if (drawerShortcutsRegistered) return;
+
+  registerPlayerShortcuts(drawerCommands, drawerIsOpen);
+  drawerShortcutsRegistered = true;
 }
 
 export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
@@ -208,7 +213,7 @@ function startPlayerOnce(keyboardSettings?: KeyboardSettings): void {
 
   ensureAudioElement();
   initializePlayer();
-  attachGlobalKeyboardHandlers(keyboardSettings || DEFAULT_KEYBOARD_SETTINGS);
+  registerDrawerShortcuts(keyboardSettings || DEFAULT_KEYBOARD_SETTINGS);
   playerInitialized = true;
 }
 
@@ -624,68 +629,6 @@ function adjustVolumeBy(delta: number): void {
   audioElement.volume = Math.min(1, Math.max(0, audioElement.volume + delta));
   updateVolumeDisplay(audioElement.volume);
   updateMuteButton(audioElement.volume === 0);
-}
-
-function handlerForEachAction(settings: KeyboardSettings): Record<KeyboardAction, () => void> {
-  return {
-    [KeyboardAction.PLAY_PAUSE]: playPause,
-    [KeyboardAction.PLAY_PAUSE_ALT]: playPause,
-    [KeyboardAction.PREV_TRACK]: prevTrack,
-    [KeyboardAction.NEXT_TRACK]: nextTrack,
-    [KeyboardAction.SEEK_FORWARD]: () => seekBy(settings.seekStepSize),
-    [KeyboardAction.SEEK_BACKWARD]: () => seekBy(-settings.seekStepSize),
-    [KeyboardAction.SEEK_FORWARD_LARGE]: () => seekBy(settings.largeSeekStepSize),
-    [KeyboardAction.SEEK_BACKWARD_LARGE]: () => seekBy(-settings.largeSeekStepSize),
-    [KeyboardAction.VOLUME_UP]: () => adjustVolumeBy(settings.volumeStep),
-    [KeyboardAction.VOLUME_DOWN]: () => adjustVolumeBy(-settings.volumeStep)
-  };
-}
-
-function buildKeyHandlersFromSettings(settings: KeyboardSettings): KeyHandlers {
-  const byAction = handlerForEachAction(settings);
-
-  return settings.controls
-    .filter(control => control.enabled)
-    .reduce<KeyHandlers>((handlers, control) => {
-      handlers[keyBindingToString(control.binding)] = byAction[control.action];
-      return handlers;
-    }, {});
-}
-
-function keydownCallback(e: KeyboardEvent, keyHandlers: KeyHandlers, preventDefault: boolean): void {
-  const drawer = document.querySelector('.bes-player-drawer');
-  if (!drawer || !(drawer as HTMLElement).classList.contains('open')) {
-    return;
-  }
-
-  if (!shouldHandleShortcut(e.target)) {
-    return;
-  }
-
-  if (e.key === 'Meta' && !e.altKey && !e.ctrlKey && !e.shiftKey) {
-    return;
-  }
-
-  const currentCombo = keyBindingToString({
-    key: e.key,
-    alt: e.altKey,
-    ctrl: e.ctrlKey,
-    shift: e.shiftKey,
-    meta: e.metaKey
-  });
-
-  log.info(`Drawer keydown: ${currentCombo}`);
-
-  const handler = keyHandlers[currentCombo] || keyHandlers[e.key];
-
-  if (!handler) {
-    return;
-  }
-  handler();
-
-  if (preventDefault) {
-    e.preventDefault();
-  }
 }
 
 function extractAlbumArtFromPage(albumId: string, albumType: string): string {

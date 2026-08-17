@@ -1,7 +1,8 @@
 import { createLogger } from './logger';
 import { initLabelView } from './label_view';
 import { initDownload } from './pages/download';
-import { initPlayer, updateKeyboardHandlers } from './player';
+import { initPlayer } from './player';
+import { updateKeyboardSettings } from './keyboardShortcuts';
 import { initAudioFeatures } from './audioFeatures';
 import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
@@ -388,16 +389,16 @@ const main = async (): Promise<void> => {
 
   initLabelView(config_port, enableFetchCaching);
 
+  config_port.onMessage.addListener((msg: any) => {
+    if (msg.config && msg.config.keyboardSettings) {
+      log.info('Keyboard settings changed, updating handlers');
+      updateKeyboardSettings(msg.config.keyboardSettings);
+    }
+  });
+
   const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
   if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
     await initPlayer(keyboardSettings, enableFetchCaching);
-
-    config_port.onMessage.addListener((msg: any) => {
-      if (msg.config && msg.config.keyboardSettings) {
-        log.info('Keyboard settings changed, updating handlers');
-        updateKeyboardHandlers(msg.config.keyboardSettings);
-      }
-    });
 
     initAudioFeatures(config_port);
   }

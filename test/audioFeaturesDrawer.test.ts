@@ -109,8 +109,7 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
         () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
       );
 
-      // Should draw waveform bars on canvas
-      // Verified by fillRect calls for ~100 bars
+      await vi.waitFor(() => expect(mockContext.fillRect).toHaveBeenCalled());
     });
 
     it('should use 100 datapoints for waveform (RMS analysis)', async () => {
@@ -129,8 +128,7 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
         () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
       );
 
-      // Function should process audio into ~100 bars
-      // This is the standard waveform resolution
+      await vi.waitFor(() => expect(mockContext.fillRect).toHaveBeenCalledTimes(100));
     });
   });
 
@@ -155,7 +153,7 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
 
       drawOverlay(canvas, 0.5, overlayColour, waveformColour);
 
-      // fillStyle should be set to purple for overlay
+      expect(mockContext.fillStyle).toBe(overlayColour);
     });
 
     it('should update overlay as progress changes', () => {
@@ -250,7 +248,7 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
         () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
       );
 
-      // Waveform should be drawn with grey color
+      await vi.waitFor(() => expect(mockContext.fillStyle).toBe(waveformColour));
     });
 
     it('should use purple (#5b53e8) for progress overlay', () => {
@@ -259,7 +257,8 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
 
       drawOverlay(canvas, 0.5, overlayColour, waveformColour);
 
-      // Overlay should use purple color
+      expect(mockContext.fillRect).toHaveBeenLastCalledWith(0, 0, canvas.width * 0.5, canvas.height);
+      expect(mockContext.fillStyle).toBe(overlayColour);
     });
   });
 

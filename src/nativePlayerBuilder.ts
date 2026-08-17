@@ -1,7 +1,7 @@
 import Logger from './logger';
 import { TralbumDetailsResponse, CURRENCY_MINIMUMS } from './bclient';
 import { createAddToCartButton } from './components/cartButton';
-import { prevIcon, nextIcon, playIcon, pauseIcon } from './components/playerIcons';
+import { prevIcon, nextIcon, playIcon, pauseIcon, volumeIcon } from './components/playerIcons';
 
 const log = new Logger();
 
@@ -87,9 +87,7 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
   const volumeCol = document.createElement('div');
   volumeCol.className = 'bes-drawer-volume-column';
   volumeCol.innerHTML = `
-    <button class="bes-volume-mute">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
-    </button>
+    <button class="bes-volume-mute">${volumeIcon(19)}</button>
     <div class="bes-volume">
       <div class="bes-volume-track">
         <div class="bes-volume-fill"></div>
@@ -101,33 +99,6 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
 
   const trackTable = buildTrackTable(tralbumDetails);
 
-  let albumBuyButton: HTMLElement | null = null;
-  if (tralbumDetails.is_purchasable && tralbumDetails.price !== undefined) {
-    const { price, currency, id, title, type } = tralbumDetails;
-    const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency] || 0.5;
-
-    const buyButtonElement = createAddToCartButton({
-      price: minimumPrice,
-      currency: currency,
-      tralbumId: String(id),
-      itemTitle: title,
-      type: type,
-      log
-    });
-
-    const container = document.createElement('div');
-    container.className = 'bes-album-buy';
-
-    const label = document.createElement('span');
-    label.className = 'bes-album-buy-label';
-    label.textContent = 'Buy Album';
-
-    container.appendChild(label);
-    container.appendChild(buyButtonElement);
-
-    albumBuyButton = container;
-  }
-
   log.info('Drawer player built successfully');
 
   return {
@@ -135,8 +106,34 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
     centerElement: center,
     volumeElement: volumeCol,
     tracklistElement: trackTable,
-    albumBuyButton: albumBuyButton
+    albumBuyButton: buildAlbumBuyButton(tralbumDetails)
   };
+}
+
+export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTMLElement | null {
+  const { price, currency, id, title, type, is_purchasable } = tralbumDetails;
+  if (!is_purchasable || price === undefined) return null;
+
+  const container = document.createElement('div');
+  container.className = 'bes-album-buy';
+
+  const label = document.createElement('span');
+  label.className = 'bes-album-buy-label';
+  label.textContent = 'Buy Album';
+
+  container.appendChild(label);
+  container.appendChild(
+    createAddToCartButton({
+      price: price > 0.0 ? price : CURRENCY_MINIMUMS[currency] || 0.5,
+      currency,
+      tralbumId: String(id),
+      itemTitle: title,
+      type,
+      log
+    })
+  );
+
+  return container;
 }
 
 export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLElement {

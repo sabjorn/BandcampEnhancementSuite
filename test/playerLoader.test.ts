@@ -1,22 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createDomNodes, cleanupTestNodes, mockApiResponse } from './utils';
-import {
-  extractDiscographyOrder,
-  updateDiscographyOrder,
-  findAlbumIndexById,
-  loadAlbumIntoDrawer,
-  loadNextAlbum,
-  loadPreviousAlbum,
-  getCurrentAlbumData,
-  getCurrentAlbumIndex,
-  getCurrentTrackIndex,
-  getDiscographyLength,
-  isPlaybackClick,
-  findPlayableTrackAfter,
-  findPlayableTrackBefore
-} from '../src/playerLoader';
-import { KeyboardSettings, KeyboardAction } from '../src/types/keyboard';
-import { getTralbumDetails } from '../src/bclient';
+import { createDomNodes, cleanupTestNodes } from './utils';
+import { isPlaybackClick, findPlayableTrackAfter, findPlayableTrackBefore } from '../src/playerLoader';
+import type { TralbumTrack } from '../src/bclient';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -73,55 +58,63 @@ vi.mock('../src/components/playerDrawer', () => ({
   updateMinimizedPlayButton: vi.fn()
 }));
 
-vi.mock('../src/nativePlayerBuilder', () => ({
-  buildDrawerPlayer: vi.fn(() => {
-    // Create transport with actual buttons
-    const transportElement = document.createElement('div');
-    const prevButton = document.createElement('button');
-    prevButton.className = 'bes-transport-prev';
-    const playButton = document.createElement('button');
-    playButton.className = 'bes-transport-play';
-    const nextButton = document.createElement('button');
-    nextButton.className = 'bes-transport-next';
-    transportElement.appendChild(prevButton);
-    transportElement.appendChild(playButton);
-    transportElement.appendChild(nextButton);
+vi.mock('../src/nativePlayerBuilder', () => {
+  const element = (tag: string, className: string): HTMLElement => {
+    const node = document.createElement(tag);
+    node.className = className;
+    return node;
+  };
 
-    // Create center element with necessary structure
-    const centerElement = document.createElement('div');
-    const progbar = document.createElement('div');
-    progbar.className = 'bes-progbar';
-    centerElement.appendChild(progbar);
-
-    // Create volume element with mute button and slider
-    const volumeElement = document.createElement('div');
-    const volumeMute = document.createElement('button');
-    volumeMute.className = 'bes-volume-mute';
-    const volumeContainer = document.createElement('div');
-    volumeContainer.className = 'bes-volume';
-    volumeElement.appendChild(volumeMute);
-    volumeElement.appendChild(volumeContainer);
-
-    // Create album buy button
-    const buyButtonContainer = document.createElement('div');
-    buyButtonContainer.className = 'bes-album-buy';
-    const buyButton = document.createElement('button');
-    buyButton.className = 'one-click-button';
-    buyButtonContainer.appendChild(buyButton);
-
-    return {
-      transportElement,
-      centerElement,
-      volumeElement,
-      tracklistElement: document.createElement('table'),
-      albumBuyButton: buyButtonContainer
-    };
-  }),
-  buildTrackTable: vi.fn(() => {
+  const buildTracklist = (): HTMLElement => {
     const table = document.createElement('table');
+    ['Track 1', 'Track 2', 'Track 3'].forEach(title => {
+      const row = element('tr', 'bes-track-row');
+      row.innerHTML = `
+        <td class="bes-track-title-col"><span class="bes-track-title">${title}</span></td>
+        <td class="bes-track-link-col"><a class="bes-track-link" href="/track">arrow</a></td>
+        <td class="bes-track-buy-col"><button class="one-click-button"></button></td>
+      `;
+      table.appendChild(row);
+    });
     return table;
-  })
-}));
+  };
+
+  const buildTransport = (): HTMLElement => {
+    const transport = element('div', 'bes-transport');
+    ['bes-transport-prev', 'bes-transport-play', 'bes-transport-next'].forEach(name =>
+      transport.appendChild(element('button', name))
+    );
+    return transport;
+  };
+
+  const buildCenter = (): HTMLElement => {
+    const center = element('div', 'bes-drawer-player-center');
+    center.appendChild(element('div', 'bes-progbar'));
+    return center;
+  };
+
+  const buildVolume = (): HTMLElement => {
+    const column = element('div', 'bes-drawer-volume-column');
+    column.appendChild(element('button', 'bes-volume-mute'));
+    column.appendChild(element('div', 'bes-volume'));
+    column.appendChild(element('span', 'bes-volume-percent'));
+    return column;
+  };
+
+  const buildAlbumBuyButton = vi.fn(() => element('div', 'bes-album-buy'));
+
+  return {
+    buildDrawerPlayer: vi.fn(() => ({
+      transportElement: buildTransport(),
+      centerElement: buildCenter(),
+      volumeElement: buildVolume(),
+      tracklistElement: buildTracklist(),
+      albumBuyButton: buildAlbumBuyButton()
+    })),
+    buildTrackTable: vi.fn(() => buildTracklist()),
+    buildAlbumBuyButton
+  };
+});
 
 vi.mock('../src/utilities', () => ({
   createFetchFunction: vi.fn(() => fetch),
@@ -501,184 +494,160 @@ describe('PlayerLoader - Main Player Logic', () => {
 });
 
 describe('PlayerLoader - Keyboard Shortcuts', () => {
+  let player: typeof import('../src/playerLoader');
   let audio: HTMLAudioElement;
 
-  beforeEach(() => {
+  const press = (key: string, modifiers: { shiftKey?: boolean } = {}) => {
+    const event = new KeyboardEvent('keydown', { key, cancelable: true, ...modifiers });
+    Object.defineProperty(event, 'target', { value: document.body });
+    document.dispatchEvent(event);
+    return event;
+  };
+
+  beforeEach(async () => {
+    vi.resetModules();
     createDomNodes(`
       <div class="bes-player-drawer open">
-        <button class="bes-transport-play"></button>
-        <button class="bes-transport-prev"></button>
-        <button class="bes-transport-next"></button>
+        <div class="bes-player-drawer-player"></div>
+        <div class="bes-player-drawer-tracklist"></div>
+        <img class="bes-player-drawer-album-art" />
+        <div class="bes-player-drawer-transport"></div>
+        <div class="bes-player-drawer-right"></div>
       </div>
-      <audio></audio>
+      <li class="music-grid-item" data-item-id="album-123"></li>
+      <li class="music-grid-item" data-item-id="album-456"></li>
     `);
 
-    audio = document.querySelector('audio') as HTMLAudioElement;
-    Object.defineProperty(audio, 'duration', { value: 180, writable: true });
-    Object.defineProperty(audio, 'currentTime', { value: 60, writable: true });
-    Object.defineProperty(audio, 'volume', { value: 0.5, writable: true });
+    player = await import('../src/playerLoader');
+    player.updateDiscographyOrder();
+    await player.loadAlbumIntoDrawer('123', 'album', false);
 
-    // Mock play/pause
+    audio = document.querySelector('audio') as HTMLAudioElement;
     audio.play = vi.fn().mockResolvedValue(undefined);
     audio.pause = vi.fn();
+    Object.defineProperty(audio, 'duration', { value: 180, writable: true, configurable: true });
+    Object.defineProperty(audio, 'currentTime', { value: 60, writable: true, configurable: true });
+    Object.defineProperty(audio, 'paused', { value: true, writable: true, configurable: true });
   });
 
   afterEach(() => {
     cleanupTestNodes();
   });
 
-  describe('Space/p: Play/Pause', () => {
-    it('should trigger play button on Space key', () => {
-      const playButton = document.querySelector('.bes-transport-play') as HTMLButtonElement;
-      const clickSpy = vi.spyOn(playButton, 'click');
+  describe('play and pause', () => {
+    it('should start playback on Space', () => {
+      press(' ');
 
-      const event = new KeyboardEvent('keydown', { key: ' ' });
-      Object.defineProperty(event, 'target', { value: document.body });
-
-      document.dispatchEvent(event);
-
-      // Keyboard handler would call playButton.click()
-      // This is verified by the buildKeyHandlersFromSettings logic
+      expect(audio.play).toHaveBeenCalled();
     });
 
-    it('should trigger play button on p key', () => {
-      const playButton = document.querySelector('.bes-transport-play') as HTMLButtonElement;
-      const clickSpy = vi.spyOn(playButton, 'click');
+    it('should start playback on p', () => {
+      press('p');
 
-      const event = new KeyboardEvent('keydown', { key: 'p' });
-      Object.defineProperty(event, 'target', { value: document.body });
+      expect(audio.play).toHaveBeenCalled();
+    });
 
-      document.dispatchEvent(event);
+    it('should pause when already playing', () => {
+      Object.defineProperty(audio, 'paused', { value: false, writable: true, configurable: true });
 
-      // Keyboard handler would call playButton.click()
+      press(' ');
+
+      expect(audio.pause).toHaveBeenCalled();
     });
   });
 
-  describe('↑/↓: Previous/Next track', () => {
-    it('should trigger prev button on ArrowUp key', () => {
-      const prevButton = document.querySelector('.bes-transport-prev') as HTMLButtonElement;
-      const clickSpy = vi.spyOn(prevButton, 'click');
+  describe('track navigation', () => {
+    it('should move to the next track on ArrowDown', () => {
+      expect(player.getCurrentTrackIndex()).toBe(0);
 
-      const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
-      Object.defineProperty(event, 'target', { value: document.body });
+      press('ArrowDown');
 
-      document.dispatchEvent(event);
-
-      // Keyboard handler would call prevButton.click()
+      expect(player.getCurrentTrackIndex()).toBe(1);
     });
 
-    it('should trigger next button on ArrowDown key', () => {
-      const nextButton = document.querySelector('.bes-transport-next') as HTMLButtonElement;
-      const clickSpy = vi.spyOn(nextButton, 'click');
+    it('should move to the previous track on ArrowUp', () => {
+      press('ArrowDown');
+      expect(player.getCurrentTrackIndex()).toBe(1);
 
-      const event = new KeyboardEvent('keydown', { key: 'ArrowDown' });
-      Object.defineProperty(event, 'target', { value: document.body });
+      press('ArrowUp');
 
-      document.dispatchEvent(event);
-
-      // Keyboard handler would call nextButton.click()
+      expect(player.getCurrentTrackIndex()).toBe(0);
     });
   });
 
-  describe('←/→: Seek backward/forward (10s)', () => {
-    it('should seek forward 10 seconds on ArrowRight', () => {
-      Object.defineProperty(audio, 'currentTime', { value: 60, writable: true });
+  describe('seeking', () => {
+    it('should seek forward by the step size on ArrowRight', () => {
+      press('ArrowRight');
 
-      const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
-      Object.defineProperty(event, 'target', { value: document.body });
-
-      // Handler would execute: audio.currentTime += 10
-      // This is verified by buildKeyHandlersFromSettings with seekStepSize: 10
+      expect(audio.currentTime).toBe(70);
     });
 
-    it('should seek backward 10 seconds on ArrowLeft', () => {
-      Object.defineProperty(audio, 'currentTime', { value: 60, writable: true });
+    it('should seek backward by the step size on ArrowLeft', () => {
+      press('ArrowLeft');
 
-      const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
-      Object.defineProperty(event, 'target', { value: document.body });
-
-      // Handler would execute: audio.currentTime -= 10
-    });
-  });
-
-  describe('Shift+←/→: Large seek (30s)', () => {
-    it('should seek forward 30 seconds on Shift+ArrowRight', () => {
-      Object.defineProperty(audio, 'currentTime', { value: 60, writable: true });
-
-      const event = new KeyboardEvent('keydown', {
-        key: 'ArrowRight',
-        shiftKey: true
-      });
-      Object.defineProperty(event, 'target', { value: document.body });
-
-      // Handler would execute: audio.currentTime += 30
-      // This is verified by buildKeyHandlersFromSettings with largeSeekStepSize: 30
+      expect(audio.currentTime).toBe(50);
     });
 
-    it('should seek backward 30 seconds on Shift+ArrowLeft', () => {
-      Object.defineProperty(audio, 'currentTime', { value: 60, writable: true });
+    it('should seek forward by the large step on Shift+ArrowRight', () => {
+      press('ArrowRight', { shiftKey: true });
 
-      const event = new KeyboardEvent('keydown', {
-        key: 'ArrowLeft',
-        shiftKey: true
-      });
-      Object.defineProperty(event, 'target', { value: document.body });
+      expect(audio.currentTime).toBe(90);
+    });
 
-      // Handler would execute: audio.currentTime -= 30
+    it('should seek backward by the large step on Shift+ArrowLeft', () => {
+      press('ArrowLeft', { shiftKey: true });
+
+      expect(audio.currentTime).toBe(30);
     });
   });
 
-  describe('Shift+↑/↓: Volume up/down', () => {
-    it('should increase volume on Shift+ArrowUp', () => {
-      Object.defineProperty(audio, 'volume', { value: 0.5, writable: true });
-
-      const event = new KeyboardEvent('keydown', {
-        key: 'ArrowUp',
-        shiftKey: true
-      });
-      Object.defineProperty(event, 'target', { value: document.body });
-
-      // Handler would execute: audio.volume += volumeStep (0.05)
-      // Expected: 0.55
+  describe('volume', () => {
+    beforeEach(() => {
+      audio.volume = 0.5;
     });
 
-    it('should decrease volume on Shift+ArrowDown', () => {
-      Object.defineProperty(audio, 'volume', { value: 0.5, writable: true });
+    it('should raise the volume on Shift+ArrowUp', () => {
+      press('ArrowUp', { shiftKey: true });
 
-      const event = new KeyboardEvent('keydown', {
-        key: 'ArrowDown',
-        shiftKey: true
-      });
-      Object.defineProperty(event, 'target', { value: document.body });
-
-      // Handler would execute: audio.volume -= volumeStep (0.05)
-      // Expected: 0.45
+      expect(audio.volume).toBeCloseTo(0.55);
     });
 
-    it('should not exceed max volume (1.0)', () => {
-      Object.defineProperty(audio, 'volume', { value: 0.98, writable: true });
+    it('should lower the volume on Shift+ArrowDown', () => {
+      press('ArrowDown', { shiftKey: true });
 
-      // Handler logic: newVolume > 1.0 ? 1.0 : newVolume
-      // Volume should be clamped to 1.0
+      expect(audio.volume).toBeCloseTo(0.45);
     });
 
-    it('should not go below min volume (0.0)', () => {
-      Object.defineProperty(audio, 'volume', { value: 0.02, writable: true });
+    it('should not raise the volume above full', () => {
+      audio.volume = 0.98;
 
-      // Handler logic: newVolume < 0.0 ? 0.0 : newVolume
-      // Volume should be clamped to 0.0
+      press('ArrowUp', { shiftKey: true });
+
+      expect(audio.volume).toBe(1);
+    });
+
+    it('should not lower the volume below silent', () => {
+      audio.volume = 0.02;
+
+      press('ArrowDown', { shiftKey: true });
+
+      expect(audio.volume).toBe(0);
+    });
+
+    it('should show the new volume in the readout', () => {
+      press('ArrowUp', { shiftKey: true });
+
+      expect(document.querySelector('.bes-volume-percent')?.textContent).toBe('55%');
     });
   });
 
-  describe('Keyboard event filtering', () => {
-    it('should only respond when drawer is open', () => {
-      const drawer = document.querySelector('.bes-player-drawer') as HTMLElement;
-      drawer.classList.remove('open');
+  describe('event filtering', () => {
+    it('should ignore keys while the drawer is closed', () => {
+      document.querySelector('.bes-player-drawer')?.classList.remove('open');
 
-      const event = new KeyboardEvent('keydown', { key: 'p' });
-      Object.defineProperty(event, 'target', { value: document.body });
+      press(' ');
 
-      document.dispatchEvent(event);
+      expect(audio.play).not.toHaveBeenCalled();
     });
 
     it('should ignore keys while the page search bar has focus', () => {
@@ -686,11 +655,11 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
       input.className = 'search-bar';
       document.body.appendChild(input);
 
-      const event = new KeyboardEvent('keydown', { key: 'p' });
+      const event = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
       Object.defineProperty(event, 'target', { value: input });
-
       document.dispatchEvent(event);
 
+      expect(audio.play).not.toHaveBeenCalled();
       expect(event.defaultPrevented).toBe(false);
     });
 
@@ -700,41 +669,41 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
 
       const event = new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true });
       Object.defineProperty(event, 'target', { value: suggestion });
-
       document.dispatchEvent(event);
 
+      expect(player.getCurrentTrackIndex()).toBe(0);
       expect(event.defaultPrevented).toBe(false);
     });
 
-    it('should ignore keys while any focusable page element has focus', () => {
-      const button = document.createElement('button');
-      document.body.appendChild(button);
-
-      const event = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
-      Object.defineProperty(event, 'target', { value: button });
-
-      document.dispatchEvent(event);
-
-      expect(event.defaultPrevented).toBe(false);
-    });
-
-    it('should ignore bare Meta key press', () => {
-      const event = new KeyboardEvent('keydown', {
-        key: 'Meta',
-        metaKey: true
-      });
+    it('should ignore a bare Meta press', () => {
+      const event = new KeyboardEvent('keydown', { key: 'Meta', metaKey: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: document.body });
-
       document.dispatchEvent(event);
 
-      // Handler should return early for bare Meta key
+      expect(audio.play).not.toHaveBeenCalled();
+    });
+
+    it('should claim the keys it handles', () => {
+      const event = press(' ');
+
+      expect(event.defaultPrevented).toBe(true);
     });
   });
 });
 
 describe('PlayerLoader - Playable track search', () => {
-  const playable = (title: string) => ({ title, streaming_url: { 'mp3-128': 'https://example.com/a.mp3' } });
-  const unplayable = (title: string) => ({ title });
+  const track = (title: string): TralbumTrack => ({
+    track_id: Number(title),
+    title,
+    price: 1,
+    currency: 'USD',
+    is_purchasable: true
+  });
+  const playable = (title: string): TralbumTrack => ({
+    ...track(title),
+    streaming_url: { 'mp3-128': 'https://example.com/a.mp3' }
+  });
+  const unplayable = (title: string): TralbumTrack => track(title);
 
   describe('only the first track is playable', () => {
     const tracks = [playable('1'), unplayable('2'), unplayable('3'), unplayable('4')];
@@ -855,266 +824,171 @@ describe('PlayerLoader - Track row click targets', () => {
 });
 
 describe('PlayerLoader - Player Interactions', () => {
-  beforeEach(() => {
+  let player: typeof import('../src/playerLoader');
+  let audio: HTMLAudioElement;
+
+  beforeEach(async () => {
+    vi.resetModules();
     createDomNodes(`
       <div class="bes-player-drawer open">
-        <audio></audio>
-        <button class="bes-transport-play"></button>
-        <div class="bes-progbar" style="width: 600px;"></div>
-        <div class="bes-volume" style="height: 200px;"></div>
-        <button class="bes-volume-mute"></button>
+        <div class="bes-player-drawer-player"></div>
+        <div class="bes-player-drawer-tracklist"></div>
+        <img class="bes-player-drawer-album-art" />
+        <div class="bes-player-drawer-transport"></div>
+        <div class="bes-player-drawer-right"></div>
       </div>
+      <li class="music-grid-item" data-item-id="album-123"></li>
     `);
+
+    player = await import('../src/playerLoader');
+    player.updateDiscographyOrder();
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+
+    audio = document.querySelector('audio') as HTMLAudioElement;
+    audio.play = vi.fn().mockResolvedValue(undefined);
+    audio.pause = vi.fn();
+    Object.defineProperty(audio, 'duration', { value: 180, writable: true, configurable: true });
+    Object.defineProperty(audio, 'currentTime', { value: 0, writable: true, configurable: true });
+    Object.defineProperty(audio, 'paused', { value: true, writable: true, configurable: true });
   });
 
   afterEach(() => {
     cleanupTestNodes();
   });
 
-  describe('Play/pause with icon state toggle', () => {
-    it('should toggle play/pause on button click', () => {
-      const audio = document.querySelector('audio') as HTMLAudioElement;
-      const playButton = document.querySelector('.bes-transport-play') as HTMLElement;
+  describe('transport buttons', () => {
+    it('should start playback when the play button is clicked', () => {
+      (document.querySelector('.bes-transport-play') as HTMLElement).click();
 
-      audio.play = vi.fn().mockResolvedValue(undefined);
-      audio.pause = vi.fn();
-
-      // Mock paused state
-      Object.defineProperty(audio, 'paused', { value: true, writable: true });
-
-      playButton.click();
-
-      // Handler would check audio.paused and call audio.play()
+      expect(audio.play).toHaveBeenCalled();
     });
 
-    it('should add playing class when audio plays', () => {
-      const audio = document.querySelector('audio') as HTMLAudioElement;
-      const playButton = document.querySelector('.bes-transport-play') as HTMLElement;
+    it('should pause when the play button is clicked while playing', () => {
+      Object.defineProperty(audio, 'paused', { value: false, writable: true, configurable: true });
 
+      (document.querySelector('.bes-transport-play') as HTMLElement).click();
+
+      expect(audio.pause).toHaveBeenCalled();
+    });
+
+    it('should mark the play button while audio is playing', () => {
       audio.dispatchEvent(new Event('play'));
 
-      // Handler: playButton.classList.add('playing')
+      expect(document.querySelector('.bes-transport-play')?.classList.contains('playing')).toBe(true);
     });
 
-    it('should remove playing class when audio pauses', () => {
-      const audio = document.querySelector('audio') as HTMLAudioElement;
-      const playButton = document.querySelector('.bes-transport-play') as HTMLElement;
-
-      playButton.classList.add('playing');
-
+    it('should unmark the play button when audio pauses', () => {
+      audio.dispatchEvent(new Event('play'));
       audio.dispatchEvent(new Event('pause'));
 
-      // Handler: playButton.classList.remove('playing')
+      expect(document.querySelector('.bes-transport-play')?.classList.contains('playing')).toBe(false);
     });
   });
 
-  describe('Seek by clicking waveform/slider', () => {
-    it('should seek to position when clicking progress bar', () => {
-      const audio = document.querySelector('audio') as HTMLAudioElement;
+  describe('seeking by clicking the progress bar', () => {
+    it('should seek to the clicked position', () => {
       const progbar = document.querySelector('.bes-progbar') as HTMLElement;
+      progbar.getBoundingClientRect = vi.fn().mockReturnValue({ left: 0, width: 600 }) as never;
 
-      Object.defineProperty(audio, 'duration', { value: 180, writable: true });
-      Object.defineProperty(audio, 'currentTime', { value: 0, writable: true });
+      progbar.dispatchEvent(new MouseEvent('click', { clientX: 300 }));
 
-      // Mock getBoundingClientRect
-      progbar.getBoundingClientRect = vi.fn().mockReturnValue({
-        left: 0,
-        width: 600
-      });
-
-      const clickEvent = new MouseEvent('click', { clientX: 300 });
-
-      progbar.dispatchEvent(clickEvent);
-
-      // Handler: audio.currentTime = percent * audio.duration
-      // At x=300, percent=0.5, so currentTime should be 90
+      expect(audio.currentTime).toBe(90);
     });
   });
 
-  describe('Volume control with pointer capture dragging', () => {
-    it('should change volume when dragging volume slider', () => {
-      const audio = document.querySelector('audio') as HTMLAudioElement;
-      const volumeContainer = document.querySelector('.bes-volume') as HTMLElement;
+  describe('volume slider', () => {
+    const dragTo = (clientY: number) => {
+      const slider = document.querySelector('.bes-volume') as HTMLElement;
+      slider.getBoundingClientRect = vi.fn().mockReturnValue({ top: 0, height: 200 }) as never;
+      slider.setPointerCapture = vi.fn();
+      slider.releasePointerCapture = vi.fn();
+      slider.dispatchEvent(new PointerEvent('pointerdown', { clientY, pointerId: 1 }));
+      return slider;
+    };
 
-      audio.volume = 1.0;
+    it('should set the volume from the pointer position', () => {
+      dragTo(100);
 
-      // Mock getBoundingClientRect
-      volumeContainer.getBoundingClientRect = vi.fn().mockReturnValue({
-        top: 0,
-        height: 200
-      });
-
-      const pointerEvent = new PointerEvent('pointerdown', {
-        clientY: 100,
-        pointerId: 1
-      });
-
-      volumeContainer.dispatchEvent(pointerEvent);
-
-      // Handler: volume = 1 - (clientY - top) / height
-      // At y=100, volume should be 0.5
+      expect(audio.volume).toBeCloseTo(0.5);
     });
 
-    it('should use pointer capture during volume drag', () => {
-      const volumeContainer = document.querySelector('.bes-volume') as HTMLElement;
-      const setPointerCaptureSpy = vi.spyOn(volumeContainer, 'setPointerCapture');
+    it('should capture the pointer so dragging outside still tracks', () => {
+      const slider = dragTo(100);
 
-      volumeContainer.getBoundingClientRect = vi.fn().mockReturnValue({
-        top: 0,
-        height: 200
-      });
-
-      const pointerEvent = new PointerEvent('pointerdown', {
-        clientY: 100,
-        pointerId: 1
-      });
-
-      volumeContainer.dispatchEvent(pointerEvent);
-
-      // Handler calls: volumeContainer.setPointerCapture(e.pointerId)
+      expect(slider.setPointerCapture).toHaveBeenCalledWith(1);
     });
 
-    it('should release pointer capture on pointerup', () => {
-      const volumeContainer = document.querySelector('.bes-volume') as HTMLElement;
-      const releasePointerCaptureSpy = vi.spyOn(volumeContainer, 'releasePointerCapture');
+    it('should release the pointer when the drag ends', () => {
+      const slider = dragTo(100);
 
-      const pointerEvent = new PointerEvent('pointerup', {
-        pointerId: 1
-      });
+      slider.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }));
 
-      volumeContainer.dispatchEvent(pointerEvent);
+      expect(slider.releasePointerCapture).toHaveBeenCalledWith(1);
+    });
 
-      // Handler calls: volumeContainer.releasePointerCapture(e.pointerId)
+    it('should clamp the volume to the slider bounds', () => {
+      dragTo(-50);
+
+      expect(audio.volume).toBe(1);
     });
   });
 
-  describe('Mute/unmute with icon toggle', () => {
-    it('should mute when unmuted', () => {
-      const audio = document.querySelector('audio') as HTMLAudioElement;
-      const muteButton = document.querySelector('.bes-volume-mute') as HTMLElement;
+  describe('mute button', () => {
+    it('should silence the audio', () => {
+      audio.volume = 0.5;
 
-      Object.defineProperty(audio, 'volume', { value: 0.5, writable: true });
+      (document.querySelector('.bes-volume-mute') as HTMLElement).click();
 
-      muteButton.click();
-
-      // Handler: if (audio.volume > 0) { previousVolume = audio.volume; audio.volume = 0; }
+      expect(audio.volume).toBe(0);
     });
 
-    it('should unmute to previous volume', () => {
-      const audio = document.querySelector('audio') as HTMLAudioElement;
-      const muteButton = document.querySelector('.bes-volume-mute') as HTMLElement;
+    it('should restore the previous volume when unmuted', () => {
+      audio.volume = 0.5;
+      const mute = document.querySelector('.bes-volume-mute') as HTMLElement;
 
-      // First mute (volume was 0.5)
-      Object.defineProperty(audio, 'volume', { value: 0.5, writable: true });
-      muteButton.click();
+      mute.click();
+      mute.click();
 
-      // Then unmute
-      audio.volume = 0;
-      muteButton.click();
-
-      // Handler: audio.volume = previousVolume (0.5)
+      expect(audio.volume).toBeCloseTo(0.5);
     });
   });
 
-  describe('Track list click to play/pause', () => {
-    it('should play track when clicking different track row', async () => {
-      createDomNodes(`
-        <div class="bes-player-drawer-tracklist">
-          <table>
-            <tr class="bes-track-row">Track 1</tr>
-            <tr class="bes-track-row">Track 2</tr>
-          </table>
-        </div>
-        <audio></audio>
-      `);
+  describe('clicking a track row', () => {
+    const rowAt = (index: number) =>
+      document.querySelectorAll('.bes-player-drawer .bes-track-row')[index] as HTMLElement;
 
-      const trackRows = document.querySelectorAll('.bes-track-row');
-      const audio = document.querySelector('audio') as HTMLAudioElement;
+    it('should play a different track when its row is clicked', () => {
+      rowAt(1).click();
 
-      audio.play = vi.fn().mockResolvedValue(undefined);
-
-      // Handler: loadTrack(index); audio.play();
+      expect(player.getCurrentTrackIndex()).toBe(1);
+      expect(audio.play).toHaveBeenCalled();
     });
 
-    it('should toggle play/pause when clicking current track', async () => {
-      createDomNodes(`
-        <div class="bes-player-drawer-tracklist">
-          <table>
-            <tr class="bes-track-row bes-track-playing">Track 1</tr>
-            <tr class="bes-track-row">Track 2</tr>
-          </table>
-        </div>
-        <audio></audio>
-      `);
+    it('should pause the current track rather than restarting it', () => {
+      Object.defineProperty(audio, 'paused', { value: false, writable: true, configurable: true });
 
-      const currentTrack = document.querySelector('.bes-track-row.playing') as HTMLElement;
-      const audio = document.querySelector('audio') as HTMLAudioElement;
+      rowAt(0).click();
 
-      Object.defineProperty(audio, 'paused', { value: true, writable: true });
-      audio.play = vi.fn().mockResolvedValue(undefined);
-
-      // Handler: if (currentTrackIndex === index) { toggle play/pause }
+      expect(audio.pause).toHaveBeenCalled();
+      expect(audio.play).not.toHaveBeenCalled();
     });
 
-    it('should NOT trigger when clicking track link icon', () => {
-      createDomNodes(`
-        <div class="bes-player-drawer-tracklist">
-          <table>
-            <tr class="bes-track-row">
-              <td>
-                <a class="track-link-icon" href="/track/1">↗</a>
-              </td>
-            </tr>
-          </table>
-        </div>
-      `);
+    it('should resume the current track when it is paused', () => {
+      rowAt(0).click();
 
-      const trackLink = document.querySelector('.bes-track-link') as HTMLElement;
-
-      // Handler: if (target.closest('.bes-track-link')) return;
-    });
-  });
-
-  describe('Unplayable Track Handling (Pre-order/Disabled)', () => {
-    it('should implement isTrackPlayable helper function', () => {
-      // Core logic implemented: checks for track.streaming_url?.['mp3-128']
-      // This enables skipping pre-order and disabled tracks
-      expect(true).toBe(true);
+      expect(audio.play).toHaveBeenCalled();
     });
 
-    it('should implement findNextPlayableTrack helper function', () => {
-      // Core logic implemented: searches forward then backward for playable track
-      // Used by next button and auto-advance handlers
-      expect(true).toBe(true);
+    it('should not change track when the buy button is clicked', () => {
+      (rowAt(1).querySelector('.one-click-button') as HTMLElement).click();
+
+      expect(player.getCurrentTrackIndex()).toBe(0);
     });
 
-    it('should implement findPrevPlayableTrack helper function', () => {
-      // Core logic implemented: searches backward then forward for playable track
-      // Used by prev button handler
-      expect(true).toBe(true);
-    });
+    it('should not change track when the track link is clicked', () => {
+      (rowAt(1).querySelector('.bes-track-link') as HTMLElement).click();
 
-    it('should skip unplayable tracks in next button handler', () => {
-      // Next button now uses findNextPlayableTrack() to skip unplayable tracks
-      // Falls back to loading next album if no playable tracks remain
-      expect(true).toBe(true);
-    });
-
-    it('should skip unplayable tracks in prev button handler', () => {
-      // Prev button now uses findPrevPlayableTrack() to skip unplayable tracks
-      expect(true).toBe(true);
-    });
-
-    it('should skip unplayable tracks in auto-advance (onended)', () => {
-      // audio.onended now uses findNextPlayableTrack() to skip unplayable tracks
-      // Falls back to loading next album if no playable tracks remain
-      expect(true).toBe(true);
-    });
-
-    it('should handle albums starting with unplayable tracks', () => {
-      // loadTrack() calls findNextPlayableTrack() when track has no streaming_url
-      // This handles albums that start with pre-order tracks
-      expect(true).toBe(true);
+      expect(player.getCurrentTrackIndex()).toBe(0);
     });
   });
 });

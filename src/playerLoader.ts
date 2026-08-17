@@ -1,11 +1,11 @@
 import Logger from './logger';
-import { getTralbumDetails, TralbumDetailsResponse, CURRENCY_MINIMUMS } from './bclient';
+import { getTralbumDetails, TralbumDetailsResponse, TralbumTrack } from './bclient';
 import { getPlayerDrawerElements, updatePlayerDrawerInfo, updateMinimizedPlayButton } from './components/playerDrawer';
 import { createFetchFunction, shouldHandleShortcut } from './utilities';
-import { buildDrawerPlayer, buildTrackTable } from './nativePlayerBuilder';
+import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from './nativePlayerBuilder';
 import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS, keyBindingToString } from './types/keyboard';
 import { drawOverlay, generateAudioFeatures } from './audioFeatures';
-import { createAddToCartButton } from './components/cartButton';
+import { volumeIcon, mutedVolumeIcon } from './components/playerIcons';
 
 const log = new Logger();
 
@@ -31,7 +31,24 @@ let configPort: chrome.runtime.Port | null = null;
 let drawerPlayerCreated = false;
 let previousVolume = 1.0;
 
-// Create persistent audio element once
+const ALBUM_LOAD_SETTLE_MS = 300;
+
+const inDrawer = <T extends HTMLElement>(selector: string): T | null =>
+  document.querySelector<T>(`.bes-player-drawer ${selector}`);
+
+const allInDrawer = <T extends HTMLElement>(selector: string): T[] =>
+  Array.from(document.querySelectorAll<T>(`.bes-player-drawer ${selector}`));
+
+const setText = (selector: string, text: string): void => {
+  const element = inDrawer(selector);
+  if (element) element.textContent = text;
+};
+
+const setStyle = (selector: string, apply: (style: CSSStyleDeclaration) => void): void => {
+  const element = inDrawer(selector);
+  if (element) apply(element.style);
+};
+
 function ensureAudioElement(): HTMLAudioElement {
   if (!audioElement) {
     audioElement = document.createElement('audio');
@@ -43,18 +60,6 @@ function ensureAudioElement(): HTMLAudioElement {
   return audioElement;
 }
 
-// Update track info inside drawer player
-function updateDrawerTrackInfo(albumName: string, artistName: string, trackTitle: string): void {
-  const albumLabel = document.querySelector('.bes-album-label') as HTMLDivElement;
-  const trackTitleEl = document.querySelector('.bes-now-playing-title') as HTMLDivElement;
-  const artistNameEl = document.querySelector('.bes-artist-name') as HTMLDivElement;
-
-  if (albumLabel) albumLabel.textContent = albumName;
-  if (trackTitleEl) trackTitleEl.textContent = trackTitle;
-  if (artistNameEl) artistNameEl.textContent = artistName;
-}
-
-// Update BPM badge inside drawer player
 function updateDrawerBpmBadge(bpm: number | null): void {
   const bpmNumber = document.querySelector('.bes-bpm-number') as HTMLSpanElement;
   if (bpmNumber) {
@@ -118,13 +123,12 @@ function attachGlobalKeyboardHandlers(settings: KeyboardSettings): void {
 }
 
 export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
-  // Store port for later use
   if (!configPort) {
     configPort = port;
   }
 
-  const canvas = document.querySelector('.bes-player-drawer canvas.bes-waveform') as HTMLCanvasElement;
-  const bpmDisplay = document.querySelector('.bes-player-drawer .bes-bpm-number') as HTMLSpanElement;
+  const canvas = inDrawer<HTMLCanvasElement>('canvas.bes-waveform');
+  const bpmDisplay = inDrawer<HTMLSpanElement>('.bes-bpm-number');
 
   if (!canvas || !bpmDisplay) {
     log.warn('Drawer audio feature elements not found');
@@ -136,7 +140,6 @@ export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
   const waveformColour = '#e2e2e6'; // Grey base waveform (unplayed)
   const waveformOverlayColour = '#5b53e8'; // Purple accent (played portion)
 
-  // Set up audio event listeners for waveform
   audio.addEventListener('canplay', () => {
     if (currentTarget.value !== audio.src) {
       generateAudioFeatures(
@@ -162,6 +165,33 @@ export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
   });
 }
 
+type DrawerPlayerParts = ReturnType<typeof buildDrawerPlayer>;
+type DrawerElements = ReturnType<typeof getPlayerDrawerElements>;
+
+function replaceChildren(container: HTMLElement | null, ...children: (HTMLElement | null)[]): void {
+  if (!container) return;
+
+  container.innerHTML = '';
+  children.filter((child): child is HTMLElement => child !== null).forEach(child => container.appendChild(child));
+}
+
+function mountDrawerPlayer(elements: DrawerElements, parts: DrawerPlayerParts): void {
+  const headerActions = elements.rightColumn?.querySelector<HTMLElement>('.bes-player-drawer-header-actions') ?? null;
+
+  replaceChildren(elements.transportControls, parts.transportElement);
+  replaceChildren(elements.playerContainer, parts.centerElement);
+  replaceChildren(elements.rightColumn, headerActions, parts.volumeElement);
+}
+
+function startPlayerOnce(keyboardSettings?: KeyboardSettings): void {
+  if (playerInitialized) return;
+
+  ensureAudioElement();
+  initializePlayer();
+  attachGlobalKeyboardHandlers(keyboardSettings || DEFAULT_KEYBOARD_SETTINGS);
+  playerInitialized = true;
+}
+
 export async function loadAlbumIntoDrawer(
   albumId: string,
   albumType: string,
@@ -172,9 +202,12 @@ export async function loadAlbumIntoDrawer(
   log.info(`Loading album ${albumId} (${albumType}) into drawer`);
 
   try {
-    const fetchFn = createFetchFunction(enableFetchCaching);
-    const apiType = convertToApiType(albumType);
-    const tralbumDetails = await getTralbumDetails(albumId, apiType, null, fetchFn);
+    const tralbumDetails = await getTralbumDetails(
+      albumId,
+      convertToApiType(albumType),
+      null,
+      createFetchFunction(enableFetchCaching)
+    );
 
     currentAlbumData = tralbumDetails;
     currentAlbumIndex = findAlbumIndexById(albumId);
@@ -185,110 +218,26 @@ export async function loadAlbumIntoDrawer(
       return;
     }
 
-    const albumArtUrl = extractAlbumArtFromPage(albumId, albumType);
-    updatePlayerDrawerInfo(albumArtUrl);
+    updatePlayerDrawerInfo(extractAlbumArtFromPage(albumId, albumType));
 
-    // Update track info inside player (if it exists)
-    updateDrawerTrackInfo(tralbumDetails.title, tralbumDetails.tralbum_artist, tralbumDetails.title);
+    if (drawerPlayerCreated) {
+      replaceChildren(
+        elements.tracklistContainer,
+        buildAlbumBuyButton(tralbumDetails),
+        buildTrackTable(tralbumDetails)
+      );
+    } else {
+      const parts = buildDrawerPlayer(tralbumDetails);
 
-    // Create player controls ONCE on first load
-    if (!drawerPlayerCreated) {
-      const { transportElement, centerElement, volumeElement, tracklistElement, albumBuyButton } =
-        buildDrawerPlayer(tralbumDetails);
-
-      // Populate the three columns
-      if (elements.transportControls) {
-        elements.transportControls.innerHTML = '';
-        elements.transportControls.appendChild(transportElement);
-      }
-
-      elements.playerContainer.innerHTML = '';
-      elements.playerContainer.appendChild(centerElement);
-
-      if (elements.rightColumn) {
-        // Preserve header actions (minimize/close buttons) at top
-        const headerActions = elements.rightColumn.querySelector('.bes-player-drawer-header-actions');
-        elements.rightColumn.innerHTML = '';
-        if (headerActions) {
-          elements.rightColumn.appendChild(headerActions);
-        }
-        elements.rightColumn.appendChild(volumeElement);
-      }
-
-      if (elements.tracklistContainer) {
-        elements.tracklistContainer.innerHTML = '';
-        // Add album buy button ABOVE tracklist if it exists
-        if (albumBuyButton) {
-          elements.tracklistContainer.appendChild(albumBuyButton);
-        }
-        elements.tracklistContainer.appendChild(tracklistElement);
-      }
-
+      mountDrawerPlayer(elements, parts);
+      replaceChildren(elements.tracklistContainer, parts.albumBuyButton, parts.tracklistElement);
       drawerPlayerCreated = true;
 
-      // Ensure persistent audio element exists
-      ensureAudioElement();
-
-      // Initialize player event listeners ONCE
-      if (!playerInitialized) {
-        initializePlayer();
-        playerInitialized = true;
-
-        // Attach keyboard handlers
-        const settings = keyboardSettings || DEFAULT_KEYBOARD_SETTINGS;
-        attachGlobalKeyboardHandlers(settings);
-      }
-
-      // Initialize audio features ONCE
-      if (port) {
-        initDrawerAudioFeatures(port);
-      }
-    } else {
-      // Just update the tracklist for subsequent albums
-      const tracklistElement = buildTrackTable(tralbumDetails);
-
-      // Rebuild album buy button if album is purchasable
-      let albumBuyButton: HTMLElement | null = null;
-      if (tralbumDetails.is_purchasable && tralbumDetails.price !== undefined) {
-        const { price, currency, id, title, type } = tralbumDetails;
-        const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency] || 0.5;
-
-        const buyButtonElement = createAddToCartButton({
-          price: minimumPrice,
-          currency: currency,
-          tralbumId: String(id),
-          itemTitle: title,
-          type: type,
-          log
-        });
-
-        const container = document.createElement('div');
-        container.className = 'bes-album-buy';
-
-        const label = document.createElement('span');
-        label.className = 'bes-album-buy-label';
-        label.textContent = 'Buy Album';
-
-        container.appendChild(label);
-        container.appendChild(buyButtonElement);
-
-        albumBuyButton = container;
-      }
-
-      if (elements.tracklistContainer) {
-        elements.tracklistContainer.innerHTML = '';
-        // Add album buy button ABOVE tracklist if it exists
-        if (albumBuyButton) {
-          elements.tracklistContainer.appendChild(albumBuyButton);
-        }
-        elements.tracklistContainer.appendChild(tracklistElement);
-      }
+      startPlayerOnce(keyboardSettings);
+      if (port) initDrawerAudioFeatures(port);
     }
 
-    // Attach track list handlers (happens after every album load)
     attachTrackListHandlers();
-
-    // Load first track (but don't play)
     loadTrack(0);
 
     log.info(`Album loaded: ${tralbumDetails.title} by ${tralbumDetails.tralbum_artist}`);
@@ -298,52 +247,51 @@ export async function loadAlbumIntoDrawer(
   }
 }
 
-function isTrackPlayable(track: any): boolean {
-  return Boolean(track?.streaming_url?.['mp3-128']);
+function streamUrlOf(track: TralbumTrack | undefined): string | undefined {
+  return track?.streaming_url?.['mp3-128'];
+}
+
+function isTrackPlayable(track: TralbumTrack | undefined): boolean {
+  return Boolean(streamUrlOf(track));
 }
 
 function loadTrack(index: number): void {
-  if (!currentAlbumData?.tracks || !audioElement) {
+  const tracks = currentAlbumData?.tracks;
+  if (!tracks || !audioElement) {
     log.warn('No album data or audio element available');
     return;
   }
 
-  const tracks = currentAlbumData.tracks;
   if (index < 0 || index >= tracks.length) {
     log.warn(`Track index ${index} out of bounds (0-${tracks.length - 1})`);
     return;
   }
 
-  const track = tracks[index];
-
-  log.debug(`loadTrack(${index}): ${track.title}, isPlayable=${isTrackPlayable(track)}`);
-
   currentTrackIndex = index;
 
-  // Set audio source - DO NOT call .play() here
-  if (isTrackPlayable(track)) {
-    log.info(`Loading track ${index}: ${track.title}`);
-    audioElement.src = track.streaming_url!['mp3-128'];
-  } else {
+  const track = tracks[index];
+  const streamUrl = streamUrlOf(track);
+
+  if (!streamUrl) {
     log.warn(`No streaming URL for track: ${track.title} (pre-order or disabled)`);
-    // Try to find next track with streaming URL
-    const nextIndex = findAnyPlayableTrack(index);
-    log.debug(`Track ${index} unplayable, findAnyPlayableTrack returned ${nextIndex}`);
-    if (nextIndex !== -1 && nextIndex !== index) {
-      log.info(`Skipping to next playable track: ${nextIndex}`);
-      loadTrack(nextIndex);
-      return;
-    }
+
+    const playableInstead = findAnyPlayableTrack(index);
+    if (playableInstead === -1 || playableInstead === index) return;
+
+    log.info(`Skipping to playable track ${playableInstead}`);
+    loadTrack(playableInstead);
     return;
   }
 
-  // Update UI
+  log.info(`Loading track ${index}: ${track.title}`);
+  audioElement.src = streamUrl;
+
   updateTrackInfo(track.title);
   updateTrackRows(index);
   updatePrevNextButtons(index, tracks.length);
 }
 
-export function findPlayableTrackAfter(tracks: any[] | undefined, startIndex: number): number {
+export function findPlayableTrackAfter(tracks: TralbumTrack[] | undefined, startIndex: number): number {
   if (!tracks) return -1;
 
   for (let i = startIndex + 1; i < tracks.length; i++) {
@@ -355,7 +303,7 @@ export function findPlayableTrackAfter(tracks: any[] | undefined, startIndex: nu
   return -1;
 }
 
-export function findPlayableTrackBefore(tracks: any[] | undefined, startIndex: number): number {
+export function findPlayableTrackBefore(tracks: TralbumTrack[] | undefined, startIndex: number): number {
   if (!tracks) return -1;
 
   for (let i = Math.min(startIndex, tracks.length) - 1; i >= 0; i--) {
@@ -374,129 +322,106 @@ function findAnyPlayableTrack(startIndex: number): number {
 }
 
 function updateTrackInfo(title: string): void {
-  // Update track title, album, and artist in new player structure
-  const trackTitleEl = document.querySelector('.bes-player-drawer .bes-now-playing-title') as HTMLDivElement;
-  const albumLabel = document.querySelector('.bes-player-drawer .bes-album-label') as HTMLDivElement;
-  const artistName = document.querySelector('.bes-player-drawer .bes-artist-name') as HTMLDivElement;
+  setText('.bes-now-playing-title', title);
+  if (!currentAlbumData) return;
 
-  if (trackTitleEl) {
-    trackTitleEl.textContent = title;
-  }
-
-  if (currentAlbumData) {
-    if (albumLabel) {
-      albumLabel.textContent = currentAlbumData.title;
-    }
-    if (artistName) {
-      artistName.textContent = currentAlbumData.tralbum_artist;
-    }
-  }
+  setText('.bes-album-label', currentAlbumData.title);
+  setText('.bes-artist-name', currentAlbumData.tralbum_artist);
 }
 
 function updateTrackRows(index: number): void {
-  const trackRows = document.querySelectorAll('.bes-player-drawer .bes-track-row');
+  const trackRows = allInDrawer('.bes-track-row');
   trackRows.forEach((row, i) => {
     row.classList.toggle('bes-track-playing', i === index);
   });
 }
 
 function updatePrevNextButtons(index: number, totalTracks: number): void {
-  const prevButton = document.querySelector('.bes-player-drawer .bes-transport-prev');
-  const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next');
+  const prevButton = inDrawer('.bes-transport-prev');
+  const nextButton = inDrawer('.bes-transport-next');
 
-  // Prev button: hide only if at first track AND no previous album available
-  const canGoPrev = index > 0 || currentAlbumIndex > 0;
-  prevButton?.classList.toggle('bes-hidden', !canGoPrev);
+  const hasEarlierTrackOrAlbum = index > 0 || currentAlbumIndex > 0;
+  const hasLaterTrackOrAlbum = index < totalTracks - 1 || currentAlbumIndex < discographyOrder.length - 1;
 
-  // Next button: hide only if at last track AND no next album available
-  const canGoNext = index < totalTracks - 1 || currentAlbumIndex < discographyOrder.length - 1;
-  nextButton?.classList.toggle('bes-hidden', !canGoNext);
+  prevButton?.classList.toggle('bes-hidden', !hasEarlierTrackOrAlbum);
+  nextButton?.classList.toggle('bes-hidden', !hasLaterTrackOrAlbum);
 }
 
-// Core player control functions - shared by button clicks and keyboard shortcuts
+function resumePlayback(): void {
+  audioElement?.play().catch(error => log.error(`Failed to play: ${error}`));
+}
+
 function playPause(): void {
   if (!audioElement) return;
 
   if (audioElement.paused) {
-    audioElement.play().catch(error => {
-      log.error(`Failed to play: ${error}`);
-    });
-  } else {
-    audioElement.pause();
+    resumePlayback();
+    return;
   }
+
+  audioElement.pause();
 }
 
-async function nextTrack(): Promise<void> {
-  if (!audioElement) return;
-
-  const wasPlaying = !audioElement.paused;
-  const nextIndex = findPlayableTrackAfter(currentAlbumData?.tracks, currentTrackIndex);
-  log.debug(`Next track: from ${currentTrackIndex}, next playable is ${nextIndex}`);
-
-  if (nextIndex !== -1) {
-    loadTrack(nextIndex);
-    if (wasPlaying) {
-      audioElement.play().catch(error => log.error(`Failed to play: ${error}`));
-    }
-    return;
-  }
-
-  if (currentAlbumIndex >= discographyOrder.length - 1) {
-    log.debug('No playable track ahead and no next album');
-    return;
-  }
-
-  log.info('No playable track ahead: loading next album in discography');
-  await loadNextAlbum();
-
-  setTimeout(() => {
-    const firstPlayable = findPlayableTrackAfter(currentAlbumData?.tracks, -1);
-    if (firstPlayable === -1) {
-      log.warn('Next album has no playable tracks');
-      return;
-    }
-    loadTrack(firstPlayable);
-    if (wasPlaying) {
-      audioElement?.play().catch(error => log.error(`Failed to play: ${error}`));
-    }
-  }, 300);
+interface TrackStep {
+  name: string;
+  nextWithinAlbum: (tracks: TralbumTrack[] | undefined, from: number) => number;
+  hasAdjacentAlbum: () => boolean;
+  loadAdjacentAlbum: () => Promise<boolean>;
+  entryTrack: (tracks: TralbumTrack[] | undefined) => number;
 }
 
-async function prevTrack(): Promise<void> {
-  if (!audioElement) return;
+const forward: TrackStep = {
+  name: 'next',
+  nextWithinAlbum: findPlayableTrackAfter,
+  hasAdjacentAlbum: () => currentAlbumIndex < discographyOrder.length - 1,
+  loadAdjacentAlbum: loadNextAlbum,
+  entryTrack: tracks => findPlayableTrackAfter(tracks, -1)
+};
 
-  const wasPlaying = !audioElement.paused;
-  const prevIndex = findPlayableTrackBefore(currentAlbumData?.tracks, currentTrackIndex);
-  log.debug(`Prev track: from ${currentTrackIndex}, previous playable is ${prevIndex}`);
+const backward: TrackStep = {
+  name: 'previous',
+  nextWithinAlbum: findPlayableTrackBefore,
+  hasAdjacentAlbum: () => currentAlbumIndex > 0,
+  loadAdjacentAlbum: loadPreviousAlbum,
+  entryTrack: tracks => findPlayableTrackBefore(tracks, tracks?.length ?? 0)
+};
 
-  if (prevIndex !== -1) {
-    loadTrack(prevIndex);
-    if (wasPlaying) {
-      audioElement.play().catch(error => log.error(`Failed to play: ${error}`));
-    }
+async function step(direction: TrackStep, keepPlaying: boolean): Promise<void> {
+  const withinAlbum = direction.nextWithinAlbum(currentAlbumData?.tracks, currentTrackIndex);
+  log.debug(`Stepping ${direction.name} from ${currentTrackIndex}, playable track is ${withinAlbum}`);
+
+  if (withinAlbum !== -1) {
+    loadTrack(withinAlbum);
+    if (keepPlaying) resumePlayback();
     return;
   }
 
-  if (currentAlbumIndex <= 0) {
-    log.debug('No playable track behind and no previous album');
+  if (!direction.hasAdjacentAlbum()) {
+    log.debug(`No playable track ${direction.name} and no ${direction.name} album`);
     return;
   }
 
-  log.info('No playable track behind: loading previous album in discography');
-  await loadPreviousAlbum();
+  log.info(`No playable track ${direction.name}: loading ${direction.name} album in discography`);
+  await direction.loadAdjacentAlbum();
 
   setTimeout(() => {
-    const tracks = currentAlbumData?.tracks;
-    const lastPlayable = findPlayableTrackBefore(tracks, tracks ? tracks.length : 0);
-    if (lastPlayable === -1) {
-      log.warn('Previous album has no playable tracks');
+    const entry = direction.entryTrack(currentAlbumData?.tracks);
+    if (entry === -1) {
+      log.warn(`The ${direction.name} album has no playable tracks`);
       return;
     }
-    loadTrack(lastPlayable);
-    if (wasPlaying) {
-      audioElement?.play().catch(error => log.error(`Failed to play: ${error}`));
-    }
-  }, 300);
+
+    loadTrack(entry);
+    if (keepPlaying) resumePlayback();
+  }, ALBUM_LOAD_SETTLE_MS);
+}
+
+function nextTrack(): Promise<void> {
+  return step(forward, Boolean(audioElement && !audioElement.paused));
+}
+
+function prevTrack(): Promise<void> {
+  return step(backward, Boolean(audioElement && !audioElement.paused));
 }
 
 function toggleMute(): void {
@@ -515,20 +440,8 @@ function toggleMute(): void {
 }
 
 function updateTimeDisplay(currentTime: number, duration: number): void {
-  const timeElapsed = document.querySelector('.bes-player-drawer .bes-time-elapsed');
-  if (timeElapsed) {
-    timeElapsed.textContent = formatTime(currentTime);
-  }
-
-  const timeTotal = document.querySelector('.bes-player-drawer .bes-time-total');
-  if (timeTotal && !isNaN(duration)) {
-    timeTotal.textContent = formatTime(duration);
-  }
-
-  const timeSection = document.querySelector('.bes-player-drawer .bes-time-elapsed');
-  if (timeSection) {
-    timeSection.classList.remove('bes-hidden');
-  }
+  setText('.bes-time-elapsed', formatTime(currentTime));
+  if (!isNaN(duration)) setText('.bes-time-total', formatTime(duration));
 }
 
 function updateProgressBar(): void {
@@ -536,15 +449,8 @@ function updateProgressBar(): void {
 
   const percent = (audioElement.currentTime / audioElement.duration) * 100;
 
-  const progbarFill = document.querySelector('.bes-player-drawer .bes-progbar-fill') as HTMLElement;
-  if (progbarFill) {
-    progbarFill.style.width = `${percent}%`;
-  }
-
-  const thumb = document.querySelector('.bes-player-drawer .bes-slider-container .bes-progbar-thumb') as HTMLElement;
-  if (thumb) {
-    thumb.style.left = `${percent}%`;
-  }
+  setStyle('.bes-progbar-fill', style => (style.width = `${percent}%`));
+  setStyle('.bes-slider-container .bes-progbar-thumb', style => (style.left = `${percent}%`));
 
   updateTimeDisplay(audioElement.currentTime, audioElement.duration);
 }
@@ -554,181 +460,126 @@ export function isPlaybackClick(target: HTMLElement | null): boolean {
   return !target.closest('.bes-track-link, .bes-track-buy-col');
 }
 
+function playTrackFromList(index: number): void {
+  if (!audioElement) return;
+
+  if (currentTrackIndex === index) {
+    playPause();
+    return;
+  }
+
+  loadTrack(index);
+  resumePlayback();
+}
+
 function attachTrackListHandlers(): void {
-  const trackRows = document.querySelectorAll('.bes-player-drawer .bes-track-row');
+  allInDrawer('.bes-track-row').forEach((row, index) => {
+    row.addEventListener('click', event => {
+      if (!isPlaybackClick(event.target as HTMLElement)) return;
 
-  trackRows.forEach((row, index) => {
-    // Make entire row clickable
-    row.addEventListener('click', (e: Event) => {
-      if (!isPlaybackClick(e.target as HTMLElement)) {
-        return;
-      }
-
-      loadTrack(index);
-      if (audioElement) {
-        if (currentTrackIndex === index) {
-          // Clicking current track toggles play/pause
-          if (audioElement.paused) {
-            audioElement.play();
-          } else {
-            audioElement.pause();
-          }
-        } else {
-          // Clicking different track plays it
-          audioElement.play();
-        }
-      }
+      playTrackFromList(index);
     });
   });
 }
 
 function updateVolumeDisplay(volume: number): void {
-  const volumeFill = document.querySelector('.bes-player-drawer .bes-volume-fill') as HTMLElement;
-  const volumeThumb = document.querySelector('.bes-player-drawer .bes-volume-thumb') as HTMLElement;
-  const volumePercent = document.querySelector('.bes-player-drawer .bes-volume-percent') as HTMLElement;
-
   const percent = volume * 100;
 
-  if (volumeFill) {
-    volumeFill.style.height = `${percent}%`;
-  }
-
-  if (volumeThumb) {
-    volumeThumb.style.bottom = `${percent}%`;
-  }
-
-  if (volumePercent) {
-    volumePercent.textContent = `${Math.round(percent)}%`;
-  }
+  setStyle('.bes-volume-fill', style => (style.height = `${percent}%`));
+  setStyle('.bes-volume-thumb', style => (style.bottom = `${percent}%`));
+  setText('.bes-volume-percent', `${Math.round(percent)}%`);
 }
 
 function updateMuteButton(isMuted: boolean): void {
-  const muteButton = document.querySelector('.bes-player-drawer .bes-volume-mute') as HTMLElement;
+  const muteButton = inDrawer('.bes-volume-mute');
   if (!muteButton) return;
 
-  const muteIcon = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
-  const unmuteIcon = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+  muteButton.innerHTML = isMuted ? mutedVolumeIcon(19) : volumeIcon(19);
+}
 
-  muteButton.innerHTML = isMuted ? muteIcon : unmuteIcon;
+function bindTransportControls(): void {
+  const bind = (selector: string, handler: () => void) => {
+    const button = inDrawer(selector);
+    if (button) button.onclick = handler;
+  };
+
+  bind('.bes-transport-play', playPause);
+  bind('.bes-transport-prev', prevTrack);
+  bind('.bes-transport-next', nextTrack);
+  bind('.bes-volume-mute', toggleMute);
+}
+
+function bindSeeking(audio: HTMLAudioElement): void {
+  const progbar = inDrawer('.bes-progbar');
+  if (!progbar) return;
+
+  progbar.onclick = event => {
+    const { left, width } = progbar.getBoundingClientRect();
+    audio.currentTime = ((event.clientX - left) / width) * audio.duration;
+  };
+}
+
+function bindVolumeSlider(audio: HTMLAudioElement): void {
+  const slider = inDrawer('.bes-volume');
+  if (!slider) return;
+
+  let dragging = false;
+
+  const volumeAt = (event: PointerEvent): number => {
+    const { top, height } = slider.getBoundingClientRect();
+    return Math.max(0, Math.min(1, 1 - (event.clientY - top) / height));
+  };
+
+  const applyVolume = (event: PointerEvent) => {
+    audio.volume = volumeAt(event);
+    updateVolumeDisplay(audio.volume);
+  };
+
+  slider.onpointerdown = event => {
+    dragging = true;
+    slider.setPointerCapture(event.pointerId);
+    applyVolume(event);
+  };
+
+  slider.onpointermove = event => {
+    if (dragging) applyVolume(event);
+  };
+
+  slider.onpointerup = event => {
+    dragging = false;
+    slider.releasePointerCapture(event.pointerId);
+  };
+}
+
+function bindAudioEvents(audio: HTMLAudioElement, playButton: HTMLElement): void {
+  const reflectPlaying = (isPlaying: boolean) => () => {
+    playButton.classList.toggle('playing', isPlaying);
+    updateMinimizedPlayButton(isPlaying);
+  };
+
+  audio.onplay = reflectPlaying(true);
+  audio.onpause = reflectPlaying(false);
+  audio.onended = () => step(forward, true);
+  audio.ontimeupdate = updateProgressBar;
 }
 
 function initializePlayer(): void {
   log.info('Initializing player');
 
   const audio = audioElement;
-  const playButton = document.querySelector('.bes-player-drawer .bes-transport-play') as HTMLElement;
-  const prevButton = document.querySelector('.bes-player-drawer .bes-transport-prev') as HTMLElement;
-  const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLElement;
-  const progbar = document.querySelector('.bes-player-drawer .bes-progbar') as HTMLElement;
-  const volumeContainer = document.querySelector('.bes-player-drawer .bes-volume') as HTMLElement;
-  const volumeMuteButton = document.querySelector('.bes-player-drawer .bes-volume-mute') as HTMLElement;
-
+  const playButton = inDrawer('.bes-transport-play');
   if (!audio || !playButton) {
     log.error('Required player elements not found');
     return;
   }
 
-  // Initialize volume to 100%
   audio.volume = 1.0;
-  updateVolumeDisplay(1.0);
+  updateVolumeDisplay(audio.volume);
 
-  // Play/pause button
-  playButton.onclick = playPause;
-
-  // Prev button
-  if (prevButton) {
-    prevButton.onclick = prevTrack;
-  }
-
-  // Next button
-  if (nextButton) {
-    nextButton.onclick = nextTrack;
-  }
-
-  // Progress bar seek
-  if (progbar) {
-    progbar.onclick = (e: MouseEvent) => {
-      const rect = progbar.getBoundingClientRect();
-      const percent = (e.clientX - rect.left) / rect.width;
-      audio.currentTime = percent * audio.duration;
-    };
-  }
-
-  // Volume slider - custom div-based slider
-  if (volumeContainer) {
-    let isVolumeChanging = false;
-
-    const handleVolumeChange = (e: MouseEvent) => {
-      const rect = volumeContainer.getBoundingClientRect();
-      const percent = 1 - (e.clientY - rect.top) / rect.height;
-      const volume = Math.max(0, Math.min(1, percent));
-      audio.volume = volume;
-      updateVolumeDisplay(volume);
-    };
-
-    volumeContainer.onpointerdown = (e: PointerEvent) => {
-      isVolumeChanging = true;
-      volumeContainer.setPointerCapture(e.pointerId);
-      handleVolumeChange(e);
-    };
-
-    volumeContainer.onpointermove = (e: PointerEvent) => {
-      if (isVolumeChanging) {
-        handleVolumeChange(e);
-      }
-    };
-
-    volumeContainer.onpointerup = (e: PointerEvent) => {
-      isVolumeChanging = false;
-      volumeContainer.releasePointerCapture(e.pointerId);
-    };
-  }
-
-  // Mute button
-  if (volumeMuteButton) {
-    volumeMuteButton.onclick = toggleMute;
-  }
-
-  // Audio events
-  audio.onplay = () => {
-    playButton.classList.add('playing');
-    updateMinimizedPlayButton(true);
-  };
-  audio.onpause = () => {
-    playButton.classList.remove('playing');
-    updateMinimizedPlayButton(false);
-  };
-  audio.onended = async () => {
-    log.debug(`Track ended at index ${currentTrackIndex}`);
-
-    const nextIndex = findPlayableTrackAfter(currentAlbumData?.tracks, currentTrackIndex);
-    if (nextIndex !== -1) {
-      loadTrack(nextIndex);
-      audio.play().catch(error => log.error(`Failed to play: ${error}`));
-      return;
-    }
-
-    if (currentAlbumIndex >= discographyOrder.length - 1) {
-      log.debug('Album finished and no next album to advance to');
-      return;
-    }
-
-    log.info('Album finished: loading next album in discography');
-    await loadNextAlbum();
-
-    setTimeout(() => {
-      const firstPlayable = findPlayableTrackAfter(currentAlbumData?.tracks, -1);
-      if (firstPlayable === -1) {
-        log.warn('Next album has no playable tracks');
-        return;
-      }
-      loadTrack(firstPlayable);
-      audio.play().catch(error => log.error(`Failed to play: ${error}`));
-    }, 300);
-  };
-  audio.ontimeupdate = () => {
-    updateProgressBar();
-  };
+  bindTransportControls();
+  bindSeeking(audio);
+  bindVolumeSlider(audio);
+  bindAudioEvents(audio, playButton);
 }
 
 function formatTime(seconds: number): string {
@@ -825,7 +676,6 @@ function buildKeyHandlersFromSettings(settings: KeyboardSettings): KeyHandlers {
 }
 
 function keydownCallback(e: KeyboardEvent, keyHandlers: KeyHandlers, preventDefault: boolean): void {
-  // Only respond to keypresses when drawer is open
   const drawer = document.querySelector('.bes-player-drawer');
   if (!drawer || !(drawer as HTMLElement).classList.contains('open')) {
     return;

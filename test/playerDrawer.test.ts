@@ -1,12 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 import { prevIcon, nextIcon } from '../src/components/playerIcons';
-import {
-  createPlayerDrawer,
-  getPlayerDrawerElements,
-  updatePlayerDrawerInfo,
-  updateMinimizedPlayButton
-} from '../src/components/playerDrawer';
+import { createPlayerDrawer, updatePlayerDrawerInfo, updateMinimizedPlayButton } from '../src/components/playerDrawer';
 
 vi.mock('../src/logger', () => ({
   createLogger: vi.fn(() => ({

@@ -12,6 +12,7 @@ vi.mock('../src/logger', () => ({
 
 vi.mock('../src/bclient', () => ({
   addAlbumToCart: vi.fn().mockResolvedValue(new Response('{"success": true}', { status: 200 })),
+  removeAlbumFromCart: vi.fn().mockResolvedValue(new Response('{"success": true}', { status: 200 })),
   getTralbumDetails: vi.fn().mockResolvedValue({ id: 123, title: 'Test Album', price: 10 }),
   CURRENCY_MINIMUMS: { USD: 0.5, EUR: 0.25 }
 }));
@@ -85,7 +86,9 @@ vi.mock('../src/components/shoppingCart', () => ({
 }));
 
 vi.mock('../src/components/svgIcons', () => ({
-  createPlusSvgIcon: vi.fn().mockReturnValue(document.createElement('div'))
+  createPlusSvgIcon: vi.fn(() => document.createElement('div')),
+  createCheckSvgIcon: vi.fn(() => document.createElement('div')),
+  createXSvgIcon: vi.fn(() => document.createElement('div'))
 }));
 
 import { initCart } from '../src/pages/cart';

@@ -364,14 +364,6 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
-  describe('AC-P1: Album art display (verified in playerDrawer)', () => {
-    it('should be tested in playerDrawer tests', () => {
-      // AC-P1 is implemented in playerDrawer.ts, not nativePlayerBuilder
-      // This is just a placeholder to document the AC coverage
-      expect(true).toBe(true);
-    });
-  });
-
   describe('Album purchase button', () => {
     it('should create album buy button when album is purchasable', () => {
       const purchasableTralbum = {

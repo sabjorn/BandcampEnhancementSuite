@@ -297,14 +297,6 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
       expect(mockContext.fillStyle).toBe(overlayColour);
     });
   });
-
-  describe('AC-I5: Waveform/slider mode toggle buttons', () => {
-    it('should be tested in nativePlayerBuilder', () => {
-      // AC-I5 toggle buttons are created in nativePlayerBuilder
-      // and tested in nativePlayerBuilder.test.ts
-      expect(true).toBe(true);
-    });
-  });
 });
 
 describe('extractTrackId', () => {

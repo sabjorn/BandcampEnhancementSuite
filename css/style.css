@@ -984,6 +984,17 @@ button.bes-downloadall[disabled]::after {
   overflow: visible !important;
 }
 
+body.bes-drawer-host #pgBd {
+  transition:
+    margin-left 0.3s ease,
+    padding-left 0.3s ease;
+}
+
+body.bes-drawer-expanded #pgBd {
+  margin-left: 10px !important;
+  padding-left: 10px !important;
+}
+
 /* Player Drawer Styles */
 .bes-player-drawer-overlay {
   position: fixed;

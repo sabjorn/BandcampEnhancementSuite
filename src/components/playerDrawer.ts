@@ -125,12 +125,19 @@ export function createPlayerDrawer(): {
 
   const overlay = element('div', { className: 'bes-player-drawer-overlay' });
 
+  document.body.classList.add('bes-drawer-host');
+
+  const reflowPageAroundDrawer = () => {
+    document.body.classList.toggle('bes-drawer-expanded', drawerState.isOpen && !drawerState.isMinimized);
+  };
+
   const openDrawer = () => {
     log.info('Opening player drawer');
     drawer.classList.add('open');
     drawer.classList.remove('minimized');
     drawerState.isOpen = true;
     drawerState.isMinimized = false;
+    reflowPageAroundDrawer();
   };
 
   const closeDrawer = () => {
@@ -139,6 +146,7 @@ export function createPlayerDrawer(): {
     drawer.classList.remove('minimized');
     drawerState.isOpen = false;
     drawerState.isMinimized = false;
+    reflowPageAroundDrawer();
 
     const audio = document.querySelector('audio');
     if (audio && !audio.paused) {
@@ -150,12 +158,14 @@ export function createPlayerDrawer(): {
     log.info('Minimizing player drawer');
     drawer.classList.add('minimized');
     drawerState.isMinimized = true;
+    reflowPageAroundDrawer();
   };
 
   const maximizeDrawer = () => {
     log.info('Maximizing player drawer');
     drawer.classList.remove('minimized');
     drawerState.isMinimized = false;
+    reflowPageAroundDrawer();
   };
 
   const getState = (): PlayerDrawerState => ({ ...drawerState });

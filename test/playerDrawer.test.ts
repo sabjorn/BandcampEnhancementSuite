@@ -92,6 +92,63 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     });
   });
 
+  describe('Reclaiming the page gutter while the drawer is expanded', () => {
+    const pageIsNarrowed = () => document.body.classList.contains('bes-drawer-expanded');
+
+    afterEach(() => {
+      document.body.classList.remove('bes-drawer-expanded', 'bes-drawer-host');
+    });
+
+    it('should mark the page as hosting a drawer so the change can animate', () => {
+      const { drawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      expect(document.body.classList.contains('bes-drawer-host')).toBe(true);
+    });
+
+    it('should narrow the page gutter when the drawer opens', () => {
+      const { drawer, openDrawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      expect(pageIsNarrowed()).toBe(false);
+
+      openDrawer();
+
+      expect(pageIsNarrowed()).toBe(true);
+    });
+
+    it('should give the gutter back when the drawer closes', () => {
+      const { drawer, openDrawer, closeDrawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      openDrawer();
+      closeDrawer();
+
+      expect(pageIsNarrowed()).toBe(false);
+    });
+
+    it('should give the gutter back when the drawer shrinks to the wedge', () => {
+      const { drawer, openDrawer, minimizeDrawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      openDrawer();
+      minimizeDrawer();
+
+      expect(pageIsNarrowed()).toBe(false);
+    });
+
+    it('should narrow the gutter again when the wedge is expanded', () => {
+      const { drawer, openDrawer, minimizeDrawer, maximizeDrawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      openDrawer();
+      minimizeDrawer();
+      maximizeDrawer();
+
+      expect(pageIsNarrowed()).toBe(true);
+    });
+  });
+
   describe('AC-P9: Minimize/close buttons', () => {
     it('should have minimize button that toggles state', () => {
       const { drawer, openDrawer, getState } = createPlayerDrawer();

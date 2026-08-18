@@ -75,6 +75,25 @@ describe('drawer stylesheet invariants', () => {
     });
   });
 
+  describe('the page gutter follows the drawer', () => {
+    it('should narrow the gutter only while the drawer is expanded', () => {
+      const rule = ruleFor('body.bes-drawer-expanded #pgBd') ?? '';
+
+      expect(rule).toContain('margin-left: 10px');
+      expect(rule).toContain('padding-left: 10px');
+    });
+
+    it('should win against the styles the page sets for itself', () => {
+      const rule = ruleFor('body.bes-drawer-expanded #pgBd') ?? '';
+
+      expect(rule.match(/!important/g)?.length).toBe(2);
+    });
+
+    it('should animate the gutter in both directions', () => {
+      expect(ruleFor('body.bes-drawer-host #pgBd')).toContain('transition');
+    });
+  });
+
   describe('visual continuity between the two states', () => {
     it('should band the drawer in the same colour as the wedge', () => {
       const wedgeBackground = ruleFor('.bes-player-drawer-minimized-bar') ?? '';

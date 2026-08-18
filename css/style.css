@@ -1109,7 +1109,6 @@ body.bes-drawer-expanded #pgBd {
   gap: 20px;
   min-width: 0;
   width: 100%;
-  max-width: 624px;
 }
 
 /* LEFT COLUMN: Album art + transport controls */

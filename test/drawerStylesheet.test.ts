@@ -122,6 +122,23 @@ describe('drawer stylesheet invariants', () => {
     });
   });
 
+  describe('extra drawer width goes to the player, not the volume column', () => {
+    it('should let the header span the drawer rather than capping it', () => {
+      expect(ruleFor('.bes-player-drawer-main')).not.toContain('max-width');
+    });
+
+    it('should give the spare width to the centre column', () => {
+      expect(ruleFor('.bes-player-drawer-center')).toContain('flex: 1');
+    });
+
+    it('should hold the volume column at a fixed width against the right edge', () => {
+      const rule = ruleFor('.bes-player-drawer-right') ?? '';
+
+      expect(rule).toMatch(/width:\s*\d+px/);
+      expect(rule).toContain('flex-shrink: 0');
+    });
+  });
+
   describe('the page gutter follows the drawer', () => {
     it('should narrow the gutter only while the drawer is expanded', () => {
       const rule = ruleFor('body.bes-drawer-expanded #pgBd') ?? '';

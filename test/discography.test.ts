@@ -112,6 +112,14 @@ describe('discography', () => {
       expect(discography.albumArtUrlFor('8', 'album')).toContain('art-8.jpg');
     });
 
+    it('should find the art for an album shown as a feed story', () => {
+      createDomNodes(
+        '<div class="collection-item-container" data-tralbumid="12" data-tralbumtype="a"><img src="art-12.jpg" /></div>'
+      );
+
+      expect(discography.albumArtUrlFor('12', 'album')).toContain('art-12.jpg');
+    });
+
     it('should return nothing when the album is not on the page', () => {
       createDomNodes(gridOf('1'));
 

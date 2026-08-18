@@ -70,9 +70,10 @@ export function previousAlbum(): DiscographyItem | null {
 }
 
 export function albumArtUrlFor(albumId: string, albumType: string): string {
-  const gridItem =
+  const listing =
     document.querySelector(`li.music-grid-item[data-item-id="${albumType}-${albumId}"]`) ??
-    document.querySelector(`li.music-grid-item[data-tralbumid="${albumId}"]`);
+    document.querySelector(`li.music-grid-item[data-tralbumid="${albumId}"]`) ??
+    document.querySelector(`.collection-item-container[data-tralbumid="${albumId}"]`);
 
-  return gridItem?.querySelector('img')?.src ?? '';
+  return listing?.querySelector('img')?.src ?? '';
 }

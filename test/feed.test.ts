@@ -16,7 +16,14 @@ vi.mock('../src/logger', () => ({
   }))
 }));
 
+vi.mock('../src/playerLoader', () => ({
+  loadAlbumIntoDrawer: vi.fn(() => Promise.resolve()),
+  loadNextAlbum: vi.fn(() => Promise.resolve(false)),
+  loadPreviousAlbum: vi.fn(() => Promise.resolve(false))
+}));
+
 import { initFeed, renderFeedPreviews, tralbumTypeToIdType } from '../src/pages/feed';
+import { loadAlbumIntoDrawer } from '../src/playerLoader';
 
 const mockPort = {
   postMessage: vi.fn(),
@@ -123,6 +130,40 @@ describe('Feed', () => {
       const drawer = document.querySelector('.bes-player-drawer');
       expect(drawer).toBeTruthy();
       expect(drawer?.classList.contains('open')).toBe(true);
+    });
+
+    it('asks the drawer for the album the story is about', () => {
+      renderFeedPreviews(mockPort as any, createPreviewState());
+
+      const button = document.querySelector(
+        '.collection-item-container[data-tralbumid="12345"] button.open-iframe'
+      ) as HTMLButtonElement;
+      button.click();
+
+      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith(
+        '12345',
+        'album',
+        expect.anything(),
+        expect.anything(),
+        expect.anything()
+      );
+    });
+
+    it('asks for a track when the story is about a track', () => {
+      renderFeedPreviews(mockPort as any, createPreviewState());
+
+      const button = document.querySelector(
+        '.collection-item-container[data-tralbumid="67890"] button.open-iframe'
+      ) as HTMLButtonElement;
+      button.click();
+
+      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith(
+        '67890',
+        'track',
+        expect.anything(),
+        expect.anything(),
+        expect.anything()
+      );
     });
 
     it('no longer injects an embedded player iframe', () => {

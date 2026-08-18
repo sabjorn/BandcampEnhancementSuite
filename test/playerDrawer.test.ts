@@ -28,7 +28,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     cleanupTestNodes();
   });
 
-  describe('AC-S3: Drawer state management', () => {
+  describe('drawer state', () => {
     it('should create drawer with correct initial state', () => {
       const { drawer, getState } = createPlayerDrawer();
 
@@ -202,7 +202,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     });
   });
 
-  describe('AC-P9: Minimize/close buttons', () => {
+  describe('minimize and close buttons', () => {
     it('should have minimize button that toggles state', () => {
       const { drawer, openDrawer, getState } = createPlayerDrawer();
       document.body.appendChild(drawer);
@@ -248,7 +248,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     });
   });
 
-  describe('AC-V3: Minimized bar (wedge layout)', () => {
+  describe('minimized wedge layout', () => {
     it('should create minimized bar with correct elements', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
@@ -291,7 +291,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     });
   });
 
-  describe('AC-S3: Minimized bar state updates', () => {
+  describe('minimized bar state updates', () => {
     it('should update minimized play button icon based on playback state', () => {
       createDomNodes(`
         <button class="bes-player-drawer-minimized-play">▶</button>
@@ -408,7 +408,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     });
   });
 
-  describe('AC-S2: Album art extraction', () => {
+  describe('album art extraction', () => {
     it('should update album art in both full and minimized views', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
@@ -424,7 +424,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     });
   });
 
-  describe('AC-V1: 3-column flexbox layout', () => {
+  describe('three-column layout', () => {
     it('should create left column with album art and transport', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
@@ -462,7 +462,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     });
   });
 
-  describe('AC-A2: Layout structure validation', () => {
+  describe('layout structure', () => {
     it('should nest the three columns inside the main container', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);

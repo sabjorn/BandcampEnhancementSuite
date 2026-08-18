@@ -56,7 +56,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     cleanupTestNodes();
   });
 
-  describe('AC-P2: Transport controls (prev/play/pause/next)', () => {
+  describe('transport controls', () => {
     it('should create transport element with prev/play/next buttons', () => {
       const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
 
@@ -82,7 +82,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
-  describe('AC-P3: Track info display (album, title, artist)', () => {
+  describe('track info display', () => {
     it('should create track info elements', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
@@ -110,7 +110,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
-  describe('AC-P4: BPM badge display', () => {
+  describe('bpm badge', () => {
     it('should create BPM badge with number and label', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
@@ -125,7 +125,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
-  describe('AC-P5: Dual-mode progress (waveform OR slider toggle)', () => {
+  describe('progress view toggle', () => {
     it('should create waveform canvas element', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
@@ -168,7 +168,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
-  describe('AC-P6: Custom vertical volume slider', () => {
+  describe('volume slider', () => {
     it('should create volume container with vertical slider', () => {
       const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
 
@@ -191,7 +191,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
-  describe('AC-P7: Mute toggle', () => {
+  describe('mute toggle', () => {
     it('should create mute button with icon', () => {
       const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
 
@@ -204,7 +204,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
-  describe('AC-P8: Time elapsed/total display', () => {
+  describe('time display', () => {
     it('should create time display elements', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
@@ -220,7 +220,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
-  describe('AC-S4: Tracklist preserved with buy buttons', () => {
+  describe('tracklist', () => {
     it('should build track table with correct number of rows', () => {
       const trackTable = buildTrackTable(mockTralbumDetails);
 
@@ -293,7 +293,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
-  describe('AC-W5: Grey base with purple accent colors', () => {
+  describe('progress bar stylesheet hooks', () => {
     it('should expose progress bar parts by class', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
 
@@ -336,7 +336,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
-  describe('AC-A3: Stylesheet hooks on player elements', () => {
+  describe('transport stylesheet hooks', () => {
     it('should expose transport buttons by class', () => {
       const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
 

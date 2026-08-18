@@ -97,7 +97,7 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
     (globalThis as any).chrome.runtime = originalChromeRuntime;
   });
 
-  describe('AC-W1: Canvas-based waveform with RMS analysis', () => {
+  describe('waveform rendering', () => {
     it('should generate waveform on canvas', async () => {
       const bpmCallback = vi.fn();
       const currentTarget = { value: undefined as string | undefined };
@@ -125,7 +125,7 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
     });
   });
 
-  describe('AC-W2: Real-time progress overlay during playback', () => {
+  describe('progress overlay', () => {
     it('should draw overlay showing played portion', () => {
       const waveformColour = '#e2e2e6';
       const overlayColour = '#5b53e8';
@@ -165,7 +165,7 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
     });
   });
 
-  describe('AC-W3: BPM detection using web-audio-beat-detector', () => {
+  describe('bpm detection', () => {
     it('should call BPM callback with detected tempo', async () => {
       vi.mocked(analyze).mockResolvedValue(128);
 
@@ -202,7 +202,7 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
     });
   });
 
-  describe('AC-W4: Metadata caching through the Find Music Club integration', () => {
+  describe('metadata caching', () => {
     const streamUrl = (trackId: number) => `https://t4.bcbits.com/stream/somehash/mp3-128/${trackId}?p=0&ts=1`;
 
     const messagesFor = (query: string) =>
@@ -272,7 +272,7 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
     });
   });
 
-  describe('AC-W5: Grey base with purple accent colors', () => {
+  describe('waveform colours', () => {
     it('should use grey (#e2e2e6) for base waveform', async () => {
       const bpmCallback = vi.fn();
       const currentTarget = { value: undefined as string | undefined };

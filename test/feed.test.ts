@@ -144,7 +144,6 @@ describe('Feed', () => {
         '12345',
         'album',
         expect.anything(),
-        expect.anything(),
         expect.anything()
       );
     });
@@ -160,7 +159,6 @@ describe('Feed', () => {
       expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith(
         '67890',
         'track',
-        expect.anything(),
         expect.anything(),
         expect.anything()
       );

@@ -3,8 +3,7 @@ import { getTralbumDetails, TralbumDetailsResponse, TralbumTrack } from '../../b
 import { getPlayerDrawerElements, updatePlayerDrawerInfo, updateMinimizedPlayButton } from './drawer';
 import { createFetchFunction } from '../../utilities';
 import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from './builder';
-import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS } from '../../types/keyboard';
-import { PlayerCommands, registerPlayerShortcuts, updateKeyboardSettings } from '../../keyboardShortcuts';
+import { PlayerCommands, registerPlayerShortcuts } from '../../keyboardShortcuts';
 import { drawOverlay, generateAudioFeatures } from '../../audioFeatures';
 import { volumeIcon, mutedVolumeIcon } from './icons';
 import { replaceChildren } from '../dom';
@@ -97,9 +96,7 @@ function drawerIsOpen(): boolean {
   return Boolean(document.querySelector('.bes-player-drawer.open'));
 }
 
-function registerDrawerShortcuts(settings: KeyboardSettings): void {
-  updateKeyboardSettings(settings);
-
+function registerDrawerShortcuts(): void {
   if (drawerShortcutsRegistered) return;
 
   registerPlayerShortcuts(drawerCommands, drawerIsOpen);
@@ -161,12 +158,12 @@ function mountDrawerPlayer(elements: DrawerElements, parts: DrawerPlayerParts): 
   replaceChildren(elements.rightColumn, headerActions, parts.volumeElement);
 }
 
-function startPlayerOnce(keyboardSettings?: KeyboardSettings): void {
+function startPlayerOnce(): void {
   if (playerInitialized) return;
 
   ensureAudioElement();
   initializePlayer();
-  registerDrawerShortcuts(keyboardSettings || DEFAULT_KEYBOARD_SETTINGS);
+  registerDrawerShortcuts();
   playerInitialized = true;
 }
 
@@ -174,7 +171,6 @@ export async function loadAlbumIntoDrawer(
   albumId: string,
   albumType: string,
   enableFetchCaching: boolean = false,
-  keyboardSettings?: KeyboardSettings,
   port?: chrome.runtime.Port
 ): Promise<void> {
   log.info(`Loading album ${albumId} (${albumType}) into drawer`);
@@ -211,7 +207,7 @@ export async function loadAlbumIntoDrawer(
       replaceChildren(elements.tracklistContainer, parts.albumBuyButton, parts.tracklistElement);
       drawerPlayerCreated = true;
 
-      startPlayerOnce(keyboardSettings);
+      startPlayerOnce();
       if (port) initDrawerAudioFeatures(port);
     }
 

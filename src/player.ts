@@ -2,14 +2,11 @@ import Logger from './logger';
 import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, createFetchFunction } from './utilities';
 import { CURRENCY_MINIMUMS, getTralbumDetails } from './bclient';
 import { createAddToCartButton } from './components/cartButton';
-import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS } from './types/keyboard';
-import { PlayerCommands, registerPlayerShortcuts, updateKeyboardSettings } from './keyboardShortcuts';
+import { PlayerCommands, registerPlayerShortcuts } from './keyboardShortcuts';
 
 let nativeShortcutsRegistered = false;
 
-function registerNativePlayerShortcuts(settings: KeyboardSettings): void {
-  updateKeyboardSettings(settings);
-
+function registerNativePlayerShortcuts(): void {
   if (nativeShortcutsRegistered) return;
 
   registerPlayerShortcuts(nativePlayerCommands);
@@ -55,17 +52,12 @@ export function volumeSliderCallback(e: Event): void {
   audio.volume = parseFloat(volume);
 }
 
-export async function initPlayer(
-  keyboardSettings?: KeyboardSettings,
-  enableFetchCaching: boolean = false
-): Promise<void> {
+export async function initPlayer(enableFetchCaching: boolean = false): Promise<void> {
   const log = new Logger();
-
-  const settings = keyboardSettings || DEFAULT_KEYBOARD_SETTINGS;
 
   log.info('Starting BES Player');
 
-  registerNativePlayerShortcuts(settings);
+  registerNativePlayerShortcuts();
 
   const progressBar = document.querySelector('.progbar') as HTMLElement;
   if (progressBar) {

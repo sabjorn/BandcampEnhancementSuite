@@ -988,7 +988,7 @@ describe('PlayerLoader - Waveform config from the extension', () => {
     discography = await import('../src/discography');
     audioFeatures = await import('../src/audioFeatures');
     discography.updateDiscographyOrder();
-    await player.loadAlbumIntoDrawer('123', 'album', false, undefined, port as never);
+    await player.loadAlbumIntoDrawer('123', 'album', false, port as never);
   });
 
   afterEach(() => {

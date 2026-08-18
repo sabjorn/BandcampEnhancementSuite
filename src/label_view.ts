@@ -1,7 +1,6 @@
 import Logger from './logger';
 import { createPlayerDrawer, loadAlbumIntoDrawer } from './components/player';
 import { updateDiscographyOrder } from './discography';
-import { DEFAULT_KEYBOARD_SETTINGS } from './types/keyboard';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -81,7 +80,7 @@ export function fillFrame(
 
   if (port) setPreviewed(target.id, port);
 
-  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, DEFAULT_KEYBOARD_SETTINGS, port).catch(error =>
+  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, port).catch(error =>
     log.error(`Failed to load album into drawer: ${error}`)
   );
 }

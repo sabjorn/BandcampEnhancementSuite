@@ -347,16 +347,12 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   log.info('BES drawer and button added to page');
 };
 
-async function initAlbumPagePlayer(
-  port: chrome.runtime.Port,
-  keyboardSettings: KeyboardSettings | undefined,
-  enableFetchCaching: boolean
-): Promise<void> {
+async function initAlbumPagePlayer(port: chrome.runtime.Port, enableFetchCaching: boolean): Promise<void> {
   const hasNativePlayer = document.querySelector('div.inline_player');
   const isBandcampHome = window.location.href === 'https://bandcamp.com/';
   if (!hasNativePlayer || isBandcampHome) return;
 
-  await initPlayer(keyboardSettings, enableFetchCaching);
+  await initPlayer(enableFetchCaching);
   initAudioFeatures(port);
 }
 
@@ -426,6 +422,8 @@ const main = async (): Promise<void> => {
 
   await getConfigPromise;
 
+  if (keyboardSettings) updateKeyboardSettings(keyboardSettings);
+
   initLabelView(config_port, enableFetchCaching);
 
   config_port.onMessage.addListener((msg: any) => {
@@ -435,7 +433,7 @@ const main = async (): Promise<void> => {
     }
   });
 
-  await initAlbumPagePlayer(config_port, keyboardSettings, enableFetchCaching);
+  await initAlbumPagePlayer(config_port, enableFetchCaching);
 
   const urlParams = new URLSearchParams(window.location.search);
   const besCartParamValue = urlParams.get('bes_cart');

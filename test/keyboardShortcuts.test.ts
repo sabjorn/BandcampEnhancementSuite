@@ -165,6 +165,26 @@ describe('keyboardShortcuts', () => {
     });
   });
 
+  describe('settings configured before a player exists', () => {
+    it('should bind a player registered later to the configured keys', () => {
+      shortcuts.updateKeyboardSettings(settingsFor(KeyboardAction.PLAY_PAUSE, 'k'));
+
+      shortcuts.registerPlayerShortcuts(commands);
+      press('k');
+
+      expect(commands.playPause).toHaveBeenCalled();
+    });
+
+    it('should not fall back to the default binding for that action', () => {
+      shortcuts.updateKeyboardSettings(settingsFor(KeyboardAction.PLAY_PAUSE, 'k'));
+
+      shortcuts.registerPlayerShortcuts(commands);
+      press(' ');
+
+      expect(commands.playPause).not.toHaveBeenCalled();
+    });
+  });
+
   describe('changing settings after registration', () => {
     it('should rebind to the new keys', () => {
       shortcuts.registerPlayerShortcuts(commands);

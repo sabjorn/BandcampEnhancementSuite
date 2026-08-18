@@ -7,7 +7,8 @@ import {
   invertColour,
   toggleWaveformCanvas,
   applyAudioConfig,
-  initAudioFeatures
+  initAudioFeatures,
+  extractTrackId
 } from '../src/audioFeatures';
 
 describe('AudioFeatures', () => {
@@ -70,5 +71,27 @@ describe('AudioFeatures', () => {
     expect(() => createCanvas()).not.toThrow();
     expect(() => createCanvasDisplayToggle()).not.toThrow();
     expect(() => createBpmDisplay()).not.toThrow();
+  });
+});
+
+describe('extractTrackId', () => {
+  it('should read the track id from a Bandcamp stream url', () => {
+    expect(extractTrackId('https://t4.bcbits.com/stream/somehash/mp3-128/3877359137?p=0&ts=1&t=abc')).toBe(3877359137);
+  });
+
+  it('should read the track id when the url carries no query string', () => {
+    expect(extractTrackId('https://t4.bcbits.com/stream/somehash/mp3-128/1234')).toBe(1234);
+  });
+
+  it('should return nothing for a url that is not a stream', () => {
+    expect(extractTrackId('https://example.com/audio.mp3')).toBeNull();
+  });
+
+  it('should return nothing when the stream path is too short to hold an id', () => {
+    expect(extractTrackId('https://t4.bcbits.com/stream/test-audio.mp3')).toBeNull();
+  });
+
+  it('should return nothing when the final segment is not a number', () => {
+    expect(extractTrackId('https://t4.bcbits.com/stream/somehash/mp3-128/notanid')).toBeNull();
   });
 });

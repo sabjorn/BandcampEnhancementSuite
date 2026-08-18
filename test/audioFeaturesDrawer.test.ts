@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
-import { generateAudioFeatures, drawOverlay, extractTrackId } from '../src/audioFeatures';
+import { generateAudioFeatures, drawOverlay } from '../src/audioFeatures';
 import { analyze } from 'web-audio-beat-detector';
 
 vi.mock('web-audio-beat-detector', () => ({
@@ -296,27 +296,5 @@ describe('AudioFeatures - Waveform & BPM for Drawer Player', () => {
       expect(mockContext.fillRect).toHaveBeenLastCalledWith(0, 0, canvas.width * 0.5, canvas.height);
       expect(mockContext.fillStyle).toBe(overlayColour);
     });
-  });
-});
-
-describe('extractTrackId', () => {
-  it('should read the track id from a Bandcamp stream url', () => {
-    expect(extractTrackId('https://t4.bcbits.com/stream/somehash/mp3-128/3877359137?p=0&ts=1&t=abc')).toBe(3877359137);
-  });
-
-  it('should read the track id when the url carries no query string', () => {
-    expect(extractTrackId('https://t4.bcbits.com/stream/somehash/mp3-128/1234')).toBe(1234);
-  });
-
-  it('should return nothing for a url that is not a stream', () => {
-    expect(extractTrackId('https://example.com/audio.mp3')).toBeNull();
-  });
-
-  it('should return nothing when the stream path is too short to hold an id', () => {
-    expect(extractTrackId('https://t4.bcbits.com/stream/test-audio.mp3')).toBeNull();
-  });
-
-  it('should return nothing when the final segment is not a number', () => {
-    expect(extractTrackId('https://t4.bcbits.com/stream/somehash/mp3-128/notanid')).toBeNull();
   });
 });

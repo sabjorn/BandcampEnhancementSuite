@@ -1,7 +1,6 @@
 import Logger from './logger';
 import { createPlayerDrawer, loadAlbumIntoDrawer } from './components/player';
 import { updateDiscographyOrder } from './discography';
-import { initContinuousPlay } from './continuousPlay';
 import { DEFAULT_KEYBOARD_SETTINGS } from './types/keyboard';
 
 export function setHistory(id: string, state: boolean): void {
@@ -111,7 +110,6 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
   renderDom(port, previewState, enableFetchCaching);
 
   updateDiscographyOrder();
-  initContinuousPlay(enableFetchCaching);
 
   const observer = new MutationObserver(() => {
     updateDiscographyOrder();

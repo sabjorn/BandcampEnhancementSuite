@@ -356,6 +356,31 @@ describe('PlayerLoader - Main Player Logic', () => {
       expect(landedOn?.streaming_url?.['mp3-128']).toBeTruthy();
     });
 
+    it('should move to the next album when the last track finishes on its own', async () => {
+      discography.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('456', 'album', false);
+
+      const audio = startPlaying();
+      audio.dispatchEvent(new Event('ended'));
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      expect(player.getCurrentAlbumData()?.id).toBe(789);
+      expect(audio.play).toHaveBeenCalled();
+    });
+
+    it('should stop at the end of the last album when it finishes on its own', async () => {
+      discography.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('789', 'album', false);
+
+      const audio = startPlaying();
+      audio.dispatchEvent(new Event('ended'));
+      audio.dispatchEvent(new Event('ended'));
+      audio.dispatchEvent(new Event('ended'));
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      expect(player.getCurrentAlbumData()?.id).toBe(789);
+    });
+
     it('should stay put when there is no next album to fall through to', async () => {
       discography.updateDiscographyOrder();
       await player.loadAlbumIntoDrawer('789', 'album', false);

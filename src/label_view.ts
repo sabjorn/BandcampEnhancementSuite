@@ -1,5 +1,4 @@
 import Logger from './logger';
-import { attachPreviewListeners } from './utilities.js';
 import { createPlayerDrawer } from './components/playerDrawer';
 import { loadAlbumIntoDrawer, updateDiscographyOrder } from './playerLoader';
 import { initContinuousPlay } from './continuousPlay';
@@ -86,6 +85,19 @@ export function fillFrame(
   loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, DEFAULT_KEYBOARD_SETTINGS, port).catch(error =>
     log.error(`Failed to load album into drawer: ${error}`)
   );
+}
+
+export function attachPreviewListeners(
+  root: Document | HTMLElement,
+  port: chrome.runtime.Port,
+  previewState: { previewOpen: boolean; previewId?: string },
+  enableFetchCaching: boolean = false
+): void {
+  root.querySelectorAll('.open-iframe').forEach(button => {
+    button.addEventListener('click', event => {
+      fillFrame(event, previewState, enableFetchCaching, port);
+    });
+  });
 }
 
 export async function initLabelView(port: chrome.runtime.Port, enableFetchCaching: boolean = false): Promise<void> {

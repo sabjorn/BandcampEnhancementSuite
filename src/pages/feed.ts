@@ -1,6 +1,5 @@
 import Logger from '../logger';
-import { generatePreview } from '../label_view.js';
-import { attachPreviewListeners } from '../utilities.js';
+import { generatePreview, attachPreviewListeners } from '../label_view';
 
 const FEED_ITEM_SELECTOR = '.collection-item-container[data-tralbumid][data-tralbumtype]';
 

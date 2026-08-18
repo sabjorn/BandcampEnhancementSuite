@@ -1,23 +1,9 @@
 import { openDB, IDBPDatabase } from 'idb';
 import Logger from './logger';
-import { fillFrame } from './label_view.js';
 
 interface MouseEventWithOffset extends MouseEvent {
   offsetX: number;
   target: HTMLElement & { offsetWidth: number };
-}
-
-export function attachPreviewListeners(
-  root: Document | HTMLElement,
-  port: chrome.runtime.Port,
-  previewState: { previewOpen: boolean; previewId?: string },
-  enableFetchCaching: boolean = false
-): void {
-  root.querySelectorAll('.open-iframe').forEach(button => {
-    button.addEventListener('click', event => {
-      fillFrame(event, previewState, enableFetchCaching, port);
-    });
-  });
 }
 
 export function shouldHandleShortcut(target: EventTarget | null): boolean {

@@ -1,8 +1,8 @@
 import Logger from './logger';
-import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, createFetchFunction } from './utilities.js';
-import { CURRENCY_MINIMUMS, getTralbumDetails, TralbumDetailsResponse } from './bclient';
+import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, createFetchFunction } from './utilities';
+import { CURRENCY_MINIMUMS, getTralbumDetails } from './bclient';
 import { createAddToCartButton } from './components/cartButton';
-import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS } from './types/keyboard.js';
+import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS } from './types/keyboard';
 import { PlayerCommands, registerPlayerShortcuts, updateKeyboardSettings } from './keyboardShortcuts';
 
 let nativeShortcutsRegistered = false;
@@ -53,117 +53,6 @@ export function volumeSliderCallback(e: Event): void {
   if (!audio) return;
 
   audio.volume = parseFloat(volume);
-}
-
-export interface PlayerContainerElements {
-  playerContainer: HTMLElement;
-  tracklistContainer?: HTMLElement;
-}
-
-export async function initPlayerInContainer(
-  container: PlayerContainerElements,
-  tralbumId: number | string,
-  tralbumType: string,
-  keyboardSettings?: KeyboardSettings,
-  enableFetchCaching: boolean = false
-): Promise<void> {
-  const log = new Logger();
-  const settings = keyboardSettings || DEFAULT_KEYBOARD_SETTINGS;
-
-  registerNativePlayerShortcuts(settings);
-
-  log.info(`Initializing player in container for ${tralbumType}=${tralbumId}`);
-
-  try {
-    const fetchFn = createFetchFunction(enableFetchCaching);
-    const tralbumDetails = await getTralbumDetails(tralbumId, tralbumType, null, fetchFn);
-
-    container.playerContainer.innerHTML = '';
-
-    const playerDiv = document.createElement('div');
-    playerDiv.className = 'inline_player';
-
-    const controls = document.createElement('div');
-    controls.classList.add('controls');
-
-    const volumeSlider = createVolumeSlider();
-    volumeSlider.addEventListener('input', volumeSliderCallback);
-    controls.append(volumeSlider);
-
-    playerDiv.appendChild(controls);
-
-    const progressBar = document.createElement('div');
-    progressBar.className = 'progbar';
-    progressBar.style.cursor = 'pointer';
-    progressBar.addEventListener('click', mousedownCallback);
-    playerDiv.appendChild(progressBar);
-
-    container.playerContainer.appendChild(playerDiv);
-
-    if (container.tracklistContainer && tralbumDetails.tracks) {
-      const tracklist = createTracklist(tralbumDetails, enableFetchCaching, log);
-      container.tracklistContainer.innerHTML = '';
-      container.tracklistContainer.appendChild(tracklist);
-    }
-
-    log.info(`Player initialized for ${tralbumDetails.title}`);
-  } catch (error) {
-    log.error(`Failed to initialize player: ${error}`);
-    throw error;
-  }
-}
-
-function createTracklist(
-  tralbumDetails: TralbumDetailsResponse,
-  enableFetchCaching: boolean,
-  log: Logger
-): HTMLTableElement {
-  const table = document.createElement('table');
-  table.id = 'track_table';
-  table.className = 'track_list';
-
-  const tbody = document.createElement('tbody');
-
-  tralbumDetails.tracks?.forEach(track => {
-    const { price, currency, track_id: trackId, title: itemTitle, is_purchasable } = track;
-    const type = 't';
-
-    const row = document.createElement('tr');
-    row.className = 'track_row_view';
-
-    const titleCol = document.createElement('td');
-    titleCol.className = 'title-col';
-    const titleSpan = document.createElement('span');
-    titleSpan.className = 'track-title';
-    titleSpan.textContent = itemTitle;
-    titleCol.appendChild(titleSpan);
-    row.appendChild(titleCol);
-
-    if (is_purchasable) {
-      const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
-      if (minimumPrice) {
-        const downloadCol = document.createElement('td');
-        downloadCol.className = 'download-col';
-
-        const oneClick = createAddToCartButton({
-          price: minimumPrice,
-          currency,
-          tralbumId: String(trackId),
-          itemTitle,
-          type,
-          log
-        });
-
-        downloadCol.appendChild(oneClick);
-        row.appendChild(downloadCol);
-      }
-    }
-
-    tbody.appendChild(row);
-  });
-
-  table.appendChild(tbody);
-  return table;
 }
 
 export async function initPlayer(

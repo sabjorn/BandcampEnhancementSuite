@@ -1,11 +1,11 @@
-import Logger from '../logger.js';
+import Logger from '../logger';
 import {
   getCollectionSummary,
   getHiddenItemsRateLimited,
   hideUnhideRateLimited,
   type GetHiddenItemsResponse,
   type HiddenItem
-} from '../bclient.js';
+} from '../bclient';
 
 const log = new Logger();
 

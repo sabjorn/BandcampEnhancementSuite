@@ -1,6 +1,6 @@
-import Logger from '../logger.js';
-import { getTralbumDetails, getTralbumDetailsFromPage, CURRENCY_MINIMUMS } from '../bclient.js';
-import { getDB, createFetchFunction } from '../utilities.js';
+import Logger from '../logger';
+import { getTralbumDetails, getTralbumDetailsFromPage, CURRENCY_MINIMUMS } from '../bclient';
+import { getDB, createFetchFunction } from '../utilities';
 
 const BASE_URL = 'http://bandcamp.com';
 

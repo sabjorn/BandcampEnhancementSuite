@@ -1,6 +1,6 @@
 import Logger from '../logger';
-import { createInputButtonPair } from './buttons.js';
-import { createShoppingCartItem } from './shoppingCart.js';
+import { createInputButtonPair } from './buttons';
+import { createShoppingCartItem } from './shoppingCart';
 import { createPlusSvgIcon, createCheckSvgIcon, createXSvgIcon } from './svgIcons';
 import { addAlbumToCart, removeAlbumFromCart } from '../bclient';
 
@@ -207,9 +207,8 @@ export function createAddToCartButton(options: CreateAddToCartButtonOptions): HT
       return;
     }
 
-    const itemUrl = getCartItems().find(
-      item => String(item.item_id) === String(tralbumId) && item.item_type === type
-    )?.url;
+    const itemUrl = getCartItems().find(item => String(item.item_id) === String(tralbumId) && item.item_type === type)
+      ?.url;
 
     setCartButtonState(button, 'loading');
 

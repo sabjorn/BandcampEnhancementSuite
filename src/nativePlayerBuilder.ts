@@ -210,28 +210,3 @@ function formatDuration(seconds: number): string {
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
-
-export function injectTrackData(container: HTMLElement, tralbumDetails: TralbumDetailsResponse): void {
-  if (!tralbumDetails.tracks) return;
-
-  const trackDataScript = document.createElement('script');
-  trackDataScript.type = 'application/json';
-  trackDataScript.id = 'pagedata';
-
-  const pageData = {
-    data_tralbum: JSON.stringify({
-      trackinfo: tralbumDetails.tracks,
-      current: {
-        title: tralbumDetails.title,
-        artist: tralbumDetails.tralbum_artist,
-        id: tralbumDetails.id,
-        type: tralbumDetails.type
-      }
-    })
-  };
-
-  trackDataScript.textContent = JSON.stringify(pageData);
-  container.appendChild(trackDataScript);
-
-  log.info('Track data injected');
-}

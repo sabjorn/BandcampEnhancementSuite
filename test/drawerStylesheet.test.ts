@@ -75,6 +75,28 @@ describe('drawer stylesheet invariants', () => {
     });
   });
 
+  describe('the drawer keeps a fixed width', () => {
+    it('should size itself from a single declared width', () => {
+      expect(ruleFor(':root')).toContain('--bes-drawer-width');
+      expect(ruleFor('.bes-player-drawer')).toContain('width: var(--bes-drawer-width)');
+    });
+
+    it('should not resize with the viewport', () => {
+      const rule = ruleFor('.bes-player-drawer') ?? '';
+
+      expect(rule).not.toMatch(/(?<![a-z-])width:\s*\d+vw/);
+      expect(stylesheet).not.toMatch(/@media[^{]*\{[^}]*\.bes-player-drawer\b/);
+    });
+
+    it('should give way rather than overflow a very narrow window', () => {
+      expect(ruleFor('.bes-player-drawer')).toContain('max-width: 100vw');
+    });
+
+    it('should keep the overlay tied to the same width', () => {
+      expect(ruleFor('.bes-player-drawer-overlay')).toContain('right: var(--bes-drawer-width)');
+    });
+  });
+
   describe('the page gutter follows the drawer', () => {
     it('should narrow the gutter only while the drawer is expanded', () => {
       const rule = ruleFor('body.bes-drawer-expanded #pgBd') ?? '';

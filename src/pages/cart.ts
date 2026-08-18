@@ -1,6 +1,6 @@
 import Logger from '../logger';
 
-import { createButton } from '../components/buttons.js';
+import { createButton } from '../components/buttons';
 import { downloadFile, dateString, loadTextFile, createFetchFunction } from '../utilities';
 import { CURRENCY_MINIMUMS, addAlbumToCart, getTralbumDetails } from '../bclient';
 import {
@@ -10,7 +10,7 @@ import {
   showPersistentNotification,
   removePersistentNotification
 } from '../components/notifications';
-import { createShoppingCartItem } from '../components/shoppingCart.js';
+import { createShoppingCartItem } from '../components/shoppingCart';
 import { createAddToCartButton } from '../components/cartButton';
 
 const BES_SUPPORT_TRALBUM_ID = 1609998585;

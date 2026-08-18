@@ -1,7 +1,7 @@
 import { analyze } from 'web-audio-beat-detector';
 
 import Logger from './logger';
-import { mousedownCallback } from './utilities.js';
+import { mousedownCallback } from './utilities';
 
 const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
 

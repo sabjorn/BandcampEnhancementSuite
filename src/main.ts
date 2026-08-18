@@ -7,8 +7,8 @@ import { initAudioFeatures } from './audioFeatures';
 import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
 import { initFeed } from './pages/feed';
-import { createKeyboardSettingsSection } from './components/keyboardSettings.js';
-import { KeyboardSettings } from './types/keyboard.js';
+import { createKeyboardSettingsSection } from './components/keyboardSettings';
+import { KeyboardSettings } from './types/keyboard';
 
 const log = createLogger();
 

@@ -1,5 +1,5 @@
 import Logger from '../logger';
-import { createButton } from '../components/buttons.js';
+import { createButton } from '../components/buttons';
 import {
   showSuccessMessage,
   showErrorMessage,

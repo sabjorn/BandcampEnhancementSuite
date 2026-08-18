@@ -995,12 +995,16 @@ body.bes-drawer-expanded #pgBd {
   padding-left: 10px !important;
 }
 
+:root {
+  --bes-drawer-width: 520px;
+}
+
 /* Player Drawer Styles */
 .bes-player-drawer-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 67%;
+  right: var(--bes-drawer-width);
   height: 100%;
   background: transparent;
   z-index: 10003;
@@ -1023,9 +1027,8 @@ body.bes-drawer-expanded #pgBd {
   right: 0;
   box-sizing: border-box;
   border-left: 6px solid #1da0c3;
-  width: 33vw;
-  min-width: 400px;
-  max-width: 600px;
+  width: var(--bes-drawer-width);
+  max-width: 100vw;
   height: 100%;
   background: #fff;
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
@@ -2028,43 +2031,6 @@ body.bes-drawer-expanded #pgBd {
 .bes-player-drawer-minimized-prev:active,
 .bes-player-drawer-minimized-next:active {
   transform: scale(0.95);
-}
-
-@media (max-width: 1400px) {
-  .bes-player-drawer {
-    width: 40vw;
-  }
-  .bes-player-drawer-overlay {
-    width: 60%;
-  }
-}
-
-@media (max-width: 1024px) {
-  .bes-player-drawer {
-    width: 50vw;
-    min-width: 350px;
-  }
-  .bes-player-drawer-overlay {
-    width: 50%;
-  }
-}
-
-@media (max-width: 768px) {
-  .bes-player-drawer {
-    width: 85vw;
-    min-width: unset;
-  }
-  .bes-player-drawer-overlay {
-    width: 15%;
-  }
-}
-/* Drawer Player Volume Slider Styling */
-.bes-player-drawer input.volume {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 6px;
-  background: transparent;
-  outline: none;
 }
 
 /* Track */

@@ -8,7 +8,7 @@ import {
   keyBindingToString,
   keyBindingsEqual,
   DEFAULT_KEYBOARD_SETTINGS
-} from '../types/keyboard.js';
+} from '../types/keyboard';
 
 interface KeyBindingEditorCallbacks {
   onBindingChange: (newBinding: KeyBinding) => void;

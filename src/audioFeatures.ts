@@ -98,7 +98,7 @@ export interface AudioFeatureOptions {
 }
 
 export async function generateAudioFeatures(
-  audioElementOrGetter: HTMLAudioElement | (() => HTMLAudioElement | null),
+  currentAudio: () => HTMLAudioElement | null,
   canvas: HTMLCanvasElement,
   onBpmUpdate: (bpm: number | null) => void,
   waveformColour: string,
@@ -107,7 +107,7 @@ export async function generateAudioFeatures(
   options: AudioFeatureOptions = {}
 ): Promise<void> {
   const datapoints = 100;
-  const audio = typeof audioElementOrGetter === 'function' ? audioElementOrGetter() : audioElementOrGetter;
+  const audio = currentAudio();
   if (!audio) return;
   if (currentTarget.value === audio.src) return;
 
@@ -237,7 +237,7 @@ export function initAudioFeatures(port: PortMessage): void {
     audio.addEventListener('canplay', () =>
       monitorAudioCanPlay(canvasDisplayToggle, () =>
         generateAudioFeatures(
-          audio,
+          () => audio,
           canvas,
           bpm => {
             bpmDisplay.innerText = bpm !== null ? `bpm: ${bpm.toFixed(2)}` : '';

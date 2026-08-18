@@ -46,35 +46,6 @@ describe('keyboardShortcuts', () => {
     document.body.innerHTML = '';
   });
 
-  describe('deciding whether a keypress belongs to the page', () => {
-    const focusTargetFrom = (markup: string): EventTarget | null => {
-      document.body.innerHTML = markup;
-      return document.body.firstElementChild;
-    };
-
-    it('should handle shortcuts when nothing on the page holds focus', () => {
-      expect(shortcuts.shouldHandleShortcut(document.body)).toBe(true);
-    });
-
-    it('should not handle shortcuts while a text field has focus', () => {
-      expect(shortcuts.shouldHandleShortcut(focusTargetFrom('<input class="search-bar" type="text" />'))).toBe(false);
-    });
-
-    it('should not handle shortcuts while a link has focus', () => {
-      expect(shortcuts.shouldHandleShortcut(focusTargetFrom('<a href="/somewhere">a search suggestion</a>'))).toBe(
-        false
-      );
-    });
-
-    it('should not handle shortcuts while a button has focus', () => {
-      expect(shortcuts.shouldHandleShortcut(focusTargetFrom('<button>press</button>'))).toBe(false);
-    });
-
-    it('should not handle shortcuts for a missing target', () => {
-      expect(shortcuts.shouldHandleShortcut(null)).toBe(false);
-    });
-  });
-
   describe('mapping settings onto a player', () => {
     it('should bind every enabled control', () => {
       const handlers = shortcuts.buildKeyHandlers(DEFAULT_KEYBOARD_SETTINGS, commands);
@@ -152,16 +123,39 @@ describe('keyboardShortcuts', () => {
       expect(commands.playPause).not.toHaveBeenCalled();
     });
 
-    it('should ignore keys while a page control holds focus', () => {
-      const input = document.createElement('input');
-      document.body.appendChild(input);
+    const pressWithFocusOn = (markup: string | null) => {
+      document.body.innerHTML = markup ?? '';
 
       const event = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
-      Object.defineProperty(event, 'target', { value: input });
+      Object.defineProperty(event, 'target', { value: document.body.firstElementChild });
       document.dispatchEvent(event);
+
+      return event;
+    };
+
+    it('should ignore keys while a text field holds focus', () => {
+      const event = pressWithFocusOn('<input class="search-bar" type="text" />');
 
       expect(commands.playPause).not.toHaveBeenCalled();
       expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('should ignore keys while a link holds focus', () => {
+      pressWithFocusOn('<a href="/somewhere">a search suggestion</a>');
+
+      expect(commands.playPause).not.toHaveBeenCalled();
+    });
+
+    it('should ignore keys while a button holds focus', () => {
+      pressWithFocusOn('<button>press</button>');
+
+      expect(commands.playPause).not.toHaveBeenCalled();
+    });
+
+    it('should ignore a keypress with no target', () => {
+      pressWithFocusOn(null);
+
+      expect(commands.playPause).not.toHaveBeenCalled();
     });
   });
 

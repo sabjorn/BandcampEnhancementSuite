@@ -54,10 +54,6 @@ export function buildKeyHandlers(settings: KeyboardSettings, commands: PlayerCom
     }, {});
 }
 
-export function shouldHandleShortcut(target: EventTarget | null): boolean {
-  return target === document.body;
-}
-
 function isBareModifier(event: KeyboardEvent): boolean {
   return event.key === 'Meta' && !event.altKey && !event.ctrlKey && !event.shiftKey;
 }
@@ -67,7 +63,7 @@ function activeRegistration(): Registration | undefined {
 }
 
 export function handleShortcutKeydown(event: KeyboardEvent): void {
-  if (!shouldHandleShortcut(event.target) || isBareModifier(event)) return;
+  if (event.target !== document.body || isBareModifier(event)) return;
 
   const registration = activeRegistration();
   if (!registration) return;

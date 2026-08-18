@@ -17,10 +17,11 @@ const drawerState: PlayerDrawerState = {
 };
 
 export const DRAWER_MIN_WIDTH = 520;
+export const CONTENT_GAP = 20;
 export const WIDTH_TRANSITION_MS = 300;
 
 export function expandedDrawerWidth(viewportWidth: number, contentRightEdge: number): number {
-  const gutter = viewportWidth - contentRightEdge;
+  const gutter = viewportWidth - contentRightEdge - CONTENT_GAP;
   return Math.max(DRAWER_MIN_WIDTH, gutter);
 }
 

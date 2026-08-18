@@ -6,7 +6,8 @@ import {
   updatePlayerDrawerInfo,
   updateMinimizedPlayButton,
   expandedDrawerWidth,
-  DRAWER_MIN_WIDTH
+  DRAWER_MIN_WIDTH,
+  CONTENT_GAP
 } from '../src/components/playerDrawer';
 
 vi.mock('../src/logger', () => ({
@@ -99,32 +100,28 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
   });
 
   describe('Filling the page gutter before covering any content', () => {
-    const contentRightEdgeFor = (viewport: number, gutter: number) => viewport - gutter;
+    const widthWhenGutterIs = (gutter: number, viewport = 1800) => expandedDrawerWidth(viewport, viewport - gutter);
 
-    it('should stretch to the gutter while it is wider than the minimum', () => {
-      const width = expandedDrawerWidth(1800, contentRightEdgeFor(1800, 900));
+    it('should stretch across the gutter, stopping short of the content', () => {
+      expect(widthWhenGutterIs(900)).toBe(900 - CONTENT_GAP);
+    });
 
-      expect(width).toBe(900);
+    it('should leave the same breathing room at any gutter width', () => {
+      expect(widthWhenGutterIs(900)).toBe(900 - CONTENT_GAP);
+      expect(widthWhenGutterIs(700)).toBe(700 - CONTENT_GAP);
     });
 
     it('should narrow with the gutter as the window shrinks', () => {
-      const wide = expandedDrawerWidth(1800, contentRightEdgeFor(1800, 900));
-      const narrower = expandedDrawerWidth(1500, contentRightEdgeFor(1500, 700));
-
-      expect(narrower).toBeLessThan(wide);
-      expect(narrower).toBe(700);
+      expect(widthWhenGutterIs(700)).toBeLessThan(widthWhenGutterIs(900));
     });
 
     it('should stop shrinking once it reaches its minimum width', () => {
-      expect(expandedDrawerWidth(1000, contentRightEdgeFor(1000, DRAWER_MIN_WIDTH))).toBe(DRAWER_MIN_WIDTH);
+      expect(widthWhenGutterIs(DRAWER_MIN_WIDTH + CONTENT_GAP)).toBe(DRAWER_MIN_WIDTH);
     });
 
     it('should hold the minimum width as the window keeps shrinking', () => {
-      const atLimit = expandedDrawerWidth(1000, contentRightEdgeFor(1000, 400));
-      const smaller = expandedDrawerWidth(800, contentRightEdgeFor(800, 200));
-
-      expect(atLimit).toBe(DRAWER_MIN_WIDTH);
-      expect(smaller).toBe(DRAWER_MIN_WIDTH);
+      expect(widthWhenGutterIs(400)).toBe(DRAWER_MIN_WIDTH);
+      expect(widthWhenGutterIs(200, 800)).toBe(DRAWER_MIN_WIDTH);
     });
 
     it('should never be narrower than the minimum, even with no gutter at all', () => {

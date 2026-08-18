@@ -347,41 +347,6 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   log.info('BES drawer and button added to page');
 };
 
-async function initAlbumPagePlayer(port: chrome.runtime.Port, enableFetchCaching: boolean): Promise<void> {
-  const hasNativePlayer = document.querySelector('div.inline_player');
-  const isBandcampHome = window.location.href === 'https://bandcamp.com/';
-  if (!hasNativePlayer || isBandcampHome) return;
-
-  await initPlayer(enableFetchCaching);
-  initAudioFeatures(port);
-}
-
-async function initCartIfPresent(
-  port: chrome.runtime.Port,
-  hasCartParam: boolean,
-  hasStoredCartData: boolean
-): Promise<void> {
-  const blob = document.querySelector('[data-blob]')?.getAttribute('data-blob');
-  if (!blob) return;
-
-  const { has_cart }: { has_cart: boolean } = JSON.parse(blob);
-  if (!has_cart && !hasCartParam && !hasStoredCartData) return;
-
-  await initCart(port);
-}
-
-async function initCollectionPage(port: chrome.runtime.Port): Promise<void> {
-  if (!document.querySelector('ol.collection-grid.editable.ui-sortable')) return;
-
-  await initHideUnhide(port);
-}
-
-async function initFeedPage(port: chrome.runtime.Port): Promise<void> {
-  if (!document.getElementById('stories')) return;
-
-  await initFeed(port);
-}
-
 const main = async (): Promise<void> => {
   const checkIsDownloadPage: Element | null = document.querySelector('.download-item-container');
   if (checkIsDownloadPage) {
@@ -433,7 +398,12 @@ const main = async (): Promise<void> => {
     }
   });
 
-  await initAlbumPagePlayer(config_port, enableFetchCaching);
+  const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
+  if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
+    await initPlayer(enableFetchCaching);
+
+    initAudioFeatures(config_port);
+  }
 
   const urlParams = new URLSearchParams(window.location.search);
   const besCartParamValue = urlParams.get('bes_cart');
@@ -467,9 +437,26 @@ const main = async (): Promise<void> => {
     return;
   }
 
-  await initCartIfPresent(config_port, hasBesCartParam, hasStoredCartData);
-  await initCollectionPage(config_port);
-  await initFeedPage(config_port);
+  const dataBlobElement: Element | null = document.querySelector('[data-blob]');
+  if (dataBlobElement) {
+    const dataBlobAttr: string | null = dataBlobElement.getAttribute('data-blob');
+    if (dataBlobAttr) {
+      const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
+      if (has_cart || hasBesCartParam || hasStoredCartData) {
+        await initCart(config_port);
+      }
+    }
+  }
+
+  const checkIsCollectionPage: Element | null = document.querySelector('ol.collection-grid.editable.ui-sortable');
+  if (checkIsCollectionPage) {
+    await initHideUnhide(config_port);
+  }
+
+  const checkIsFeedPage: Element | null = document.querySelector('#stories');
+  if (checkIsFeedPage) {
+    await initFeed(config_port);
+  }
 
   initBESDrawer(config_port);
 };

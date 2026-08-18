@@ -46,6 +46,35 @@ describe('keyboardShortcuts', () => {
     document.body.innerHTML = '';
   });
 
+  describe('deciding whether a keypress belongs to the page', () => {
+    const focusTargetFrom = (markup: string): EventTarget | null => {
+      document.body.innerHTML = markup;
+      return document.body.firstElementChild;
+    };
+
+    it('should handle shortcuts when nothing on the page holds focus', () => {
+      expect(shortcuts.shouldHandleShortcut(document.body)).toBe(true);
+    });
+
+    it('should not handle shortcuts while a text field has focus', () => {
+      expect(shortcuts.shouldHandleShortcut(focusTargetFrom('<input class="search-bar" type="text" />'))).toBe(false);
+    });
+
+    it('should not handle shortcuts while a link has focus', () => {
+      expect(shortcuts.shouldHandleShortcut(focusTargetFrom('<a href="/somewhere">a search suggestion</a>'))).toBe(
+        false
+      );
+    });
+
+    it('should not handle shortcuts while a button has focus', () => {
+      expect(shortcuts.shouldHandleShortcut(focusTargetFrom('<button>press</button>'))).toBe(false);
+    });
+
+    it('should not handle shortcuts for a missing target', () => {
+      expect(shortcuts.shouldHandleShortcut(null)).toBe(false);
+    });
+  });
+
   describe('mapping settings onto a player', () => {
     it('should bind every enabled control', () => {
       const handlers = shortcuts.buildKeyHandlers(DEFAULT_KEYBOARD_SETTINGS, commands);

@@ -130,8 +130,7 @@ vi.mock('../src/components/player/builder', () => {
 });
 
 vi.mock('../src/utilities', () => ({
-  createFetchFunction: vi.fn(() => fetch),
-  shouldHandleShortcut: (target: EventTarget | null) => target === document.body
+  createFetchFunction: vi.fn(() => fetch)
 }));
 
 vi.mock('../src/audioFeatures', () => ({

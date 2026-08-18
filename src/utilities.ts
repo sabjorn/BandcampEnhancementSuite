@@ -6,10 +6,6 @@ interface MouseEventWithOffset extends MouseEvent {
   target: HTMLElement & { offsetWidth: number };
 }
 
-export function shouldHandleShortcut(target: EventTarget | null): boolean {
-  return target === document.body;
-}
-
 export function mousedownCallback(e: MouseEventWithOffset): void {
   const elementOffset: number = e.offsetX;
   const elementWidth: number = e.target.offsetWidth;

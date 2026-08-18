@@ -1,5 +1,4 @@
 import Logger from './logger';
-import { shouldHandleShortcut } from './utilities';
 import { KeyboardSettings, KeyboardAction, DEFAULT_KEYBOARD_SETTINGS, keyBindingToString } from './types/keyboard';
 
 const log = new Logger();
@@ -53,6 +52,10 @@ export function buildKeyHandlers(settings: KeyboardSettings, commands: PlayerCom
       handlers[keyBindingToString(control.binding)] = byAction[control.action];
       return handlers;
     }, {});
+}
+
+export function shouldHandleShortcut(target: EventTarget | null): boolean {
+  return target === document.body;
 }
 
 function isBareModifier(event: KeyboardEvent): boolean {

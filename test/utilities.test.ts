@@ -113,7 +113,6 @@ vi.mock('../src/utilities', async () => {
 import DBUtils, {
   getDB,
   mousedownCallback,
-  shouldHandleShortcut,
   extractBandFollowInfo,
   loadTextFile,
   cachedFetch,
@@ -130,38 +129,6 @@ vi.mock('../src/bclient', () => ({
   removeAlbumFromCart: vi.fn(),
   CURRENCY_MINIMUMS: { USD: 0.5, EUR: 0.25 }
 }));
-
-describe('shouldHandleShortcut', () => {
-  afterEach(() => {
-    cleanupTestNodes();
-  });
-
-  it('should handle shortcuts when nothing on the page holds focus', () => {
-    expect(shouldHandleShortcut(document.body)).toBe(true);
-  });
-
-  it('should not handle shortcuts while a text field has focus', () => {
-    createDomNodes('<input class="search-bar" type="text" />');
-
-    expect(shouldHandleShortcut(document.querySelector('input'))).toBe(false);
-  });
-
-  it('should not handle shortcuts while a link has focus', () => {
-    createDomNodes('<a href="/somewhere">a search suggestion</a>');
-
-    expect(shouldHandleShortcut(document.querySelector('a'))).toBe(false);
-  });
-
-  it('should not handle shortcuts while a button has focus', () => {
-    createDomNodes('<button>press</button>');
-
-    expect(shouldHandleShortcut(document.querySelector('button'))).toBe(false);
-  });
-
-  it('should not handle shortcuts for a missing target', () => {
-    expect(shouldHandleShortcut(null)).toBe(false);
-  });
-});
 
 describe('mousedownCallback', () => {
   const spyElement = { click: vi.fn(), duration: 0, currentTime: 0 };

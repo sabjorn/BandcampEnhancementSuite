@@ -2,6 +2,7 @@ import Logger from '../../logger';
 import { TralbumDetailsResponse, CURRENCY_MINIMUMS } from '../../bclient';
 import { createAddToCartButton } from '../cartButton';
 import { prevIcon, nextIcon, playIcon, pauseIcon, volumeIcon } from './icons';
+import playerCenterMarkup from '../../../html/drawer_player_center.html';
 
 const log = new Logger();
 
@@ -22,44 +23,7 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
 
   const center = document.createElement('div');
   center.className = 'bes-drawer-player-center';
-  center.innerHTML = `
-    <div class="bes-now-playing">
-      <div class="bes-track-info">
-        <div class="bes-album-label"></div>
-        <div class="bes-now-playing-title"></div>
-        <div class="bes-artist-name"></div>
-      </div>
-      <div class="bes-bpm-badge">
-        <span class="bes-bpm-number"></span>
-        <span class="bes-bpm-unit">BPM</span>
-      </div>
-    </div>
-    <div class="bes-progress-area">
-      <div class="bes-progbar">
-        <div class="bes-slider-container">
-          <div class="bes-progbar-fill"></div>
-          <div class="bes-progbar-thumb"></div>
-        </div>
-        <div class="bes-waveform-container">
-          <canvas class="bes-waveform" width="600" height="30"></canvas>
-        </div>
-      </div>
-      <div class="bes-player-controls">
-        <div class="bes-view-toggle">
-          <button class="bes-toggle-slider" title="Slider">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><circle cx="15" cy="12" r="3" fill="currentColor" stroke="none"></circle></svg>
-          </button>
-          <button class="bes-toggle-waveform bes-toggle-active" title="Waveform">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="9" x2="4" y2="15"></line><line x1="9" y1="5" x2="9" y2="19"></line><line x1="14" y1="8" x2="14" y2="16"></line><line x1="19" y1="6" x2="19" y2="18"></line></svg>
-          </button>
-        </div>
-        <div class="bes-controls-spacer"></div>
-        <span class="bes-time-elapsed">00:00</span>
-        <span class="bes-time-separator">/ </span>
-        <span class="bes-time-total">00:00</span>
-      </div>
-    </div>
-  `;
+  center.innerHTML = playerCenterMarkup;
 
   const volumeCol = document.createElement('div');
   volumeCol.className = 'bes-drawer-volume-column';

@@ -1,7 +1,19 @@
+import { readFileSync } from 'fs';
 import { defineConfig } from 'vitest/config';
 
+const htmlAsText = {
+  name: 'html-as-text',
+  enforce: 'pre' as const,
+  load(id: string) {
+    const path = id.split('?')[0];
+    if (!path.endsWith('.html')) return null;
+
+    return `export default ${JSON.stringify(readFileSync(path, 'utf8'))};`;
+  }
+};
+
 export default defineConfig({
-  assetsInclude: ['**/*.html'],
+  plugins: [htmlAsText],
   define: {
     'process.env.FINDMUSIC_BASE_URL': JSON.stringify('https://findmusic.club'),
     'process.env.FINDMUSIC_ORIGIN_PATTERN': JSON.stringify('https://*.findmusic.club/*')

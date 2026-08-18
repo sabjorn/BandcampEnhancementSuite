@@ -12,7 +12,7 @@ vi.mock('../src/logger', () => ({
   createLogger: vi.fn(() => ({ info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() }))
 }));
 
-import { createPlayerDrawer, DRAWER_MIN_WIDTH } from '../src/components/playerDrawer';
+import { createPlayerDrawer, DRAWER_MIN_WIDTH, WIDTH_TRANSITION_MS } from '../src/components/playerDrawer';
 
 const stylesheet = readFileSync(join(__dirname, '../css/style.css'), 'utf8');
 
@@ -100,6 +100,25 @@ describe('drawer stylesheet invariants', () => {
 
     it('should keep the overlay tied to the same width', () => {
       expect(ruleFor('.bes-player-drawer-overlay')).toContain('right: var(--bes-drawer-width)');
+    });
+  });
+
+  describe('width animates on state changes but tracks a resize exactly', () => {
+    it('should not transition width by default, so a resize is not animated', () => {
+      const base = ruleFor('.bes-player-drawer') ?? '';
+
+      expect(base).toContain('transition: transform');
+      expect(base).not.toMatch(/transition:[^;]*\bwidth\b/s);
+    });
+
+    it('should transition width only while a state change is marked', () => {
+      expect(ruleFor('.bes-player-drawer.bes-animating-width')).toMatch(/width\s+0\.3s/);
+    });
+
+    it('should mark the state change for as long as the transition lasts', () => {
+      const seconds = (ruleFor('.bes-player-drawer.bes-animating-width') ?? '').match(/width\s+([\d.]+)s/)?.[1];
+
+      expect(Number(seconds) * 1000).toBe(WIDTH_TRANSITION_MS);
     });
   });
 

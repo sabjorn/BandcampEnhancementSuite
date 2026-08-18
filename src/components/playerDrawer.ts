@@ -17,6 +17,7 @@ const drawerState: PlayerDrawerState = {
 };
 
 export const DRAWER_MIN_WIDTH = 520;
+export const WIDTH_TRANSITION_MS = 300;
 
 export function expandedDrawerWidth(viewportWidth: number, contentRightEdge: number): number {
   const gutter = viewportWidth - contentRightEdge;
@@ -152,6 +153,25 @@ export function createPlayerDrawer(): {
 
   document.body.classList.add('bes-drawer-host');
 
+  let widthAnimationTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const animateNextWidthChange = () => {
+    drawer.classList.add('bes-animating-width');
+    clearTimeout(widthAnimationTimer);
+    widthAnimationTimer = setTimeout(() => drawer.classList.remove('bes-animating-width'), WIDTH_TRANSITION_MS);
+  };
+
+  let pendingMeasurement = 0;
+
+  const trackPageGutter = () => {
+    if (!drawerState.isOpen || drawerState.isMinimized || pendingMeasurement) return;
+
+    pendingMeasurement = requestAnimationFrame(() => {
+      pendingMeasurement = 0;
+      sizeDrawerToPageGutter();
+    });
+  };
+
   const reflowPageAroundDrawer = () => {
     const isExpanded = drawerState.isOpen && !drawerState.isMinimized;
 
@@ -159,9 +179,10 @@ export function createPlayerDrawer(): {
     if (isExpanded) sizeDrawerToPageGutter();
   };
 
-  window.addEventListener('resize', reflowPageAroundDrawer);
+  window.addEventListener('resize', trackPageGutter);
 
   const openDrawer = () => {
+    animateNextWidthChange();
     log.info('Opening player drawer');
     drawer.classList.add('open');
     drawer.classList.remove('minimized');
@@ -171,6 +192,7 @@ export function createPlayerDrawer(): {
   };
 
   const closeDrawer = () => {
+    animateNextWidthChange();
     log.info('Closing player drawer');
     drawer.classList.remove('open');
     drawer.classList.remove('minimized');
@@ -185,6 +207,7 @@ export function createPlayerDrawer(): {
   };
 
   const minimizeDrawer = () => {
+    animateNextWidthChange();
     log.info('Minimizing player drawer');
     drawer.classList.add('minimized');
     drawerState.isMinimized = true;
@@ -192,6 +215,7 @@ export function createPlayerDrawer(): {
   };
 
   const maximizeDrawer = () => {
+    animateNextWidthChange();
     log.info('Maximizing player drawer');
     drawer.classList.remove('minimized');
     drawerState.isMinimized = false;

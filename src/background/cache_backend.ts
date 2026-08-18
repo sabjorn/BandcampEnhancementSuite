@@ -62,7 +62,6 @@ async function postCacheToFindMusic(
   responseBody: string
 ): Promise<void> {
   try {
-    // Check if already cached
     if (await hasBeenCached(url, method, requestBody)) {
       log.debug(`Already cached ${method} ${url} - skipping duplicate`);
       return;
@@ -97,7 +96,6 @@ async function postCacheToFindMusic(
       throw new Error(`Failed to post cache: ${response.status} ${response.statusText}`);
     }
 
-    // Mark as cached after successful post
     await markAsCached(url, method, requestBody);
 
     log.info(`Successfully posted cache to FindMusic.club: ${method} ${url}`);

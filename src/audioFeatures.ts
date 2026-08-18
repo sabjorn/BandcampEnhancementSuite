@@ -136,7 +136,6 @@ export async function generateAudioFeatures(
 
   const ctx = new AudioContext();
 
-  // Use custom URL formatter if provided, otherwise use default direct-path format
   const requestParams = options.urlFormatter
     ? options.urlFormatter(audio.src)
     : { url: audio.src.split('stream/')[1] };

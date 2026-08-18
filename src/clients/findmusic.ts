@@ -71,7 +71,6 @@ export async function getFindMusicToken(): Promise<string | null> {
   try {
     return await exchangeBandcampToken();
   } catch (error) {
-    // No permissions or not logged in - this is expected, not an error
     log.debug('Failed to exchange token (likely missing permissions or not logged in)');
     return null;
   }

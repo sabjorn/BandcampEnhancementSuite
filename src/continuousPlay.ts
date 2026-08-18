@@ -54,15 +54,11 @@ async function checkAndHandleBoundary(enableFetchCaching: boolean): Promise<void
 }
 
 function shouldLoadPrevious(): boolean {
-  // When on first track and prev button clicked, always load previous album if available
-  // Time checks should ONLY apply to automatic playback (audio ended)
   const currentIndex = getCurrentAlbumIndex();
   return currentIndex > 0;
 }
 
 function shouldLoadNext(): boolean {
-  // When on last track and next button clicked, always load next album if available
-  // Time checks should ONLY apply to automatic playback (audio ended)
   const currentIndex = getCurrentAlbumIndex();
   const totalAlbums = getDiscographyLength();
   return currentIndex < totalAlbums - 1;

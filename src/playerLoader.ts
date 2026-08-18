@@ -8,17 +8,12 @@ import { PlayerCommands, registerPlayerShortcuts, updateKeyboardSettings } from 
 import { drawOverlay, generateAudioFeatures } from './audioFeatures';
 import { volumeIcon, mutedVolumeIcon } from './components/playerIcons';
 import { replaceChildren } from './components/dom';
+import { inDrawer, allInDrawer, setText, setStyle } from './components/drawerDom';
+import { streamUrlOf, findPlayableTrackAfter, findPlayableTrackBefore } from './trackSelection';
+import { selectAlbum, hasNextAlbum, hasPreviousAlbum, nextAlbum, previousAlbum, albumArtUrlFor } from './discography';
 
 const log = new Logger();
 
-interface DiscographyItem {
-  id: string;
-  type: string;
-  element: Element;
-}
-
-let discographyOrder: DiscographyItem[] = [];
-let currentAlbumIndex = -1;
 let currentAlbumData: TralbumDetailsResponse | null = null;
 let playerInitialized = false;
 let currentTrackIndex = 0;
@@ -30,22 +25,6 @@ let configPort: chrome.runtime.Port | null = null;
 let waveformEnabled = true;
 
 const ALBUM_LOAD_SETTLE_MS = 300;
-
-const inDrawer = <T extends HTMLElement>(selector: string): T | null =>
-  document.querySelector<T>(`.bes-player-drawer ${selector}`);
-
-const allInDrawer = <T extends HTMLElement>(selector: string): T[] =>
-  Array.from(document.querySelectorAll<T>(`.bes-player-drawer ${selector}`));
-
-const setText = (selector: string, text: string): void => {
-  const element = inDrawer(selector);
-  if (element) element.textContent = text;
-};
-
-const setStyle = (selector: string, apply: (style: CSSStyleDeclaration) => void): void => {
-  const element = inDrawer(selector);
-  if (element) apply(element.style);
-};
 
 function ensureAudioElement(): HTMLAudioElement {
   if (!audioElement) {
@@ -67,39 +46,6 @@ function updateDrawerBpmBadge(bpm: number | null): void {
       bpmNumber.textContent = '';
     }
   }
-}
-
-export function extractDiscographyOrder(): DiscographyItem[] {
-  const items: DiscographyItem[] = [];
-
-  document.querySelectorAll('li.music-grid-item[data-item-id]').forEach(item => {
-    const idAndType = (item as HTMLElement).dataset.itemId;
-    if (!idAndType) return;
-
-    const id = idAndType.split('-')[1];
-    const type = idAndType.split('-')[0];
-    items.push({ id, type, element: item });
-  });
-
-  document.querySelectorAll('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').forEach(item => {
-    const id = (item as HTMLElement).dataset.tralbumid;
-    if (!id) return;
-
-    if (!items.find(i => i.id === id && i.type === 'album')) {
-      items.push({ id, type: 'album', element: item });
-    }
-  });
-
-  log.info(`Extracted ${items.length} items from discography`);
-  return items;
-}
-
-export function updateDiscographyOrder(): void {
-  discographyOrder = extractDiscographyOrder();
-}
-
-export function findAlbumIndexById(albumId: string): number {
-  return discographyOrder.findIndex(item => item.id === albumId);
 }
 
 function convertToApiType(type: string): string {
@@ -235,7 +181,7 @@ export async function loadAlbumIntoDrawer(
     );
 
     currentAlbumData = tralbumDetails;
-    currentAlbumIndex = findAlbumIndexById(albumId);
+    selectAlbum(albumId);
 
     const elements = getPlayerDrawerElements();
     if (!elements.playerContainer || !elements.tracklistContainer) {
@@ -243,7 +189,7 @@ export async function loadAlbumIntoDrawer(
       return;
     }
 
-    updatePlayerDrawerInfo(extractAlbumArtFromPage(albumId, albumType));
+    updatePlayerDrawerInfo(albumArtUrlFor(albumId, albumType));
 
     if (drawerPlayerCreated) {
       replaceChildren(
@@ -274,14 +220,6 @@ export async function loadAlbumIntoDrawer(
 
 function currentTrack(): TralbumTrack | undefined {
   return currentAlbumData?.tracks?.[currentTrackIndex];
-}
-
-function streamUrlOf(track: TralbumTrack | undefined): string | undefined {
-  return track?.streaming_url?.['mp3-128'];
-}
-
-function isTrackPlayable(track: TralbumTrack | undefined): boolean {
-  return Boolean(streamUrlOf(track));
 }
 
 function loadTrack(index: number): void {
@@ -320,30 +258,6 @@ function loadTrack(index: number): void {
   updatePrevNextButtons(index, tracks.length);
 }
 
-export function findPlayableTrackAfter(tracks: TralbumTrack[] | undefined, startIndex: number): number {
-  if (!tracks) return -1;
-
-  for (let i = startIndex + 1; i < tracks.length; i++) {
-    if (isTrackPlayable(tracks[i])) {
-      return i;
-    }
-  }
-
-  return -1;
-}
-
-export function findPlayableTrackBefore(tracks: TralbumTrack[] | undefined, startIndex: number): number {
-  if (!tracks) return -1;
-
-  for (let i = Math.min(startIndex, tracks.length) - 1; i >= 0; i--) {
-    if (isTrackPlayable(tracks[i])) {
-      return i;
-    }
-  }
-
-  return -1;
-}
-
 function findAnyPlayableTrack(startIndex: number): number {
   const tracks = currentAlbumData?.tracks;
   const after = findPlayableTrackAfter(tracks, startIndex);
@@ -369,8 +283,8 @@ function updatePrevNextButtons(index: number, totalTracks: number): void {
   const prevButton = inDrawer('.bes-transport-prev');
   const nextButton = inDrawer('.bes-transport-next');
 
-  const hasEarlierTrackOrAlbum = index > 0 || currentAlbumIndex > 0;
-  const hasLaterTrackOrAlbum = index < totalTracks - 1 || currentAlbumIndex < discographyOrder.length - 1;
+  const hasEarlierTrackOrAlbum = index > 0 || hasPreviousAlbum();
+  const hasLaterTrackOrAlbum = index < totalTracks - 1 || hasNextAlbum();
 
   prevButton?.classList.toggle('bes-hidden', !hasEarlierTrackOrAlbum);
   nextButton?.classList.toggle('bes-hidden', !hasLaterTrackOrAlbum);
@@ -402,7 +316,7 @@ interface TrackStep {
 const forward: TrackStep = {
   name: 'next',
   nextWithinAlbum: findPlayableTrackAfter,
-  hasAdjacentAlbum: () => currentAlbumIndex < discographyOrder.length - 1,
+  hasAdjacentAlbum: hasNextAlbum,
   loadAdjacentAlbum: loadNextAlbum,
   entryTrack: tracks => findPlayableTrackAfter(tracks, -1)
 };
@@ -410,7 +324,7 @@ const forward: TrackStep = {
 const backward: TrackStep = {
   name: 'previous',
   nextWithinAlbum: findPlayableTrackBefore,
-  hasAdjacentAlbum: () => currentAlbumIndex > 0,
+  hasAdjacentAlbum: hasPreviousAlbum,
   loadAdjacentAlbum: loadPreviousAlbum,
   entryTrack: tracks => findPlayableTrackBefore(tracks, tracks?.length ?? 0)
 };
@@ -631,44 +545,25 @@ function adjustVolumeBy(delta: number): void {
   updateMuteButton(audioElement.volume === 0);
 }
 
-function extractAlbumArtFromPage(albumId: string, albumType: string): string {
-  const itemId = `${albumType}-${albumId}`;
-
-  let gridItem = document.querySelector(`li.music-grid-item[data-item-id="${itemId}"]`);
-
-  if (!gridItem) {
-    gridItem = document.querySelector(`li.music-grid-item[data-tralbumid="${albumId}"]`);
-  }
-
-  if (gridItem) {
-    const img = gridItem.querySelector('img');
-    if (img) {
-      return img.src;
-    }
-  }
-
-  return '';
-}
-
 export async function loadNextAlbum(enableFetchCaching: boolean = false): Promise<boolean> {
-  if (currentAlbumIndex === -1 || currentAlbumIndex >= discographyOrder.length - 1) {
+  const item = nextAlbum();
+  if (!item) {
     log.info('No next album available');
     return false;
   }
 
-  const nextItem = discographyOrder[currentAlbumIndex + 1];
-  await loadAlbumIntoDrawer(nextItem.id, nextItem.type, enableFetchCaching);
+  await loadAlbumIntoDrawer(item.id, item.type, enableFetchCaching);
   return true;
 }
 
 export async function loadPreviousAlbum(enableFetchCaching: boolean = false): Promise<boolean> {
-  if (currentAlbumIndex <= 0) {
+  const item = previousAlbum();
+  if (!item) {
     log.info('No previous album available');
     return false;
   }
 
-  const prevItem = discographyOrder[currentAlbumIndex - 1];
-  await loadAlbumIntoDrawer(prevItem.id, prevItem.type, enableFetchCaching);
+  await loadAlbumIntoDrawer(item.id, item.type, enableFetchCaching);
   return true;
 }
 
@@ -676,14 +571,6 @@ export function getCurrentAlbumData(): TralbumDetailsResponse | null {
   return currentAlbumData;
 }
 
-export function getCurrentAlbumIndex(): number {
-  return currentAlbumIndex;
-}
-
 export function getCurrentTrackIndex(): number {
   return currentTrackIndex;
-}
-
-export function getDiscographyLength(): number {
-  return discographyOrder.length;
 }

@@ -1,6 +1,7 @@
 import Logger from './logger';
 import { createPlayerDrawer } from './components/playerDrawer';
-import { loadAlbumIntoDrawer, updateDiscographyOrder } from './playerLoader';
+import { loadAlbumIntoDrawer } from './playerLoader';
+import { updateDiscographyOrder } from './discography';
 import { initContinuousPlay } from './continuousPlay';
 import { DEFAULT_KEYBOARD_SETTINGS } from './types/keyboard';
 

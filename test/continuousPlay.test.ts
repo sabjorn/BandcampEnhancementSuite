@@ -5,7 +5,10 @@ import { initContinuousPlay } from '../src/continuousPlay';
 // Mock playerLoader functions
 vi.mock('../src/playerLoader', () => ({
   loadNextAlbum: vi.fn().mockResolvedValue(true),
-  loadPreviousAlbum: vi.fn().mockResolvedValue(true),
+  loadPreviousAlbum: vi.fn().mockResolvedValue(true)
+}));
+
+vi.mock('../src/discography', () => ({
   getCurrentAlbumIndex: vi.fn().mockReturnValue(1),
   getDiscographyLength: vi.fn().mockReturnValue(3)
 }));

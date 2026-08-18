@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
-import { isPlaybackClick, findPlayableTrackAfter, findPlayableTrackBefore } from '../src/playerLoader';
-import type { TralbumTrack } from '../src/bclient';
+import { isPlaybackClick } from '../src/playerLoader';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -142,6 +141,7 @@ vi.mock('../src/audioFeatures', () => ({
 
 describe('PlayerLoader - Main Player Logic', () => {
   let player: typeof import('../src/playerLoader');
+  let discography: typeof import('../src/discography');
 
   beforeEach(async () => {
     vi.resetModules();
@@ -165,6 +165,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     `);
 
     player = await import('../src/playerLoader');
+    discography = await import('../src/discography');
   });
 
   afterEach(() => {
@@ -174,7 +175,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
   describe('Continuous play across albums', () => {
     it('should extract discography order from page', () => {
-      const items = player.extractDiscographyOrder();
+      const items = discography.extractDiscographyOrder();
 
       expect(items.length).toBe(3);
       expect(items[0].id).toBe('123');
@@ -183,54 +184,54 @@ describe('PlayerLoader - Main Player Logic', () => {
     });
 
     it('should update discography order', () => {
-      player.updateDiscographyOrder();
-      const length = player.getDiscographyLength();
+      discography.updateDiscographyOrder();
+      const length = discography.getDiscographyLength();
 
       expect(length).toBe(3);
     });
 
     it('should find album index by ID', () => {
-      player.updateDiscographyOrder();
-      const index = player.findAlbumIndexById('456');
+      discography.updateDiscographyOrder();
+      const index = discography.findAlbumIndexById('456');
 
       expect(index).toBe(1);
     });
 
     it('should return current album index', () => {
-      expect(() => player.getCurrentAlbumIndex()).not.toThrow();
+      expect(() => discography.getCurrentAlbumIndex()).not.toThrow();
     });
 
     it('should return discography length', () => {
-      player.updateDiscographyOrder();
-      expect(player.getDiscographyLength()).toBe(3);
+      discography.updateDiscographyOrder();
+      expect(discography.getDiscographyLength()).toBe(3);
     });
   });
 
   describe('Album navigation (prev/next in discography)', () => {
     it('should load next album when available', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
       // Load first album first
       await player.loadAlbumIntoDrawer('123', 'album', false);
 
       const result = await player.loadNextAlbum(false);
 
       expect(result).toBe(true);
-      expect(player.getCurrentAlbumIndex()).toBe(1);
+      expect(discography.getCurrentAlbumIndex()).toBe(1);
     });
 
     it('should load previous album when available', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
       // Load second album first
       await player.loadAlbumIntoDrawer('456', 'album', false);
 
       const result = await player.loadPreviousAlbum(false);
 
       expect(result).toBe(true);
-      expect(player.getCurrentAlbumIndex()).toBe(0);
+      expect(discography.getCurrentAlbumIndex()).toBe(0);
     });
 
     it('should return false when trying to load next album at end', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
       // Load last album
       await player.loadAlbumIntoDrawer('789', 'album', false);
 
@@ -240,7 +241,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     });
 
     it('should return false when trying to load previous album at start', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
       // Load first album
       await player.loadAlbumIntoDrawer('123', 'album', false);
 
@@ -250,7 +251,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     });
 
     it('should preserve album buy button when navigating to next album', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
       // Load first album
       await player.loadAlbumIntoDrawer('123', 'album', false);
 
@@ -268,7 +269,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
   describe('Album art extracted from discography grid', () => {
     it('should extract album art URL from grid item', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
 
       await player.loadAlbumIntoDrawer('123', 'album', false);
 
@@ -280,7 +281,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
   describe('Persistent audio element with state management', () => {
     it('should create persistent audio element only once', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
 
       await player.loadAlbumIntoDrawer('123', 'album', false);
 
@@ -294,7 +295,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     });
 
     it('should have audio element hidden from view', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
 
       await player.loadAlbumIntoDrawer('123', 'album', false);
 
@@ -313,7 +314,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     };
 
     it('should advance to the next album when nothing after the current track can play', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
       await player.loadAlbumIntoDrawer('456', 'album', false);
 
       expect(player.getCurrentTrackIndex()).toBe(0);
@@ -328,7 +329,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     });
 
     it('should keep playing through the album change', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
       await player.loadAlbumIntoDrawer('456', 'album', false);
 
       const audio = startPlaying();
@@ -340,7 +341,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     });
 
     it('should land on a playable track in the album it moves to', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
       await player.loadAlbumIntoDrawer('456', 'album', false);
 
       startPlaying();
@@ -356,7 +357,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     });
 
     it('should stay put when there is no next album to fall through to', async () => {
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
       await player.loadAlbumIntoDrawer('789', 'album', false);
 
       startPlaying();
@@ -395,7 +396,7 @@ describe('PlayerLoader - Main Player Logic', () => {
         </li>
       `);
 
-      player.updateDiscographyOrder();
+      discography.updateDiscographyOrder();
       await player.loadAlbumIntoDrawer('123', 'album', false);
 
       // Re-query buttons after loadAlbumIntoDrawer replaces them
@@ -509,6 +510,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
 describe('PlayerLoader - Keyboard Shortcuts', () => {
   let player: typeof import('../src/playerLoader');
+  let discography: typeof import('../src/discography');
   let audio: HTMLAudioElement;
 
   const press = (key: string, modifiers: { shiftKey?: boolean } = {}) => {
@@ -533,7 +535,8 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
     `);
 
     player = await import('../src/playerLoader');
-    player.updateDiscographyOrder();
+    discography = await import('../src/discography');
+    discography.updateDiscographyOrder();
     await player.loadAlbumIntoDrawer('123', 'album', false);
 
     audio = document.querySelector('audio') as HTMLAudioElement;
@@ -705,85 +708,6 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
   });
 });
 
-describe('PlayerLoader - Playable track search', () => {
-  const track = (title: string): TralbumTrack => ({
-    track_id: Number(title),
-    title,
-    price: 1,
-    currency: 'USD',
-    is_purchasable: true
-  });
-  const playable = (title: string): TralbumTrack => ({
-    ...track(title),
-    streaming_url: { 'mp3-128': 'https://example.com/a.mp3' }
-  });
-  const unplayable = (title: string): TralbumTrack => track(title);
-
-  describe('only the first track is playable', () => {
-    const tracks = [playable('1'), unplayable('2'), unplayable('3'), unplayable('4')];
-
-    it('should report no playable track after the first', () => {
-      expect(findPlayableTrackAfter(tracks, 0)).toBe(-1);
-    });
-
-    it('should not fall back to an earlier track when searching forward', () => {
-      expect(findPlayableTrackAfter(tracks, 3)).toBe(-1);
-    });
-  });
-
-  describe('only the last track is playable', () => {
-    const tracks = [unplayable('1'), unplayable('2'), playable('3')];
-
-    it('should report no playable track before the last', () => {
-      expect(findPlayableTrackBefore(tracks, 2)).toBe(-1);
-    });
-
-    it('should find the last track when searching forward from the start', () => {
-      expect(findPlayableTrackAfter(tracks, -1)).toBe(2);
-    });
-  });
-
-  describe('playable tracks on both sides', () => {
-    const tracks = [playable('1'), unplayable('2'), playable('3'), unplayable('4'), playable('5')];
-
-    it('should skip over unplayable tracks going forward', () => {
-      expect(findPlayableTrackAfter(tracks, 0)).toBe(2);
-      expect(findPlayableTrackAfter(tracks, 2)).toBe(4);
-    });
-
-    it('should skip over unplayable tracks going backward', () => {
-      expect(findPlayableTrackBefore(tracks, 4)).toBe(2);
-      expect(findPlayableTrackBefore(tracks, 2)).toBe(0);
-    });
-
-    it('should never search backward when asked for a later track', () => {
-      expect(findPlayableTrackAfter(tracks, 4)).toBe(-1);
-    });
-
-    it('should never search forward when asked for an earlier track', () => {
-      expect(findPlayableTrackBefore(tracks, 0)).toBe(-1);
-    });
-
-    it('should find the last playable track when starting past the end', () => {
-      expect(findPlayableTrackBefore(tracks, tracks.length)).toBe(4);
-    });
-  });
-
-  describe('no playable tracks at all', () => {
-    const tracks = [unplayable('1'), unplayable('2')];
-
-    it('should report none in either direction', () => {
-      expect(findPlayableTrackAfter(tracks, -1)).toBe(-1);
-      expect(findPlayableTrackBefore(tracks, tracks.length)).toBe(-1);
-    });
-  });
-
-  it('should handle missing track data', () => {
-    expect(findPlayableTrackAfter(undefined, 0)).toBe(-1);
-    expect(findPlayableTrackBefore(undefined, 0)).toBe(-1);
-  });
-});
-
 describe('PlayerLoader - Track row click targets', () => {
   beforeEach(() => {
     createDomNodes(`
@@ -839,6 +763,7 @@ describe('PlayerLoader - Track row click targets', () => {
 
 describe('PlayerLoader - Player Interactions', () => {
   let player: typeof import('../src/playerLoader');
+  let discography: typeof import('../src/discography');
   let audio: HTMLAudioElement;
 
   beforeEach(async () => {
@@ -855,7 +780,8 @@ describe('PlayerLoader - Player Interactions', () => {
     `);
 
     player = await import('../src/playerLoader');
-    player.updateDiscographyOrder();
+    discography = await import('../src/discography');
+    discography.updateDiscographyOrder();
     await player.loadAlbumIntoDrawer('123', 'album', false);
 
     audio = document.querySelector('audio') as HTMLAudioElement;
@@ -1009,6 +935,7 @@ describe('PlayerLoader - Player Interactions', () => {
 
 describe('PlayerLoader - Waveform config from the extension', () => {
   let player: typeof import('../src/playerLoader');
+  let discography: typeof import('../src/discography');
   let audioFeatures: typeof import('../src/audioFeatures');
   let port: { postMessage: ReturnType<typeof vi.fn>; onMessage: { addListener: ReturnType<typeof vi.fn> } };
 
@@ -1034,8 +961,9 @@ describe('PlayerLoader - Waveform config from the extension', () => {
     port = { postMessage: vi.fn(), onMessage: { addListener: vi.fn() } };
 
     player = await import('../src/playerLoader');
+    discography = await import('../src/discography');
     audioFeatures = await import('../src/audioFeatures');
-    player.updateDiscographyOrder();
+    discography.updateDiscographyOrder();
     await player.loadAlbumIntoDrawer('123', 'album', false, undefined, port as never);
   });
 

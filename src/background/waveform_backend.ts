@@ -8,6 +8,8 @@ import { getDB } from '../utilities';
 
 const log = new Logger();
 
+const STREAM_BASE_URL = 'https://t4.bcbits.com/stream';
+
 type StreamUrl = { type: 'direct-path'; path: string } | { type: 'full-url'; url: string };
 
 interface RenderBufferRequest {
@@ -49,15 +51,17 @@ export function processRequest(
 
   const renderRequest = request as RenderBufferRequest;
 
-  let url: string;
-  if (renderRequest.stream) {
-    url =
-      renderRequest.stream.type === 'direct-path'
-        ? `https://t4.bcbits.com/stream/${renderRequest.stream.path}`
-        : renderRequest.stream.url;
-  } else if (renderRequest.url) {
-    url = `https://t4.bcbits.com/stream/${renderRequest.url}`;
-  } else {
+  const url = ((): string | undefined => {
+    const { stream, url: legacyPath } = renderRequest;
+
+    if (stream) {
+      return stream.type === 'direct-path' ? `${STREAM_BASE_URL}/${stream.path}` : stream.url;
+    }
+
+    return legacyPath ? `${STREAM_BASE_URL}/${legacyPath}` : undefined;
+  })();
+
+  if (!url) {
     log.error('renderBuffer request missing both stream and url parameters');
     sendResponse(null);
     return true;

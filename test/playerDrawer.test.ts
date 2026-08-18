@@ -262,6 +262,42 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     });
   });
 
+  describe('Branding and visual continuity with the wedge', () => {
+    it('should carry the logo in a footer that survives both states', () => {
+      const { drawer, openDrawer, minimizeDrawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      const footer = drawer.querySelector('.bes-player-drawer-footer');
+      expect(footer?.querySelector('.bes-player-drawer-logo')).toBeTruthy();
+
+      openDrawer();
+      expect(drawer.querySelector('.bes-player-drawer-footer')).toBeTruthy();
+
+      minimizeDrawer();
+      expect(drawer.querySelector('.bes-player-drawer-footer')).toBeTruthy();
+    });
+
+    it('should name the logo for assistive technology', () => {
+      const { drawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      const logo = drawer.querySelector('.bes-player-drawer-logo') as HTMLElement;
+
+      expect(logo.getAttribute('role')).toBe('img');
+      expect(logo.getAttribute('aria-label')).toBe('Bandcamp Enhancement Suite');
+    });
+
+    it('should keep the footer outside the scrolling tracklist', () => {
+      const { drawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      const content = drawer.querySelector('.bes-player-drawer-content') as HTMLElement;
+
+      expect(content.querySelector('.bes-player-drawer-footer')).toBeNull();
+      expect(drawer.querySelector(':scope > .bes-player-drawer-footer')).toBeTruthy();
+    });
+  });
+
   describe('AC-S2: Album art extraction', () => {
     it('should update album art in both full and minimized views', () => {
       const { drawer } = createPlayerDrawer();

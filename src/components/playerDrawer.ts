@@ -106,7 +106,20 @@ export function createPlayerDrawer(): {
         ]
       }),
       element('div', { className: 'bes-player-drawer-content', children: [tracklistContainer] }),
-      minimizedBar
+      minimizedBar,
+      element('div', {
+        className: 'bes-player-drawer-footer',
+        children: [
+          element('span', {
+            className: 'bes-player-drawer-logo',
+            attributes: {
+              role: 'img',
+              'aria-label': 'Bandcamp Enhancement Suite',
+              title: 'Bandcamp Enhancement Suite'
+            }
+          })
+        ]
+      })
     ]
   });
 

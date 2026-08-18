@@ -1010,6 +1010,8 @@ button.bes-downloadall[disabled]::after {
   position: fixed;
   top: 0;
   right: 0;
+  box-sizing: border-box;
+  border-left: 6px solid #1da0c3;
   width: 33vw;
   min-width: 400px;
   max-width: 600px;
@@ -1043,6 +1045,30 @@ button.bes-downloadall[disabled]::after {
 .bes-player-drawer.minimized .bes-player-drawer-header,
 .bes-player-drawer.minimized .bes-player-drawer-content {
   display: none;
+}
+
+.bes-player-drawer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  padding: 8px 16px 10px 20px;
+}
+
+.bes-player-drawer.minimized .bes-player-drawer-footer {
+  display: none;
+}
+
+.bes-player-drawer-logo {
+  width: 22px;
+  height: 22px;
+  background: url('../icons/icon48.png') center / contain no-repeat;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.bes-player-drawer-logo:hover {
+  opacity: 1;
 }
 
 .bes-player-drawer.minimized .bes-player-drawer-minimized-bar {
@@ -1893,7 +1919,8 @@ button.bes-downloadall[disabled]::after {
   align-items: center;
   justify-content: flex-start;
   padding: 16px 4px;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   cursor: pointer;
   background: #1da0c3;

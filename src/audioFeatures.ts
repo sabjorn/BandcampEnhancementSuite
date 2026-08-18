@@ -1,7 +1,7 @@
 import { analyze } from 'web-audio-beat-detector';
 
 import Logger from './logger';
-import { mousedownCallback } from './utilities.js';
+import { mousedownCallback } from './utilities';
 
 const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
 
@@ -46,7 +46,7 @@ export function applyAudioConfig(
   msg: AudioFeaturesConfig,
   canvas: HTMLCanvasElement,
   canvasDisplayToggle: HTMLInputElement,
-  log: Logger
+  _log: Logger
 ): void {
   if (!msg.config) {
     return;
@@ -55,7 +55,7 @@ export function applyAudioConfig(
   canvasDisplayToggle.checked = msg.config.displayWaveform;
 }
 
-function extractTrackId(audioSrc: string): number | null {
+export function extractTrackId(audioSrc: string): number | null {
   const match = audioSrc.match(/stream\/[^/]+\/[^/]+\/(\d+)/);
   if (!match) return null;
 
@@ -63,7 +63,10 @@ function extractTrackId(audioSrc: string): number | null {
   return isNaN(trackId) ? null : trackId;
 }
 
-async function fetchCachedMetadata(trackId: number, log: Logger): Promise<{ waveform: number[]; bpm: number } | null> {
+export async function fetchCachedMetadata(
+  trackId: number,
+  log: Logger
+): Promise<{ waveform: number[]; bpm: number } | null> {
   const memoryCached = metadataCache.get(trackId);
   if (memoryCached) {
     return memoryCached;
@@ -86,27 +89,41 @@ async function fetchCachedMetadata(trackId: number, log: Logger): Promise<{ wave
   return apiMetadata;
 }
 
+export interface AudioFeatureOptions {
+  urlFormatter?: (audioSrc: string) => {
+    url?: string;
+    stream?: { type: 'direct-path' | 'full-url'; path?: string; url?: string };
+  };
+  trackId?: number | null;
+}
+
 export async function generateAudioFeatures(
+  currentAudio: () => HTMLAudioElement | null,
   canvas: HTMLCanvasElement,
-  bpmDisplay: HTMLDivElement,
+  onBpmUpdate: (bpm: number | null) => void,
   waveformColour: string,
   log: Logger,
-  currentTarget: { value?: string }
+  currentTarget: { value?: string },
+  options: AudioFeatureOptions = {}
 ): Promise<void> {
   const datapoints = 100;
-  const audio = document.querySelector('audio') as HTMLAudioElement;
+  const audio = currentAudio();
   if (!audio) return;
   if (currentTarget.value === audio.src) return;
 
   currentTarget.value = audio.src;
-  bpmDisplay.innerText = '';
+  onBpmUpdate(null);
   canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
 
-  const trackId = extractTrackId(audio.src);
+  const trackId = options.trackId ?? extractTrackId(audio.src);
+  if (!trackId) {
+    log.warn(`Track id unknown for ${audio.src}, metadata will be neither read from nor written to the cache`);
+  }
+
   if (trackId) {
     const cachedMetadata = await fetchCachedMetadata(trackId, log);
     if (cachedMetadata && cachedMetadata.waveform && cachedMetadata.bpm) {
-      bpmDisplay.innerText = `bpm: ${cachedMetadata.bpm.toFixed(2)}`;
+      onBpmUpdate(cachedMetadata.bpm);
 
       const max = cachedMetadata.waveform.reduce((a: number, b: number) => Math.max(a, b));
       for (let i = 0; i < cachedMetadata.waveform.length; i++) {
@@ -118,12 +135,15 @@ export async function generateAudioFeatures(
   }
 
   const ctx = new AudioContext();
-  const src = audio.src.split('stream/')[1];
+
+  const requestParams = options.urlFormatter
+    ? options.urlFormatter(audio.src)
+    : { url: audio.src.split('stream/')[1] };
 
   chrome.runtime.sendMessage(
     {
       contentScriptQuery: 'renderBuffer',
-      url: src
+      ...requestParams
     },
     audioData => {
       const audioBuffer_ = new Uint8Array(audioData.data).buffer;
@@ -132,7 +152,7 @@ export async function generateAudioFeatures(
       const bpmPromise = decodePromise.then(decodedAudio =>
         analyze(decodedAudio)
           .then(bpm => {
-            bpmDisplay.innerText = `bpm: ${bpm.toFixed(2)}`;
+            onBpmUpdate(bpm);
             return bpm;
           })
           .catch(err => {
@@ -215,7 +235,16 @@ export function initAudioFeatures(port: PortMessage): void {
   if (audio) {
     audio.addEventListener('canplay', () =>
       monitorAudioCanPlay(canvasDisplayToggle, () =>
-        generateAudioFeatures(canvas, bpmDisplay, waveformColour, log, currentTarget)
+        generateAudioFeatures(
+          () => audio,
+          canvas,
+          bpm => {
+            bpmDisplay.innerText = bpm !== null ? `bpm: ${bpm.toFixed(2)}` : '';
+          },
+          waveformColour,
+          log,
+          currentTarget
+        )
       )
     );
     audio.addEventListener('timeupdate', (e: Event) =>

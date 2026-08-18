@@ -67,8 +67,13 @@ export async function getFindMusicToken(): Promise<string | null> {
     return storedToken;
   }
 
-  log.info('No valid stored token, exchanging new token');
-  return await exchangeBandcampToken();
+  log.info('No valid stored token, attempting to exchange new token');
+  try {
+    return await exchangeBandcampToken();
+  } catch (error) {
+    log.debug('Failed to exchange token (likely missing permissions or not logged in)');
+    return null;
+  }
 }
 
 export async function fetchTrackMetadata(

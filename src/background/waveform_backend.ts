@@ -8,6 +8,16 @@ import { getDB } from '../utilities';
 
 const log = new Logger();
 
+const STREAM_BASE_URL = 'https://t4.bcbits.com/stream';
+
+type StreamUrl = { type: 'direct-path'; path: string } | { type: 'full-url'; url: string };
+
+interface RenderBufferRequest {
+  contentScriptQuery: 'renderBuffer';
+  stream?: StreamUrl;
+  url?: string;
+}
+
 export function processRequest(
   request: any,
   _sender: chrome.runtime.MessageSender,
@@ -39,10 +49,33 @@ export function processRequest(
 
   if (request.contentScriptQuery !== 'renderBuffer') return false;
 
-  const url = 'https://t4.bcbits.com/stream/' + request.url;
+  const renderRequest = request as RenderBufferRequest;
+
+  const url = ((): string | undefined => {
+    const { stream, url: legacyPath } = renderRequest;
+
+    if (stream) {
+      return stream.type === 'direct-path' ? `${STREAM_BASE_URL}/${stream.path}` : stream.url;
+    }
+
+    return legacyPath ? `${STREAM_BASE_URL}/${legacyPath}` : undefined;
+  })();
+
+  if (!url) {
+    log.error('renderBuffer request missing both stream and url parameters');
+    sendResponse(null);
+    return true;
+  }
+
+  log.debug(`Fetching audio buffer from: ${url.substring(0, 60)}...`);
 
   fetch(url)
-    .then(response => response.arrayBuffer())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.arrayBuffer();
+    })
     .then(arrayBuffer => {
       const uint8Array = new Uint8Array(arrayBuffer);
       const jsonResult = {
@@ -52,8 +85,8 @@ export function processRequest(
       sendResponse(jsonResult);
     })
     .catch(error => {
-      // eslint-disable-next-line no-console
-      console.error(error);
+      log.error(`Failed to fetch audio buffer: ${error.message}`);
+      sendResponse(null);
     });
 
   return true;

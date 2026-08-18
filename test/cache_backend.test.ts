@@ -6,7 +6,13 @@ vi.mock('../src/logger', () => ({
     error = vi.fn();
     debug = vi.fn();
     warn = vi.fn();
-  }
+  },
+  createLogger: vi.fn(() => ({
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn()
+  }))
 }));
 
 vi.mock('../src/clients/findmusic', () => ({

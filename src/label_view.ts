@@ -1,5 +1,6 @@
 import Logger from './logger';
-import { attachPreviewListeners } from './utilities.js';
+import { createPlayerDrawer, loadAlbumIntoDrawer } from './components/player';
+import { updateDiscographyOrder } from './discography';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -28,46 +29,76 @@ export function previewClicked(event: Event, port: chrome.runtime.Port): void {
   setPreviewed(id, port);
 }
 
-export function fillFrame(event: Event, previewState: { previewOpen: boolean; previewId?: string }): void {
-  document.querySelectorAll('.preview-frame').forEach(item => {
-    while (item.firstChild) {
-      item.removeChild(item.firstChild);
-    }
-  });
+const log = new Logger();
 
-  const preview = (event.target as HTMLElement).closest('.preview')?.querySelector('.preview-frame');
-  if (!preview) return;
+let drawerController: ReturnType<typeof createPlayerDrawer> | null = null;
 
-  const idAndType = preview.getAttribute('id');
-  if (!idAndType) return;
-
-  const id = idAndType.split('-')[1];
-  const idType = idAndType.split('-')[0];
-
-  if (previewState.previewOpen === true && previewState.previewId === id) {
-    previewState.previewOpen = false;
-  } else {
-    previewState.previewId = id;
-    previewState.previewOpen = true;
-  }
-
-  if (previewState.previewOpen) {
-    let url = `https://bandcamp.com/EmbeddedPlayer/${idType}=${id}`;
-    url += '/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=none/transparent=true/"';
-
-    const iframe_style =
-      'margin: 6px 0px 0px 0px; border: 0; width: 150%; height: 300px; position:relative; z-index:1;';
-
-    const iframe = document.createElement('iframe');
-    iframe.setAttribute('style', iframe_style);
-    iframe.setAttribute('src', url);
-    iframe.setAttribute('seamless', '');
-    preview.appendChild(iframe);
-  }
+interface PreviewTarget {
+  id: string;
+  idType: string;
 }
 
-export async function initLabelView(port: chrome.runtime.Port): Promise<void> {
-  const log = new Logger();
+function previewTargetFrom(event: Event): PreviewTarget | null {
+  const frame = (event.target as HTMLElement).closest('.preview')?.querySelector('.preview-frame');
+  const idAndType = frame?.getAttribute('id');
+  if (!idAndType) return null;
+
+  const [idType, id] = idAndType.split('-');
+  return { id, idType };
+}
+
+function drawer(): ReturnType<typeof createPlayerDrawer> {
+  if (!drawerController) {
+    drawerController = createPlayerDrawer();
+    document.body.appendChild(drawerController.drawer);
+  }
+
+  return drawerController;
+}
+
+export function fillFrame(
+  event: Event,
+  previewState: { previewOpen: boolean; previewId?: string },
+  enableFetchCaching: boolean = false,
+  port?: chrome.runtime.Port
+): void {
+  const target = previewTargetFrom(event);
+  if (!target) return;
+
+  const player = drawer();
+  const { isOpen, isMinimized } = player.getState();
+
+  if (isOpen && previewState.previewId === target.id) {
+    if (isMinimized) player.maximizeDrawer();
+    else player.minimizeDrawer();
+    return;
+  }
+
+  previewState.previewId = target.id;
+  previewState.previewOpen = true;
+  player.openDrawer();
+
+  if (port) setPreviewed(target.id, port);
+
+  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, port).catch(error =>
+    log.error(`Failed to load album into drawer: ${error}`)
+  );
+}
+
+export function attachPreviewListeners(
+  root: Document | HTMLElement,
+  port: chrome.runtime.Port,
+  previewState: { previewOpen: boolean; previewId?: string },
+  enableFetchCaching: boolean = false
+): void {
+  root.querySelectorAll('.open-iframe').forEach(button => {
+    button.addEventListener('click', event => {
+      fillFrame(event, previewState, enableFetchCaching, port);
+    });
+  });
+}
+
+export async function initLabelView(port: chrome.runtime.Port, enableFetchCaching: boolean = false): Promise<void> {
   const previewState = { previewOpen: false, previewId: undefined };
 
   port.onMessage.addListener(msg => {
@@ -75,7 +106,16 @@ export async function initLabelView(port: chrome.runtime.Port): Promise<void> {
   });
 
   log.info('Rendering BES...');
-  renderDom(port, previewState);
+  renderDom(port, previewState, enableFetchCaching);
+
+  updateDiscographyOrder();
+
+  const observer = new MutationObserver(() => {
+    updateDiscographyOrder();
+  });
+
+  const discographyContainer = document.querySelector('ol.music-grid') || document.body;
+  observer.observe(discographyContainer, { childList: true, subtree: true });
 }
 
 export function generatePreview(id: string, idType: string): HTMLDivElement {
@@ -107,7 +147,8 @@ export function generatePreview(id: string, idType: string): HTMLDivElement {
 
 export function renderDom(
   port: chrome.runtime.Port,
-  previewState: { previewOpen: boolean; previewId?: string }
+  previewState: { previewOpen: boolean; previewId?: string },
+  enableFetchCaching: boolean = false
 ): void {
   document.querySelectorAll('li.music-grid-item[data-item-id]').forEach(item => {
     const idAndType = (item as HTMLElement).dataset.itemId;
@@ -139,9 +180,9 @@ export function renderDom(
     setPreviewed(id, port);
   }
 
-  attachPreviewListeners(document, port, previewState);
+  attachPreviewListeners(document, port, previewState, enableFetchCaching);
 
-  const _historybox = document.querySelectorAll('.historybox').forEach(item => {
+  document.querySelectorAll('.historybox').forEach(item => {
     item.addEventListener('click', event => {
       boxClicked(event, port);
     });

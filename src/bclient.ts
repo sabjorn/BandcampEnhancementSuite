@@ -39,6 +39,20 @@ function createRateLimitedFunction<T extends (...args: any[]) => Promise<any>>(f
   }) as T;
 }
 
+export interface TralbumTrack {
+  track_id: number;
+  title: string;
+  price: number;
+  currency: string;
+  is_purchasable: boolean;
+  duration?: number;
+  streaming_url?: {
+    'mp3-128': string;
+  };
+  track_url?: string;
+  track_num?: number;
+}
+
 export interface TralbumDetailsResponse {
   id: number;
   type: 'a' | 't';
@@ -48,13 +62,7 @@ export interface TralbumDetailsResponse {
   price: number;
   is_purchasable: boolean;
   bandcamp_url?: string;
-  tracks?: Array<{
-    track_id: number;
-    title: string;
-    price: number;
-    currency: string;
-    is_purchasable: boolean;
-  }>;
+  tracks?: TralbumTrack[];
 }
 
 interface AddAlbumToCartBody {

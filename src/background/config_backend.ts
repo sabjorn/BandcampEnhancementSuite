@@ -1,6 +1,6 @@
-import Logger from '../logger.js';
-import { getDB } from '../utilities.js';
-import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings } from '../types/keyboard.js';
+import Logger from '../logger';
+import { getDB } from '../utilities';
+import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings } from '../types/keyboard';
 
 interface Config {
   displayWaveform: boolean;

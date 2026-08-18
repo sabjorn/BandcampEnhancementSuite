@@ -1,13 +1,14 @@
 import { createLogger } from './logger';
 import { initLabelView } from './label_view';
 import { initDownload } from './pages/download';
-import { initPlayer, updateKeyboardHandlers } from './player';
+import { initPlayer } from './player';
+import { updateKeyboardSettings } from './keyboardShortcuts';
 import { initAudioFeatures } from './audioFeatures';
 import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
 import { initFeed } from './pages/feed';
-import { createKeyboardSettingsSection } from './components/keyboardSettings.js';
-import { KeyboardSettings } from './types/keyboard.js';
+import { createKeyboardSettingsSection } from './components/keyboardSettings';
+import { KeyboardSettings } from './types/keyboard';
 
 const log = createLogger();
 
@@ -363,40 +364,43 @@ const main = async (): Promise<void> => {
     }
   })();
 
-  initLabelView(config_port);
+  let keyboardSettings: KeyboardSettings | undefined;
+  let enableFetchCaching = false;
+
+  const getConfigPromise = new Promise<void>(resolve => {
+    const listener = (msg: any) => {
+      if (msg.config && msg.config.keyboardSettings) {
+        keyboardSettings = msg.config.keyboardSettings;
+        enableFetchCaching = msg.config.enableFetchCaching ?? false;
+        config_port.onMessage.removeListener(listener);
+        resolve();
+      }
+    };
+    config_port.onMessage.addListener(listener);
+    config_port.postMessage({ requestConfig: {} });
+
+    setTimeout(() => {
+      config_port.onMessage.removeListener(listener);
+      resolve();
+    }, 1000);
+  });
+
+  await getConfigPromise;
+
+  if (keyboardSettings) updateKeyboardSettings(keyboardSettings);
+
+  initLabelView(config_port, enableFetchCaching);
+
+  config_port.onMessage.addListener((msg: any) => {
+    if (msg.config && msg.config.keyboardSettings) {
+      log.info('Keyboard settings changed, updating handlers');
+      updateKeyboardSettings(msg.config.keyboardSettings);
+    }
+  });
 
   const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
   if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
-    let keyboardSettings: KeyboardSettings | undefined;
-    let enableFetchCaching = false;
-
-    const getConfigPromise = new Promise<void>(resolve => {
-      const listener = (msg: any) => {
-        if (msg.config && msg.config.keyboardSettings) {
-          keyboardSettings = msg.config.keyboardSettings;
-          enableFetchCaching = msg.config.enableFetchCaching ?? false;
-          config_port.onMessage.removeListener(listener);
-          resolve();
-        }
-      };
-      config_port.onMessage.addListener(listener);
-      config_port.postMessage({ requestConfig: {} });
-
-      setTimeout(() => {
-        config_port.onMessage.removeListener(listener);
-        resolve();
-      }, 1000);
-    });
-
-    await getConfigPromise;
-    await initPlayer(keyboardSettings, enableFetchCaching);
-
-    config_port.onMessage.addListener((msg: any) => {
-      if (msg.config && msg.config.keyboardSettings) {
-        log.info('Keyboard settings changed, updating handlers');
-        updateKeyboardHandlers(msg.config.keyboardSettings);
-      }
-    });
+    await initPlayer(enableFetchCaching);
 
     initAudioFeatures(config_port);
   }

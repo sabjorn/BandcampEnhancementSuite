@@ -124,6 +124,9 @@ import { getTralbumDetailsFromPage } from '../src/bclient';
 
 vi.mock('../src/bclient', () => ({
   getTralbumDetailsFromPage: vi.fn(),
+  getTralbumDetails: vi.fn(),
+  addAlbumToCart: vi.fn(),
+  removeAlbumFromCart: vi.fn(),
   CURRENCY_MINIMUMS: { USD: 0.5, EUR: 0.25 }
 }));
 

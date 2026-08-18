@@ -3,7 +3,7 @@ import { createDomNodes, cleanupTestNodes } from './utils';
 import { initContinuousPlay } from '../src/continuousPlay';
 
 // Mock playerLoader functions
-vi.mock('../src/playerLoader', () => ({
+vi.mock('../src/components/player/loader', () => ({
   loadNextAlbum: vi.fn().mockResolvedValue(true),
   loadPreviousAlbum: vi.fn().mockResolvedValue(true)
 }));
@@ -28,7 +28,7 @@ vi.mock('../src/logger', () => ({
   }))
 }));
 
-import { loadNextAlbum, loadPreviousAlbum } from '../src/playerLoader';
+import { loadNextAlbum, loadPreviousAlbum } from '../src/components/player/loader';
 
 describe('ContinuousPlay - Cross-Album Navigation', () => {
   let audio: HTMLAudioElement;

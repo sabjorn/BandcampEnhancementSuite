@@ -12,7 +12,7 @@ vi.mock('../src/logger', () => ({
   createLogger: vi.fn(() => ({ info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() }))
 }));
 
-import { createPlayerDrawer, DRAWER_MIN_WIDTH, WIDTH_TRANSITION_MS } from '../src/components/playerDrawer';
+import { createPlayerDrawer, DRAWER_MIN_WIDTH, WIDTH_TRANSITION_MS } from '../src/components/player/drawer';
 
 const stylesheet = readFileSync(join(__dirname, '../css/style.css'), 'utf8');
 

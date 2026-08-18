@@ -1,16 +1,23 @@
-import Logger from './logger';
-import { getTralbumDetails, TralbumDetailsResponse, TralbumTrack } from './bclient';
-import { getPlayerDrawerElements, updatePlayerDrawerInfo, updateMinimizedPlayButton } from './components/playerDrawer';
-import { createFetchFunction } from './utilities';
-import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from './nativePlayerBuilder';
-import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS } from './types/keyboard';
-import { PlayerCommands, registerPlayerShortcuts, updateKeyboardSettings } from './keyboardShortcuts';
-import { drawOverlay, generateAudioFeatures } from './audioFeatures';
-import { volumeIcon, mutedVolumeIcon } from './components/playerIcons';
-import { replaceChildren } from './components/dom';
-import { inDrawer, allInDrawer, setText, setStyle } from './components/drawerDom';
+import Logger from '../../logger';
+import { getTralbumDetails, TralbumDetailsResponse, TralbumTrack } from '../../bclient';
+import { getPlayerDrawerElements, updatePlayerDrawerInfo, updateMinimizedPlayButton } from './drawer';
+import { createFetchFunction } from '../../utilities';
+import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from './builder';
+import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS } from '../../types/keyboard';
+import { PlayerCommands, registerPlayerShortcuts, updateKeyboardSettings } from '../../keyboardShortcuts';
+import { drawOverlay, generateAudioFeatures } from '../../audioFeatures';
+import { volumeIcon, mutedVolumeIcon } from './icons';
+import { replaceChildren } from '../dom';
+import { inDrawer, allInDrawer, setText, setStyle } from './query';
 import { streamUrlOf, findPlayableTrackAfter, findPlayableTrackBefore } from './trackSelection';
-import { selectAlbum, hasNextAlbum, hasPreviousAlbum, nextAlbum, previousAlbum, albumArtUrlFor } from './discography';
+import {
+  selectAlbum,
+  hasNextAlbum,
+  hasPreviousAlbum,
+  nextAlbum,
+  previousAlbum,
+  albumArtUrlFor
+} from '../../discography';
 
 const log = new Logger();
 

@@ -1,4 +1,4 @@
-import { TralbumTrack } from './bclient';
+import { TralbumTrack } from '../../bclient';
 
 export function streamUrlOf(track: TralbumTrack | undefined): string | undefined {
   return track?.streaming_url?.['mp3-128'];

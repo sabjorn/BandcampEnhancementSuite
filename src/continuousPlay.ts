@@ -1,5 +1,5 @@
 import { createLogger } from './logger';
-import { loadNextAlbum, loadPreviousAlbum } from './playerLoader';
+import { loadNextAlbum, loadPreviousAlbum } from './components/player';
 import { getCurrentAlbumIndex, getDiscographyLength } from './discography';
 
 const log = createLogger();

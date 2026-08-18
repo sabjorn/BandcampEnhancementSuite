@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { prevIcon, nextIcon, playIcon, pauseIcon } from '../src/components/playerIcons';
+import { prevIcon, nextIcon, playIcon, pauseIcon } from '../src/components/player/icons';
 
 const parse = (markup: string): SVGElement => {
   const holder = document.createElement('div');

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { findPlayableTrackAfter, findPlayableTrackBefore, isTrackPlayable, streamUrlOf } from '../src/trackSelection';
+import {
+  findPlayableTrackAfter,
+  findPlayableTrackBefore,
+  isTrackPlayable,
+  streamUrlOf
+} from '../src/components/player/trackSelection';
 import type { TralbumTrack } from '../src/bclient';
 
 describe('trackSelection', () => {

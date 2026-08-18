@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
-import { isPlaybackClick } from '../src/playerLoader';
+import { isPlaybackClick } from '../src/components/player/loader';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -50,7 +50,7 @@ vi.mock('../src/bclient', () => {
   };
 });
 
-vi.mock('../src/components/playerDrawer', () => ({
+vi.mock('../src/components/player/drawer', () => ({
   getPlayerDrawerElements: vi.fn(() => ({
     drawer: document.querySelector('.bes-player-drawer'),
     playerContainer: document.querySelector('.bes-player-drawer-player'),
@@ -63,7 +63,7 @@ vi.mock('../src/components/playerDrawer', () => ({
   updateMinimizedPlayButton: vi.fn()
 }));
 
-vi.mock('../src/nativePlayerBuilder', () => {
+vi.mock('../src/components/player/builder', () => {
   const element = (tag: string, className: string): HTMLElement => {
     const node = document.createElement(tag);
     node.className = className;
@@ -140,7 +140,7 @@ vi.mock('../src/audioFeatures', () => ({
 }));
 
 describe('PlayerLoader - Main Player Logic', () => {
-  let player: typeof import('../src/playerLoader');
+  let player: typeof import('../src/components/player/loader');
   let discography: typeof import('../src/discography');
 
   beforeEach(async () => {
@@ -164,7 +164,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       </li>
     `);
 
-    player = await import('../src/playerLoader');
+    player = await import('../src/components/player/loader');
     discography = await import('../src/discography');
   });
 
@@ -509,7 +509,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 });
 
 describe('PlayerLoader - Keyboard Shortcuts', () => {
-  let player: typeof import('../src/playerLoader');
+  let player: typeof import('../src/components/player/loader');
   let discography: typeof import('../src/discography');
   let audio: HTMLAudioElement;
 
@@ -534,7 +534,7 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
       <li class="music-grid-item" data-item-id="album-456"></li>
     `);
 
-    player = await import('../src/playerLoader');
+    player = await import('../src/components/player/loader');
     discography = await import('../src/discography');
     discography.updateDiscographyOrder();
     await player.loadAlbumIntoDrawer('123', 'album', false);
@@ -762,7 +762,7 @@ describe('PlayerLoader - Track row click targets', () => {
 });
 
 describe('PlayerLoader - Player Interactions', () => {
-  let player: typeof import('../src/playerLoader');
+  let player: typeof import('../src/components/player/loader');
   let discography: typeof import('../src/discography');
   let audio: HTMLAudioElement;
 
@@ -779,7 +779,7 @@ describe('PlayerLoader - Player Interactions', () => {
       <li class="music-grid-item" data-item-id="album-123"></li>
     `);
 
-    player = await import('../src/playerLoader');
+    player = await import('../src/components/player/loader');
     discography = await import('../src/discography');
     discography.updateDiscographyOrder();
     await player.loadAlbumIntoDrawer('123', 'album', false);
@@ -934,7 +934,7 @@ describe('PlayerLoader - Player Interactions', () => {
 });
 
 describe('PlayerLoader - Waveform config from the extension', () => {
-  let player: typeof import('../src/playerLoader');
+  let player: typeof import('../src/components/player/loader');
   let discography: typeof import('../src/discography');
   let audioFeatures: typeof import('../src/audioFeatures');
   let port: { postMessage: ReturnType<typeof vi.fn>; onMessage: { addListener: ReturnType<typeof vi.fn> } };
@@ -960,7 +960,7 @@ describe('PlayerLoader - Waveform config from the extension', () => {
 
     port = { postMessage: vi.fn(), onMessage: { addListener: vi.fn() } };
 
-    player = await import('../src/playerLoader');
+    player = await import('../src/components/player/loader');
     discography = await import('../src/discography');
     audioFeatures = await import('../src/audioFeatures');
     discography.updateDiscographyOrder();

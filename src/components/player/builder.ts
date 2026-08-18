@@ -1,7 +1,7 @@
-import Logger from './logger';
-import { TralbumDetailsResponse, CURRENCY_MINIMUMS } from './bclient';
-import { createAddToCartButton } from './components/cartButton';
-import { prevIcon, nextIcon, playIcon, pauseIcon, volumeIcon } from './components/playerIcons';
+import Logger from '../../logger';
+import { TralbumDetailsResponse, CURRENCY_MINIMUMS } from '../../bclient';
+import { createAddToCartButton } from '../cartButton';
+import { prevIcon, nextIcon, playIcon, pauseIcon, volumeIcon } from './icons';
 
 const log = new Logger();
 

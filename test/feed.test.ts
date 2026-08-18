@@ -16,14 +16,14 @@ vi.mock('../src/logger', () => ({
   }))
 }));
 
-vi.mock('../src/playerLoader', () => ({
+vi.mock('../src/components/player/loader', () => ({
   loadAlbumIntoDrawer: vi.fn(() => Promise.resolve()),
   loadNextAlbum: vi.fn(() => Promise.resolve(false)),
   loadPreviousAlbum: vi.fn(() => Promise.resolve(false))
 }));
 
 import { initFeed, renderFeedPreviews, tralbumTypeToIdType } from '../src/pages/feed';
-import { loadAlbumIntoDrawer } from '../src/playerLoader';
+import { loadAlbumIntoDrawer } from '../src/components/player/loader';
 
 const mockPort = {
   postMessage: vi.fn(),

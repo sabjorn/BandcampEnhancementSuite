@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
-import { prevIcon, nextIcon } from '../src/components/playerIcons';
+import { prevIcon, nextIcon } from '../src/components/player/icons';
 import {
   createPlayerDrawer,
   updatePlayerDrawerInfo,
@@ -8,7 +8,7 @@ import {
   expandedDrawerWidth,
   DRAWER_MIN_WIDTH,
   CONTENT_GAP
-} from '../src/components/playerDrawer';
+} from '../src/components/player/drawer';
 
 vi.mock('../src/logger', () => ({
   createLogger: vi.fn(() => ({

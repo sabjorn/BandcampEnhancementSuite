@@ -1,6 +1,6 @@
-import { createLogger } from '../logger';
-import { prevIcon, nextIcon, playIcon, pauseIcon, minimizeIcon, closeIcon } from './playerIcons';
-import { element } from './dom';
+import { createLogger } from '../../logger';
+import { prevIcon, nextIcon, playIcon, pauseIcon, minimizeIcon, closeIcon } from './icons';
+import { element } from '../dom';
 
 const log = createLogger();
 

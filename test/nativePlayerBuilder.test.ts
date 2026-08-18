@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
-import { buildDrawerPlayer, buildTrackTable } from '../src/nativePlayerBuilder';
-import { prevIcon, nextIcon, playIcon, pauseIcon } from '../src/components/playerIcons';
+import { buildDrawerPlayer, buildTrackTable } from '../src/components/player/builder';
+import { prevIcon, nextIcon, playIcon, pauseIcon } from '../src/components/player/icons';
 import { TralbumDetailsResponse } from '../src/bclient';
 
 vi.mock('../src/logger', () => ({

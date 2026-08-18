@@ -16,6 +16,31 @@ const drawerState: PlayerDrawerState = {
   isMinimized: false
 };
 
+export const DRAWER_MIN_WIDTH = 520;
+
+export function expandedDrawerWidth(viewportWidth: number, contentRightEdge: number): number {
+  const gutter = viewportWidth - contentRightEdge;
+  return Math.max(DRAWER_MIN_WIDTH, gutter);
+}
+
+function pageContentRightEdge(): number | null {
+  const page = document.querySelector<HTMLElement>('#pgBd');
+  if (!page) return null;
+
+  const { right } = page.getBoundingClientRect();
+  return right - parseFloat(getComputedStyle(page).paddingRight || '0');
+}
+
+function sizeDrawerToPageGutter(): void {
+  const contentRightEdge = pageContentRightEdge();
+  const width =
+    contentRightEdge === null
+      ? DRAWER_MIN_WIDTH
+      : expandedDrawerWidth(document.documentElement.clientWidth, contentRightEdge);
+
+  document.documentElement.style.setProperty('--bes-drawer-width', `${width}px`);
+}
+
 export function createPlayerDrawer(): {
   drawer: HTMLDivElement;
   overlay: HTMLDivElement;
@@ -128,8 +153,13 @@ export function createPlayerDrawer(): {
   document.body.classList.add('bes-drawer-host');
 
   const reflowPageAroundDrawer = () => {
-    document.body.classList.toggle('bes-drawer-expanded', drawerState.isOpen && !drawerState.isMinimized);
+    const isExpanded = drawerState.isOpen && !drawerState.isMinimized;
+
+    document.body.classList.toggle('bes-drawer-expanded', isExpanded);
+    if (isExpanded) sizeDrawerToPageGutter();
   };
+
+  window.addEventListener('resize', reflowPageAroundDrawer);
 
   const openDrawer = () => {
     log.info('Opening player drawer');

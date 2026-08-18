@@ -12,7 +12,7 @@ vi.mock('../src/logger', () => ({
   createLogger: vi.fn(() => ({ info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() }))
 }));
 
-import { createPlayerDrawer } from '../src/components/playerDrawer';
+import { createPlayerDrawer, DRAWER_MIN_WIDTH } from '../src/components/playerDrawer';
 
 const stylesheet = readFileSync(join(__dirname, '../css/style.css'), 'utf8');
 
@@ -76,6 +76,12 @@ describe('drawer stylesheet invariants', () => {
   });
 
   describe('the drawer keeps a fixed width', () => {
+    it('should fall back to the same minimum the player enforces', () => {
+      const declared = (ruleFor(':root') ?? '').match(/--bes-drawer-width:\s*(\d+)px/)?.[1];
+
+      expect(Number(declared)).toBe(DRAWER_MIN_WIDTH);
+    });
+
     it('should size itself from a single declared width', () => {
       expect(ruleFor(':root')).toContain('--bes-drawer-width');
       expect(ruleFor('.bes-player-drawer')).toContain('width: var(--bes-drawer-width)');

@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 import { prevIcon, nextIcon } from '../src/components/playerIcons';
-import { createPlayerDrawer, updatePlayerDrawerInfo, updateMinimizedPlayButton } from '../src/components/playerDrawer';
+import {
+  createPlayerDrawer,
+  updatePlayerDrawerInfo,
+  updateMinimizedPlayButton,
+  expandedDrawerWidth,
+  DRAWER_MIN_WIDTH
+} from '../src/components/playerDrawer';
 
 vi.mock('../src/logger', () => ({
   createLogger: vi.fn(() => ({
@@ -89,6 +95,56 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
 
       expect(drawer.classList.contains('minimized')).toBe(false);
       expect(getState().isMinimized).toBe(false);
+    });
+  });
+
+  describe('Filling the page gutter before covering any content', () => {
+    const contentRightEdgeFor = (viewport: number, gutter: number) => viewport - gutter;
+
+    it('should stretch to the gutter while it is wider than the minimum', () => {
+      const width = expandedDrawerWidth(1800, contentRightEdgeFor(1800, 900));
+
+      expect(width).toBe(900);
+    });
+
+    it('should narrow with the gutter as the window shrinks', () => {
+      const wide = expandedDrawerWidth(1800, contentRightEdgeFor(1800, 900));
+      const narrower = expandedDrawerWidth(1500, contentRightEdgeFor(1500, 700));
+
+      expect(narrower).toBeLessThan(wide);
+      expect(narrower).toBe(700);
+    });
+
+    it('should stop shrinking once it reaches its minimum width', () => {
+      expect(expandedDrawerWidth(1000, contentRightEdgeFor(1000, DRAWER_MIN_WIDTH))).toBe(DRAWER_MIN_WIDTH);
+    });
+
+    it('should hold the minimum width as the window keeps shrinking', () => {
+      const atLimit = expandedDrawerWidth(1000, contentRightEdgeFor(1000, 400));
+      const smaller = expandedDrawerWidth(800, contentRightEdgeFor(800, 200));
+
+      expect(atLimit).toBe(DRAWER_MIN_WIDTH);
+      expect(smaller).toBe(DRAWER_MIN_WIDTH);
+    });
+
+    it('should never be narrower than the minimum, even with no gutter at all', () => {
+      expect(expandedDrawerWidth(600, 600)).toBe(DRAWER_MIN_WIDTH);
+    });
+
+    it('should publish the width for the stylesheet to use', () => {
+      const page = document.createElement('div');
+      page.id = 'pgBd';
+      document.body.appendChild(page);
+      page.getBoundingClientRect = () => ({ right: 900 }) as DOMRect;
+
+      const { drawer, openDrawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+      openDrawer();
+
+      expect(document.documentElement.style.getPropertyValue('--bes-drawer-width')).toMatch(/^\d+px$/);
+
+      page.remove();
+      document.documentElement.style.removeProperty('--bes-drawer-width');
     });
   });
 

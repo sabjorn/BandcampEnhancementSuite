@@ -268,3 +268,73 @@ describe('BES Drawer', () => {
     expect(drawers.length).toBeLessThanOrEqual(1);
   });
 });
+
+describe('Played caching setting', () => {
+  let mockPort: any;
+  let initBESDrawer: any;
+
+  const buildDrawer = async (granted: boolean) => {
+    document.body.innerHTML = '';
+    mockRuntimeSendMessage.mockResolvedValue({ granted });
+
+    const mainModule = await import('../src/main');
+    initBESDrawer = mainModule.initBESDrawer;
+    initBESDrawer(mockPort as any);
+
+    await new Promise(resolve => setTimeout(resolve, 0));
+  };
+
+  const toggle = () => document.getElementById('bes-played-caching-toggle') as HTMLInputElement;
+  const settingRow = () => toggle().closest('.bes-drawer-setting') as HTMLElement;
+  const configListener = () => mockPort.onMessage.addListener.mock.calls[0][0];
+
+  beforeEach(() => {
+    mockPort = {
+      onMessage: { addListener: vi.fn() },
+      postMessage: vi.fn()
+    };
+  });
+
+  afterEach(() => {
+    cleanupTestNodes();
+    vi.clearAllMocks();
+  });
+
+  it('should offer a played caching toggle', async () => {
+    await buildDrawer(true);
+
+    expect(toggle()).toBeTruthy();
+    expect(toggle().type).toBe('checkbox');
+    expect(document.body.textContent).toContain('Enable played caching');
+  });
+
+  it('should hide the setting until FindMusic.club integration is enabled', async () => {
+    await buildDrawer(false);
+
+    expect(settingRow().style.display).toBe('none');
+  });
+
+  it('should show the setting once FindMusic.club integration is enabled', async () => {
+    await buildDrawer(true);
+
+    expect(settingRow().style.display).toBe('flex');
+  });
+
+  it('should reflect the stored setting', async () => {
+    await buildDrawer(true);
+
+    configListener()({ config: { enablePlayedCaching: true } });
+    expect(toggle().checked).toBe(true);
+
+    configListener()({ config: { enablePlayedCaching: false } });
+    expect(toggle().checked).toBe(false);
+  });
+
+  it('should ask the background to toggle the setting when the user flips it', async () => {
+    await buildDrawer(true);
+
+    toggle().dispatchEvent(new Event('change'));
+
+    expect(mockPort.postMessage).toHaveBeenCalledWith({ togglePlayedCaching: {} });
+  });
+});

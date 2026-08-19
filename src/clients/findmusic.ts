@@ -144,3 +144,70 @@ export async function postTrackMetadata(
     log.warn(`Network error posting metadata for track ${trackId}: ${message}`);
   }
 }
+
+export interface TrackState {
+  liked: number[];
+  played: number[];
+}
+
+export async function fetchAlbumTrackState(albumId: string, token: string): Promise<TrackState | null> {
+  try {
+    const url = new URL(`${process.env.FINDMUSIC_BASE_URL}/api/track-state`);
+    url.searchParams.set('album_id', albumId);
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (response.status === 404 || response.status === 500) {
+      log.debug(`No track state for album ${albumId} (${response.status})`);
+      return null;
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      log.error(`FindMusic.club track state API error: ${response.status} ${errorText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    log.info(`Successfully fetched track state for album ${albumId}`);
+    return {
+      liked: Array.isArray(data?.liked) ? data.liked : [],
+      played: Array.isArray(data?.played) ? data.played : []
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    log.warn(`Network error fetching track state for album ${albumId}: ${message}`);
+    return null;
+  }
+}
+
+export async function postTrackPlayed(trackId: number, token: string): Promise<void> {
+  try {
+    const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/played`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        track_id: trackId
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      log.warn(`Failed to post play for track ${trackId}: ${response.status} ${errorText}`);
+      return;
+    }
+
+    log.info(`Successfully posted play for track ${trackId}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    log.warn(`Network error posting play for track ${trackId}: ${message}`);
+  }
+}

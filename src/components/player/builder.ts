@@ -1,7 +1,7 @@
 import Logger from '../../logger';
 import { TralbumDetailsResponse, CURRENCY_MINIMUMS } from '../../bclient';
 import { createAddToCartButton } from '../cartButton';
-import { prevIcon, nextIcon, playIcon, pauseIcon, volumeIcon } from './icons';
+import { prevIcon, nextIcon, playIcon, pauseIcon, volumeIcon, heartIcon, playedIcon } from './icons';
 import playerCenterMarkup from '../../../html/drawer_player_center.html';
 
 const log = new Logger();
@@ -90,6 +90,10 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
     row.className = 'bes-track-row';
     row.setAttribute('rel', `tracknum=${index + 1}`);
 
+    if (track.track_id) {
+      row.dataset.trackId = String(track.track_id);
+    }
+
     const isPlayable = Boolean(track?.streaming_url?.['mp3-128']);
 
     const trackNumCol = document.createElement('td');
@@ -119,6 +123,22 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
       timeSpan.textContent = formatDuration(track.duration);
       durationCol.appendChild(timeSpan);
     }
+
+    const stateCol = document.createElement('td');
+    stateCol.className = 'bes-track-state-col';
+
+    const likedIndicator = document.createElement('span');
+    likedIndicator.className = 'bes-track-liked';
+    likedIndicator.setAttribute('title', 'Liked on FindMusic.club');
+    likedIndicator.innerHTML = heartIcon(12);
+
+    const playedIndicator = document.createElement('span');
+    playedIndicator.className = 'bes-track-played';
+    playedIndicator.setAttribute('title', 'Played');
+    playedIndicator.innerHTML = playedIcon(12);
+
+    stateCol.appendChild(likedIndicator);
+    stateCol.appendChild(playedIndicator);
 
     const linkCol = document.createElement('td');
     linkCol.className = 'bes-track-link-col';
@@ -156,6 +176,7 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
     row.appendChild(trackNumCol);
     row.appendChild(titleCol);
     row.appendChild(durationCol);
+    row.appendChild(stateCol);
     row.appendChild(linkCol);
     row.appendChild(buyCol);
 

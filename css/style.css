@@ -1782,6 +1782,34 @@ body.bes-drawer-expanded #pgBd {
   font-size: 13px;
 }
 
+.bes-player-drawer .bes-track-state-col {
+  width: 38px;
+  text-align: right;
+  padding: 8px 4px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.bes-player-drawer .bes-track-liked,
+.bes-player-drawer .bes-track-played {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+.bes-player-drawer .bes-track-row.bes-is-liked .bes-track-liked {
+  display: inline-flex;
+  color: #e0245e;
+}
+
+.bes-player-drawer .bes-track-row.bes-is-played .bes-track-played {
+  display: inline-flex;
+  color: #71717a;
+}
+
 .bes-player-drawer .bes-track-link-col {
   width: 34px;
   text-align: center;

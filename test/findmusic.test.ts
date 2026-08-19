@@ -30,7 +30,12 @@ global.fetch = vi.fn();
 
 process.env.FINDMUSIC_BASE_URL = 'https://findmusic.club';
 
-import { exchangeBandcampToken, getFindMusicToken } from '../src/clients/findmusic';
+import {
+  exchangeBandcampToken,
+  getFindMusicToken,
+  fetchAlbumTrackState,
+  postTrackPlayed
+} from '../src/clients/findmusic';
 import { storeFindMusicToken, getFindMusicTokenFromStorage, hasFindMusicPermissions } from '../src/utilities';
 
 describe('FindMusic Client', () => {
@@ -220,6 +225,96 @@ describe('FindMusic Client', () => {
       expect(getFindMusicTokenFromStorageMock).toHaveBeenCalled();
       expect(mockCookiesGet).toHaveBeenCalled();
       expect(storeFindMusicTokenMock).toHaveBeenCalledWith(mockJwtToken);
+    });
+  });
+
+  describe('fetchAlbumTrackState()', () => {
+    it('should request the album track state with a bearer token', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ liked: [4011], played: [4011, 4012] })
+      } as any);
+
+      await fetchAlbumTrackState('123', 'mock-jwt-token');
+
+      expect(global.fetch).toHaveBeenCalledWith('https://findmusic.club/api/track-state?album_id=123', {
+        method: 'GET',
+        headers: { Authorization: 'Bearer mock-jwt-token' }
+      });
+    });
+
+    it('should return the liked and played track ids', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ liked: [4011], played: [4011, 4012] })
+      } as any);
+
+      const state = await fetchAlbumTrackState('123', 'mock-jwt-token');
+
+      expect(state).toEqual({ liked: [4011], played: [4011, 4012] });
+    });
+
+    it('should fall back to empty lists when the response omits them', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({})
+      } as any);
+
+      const state = await fetchAlbumTrackState('123', 'mock-jwt-token');
+
+      expect(state).toEqual({ liked: [], played: [] });
+    });
+
+    it('should return null when the album has no stored state', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({ ok: false, status: 404 } as any);
+
+      const state = await fetchAlbumTrackState('123', 'mock-jwt-token');
+
+      expect(state).toBeNull();
+    });
+
+    it('should return null on a network error', async () => {
+      vi.mocked(global.fetch).mockRejectedValue(new Error('offline'));
+
+      const state = await fetchAlbumTrackState('123', 'mock-jwt-token');
+
+      expect(state).toBeNull();
+    });
+  });
+
+  describe('postTrackPlayed()', () => {
+    it('should post the track id with a bearer token', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({ ok: true, status: 200 } as any);
+
+      await postTrackPlayed(4012, 'mock-jwt-token');
+
+      expect(global.fetch).toHaveBeenCalledWith('https://findmusic.club/api/played', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-jwt-token'
+        },
+        body: JSON.stringify({ track_id: 4012 })
+      });
+    });
+
+    it('should swallow a failed response', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => 'server error'
+      } as any);
+
+      await expect(postTrackPlayed(4012, 'mock-jwt-token')).resolves.toBeUndefined();
+    });
+
+    it('should swallow a network error', async () => {
+      vi.mocked(global.fetch).mockRejectedValue(new Error('offline'));
+
+      await expect(postTrackPlayed(4012, 'mock-jwt-token')).resolves.toBeUndefined();
     });
   });
 });

@@ -40,3 +40,11 @@ export function minimizeIcon(size: number): string {
 export function closeIcon(size: number): string {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 18 18 M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path></svg>`;
 }
+
+export function heartIcon(size: number): string {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5l-1.2-1.08C6.24 15.3 3.5 12.83 3.5 9.78 3.5 7.3 5.46 5.35 7.95 5.35c1.4 0 2.75.65 3.62 1.68l.43.5.43-.5a4.77 4.77 0 0 1 3.62-1.68c2.49 0 4.45 1.95 4.45 4.43 0 3.05-2.74 5.52-7.3 9.65z"></path></svg>`;
+}
+
+export function playedIcon(size: number): string {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3a8 8 0 0 0-8 8v6a2.5 2.5 0 0 0 2.5 2.5H8V13H5.5v-2a6.5 6.5 0 0 1 13 0v2H16v6.5h1.5A2.5 2.5 0 0 0 20 17v-6a8 8 0 0 0-8-8z"></path></svg>`;
+}

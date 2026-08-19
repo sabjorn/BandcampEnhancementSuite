@@ -72,8 +72,9 @@ vi.mock('../src/components/player/builder', () => {
 
   const buildTracklist = (): HTMLElement => {
     const table = document.createElement('table');
-    ['Track 1', 'Track 2', 'Track 3'].forEach(title => {
+    ['Track 1', 'Track 2', 'Track 3'].forEach((title, index) => {
       const row = element('tr', 'bes-track-row');
+      row.dataset.trackId = String(index + 1);
       row.innerHTML = `
         <td class="bes-track-title-col"><span class="bes-track-title">${title}</span></td>
         <td class="bes-track-link-col"><a class="bes-track-link" href="/track">arrow</a></td>
@@ -1082,5 +1083,152 @@ describe('PlayerLoader - Waveform config from the extension', () => {
     audio.dispatchEvent(new Event('canplay'));
 
     expect(lastAnalysisOptions().trackId).toBe(1);
+  });
+});
+
+describe('FindMusic.club played and liked state', () => {
+  let player: typeof import('../src/components/player/loader');
+  let discography: typeof import('../src/discography');
+  let sendMessage: ReturnType<typeof vi.fn>;
+
+  const rows = (): HTMLElement[] =>
+    Array.from(document.querySelectorAll<HTMLElement>('.bes-player-drawer .bes-track-row'));
+
+  const audio = (): HTMLAudioElement => document.querySelector('audio') as HTMLAudioElement;
+
+  const startPlayback = () => audio().dispatchEvent(new Event('play'));
+
+  const playPosts = (): number[] =>
+    sendMessage.mock.calls
+      .map(([message]) => message)
+      .filter(message => message?.contentScriptQuery === 'postTrackPlayed')
+      .map(message => message.trackId);
+
+  const flush = () => new Promise(resolve => setTimeout(resolve, 0));
+
+  beforeEach(async () => {
+    vi.resetModules();
+    sendMessage = vi.fn(async () => null);
+    (globalThis as any).chrome = { runtime: { sendMessage } };
+
+    createDomNodes(`
+      <div class="bes-player-drawer">
+        <div class="bes-player-drawer-player"></div>
+        <div class="bes-player-drawer-tracklist"></div>
+        <img class="bes-player-drawer-album-art" />
+        <div class="bes-player-drawer-transport"></div>
+        <div class="bes-player-drawer-right"></div>
+      </div>
+      <li class="music-grid-item" data-item-id="album-123">
+        <img src="https://example.com/album123.jpg" />
+      </li>
+    `);
+
+    player = await import('../src/components/player/loader');
+    discography = await import('../src/discography');
+    discography.updateDiscographyOrder();
+  });
+
+  afterEach(() => {
+    document.querySelector('audio')?.remove();
+    cleanupTestNodes();
+    vi.clearAllMocks();
+  });
+
+  it('should ask the background for the track state of the album it loads', async () => {
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+    await flush();
+
+    expect(sendMessage).toHaveBeenCalledWith({
+      contentScriptQuery: 'fetchAlbumTrackState',
+      albumId: '123'
+    });
+  });
+
+  it('should mark liked and played tracks returned by FindMusic.club', async () => {
+    sendMessage.mockResolvedValue({ liked: [2], played: [1, 2] });
+
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+    await flush();
+
+    expect(rows().map(row => row.classList.contains('bes-is-liked'))).toEqual([false, true, false]);
+    expect(rows().map(row => row.classList.contains('bes-is-played'))).toEqual([true, true, false]);
+  });
+
+  it('should leave rows unmarked when no state is available', async () => {
+    sendMessage.mockResolvedValue(null);
+
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+    await flush();
+
+    rows().forEach(row => {
+      expect(row.classList.contains('bes-is-liked')).toBe(false);
+      expect(row.classList.contains('bes-is-played')).toBe(false);
+    });
+  });
+
+  it('should still load the album when the track state request fails', async () => {
+    sendMessage.mockRejectedValue(new Error('offline'));
+
+    await expect(player.loadAlbumIntoDrawer('123', 'album', false)).resolves.toBeUndefined();
+    await flush();
+
+    expect(rows().length).toBe(3);
+  });
+
+  it('should mark a track played locally as soon as it starts playing', async () => {
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+    await flush();
+
+    startPlayback();
+
+    expect(rows()[0].classList.contains('bes-is-played')).toBe(true);
+  });
+
+  it('should report the play to the background', async () => {
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+    await flush();
+
+    startPlayback();
+    await flush();
+
+    expect(playPosts()).toEqual([1]);
+  });
+
+  it('should report a play once per track, not on every resume', async () => {
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+    await flush();
+
+    startPlayback();
+    startPlayback();
+    startPlayback();
+    await flush();
+
+    expect(playPosts()).toEqual([1]);
+  });
+
+  it('should report each track the listener moves on to', async () => {
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+    await flush();
+
+    startPlayback();
+    (document.querySelector('.bes-transport-next') as HTMLElement).click();
+    await flush();
+    startPlayback();
+    await flush();
+
+    expect(playPosts()).toEqual([1, 2]);
+  });
+
+  it('should keep playing when reporting the play fails', async () => {
+    sendMessage.mockRejectedValue(new Error('offline'));
+
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+    await flush();
+
+    expect(() => startPlayback()).not.toThrow();
+    await flush();
+
+    expect(rows()[0].classList.contains('bes-is-played')).toBe(true);
   });
 });

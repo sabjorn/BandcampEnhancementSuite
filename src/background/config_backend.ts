@@ -6,6 +6,7 @@ interface Config {
   displayWaveform: boolean;
   enableMetadataCaching: boolean;
   enableFetchCaching: boolean;
+  enablePlayedCaching: boolean;
   albumPurchasedDuringCheckout: boolean;
   albumOnCheckoutDisabled: boolean;
   albumPurchaseTimeDelaySeconds: number;
@@ -17,6 +18,7 @@ const defaultConfig: Config = {
   displayWaveform: true,
   enableMetadataCaching: true,
   enableFetchCaching: true,
+  enablePlayedCaching: true,
   albumPurchasedDuringCheckout: false,
   albumOnCheckoutDisabled: false,
   albumPurchaseTimeDelaySeconds: 60 * 60 * 24 * 30,
@@ -60,6 +62,8 @@ export async function portListenerCallback(
   if (msg.toggleMetadataCaching) await toggleMetadataCaching(db, log, portState.port);
 
   if (msg.toggleFetchCaching) await toggleFetchCaching(db, log, portState.port);
+
+  if (msg.togglePlayedCaching) await togglePlayedCaching(db, log, portState.port);
 
   if (msg.enableFindMusicCaching) await enableFindMusicCaching(db, log, portState.port);
 
@@ -128,12 +132,22 @@ export async function toggleFetchCaching(db: any, log: Logger, port?: chrome.run
   port?.postMessage({ config: db_config });
 }
 
+export async function togglePlayedCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+  log.info('toggling played caching');
+
+  const db_config = await db.get('config', 'config');
+  db_config['enablePlayedCaching'] = !db_config['enablePlayedCaching'];
+  await db.put('config', db_config, 'config');
+  port?.postMessage({ config: db_config });
+}
+
 export async function enableFindMusicCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
   log.info('enabling FindMusic.club caching after permission grant');
 
   const db_config = await db.get('config', 'config');
   db_config['enableMetadataCaching'] = true;
   db_config['enableFetchCaching'] = true;
+  db_config['enablePlayedCaching'] = true;
   await db.put('config', db_config, 'config');
   port?.postMessage({ config: db_config });
 }

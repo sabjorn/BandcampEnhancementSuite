@@ -6,6 +6,7 @@ import { initDownloadBackend } from './background/download_backend';
 import { initCartImportBackend } from './background/cart_import_backend';
 import { initFindMusicBackend } from './background/findmusic_backend';
 import { initCacheBackend } from './background/cache_backend';
+import { initPlayedBackend } from './background/played_backend';
 
 (async () => {
   await initConfigBackend();
@@ -16,4 +17,5 @@ import { initCacheBackend } from './background/cache_backend';
   initCartImportBackend();
   initFindMusicBackend();
   initCacheBackend();
+  initPlayedBackend();
 })();

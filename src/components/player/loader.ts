@@ -9,6 +9,7 @@ import { volumeIcon, mutedVolumeIcon } from './icons';
 import { replaceChildren } from '../dom';
 import { inDrawer, allInDrawer, setText, setStyle } from './query';
 import { streamUrlOf, findPlayableTrackAfter, findPlayableTrackBefore } from './trackSelection';
+import { applyTrackState, markRowPlayed } from './trackState';
 import {
   selectAlbum,
   hasNextAlbum,
@@ -31,6 +32,40 @@ let configPort: chrome.runtime.Port | null = null;
 let waveformEnabled = true;
 
 const ALBUM_LOAD_SETTLE_MS = 300;
+
+const reportedPlays = new Set<number>();
+
+async function loadTrackState(albumId: string): Promise<void> {
+  try {
+    const state = await chrome.runtime.sendMessage({
+      contentScriptQuery: 'fetchAlbumTrackState',
+      albumId
+    });
+
+    if (!state) {
+      log.debug(`No track state available for album ${albumId}`);
+      return;
+    }
+
+    applyTrackState(state);
+  } catch (error) {
+    log.warn(`Failed to load track state for album ${albumId}: ${error}`);
+  }
+}
+
+async function reportPlay(): Promise<void> {
+  const trackId = currentTrack()?.track_id;
+  if (!trackId || reportedPlays.has(trackId)) return;
+
+  reportedPlays.add(trackId);
+  markRowPlayed(trackId);
+
+  try {
+    await chrome.runtime.sendMessage({ contentScriptQuery: 'postTrackPlayed', trackId });
+  } catch (error) {
+    log.warn(`Failed to report play for track ${trackId}: ${error}`);
+  }
+}
 
 function ensureAudioElement(): HTMLAudioElement {
   if (!audioElement) {
@@ -213,6 +248,7 @@ export async function loadAlbumIntoDrawer(
 
     attachTrackListHandlers();
     loadTrack(0);
+    loadTrackState(albumId);
 
     log.info(`Album loaded: ${tralbumDetails.title} by ${tralbumDetails.tralbum_artist}`);
   } catch (error) {
@@ -503,7 +539,10 @@ function bindAudioEvents(audio: HTMLAudioElement, playButton: HTMLElement): void
     updateMinimizedPlayButton(isPlaying);
   };
 
-  audio.onplay = reflectPlaying(true);
+  audio.onplay = () => {
+    reflectPlaying(true)();
+    reportPlay();
+  };
   audio.onpause = reflectPlaying(false);
   audio.onended = () => step(forward, true);
   audio.ontimeupdate = updateProgressBar;

@@ -160,10 +160,18 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
     'Share your Bandcamp browsing data with FindMusic.club to help build a music discovery database.'
   );
 
+  const { row: playedCachingSettingRow, toggle: playedCachingToggle } = createToggleSetting(
+    'bes-played-caching-toggle',
+    'Enable played caching',
+    false,
+    'Share which tracks you listen to with FindMusic.club, and show played and liked markers in the player.'
+  );
+
   settingsSection.appendChild(settingsTitle);
   settingsSection.appendChild(waveformSettingRow);
   settingsSection.appendChild(metadataCachingSettingRow);
   settingsSection.appendChild(fetchCachingSettingRow);
+  settingsSection.appendChild(playedCachingSettingRow);
 
   let keyboardSection: HTMLElement | null = null;
 
@@ -209,6 +217,10 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       fetchCachingToggle.checked = msg.config.enableFetchCaching;
     }
 
+    if (msg.config && typeof msg.config.enablePlayedCaching === 'boolean') {
+      playedCachingToggle.checked = msg.config.enablePlayedCaching;
+    }
+
     if (msg.config && msg.config.keyboardSettings) {
       initKeyboardSection(msg.config.keyboardSettings);
     }
@@ -229,6 +241,10 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   fetchCachingToggle.addEventListener('change', () => {
     config_port.postMessage({ toggleFetchCaching: {} });
+  });
+
+  playedCachingToggle.addEventListener('change', () => {
+    config_port.postMessage({ togglePlayedCaching: {} });
   });
 
   config_port.postMessage({ requestConfig: {} });
@@ -258,11 +274,13 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
       metadataCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
       fetchCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
+      playedCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
     } catch (error) {
       log.error(`Failed to check permissions: ${error}`);
       findMusicButton.textContent = 'Enable FindMusic.club Integration';
       metadataCachingSettingRow.style.display = 'none';
       fetchCachingSettingRow.style.display = 'none';
+      playedCachingSettingRow.style.display = 'none';
     }
   };
 

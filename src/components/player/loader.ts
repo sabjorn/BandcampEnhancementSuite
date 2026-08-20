@@ -248,7 +248,7 @@ export async function loadAlbumIntoDrawer(
 
     attachTrackListHandlers();
     loadTrack(0);
-    loadTrackState(albumId);
+    void loadTrackState(albumId);
 
     log.info(`Album loaded: ${tralbumDetails.title} by ${tralbumDetails.tralbum_artist}`);
   } catch (error) {
@@ -539,9 +539,11 @@ function bindAudioEvents(audio: HTMLAudioElement, playButton: HTMLElement): void
     updateMinimizedPlayButton(isPlaying);
   };
 
+  const showPlaying = reflectPlaying(true);
+
   audio.onplay = () => {
-    reflectPlaying(true)();
-    reportPlay();
+    showPlaying();
+    void reportPlay();
   };
   audio.onpause = reflectPlaying(false);
   audio.onended = () => step(forward, true);

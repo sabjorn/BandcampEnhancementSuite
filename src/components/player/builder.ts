@@ -77,6 +77,24 @@ export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTM
   return container;
 }
 
+function buildIndicator(className: string, title: string, icon: string): HTMLElement {
+  const indicator = document.createElement('span');
+  indicator.className = className;
+  indicator.setAttribute('title', title);
+  indicator.innerHTML = icon;
+  return indicator;
+}
+
+function buildTrackStateCell(): HTMLElement {
+  const stateCol = document.createElement('td');
+  stateCol.className = 'bes-track-state-col';
+
+  stateCol.appendChild(buildIndicator('bes-track-liked', 'Liked on FindMusic.club', heartIcon(12)));
+  stateCol.appendChild(buildIndicator('bes-track-played', 'Played', playedIcon(12)));
+
+  return stateCol;
+}
+
 export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLElement {
   const table = document.createElement('table');
   table.className = 'bes-tracklist-table';
@@ -124,21 +142,7 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
       durationCol.appendChild(timeSpan);
     }
 
-    const stateCol = document.createElement('td');
-    stateCol.className = 'bes-track-state-col';
-
-    const likedIndicator = document.createElement('span');
-    likedIndicator.className = 'bes-track-liked';
-    likedIndicator.setAttribute('title', 'Liked on FindMusic.club');
-    likedIndicator.innerHTML = heartIcon(12);
-
-    const playedIndicator = document.createElement('span');
-    playedIndicator.className = 'bes-track-played';
-    playedIndicator.setAttribute('title', 'Played');
-    playedIndicator.innerHTML = playedIcon(12);
-
-    stateCol.appendChild(likedIndicator);
-    stateCol.appendChild(playedIndicator);
+    const stateCol = buildTrackStateCell();
 
     const linkCol = document.createElement('td');
     linkCol.className = 'bes-track-link-col';

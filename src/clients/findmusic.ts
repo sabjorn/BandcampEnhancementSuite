@@ -150,6 +150,8 @@ export interface TrackState {
   played: number[];
 }
 
+const trackIds = (value: unknown): number[] => (Array.isArray(value) ? value : []);
+
 export async function fetchAlbumTrackState(albumId: string, token: string): Promise<TrackState | null> {
   try {
     const url = new URL(`${process.env.FINDMUSIC_BASE_URL}/api/track-state`);
@@ -175,10 +177,7 @@ export async function fetchAlbumTrackState(albumId: string, token: string): Prom
 
     const data = await response.json();
     log.info(`Successfully fetched track state for album ${albumId}`);
-    return {
-      liked: Array.isArray(data?.liked) ? data.liked : [],
-      played: Array.isArray(data?.played) ? data.played : []
-    };
+    return { liked: trackIds(data?.liked), played: trackIds(data?.played) };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     log.warn(`Network error fetching track state for album ${albumId}: ${message}`);

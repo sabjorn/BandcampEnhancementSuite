@@ -9,40 +9,33 @@ import { getDB } from '../utilities';
 
 const log = new Logger();
 
-async function playedCachingEnabled(): Promise<boolean> {
+async function tokenWhenPlayedCachingEnabled(): Promise<string | null> {
   const db = await getDB();
   const config = await db.get('config', 'config');
-  return Boolean(config?.enablePlayedCaching);
+
+  if (!config?.enablePlayedCaching) {
+    log.debug('Played caching disabled');
+    return null;
+  }
+
+  const token = await getFindMusicToken();
+  if (!token) log.debug('No FindMusic.club token available');
+
+  return token;
 }
 
 async function fetchAlbumTrackState(albumId: string): Promise<TrackState | null> {
-  if (!(await playedCachingEnabled())) {
-    log.debug(`Skipping track state fetch for album ${albumId} - played caching disabled`);
-    return null;
-  }
+  const token = await tokenWhenPlayedCachingEnabled();
+  if (!token) return null;
 
-  const token = await getFindMusicToken();
-  if (!token) {
-    log.debug(`Skipping track state fetch for album ${albumId} - no token available`);
-    return null;
-  }
-
-  return await fetchAlbumTrackStateFromAPI(albumId, token);
+  return fetchAlbumTrackStateFromAPI(albumId, token);
 }
 
 async function postTrackPlayed(trackId: number): Promise<void> {
-  if (!(await playedCachingEnabled())) {
-    log.debug(`Skipping play post for track ${trackId} - played caching disabled`);
-    return;
-  }
+  const token = await tokenWhenPlayedCachingEnabled();
+  if (!token) return;
 
-  const token = await getFindMusicToken();
-  if (!token) {
-    log.debug(`Skipping play post for track ${trackId} - no token available`);
-    return;
-  }
-
-  return await postTrackPlayedToAPI(trackId, token);
+  return postTrackPlayedToAPI(trackId, token);
 }
 
 export function processRequest(
@@ -52,9 +45,7 @@ export function processRequest(
 ): boolean {
   if (request.contentScriptQuery === 'fetchAlbumTrackState') {
     fetchAlbumTrackState(request.albumId)
-      .then(state => {
-        sendResponse(state);
-      })
+      .then(sendResponse)
       .catch(error => {
         log.warn(`Unexpected error in fetchAlbumTrackState: ${error.message}`);
         sendResponse(null);
@@ -64,9 +55,7 @@ export function processRequest(
 
   if (request.contentScriptQuery === 'postTrackPlayed') {
     postTrackPlayed(request.trackId)
-      .then(() => {
-        sendResponse({ success: true });
-      })
+      .then(() => sendResponse({ success: true }))
       .catch(error => {
         log.warn(`Unexpected error in postTrackPlayed: ${error.message}`);
         sendResponse({ success: false, error: error.message });

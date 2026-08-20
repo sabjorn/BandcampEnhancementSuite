@@ -87,7 +87,7 @@ describe('Played Backend', () => {
 
   describe('postTrackPlayed', () => {
     it('should report the play to FindMusic.club', async () => {
-      vi.mocked(postTrackPlayed).mockResolvedValue(undefined);
+      vi.mocked(postTrackPlayed).mockResolvedValue(true);
 
       const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
 
@@ -110,6 +110,14 @@ describe('Played Backend', () => {
       const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
 
       expect(postTrackPlayed).not.toHaveBeenCalled();
+      expect(response).toEqual({ success: true, recorded: false });
+    });
+
+    it('should pass on a play the service rejected', async () => {
+      vi.mocked(postTrackPlayed).mockResolvedValue(false);
+
+      const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
+
       expect(response).toEqual({ success: true, recorded: false });
     });
 

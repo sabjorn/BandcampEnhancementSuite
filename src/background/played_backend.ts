@@ -43,8 +43,7 @@ async function postTrackPlayed(trackId: number): Promise<boolean> {
     return false;
   }
 
-  await postTrackPlayedToAPI(trackId, token);
-  return true;
+  return postTrackPlayedToAPI(trackId, token);
 }
 
 export function processRequest(

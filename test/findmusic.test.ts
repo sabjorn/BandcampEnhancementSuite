@@ -301,20 +301,26 @@ describe('FindMusic Client', () => {
       });
     });
 
-    it('should swallow a failed response', async () => {
+    it('should report that the service accepted the play', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({ ok: true, status: 200 } as any);
+
+      await expect(postTrackPlayed(4012, 'mock-jwt-token')).resolves.toBe(true);
+    });
+
+    it('should report a rejected play without throwing', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
         status: 500,
         text: async () => 'server error'
       } as any);
 
-      await expect(postTrackPlayed(4012, 'mock-jwt-token')).resolves.toBeUndefined();
+      await expect(postTrackPlayed(4012, 'mock-jwt-token')).resolves.toBe(false);
     });
 
-    it('should swallow a network error', async () => {
+    it('should report a network error without throwing', async () => {
       vi.mocked(global.fetch).mockRejectedValue(new Error('offline'));
 
-      await expect(postTrackPlayed(4012, 'mock-jwt-token')).resolves.toBeUndefined();
+      await expect(postTrackPlayed(4012, 'mock-jwt-token')).resolves.toBe(false);
     });
   });
 });

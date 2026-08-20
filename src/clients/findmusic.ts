@@ -186,7 +186,7 @@ export async function fetchAlbumTrackState(albumId: string, token: string): Prom
   }
 }
 
-export async function postTrackPlayed(trackId: number, token: string): Promise<void> {
+export async function postTrackPlayed(trackId: number, token: string): Promise<boolean> {
   try {
     const response = await fetch(`${process.env.FINDMUSIC_BASE_URL}/api/played`, {
       method: 'POST',
@@ -202,12 +202,14 @@ export async function postTrackPlayed(trackId: number, token: string): Promise<v
     if (!response.ok) {
       const errorText = await response.text();
       log.warn(`Failed to post play for track ${trackId}: ${response.status} ${errorText}`);
-      return;
+      return false;
     }
 
     log.info(`Successfully posted play for track ${trackId}`);
+    return true;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     log.warn(`Network error posting play for track ${trackId}: ${message}`);
+    return false;
   }
 }

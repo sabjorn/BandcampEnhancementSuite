@@ -1,6 +1,8 @@
 import { createLogger } from '../../logger';
 import { prevIcon, nextIcon, playIcon, pauseIcon, minimizeIcon, closeIcon } from './icons';
 import { element } from '../dom';
+import { setPlayerRoot } from './query';
+import { buildPlayerShell, setAlbumArt } from './shell';
 
 const log = createLogger();
 
@@ -51,13 +53,7 @@ export function createPlayerDrawer(): {
   maximizeDrawer: () => void;
   getState: () => PlayerDrawerState;
 } {
-  const albumArt = element('img', {
-    className: 'bes-player-drawer-album-art',
-    attributes: { alt: 'Album artwork' }
-  });
-  const transportControls = element('div', { className: 'bes-player-drawer-transport' });
-  const playerContainer = element('div', { className: 'bes-player-drawer-player' });
-  const tracklistContainer = element('div', { className: 'bes-player-drawer-tracklist' });
+  const shell = buildPlayerShell();
 
   const minimizeButton = element('button', {
     className: 'bes-player-drawer-minimize',
@@ -69,6 +65,13 @@ export function createPlayerDrawer(): {
     html: closeIcon(14),
     attributes: { 'aria-label': 'Close player', title: 'Close player' }
   });
+
+  shell.querySelector('.bes-player-right')?.prepend(
+    element('div', {
+      className: 'bes-player-drawer-header-actions',
+      children: [minimizeButton, closeButton]
+    })
+  );
 
   const minimizedArt = element('img', {
     className: 'bes-player-drawer-minimized-art',
@@ -104,34 +107,7 @@ export function createPlayerDrawer(): {
   const drawer = element('div', {
     className: 'bes-player-drawer',
     children: [
-      element('div', {
-        className: 'bes-player-drawer-header',
-        children: [
-          element('div', {
-            className: 'bes-player-drawer-main',
-            children: [
-              element('div', {
-                className: 'bes-player-drawer-left',
-                children: [albumArt, transportControls]
-              }),
-              element('div', {
-                className: 'bes-player-drawer-center',
-                children: [playerContainer]
-              }),
-              element('div', {
-                className: 'bes-player-drawer-right',
-                children: [
-                  element('div', {
-                    className: 'bes-player-drawer-header-actions',
-                    children: [minimizeButton, closeButton]
-                  })
-                ]
-              })
-            ]
-          })
-        ]
-      }),
-      element('div', { className: 'bes-player-drawer-content', children: [tracklistContainer] }),
+      shell,
       minimizedBar,
       element('div', {
         className: 'bes-player-drawer-footer',
@@ -149,6 +125,7 @@ export function createPlayerDrawer(): {
     ]
   });
 
+  setPlayerRoot(drawer);
   document.body.classList.add('bes-drawer-host');
 
   let widthAnimationTimer: ReturnType<typeof setTimeout> | undefined;
@@ -284,24 +261,17 @@ export function createPlayerDrawer(): {
 export function getPlayerDrawerElements() {
   return {
     drawer: document.querySelector('.bes-player-drawer') as HTMLDivElement,
-    playerContainer: document.querySelector('.bes-player-drawer-player') as HTMLDivElement,
-    tracklistContainer: document.querySelector('.bes-player-drawer-tracklist') as HTMLDivElement,
-    albumArt: document.querySelector('.bes-player-drawer-album-art') as HTMLImageElement,
-    transportControls: document.querySelector('.bes-player-drawer-transport') as HTMLDivElement,
-    rightColumn: document.querySelector('.bes-player-drawer-right') as HTMLDivElement,
     minimizedArt: document.querySelector('.bes-player-drawer-minimized-art') as HTMLImageElement,
     minimizedPlayButton: document.querySelector('.bes-player-drawer-minimized-play') as HTMLButtonElement
   };
 }
 
 export function updatePlayerDrawerInfo(albumArtUrl: string) {
-  const elements = getPlayerDrawerElements();
+  setAlbumArt(albumArtUrl);
 
-  if (elements.albumArt) {
-    elements.albumArt.src = albumArtUrl;
-  }
-  if (elements.minimizedArt) {
-    elements.minimizedArt.src = albumArtUrl;
+  const { minimizedArt } = getPlayerDrawerElements();
+  if (minimizedArt && albumArtUrl) {
+    minimizedArt.src = albumArtUrl;
   }
 }
 

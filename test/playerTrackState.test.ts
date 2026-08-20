@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 import { applyTrackState, markRowPlayed } from '../src/components/player/trackState';
+import { setPlayerRoot } from '../src/components/player/query';
 
 const buildTracklist = (trackIds: number[]) =>
   createDomNodes(`
@@ -15,6 +16,7 @@ const rows = () => Array.from(document.querySelectorAll<HTMLElement>('.bes-track
 
 describe('Player track state', () => {
   afterEach(() => {
+    setPlayerRoot(document);
     cleanupTestNodes();
   });
 
@@ -59,13 +61,14 @@ describe('Player track state', () => {
     expect(() => markRowPlayed(9999)).not.toThrow();
   });
 
-  it('should only touch rows inside the player drawer', () => {
+  it('should only touch rows inside the player root', () => {
     createDomNodes(`
       <table><tr class="bes-track-row" data-track-id="1001"></tr></table>
-      <div class="bes-player-drawer">
+      <div class="bes-player-host">
         <table><tr class="bes-track-row" data-track-id="1002"></tr></table>
       </div>
     `);
+    setPlayerRoot(document.querySelector('.bes-player-host') as HTMLElement);
 
     applyTrackState({ liked: [1001, 1002], played: [1001, 1002] });
 

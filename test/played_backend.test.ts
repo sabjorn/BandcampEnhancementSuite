@@ -92,23 +92,25 @@ describe('Played Backend', () => {
       const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
 
       expect(postTrackPlayed).toHaveBeenCalledWith(4012, 'mock-jwt-token');
-      expect(response).toEqual({ success: true });
+      expect(response).toEqual({ success: true, recorded: true });
     });
 
-    it('should not report plays when played caching is disabled', async () => {
+    it('should say the play was not recorded when played caching is disabled', async () => {
       setConfig({ enablePlayedCaching: false });
 
-      await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
+      const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
 
       expect(postTrackPlayed).not.toHaveBeenCalled();
+      expect(response).toEqual({ success: true, recorded: false });
     });
 
-    it('should not report plays without a token', async () => {
+    it('should say the play was not recorded without a token', async () => {
       vi.mocked(getFindMusicToken).mockResolvedValue(null);
 
-      await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
+      const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
 
       expect(postTrackPlayed).not.toHaveBeenCalled();
+      expect(response).toEqual({ success: true, recorded: false });
     });
 
     it('should respond with a failure when the client throws', async () => {
@@ -116,7 +118,7 @@ describe('Played Backend', () => {
 
       const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
 
-      expect(response).toEqual({ success: false, error: 'boom' });
+      expect(response).toEqual({ success: false, recorded: false, error: 'boom' });
     });
   });
 });

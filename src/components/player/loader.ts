@@ -63,10 +63,15 @@ async function reportPlay(): Promise<void> {
   if (!trackId || reportedPlays.has(trackId)) return;
 
   reportedPlays.add(trackId);
-  markRowPlayed(trackId);
 
   try {
-    await chrome.runtime.sendMessage({ contentScriptQuery: 'postTrackPlayed', trackId });
+    const response = await chrome.runtime.sendMessage({ contentScriptQuery: 'postTrackPlayed', trackId });
+    if (!response?.recorded) {
+      log.debug(`Play of track ${trackId} was not recorded`);
+      return;
+    }
+
+    markRowPlayed(trackId);
   } catch (error) {
     log.warn(`Failed to report play for track ${trackId}: ${error}`);
   }

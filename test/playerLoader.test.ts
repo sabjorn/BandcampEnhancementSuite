@@ -1193,13 +1193,28 @@ describe('FindMusic.club played and liked state', () => {
     expect(rows()[0].classList.contains('bes-is-played')).toBe(false);
   });
 
-  it('should mark a track played locally as soon as it starts playing', async () => {
+  it('should mark a track played once the play is recorded', async () => {
+    sendMessage.mockResolvedValue({ success: true, recorded: true });
+
     await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();
 
     startPlayback();
+    await flush();
 
     expect(rows()[0].classList.contains('bes-is-played')).toBe(true);
+  });
+
+  it('should not mark a track played when played caching is off', async () => {
+    sendMessage.mockResolvedValue({ success: true, recorded: false });
+
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+    await flush();
+
+    startPlayback();
+    await flush();
+
+    expect(rows()[0].classList.contains('bes-is-played')).toBe(false);
   });
 
   it('should report the play to the background', async () => {
@@ -1246,6 +1261,6 @@ describe('FindMusic.club played and liked state', () => {
     expect(() => startPlayback()).not.toThrow();
     await flush();
 
-    expect(rows()[0].classList.contains('bes-is-played')).toBe(true);
+    expect(rows()[0].classList.contains('bes-is-played')).toBe(false);
   });
 });

@@ -31,19 +31,20 @@ async function fetchAlbumTrackState(albumId: string): Promise<TrackState | null>
   return fetchAlbumTrackStateFromAPI(albumId, token);
 }
 
-async function postTrackPlayed(trackId: number): Promise<void> {
+async function postTrackPlayed(trackId: number): Promise<boolean> {
   if (!(await playedCachingEnabled())) {
     log.debug(`Skipping play post for track ${trackId} - played caching disabled`);
-    return;
+    return false;
   }
 
   const token = await getFindMusicToken();
   if (!token) {
     log.debug(`Skipping play post for track ${trackId} - no token available`);
-    return;
+    return false;
   }
 
-  return postTrackPlayedToAPI(trackId, token);
+  await postTrackPlayedToAPI(trackId, token);
+  return true;
 }
 
 export function processRequest(
@@ -63,10 +64,10 @@ export function processRequest(
 
   if (request.contentScriptQuery === 'postTrackPlayed') {
     postTrackPlayed(request.trackId)
-      .then(() => sendResponse({ success: true }))
+      .then(recorded => sendResponse({ success: true, recorded }))
       .catch(error => {
         log.warn(`Unexpected error in postTrackPlayed: ${error.message}`);
-        sendResponse({ success: false, error: error.message });
+        sendResponse({ success: false, recorded: false, error: error.message });
       });
     return true;
   }

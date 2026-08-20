@@ -43,7 +43,11 @@ function sizeDrawerToPageGutter(): void {
   document.documentElement.style.setProperty('--bes-drawer-width', `${width}px`);
 }
 
-export function createPlayerDrawer(): {
+export interface PlayerDrawerOptions {
+  dismissible?: boolean;
+}
+
+export function createPlayerDrawer({ dismissible = true }: PlayerDrawerOptions = {}): {
   drawer: HTMLDivElement;
   openDrawer: () => void;
   closeDrawer: () => void;
@@ -121,10 +125,12 @@ export function createPlayerDrawer(): {
               element('div', {
                 className: 'bes-player-drawer-right',
                 children: [
-                  element('div', {
-                    className: 'bes-player-drawer-header-actions',
-                    children: [minimizeButton, closeButton]
-                  })
+                  dismissible
+                    ? element('div', {
+                        className: 'bes-player-drawer-header-actions',
+                        children: [minimizeButton, closeButton]
+                      })
+                    : null
                 ]
               })
             ]
@@ -132,7 +138,7 @@ export function createPlayerDrawer(): {
         ]
       }),
       element('div', { className: 'bes-player-drawer-content', children: [tracklistContainer] }),
-      minimizedBar,
+      dismissible ? minimizedBar : null,
       element('div', {
         className: 'bes-player-drawer-footer',
         children: [
@@ -190,6 +196,11 @@ export function createPlayerDrawer(): {
   };
 
   const closeDrawer = () => {
+    if (!dismissible) {
+      log.info('Player drawer cannot be closed on this page');
+      return;
+    }
+
     animateNextWidthChange();
     log.info('Closing player drawer');
     drawer.classList.remove('open');
@@ -205,6 +216,8 @@ export function createPlayerDrawer(): {
   };
 
   const minimizeDrawer = () => {
+    if (!dismissible) return;
+
     animateNextWidthChange();
     log.info('Minimizing player drawer');
     drawer.classList.add('minimized');

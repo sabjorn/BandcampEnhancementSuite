@@ -1,23 +1,6 @@
 import { openDB, IDBPDatabase } from 'idb';
 import Logger from './logger';
 
-interface MouseEventWithOffset extends MouseEvent {
-  offsetX: number;
-  target: HTMLElement & { offsetWidth: number };
-}
-
-export function mousedownCallback(e: MouseEventWithOffset): void {
-  const elementOffset: number = e.offsetX;
-  const elementWidth: number = e.target.offsetWidth;
-  const scaleDuration: number = elementOffset / elementWidth;
-
-  const audio: HTMLAudioElement | null = document.querySelector('audio');
-  if (!audio) return;
-
-  const audioDuration: number = audio.duration;
-  audio.currentTime = scaleDuration * audioDuration;
-}
-
 export async function getDB(_name?: string): Promise<IDBPDatabase> {
   const dbName: string = 'BandcampEnhancementSuite';
   const version: number = 3;
@@ -305,4 +288,4 @@ export function createFetchFunction(enableCaching: boolean): FetchFunction {
   return (url: string, options?: RequestInit) => cachedFetch(url, options, true);
 }
 
-export type { BandFollowInfo, FanTralbumData, MouseEventWithOffset, FindMusicTokenData };
+export type { BandFollowInfo, FanTralbumData, FindMusicTokenData };

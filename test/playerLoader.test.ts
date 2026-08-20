@@ -51,6 +51,14 @@ vi.mock('../src/bclient', () => {
 });
 
 vi.mock('../src/components/player/drawer', () => ({
+  getPlayerDrawerElements: vi.fn(() => ({
+    drawer: document.querySelector('.bes-player-drawer'),
+    playerContainer: document.querySelector('.bes-player-drawer-player'),
+    tracklistContainer: document.querySelector('.bes-player-drawer-tracklist'),
+    albumArt: document.querySelector('.bes-player-drawer-album-art'),
+    transportControls: document.querySelector('.bes-player-drawer-transport'),
+    rightColumn: document.querySelector('.bes-player-drawer-right')
+  })),
   updatePlayerDrawerInfo: vi.fn(),
   updateMinimizedPlayButton: vi.fn()
 }));
@@ -86,7 +94,7 @@ vi.mock('../src/components/player/builder', () => {
   };
 
   const buildCenter = (): HTMLElement => {
-    const center = element('div', 'bes-player-center');
+    const center = element('div', 'bes-drawer-player-center');
     const progbar = element('div', 'bes-progbar');
     const waveformView = element('div', 'bes-waveform-container bes-visible');
     waveformView.appendChild(element('canvas', 'bes-waveform'));
@@ -100,7 +108,7 @@ vi.mock('../src/components/player/builder', () => {
   };
 
   const buildVolume = (): HTMLElement => {
-    const column = element('div', 'bes-player-volume');
+    const column = element('div', 'bes-drawer-volume-column');
     column.appendChild(element('button', 'bes-volume-mute'));
     column.appendChild(element('div', 'bes-volume'));
     column.appendChild(element('span', 'bes-volume-percent'));
@@ -110,7 +118,7 @@ vi.mock('../src/components/player/builder', () => {
   const buildAlbumBuyButton = vi.fn(() => element('div', 'bes-album-buy'));
 
   return {
-    buildPlayer: vi.fn(() => ({
+    buildDrawerPlayer: vi.fn(() => ({
       transportElement: buildTransport(),
       centerElement: buildCenter(),
       volumeElement: buildVolume(),
@@ -139,11 +147,11 @@ describe('PlayerLoader - Main Player Logic', () => {
     vi.resetModules();
     createDomNodes(`
       <div class="bes-player-drawer">
-        <div class="bes-player-container"></div>
-        <div class="bes-player-tracklist"></div>
-        <img class="bes-player-art" />
-        <div class="bes-player-transport"></div>
-        <div class="bes-player-right"></div>
+        <div class="bes-player-drawer-player"></div>
+        <div class="bes-player-drawer-tracklist"></div>
+        <img class="bes-player-drawer-album-art" />
+        <div class="bes-player-drawer-transport"></div>
+        <div class="bes-player-drawer-right"></div>
       </div>
       <li class="music-grid-item" data-item-id="album-123">
         <img src="https://example.com/album123.jpg" />
@@ -203,7 +211,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     it('should load next album when available', async () => {
       discography.updateDiscographyOrder();
       // Load first album first
-      await player.loadAlbum('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
       const result = await player.loadNextAlbum(false);
 
@@ -214,7 +222,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     it('should load previous album when available', async () => {
       discography.updateDiscographyOrder();
       // Load second album first
-      await player.loadAlbum('456', 'album', false);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
 
       const result = await player.loadPreviousAlbum(false);
 
@@ -225,7 +233,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     it('should return false when trying to load next album at end', async () => {
       discography.updateDiscographyOrder();
       // Load last album
-      await player.loadAlbum('789', 'album', false);
+      await player.loadAlbumIntoDrawer('789', 'album', false);
 
       const result = await player.loadNextAlbum(false);
 
@@ -235,7 +243,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     it('should return false when trying to load previous album at start', async () => {
       discography.updateDiscographyOrder();
       // Load first album
-      await player.loadAlbum('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
       const result = await player.loadPreviousAlbum(false);
 
@@ -245,10 +253,10 @@ describe('PlayerLoader - Main Player Logic', () => {
     it('should preserve album buy button when navigating to next album', async () => {
       discography.updateDiscographyOrder();
       // Load first album
-      await player.loadAlbum('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
       // Check buy button exists after first load
-      const tracklistContainer = document.querySelector('.bes-player-tracklist');
+      const tracklistContainer = document.querySelector('.bes-player-drawer-tracklist');
       expect(tracklistContainer?.querySelector('.bes-album-buy')).toBeTruthy();
 
       // Navigate to next album
@@ -263,7 +271,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     it('should extract album art URL from grid item', async () => {
       discography.updateDiscographyOrder();
 
-      await player.loadAlbum('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
       // Album art extraction is verified by the function call
       // The actual URL is extracted in extractAlbumArtFromPage
@@ -275,12 +283,12 @@ describe('PlayerLoader - Main Player Logic', () => {
     it('should create persistent audio element only once', async () => {
       discography.updateDiscographyOrder();
 
-      await player.loadAlbum('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
       const firstAudio = document.querySelector('audio');
       expect(firstAudio).toBeDefined();
 
-      await player.loadAlbum('456', 'album', false);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
 
       const secondAudio = document.querySelector('audio');
       expect(secondAudio).toBe(firstAudio); // Same element
@@ -289,7 +297,7 @@ describe('PlayerLoader - Main Player Logic', () => {
     it('should have audio element hidden from view', async () => {
       discography.updateDiscographyOrder();
 
-      await player.loadAlbum('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
       const audio = document.querySelector('audio') as HTMLAudioElement;
       expect(audio.style.display).toBe('none');
@@ -307,7 +315,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
     it('should advance to the next album when nothing after the current track can play', async () => {
       discography.updateDiscographyOrder();
-      await player.loadAlbum('456', 'album', false);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
 
       expect(player.getCurrentTrackIndex()).toBe(0);
       expect(player.getCurrentAlbumData()?.id).toBe(456);
@@ -322,7 +330,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
     it('should keep playing through the album change', async () => {
       discography.updateDiscographyOrder();
-      await player.loadAlbum('456', 'album', false);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
 
       const audio = startPlaying();
       const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
@@ -334,7 +342,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
     it('should land on a playable track in the album it moves to', async () => {
       discography.updateDiscographyOrder();
-      await player.loadAlbum('456', 'album', false);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
 
       startPlaying();
       const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
@@ -350,7 +358,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
     it('should move to the next album when the last track finishes on its own', async () => {
       discography.updateDiscographyOrder();
-      await player.loadAlbum('456', 'album', false);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
 
       const audio = startPlaying();
       audio.dispatchEvent(new Event('ended'));
@@ -362,7 +370,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
     it('should stop at the end of the last album when it finishes on its own', async () => {
       discography.updateDiscographyOrder();
-      await player.loadAlbum('789', 'album', false);
+      await player.loadAlbumIntoDrawer('789', 'album', false);
 
       const audio = startPlaying();
       audio.dispatchEvent(new Event('ended'));
@@ -375,7 +383,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
     it('should stay put when there is no next album to fall through to', async () => {
       discography.updateDiscographyOrder();
-      await player.loadAlbum('789', 'album', false);
+      await player.loadAlbumIntoDrawer('789', 'album', false);
 
       startPlaying();
       const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
@@ -396,14 +404,14 @@ describe('PlayerLoader - Main Player Logic', () => {
     beforeEach(async () => {
       createDomNodes(`
         <div class="bes-player-drawer open">
-          <div class="bes-player-container"></div>
-          <div class="bes-player-tracklist"></div>
-          <img class="bes-player-art" />
-          <div class="bes-player-transport">
+          <div class="bes-player-drawer-player"></div>
+          <div class="bes-player-drawer-tracklist"></div>
+          <img class="bes-player-drawer-album-art" />
+          <div class="bes-player-drawer-transport">
             <button class="bes-transport-prev"></button>
             <button class="bes-transport-next"></button>
           </div>
-          <div class="bes-player-right"></div>
+          <div class="bes-player-drawer-right"></div>
         </div>
         <li class="music-grid-item" data-item-id="album-123">
           <img src="https://example.com/album123.jpg" />
@@ -414,9 +422,9 @@ describe('PlayerLoader - Main Player Logic', () => {
       `);
 
       discography.updateDiscographyOrder();
-      await player.loadAlbum('123', 'album', false);
+      await player.loadAlbumIntoDrawer('123', 'album', false);
 
-      // Re-query buttons after loadAlbum replaces them
+      // Re-query buttons after loadAlbumIntoDrawer replaces them
       nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
       prevButton = document.querySelector('.bes-player-drawer .bes-transport-prev') as HTMLButtonElement;
       audio = document.querySelector('audio') as HTMLAudioElement;
@@ -511,7 +519,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
     it('should load previous album when prev button clicked on first track', async () => {
       // Load second album first
-      await player.loadAlbum('456', 'album', false);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
       expect(player.getCurrentTrackIndex()).toBe(0); // First track
       expect(player.getCurrentAlbumData()?.id).toBe(456);
 
@@ -541,11 +549,11 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
     vi.resetModules();
     createDomNodes(`
       <div class="bes-player-drawer open">
-        <div class="bes-player-container"></div>
-        <div class="bes-player-tracklist"></div>
-        <img class="bes-player-art" />
-        <div class="bes-player-transport"></div>
-        <div class="bes-player-right"></div>
+        <div class="bes-player-drawer-player"></div>
+        <div class="bes-player-drawer-tracklist"></div>
+        <img class="bes-player-drawer-album-art" />
+        <div class="bes-player-drawer-transport"></div>
+        <div class="bes-player-drawer-right"></div>
       </div>
       <li class="music-grid-item" data-item-id="album-123"></li>
       <li class="music-grid-item" data-item-id="album-456"></li>
@@ -554,7 +562,7 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
     player = await import('../src/components/player/loader');
     discography = await import('../src/discography');
     discography.updateDiscographyOrder();
-    await player.loadAlbum('123', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
 
     audio = document.querySelector('audio') as HTMLAudioElement;
     audio.play = vi.fn().mockResolvedValue(undefined);
@@ -787,11 +795,11 @@ describe('PlayerLoader - Player Interactions', () => {
     vi.resetModules();
     createDomNodes(`
       <div class="bes-player-drawer open">
-        <div class="bes-player-container"></div>
-        <div class="bes-player-tracklist"></div>
-        <img class="bes-player-art" />
-        <div class="bes-player-transport"></div>
-        <div class="bes-player-right"></div>
+        <div class="bes-player-drawer-player"></div>
+        <div class="bes-player-drawer-tracklist"></div>
+        <img class="bes-player-drawer-album-art" />
+        <div class="bes-player-drawer-transport"></div>
+        <div class="bes-player-drawer-right"></div>
       </div>
       <li class="music-grid-item" data-item-id="album-123"></li>
     `);
@@ -799,7 +807,7 @@ describe('PlayerLoader - Player Interactions', () => {
     player = await import('../src/components/player/loader');
     discography = await import('../src/discography');
     discography.updateDiscographyOrder();
-    await player.loadAlbum('123', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
 
     audio = document.querySelector('audio') as HTMLAudioElement;
     audio.play = vi.fn().mockResolvedValue(undefined);
@@ -966,11 +974,11 @@ describe('PlayerLoader - Waveform config from the extension', () => {
     vi.resetModules();
     createDomNodes(`
       <div class="bes-player-drawer open">
-        <div class="bes-player-container"></div>
-        <div class="bes-player-tracklist"></div>
-        <img class="bes-player-art" />
-        <div class="bes-player-transport"></div>
-        <div class="bes-player-right"></div>
+        <div class="bes-player-drawer-player"></div>
+        <div class="bes-player-drawer-tracklist"></div>
+        <img class="bes-player-drawer-album-art" />
+        <div class="bes-player-drawer-transport"></div>
+        <div class="bes-player-drawer-right"></div>
       </div>
       <li class="music-grid-item" data-item-id="album-123"></li>
     `);
@@ -981,7 +989,7 @@ describe('PlayerLoader - Waveform config from the extension', () => {
     discography = await import('../src/discography');
     audioFeatures = await import('../src/audioFeatures');
     discography.updateDiscographyOrder();
-    await player.loadAlbum('123', 'album', false, port as never);
+    await player.loadAlbumIntoDrawer('123', 'album', false, port as never);
   });
 
   afterEach(() => {
@@ -1105,11 +1113,11 @@ describe('FindMusic.club played and liked state', () => {
 
     createDomNodes(`
       <div class="bes-player-drawer">
-        <div class="bes-player-container"></div>
-        <div class="bes-player-tracklist"></div>
-        <img class="bes-player-art" />
-        <div class="bes-player-transport"></div>
-        <div class="bes-player-right"></div>
+        <div class="bes-player-drawer-player"></div>
+        <div class="bes-player-drawer-tracklist"></div>
+        <img class="bes-player-drawer-album-art" />
+        <div class="bes-player-drawer-transport"></div>
+        <div class="bes-player-drawer-right"></div>
       </div>
       <li class="music-grid-item" data-item-id="album-123">
         <img src="https://example.com/album123.jpg" />
@@ -1131,7 +1139,7 @@ describe('FindMusic.club played and liked state', () => {
   });
 
   it('should ask the background for the track state of the album it loads', async () => {
-    await player.loadAlbum('123', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();
 
     expect(sendMessage).toHaveBeenCalledWith({
@@ -1143,7 +1151,7 @@ describe('FindMusic.club played and liked state', () => {
   it('should mark liked and played tracks returned by FindMusic.club', async () => {
     sendMessage.mockResolvedValue({ liked: [2], played: [1, 2] });
 
-    await player.loadAlbum('123', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();
 
     expect(rows().map(row => row.classList.contains('bes-is-liked'))).toEqual([false, true, false]);
@@ -1153,7 +1161,7 @@ describe('FindMusic.club played and liked state', () => {
   it('should leave rows unmarked when no state is available', async () => {
     sendMessage.mockResolvedValue(null);
 
-    await player.loadAlbum('123', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();
 
     rows().forEach(row => {
@@ -1165,7 +1173,7 @@ describe('FindMusic.club played and liked state', () => {
   it('should still load the album when the track state request fails', async () => {
     sendMessage.mockRejectedValue(new Error('offline'));
 
-    await expect(player.loadAlbum('123', 'album', false)).resolves.toBeUndefined();
+    await expect(player.loadAlbumIntoDrawer('123', 'album', false)).resolves.toBeUndefined();
     await flush();
 
     expect(rows().length).toBe(3);
@@ -1175,8 +1183,8 @@ describe('FindMusic.club played and liked state', () => {
     let resolveState: (state: unknown) => void = () => {};
     sendMessage.mockImplementationOnce(() => new Promise(resolve => (resolveState = resolve)));
 
-    await player.loadAlbum('123', 'album', false);
-    await player.loadAlbum('456', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+    await player.loadAlbumIntoDrawer('456', 'album', false);
 
     resolveState({ liked: [1], played: [1] });
     await flush();
@@ -1188,7 +1196,7 @@ describe('FindMusic.club played and liked state', () => {
   it('should mark a track played once the play is recorded', async () => {
     sendMessage.mockResolvedValue({ success: true });
 
-    await player.loadAlbum('123', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();
 
     startPlayback();
@@ -1200,7 +1208,7 @@ describe('FindMusic.club played and liked state', () => {
   it('should not mark a track played when played caching is off', async () => {
     sendMessage.mockResolvedValue({ success: false });
 
-    await player.loadAlbum('123', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();
 
     startPlayback();
@@ -1210,7 +1218,7 @@ describe('FindMusic.club played and liked state', () => {
   });
 
   it('should report the play to the background', async () => {
-    await player.loadAlbum('123', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();
 
     startPlayback();
@@ -1220,7 +1228,7 @@ describe('FindMusic.club played and liked state', () => {
   });
 
   it('should report a play once per track, not on every resume', async () => {
-    await player.loadAlbum('123', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();
 
     startPlayback();
@@ -1232,7 +1240,7 @@ describe('FindMusic.club played and liked state', () => {
   });
 
   it('should report each track the listener moves on to', async () => {
-    await player.loadAlbum('123', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();
 
     startPlayback();
@@ -1247,95 +1255,12 @@ describe('FindMusic.club played and liked state', () => {
   it('should keep playing when reporting the play fails', async () => {
     sendMessage.mockRejectedValue(new Error('offline'));
 
-    await player.loadAlbum('123', 'album', false);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();
 
     expect(() => startPlayback()).not.toThrow();
     await flush();
 
     expect(rows()[0].classList.contains('bes-is-played')).toBe(false);
-  });
-});
-
-describe('PlayerLoader - Hosted outside the drawer', () => {
-  let player: typeof import('../src/components/player/loader');
-  let query: typeof import('../src/components/player/query');
-
-  const press = (key: string) => {
-    const event = new KeyboardEvent('keydown', { key, cancelable: true });
-    Object.defineProperty(event, 'target', { value: document.body });
-    document.dispatchEvent(event);
-    return event;
-  };
-
-  beforeEach(async () => {
-    vi.resetModules();
-    createDomNodes(`
-      <div class="bes-album-player">
-        <div class="bes-player-transport"></div>
-        <div class="bes-player-container"></div>
-        <div class="bes-player-right"></div>
-        <div class="bes-player-tracklist"></div>
-      </div>
-    `);
-
-    player = await import('../src/components/player/loader');
-    query = await import('../src/components/player/query');
-    query.setPlayerRoot(document.querySelector('.bes-album-player') as HTMLElement);
-  });
-
-  afterEach(() => {
-    query.setPlayerRoot(document);
-    document.querySelector('audio')?.remove();
-    cleanupTestNodes();
-    vi.clearAllMocks();
-  });
-
-  it('should mount the transport and tracklist into the host container', async () => {
-    await player.loadAlbum('123', 'album', false);
-
-    const container = document.querySelector('.bes-album-player') as HTMLElement;
-    expect(container.querySelector('.bes-transport-play')).toBeTruthy();
-    expect(container.querySelectorAll('.bes-track-row').length).toBe(3);
-  });
-
-  it('should load the first track without a drawer present', async () => {
-    await player.loadAlbum('123', 'album', false);
-
-    const audio = document.querySelector('audio') as HTMLAudioElement;
-    expect(audio.src).toContain('track1.mp3');
-    expect(document.querySelector('.bes-player-drawer')).toBeNull();
-  });
-
-  it('should highlight the playing track in the host container', async () => {
-    await player.loadAlbum('123', 'album', false);
-
-    const rows = Array.from(document.querySelectorAll('.bes-album-player .bes-track-row'));
-    expect(rows.map(row => row.classList.contains('bes-track-playing'))).toEqual([true, false, false]);
-  });
-
-  it('should play a track clicked in the host tracklist', async () => {
-    await player.loadAlbum('123', 'album', false);
-
-    const audio = document.querySelector('audio') as HTMLAudioElement;
-    audio.play = vi.fn().mockResolvedValue(undefined);
-
-    (document.querySelectorAll('.bes-album-player .bes-track-row')[1] as HTMLElement).click();
-
-    expect(audio.src).toContain('track2.mp3');
-    expect(audio.play).toHaveBeenCalled();
-  });
-
-  it('should answer keyboard shortcuts without an open drawer', async () => {
-    await player.loadAlbum('123', 'album', false);
-
-    const audio = document.querySelector('audio') as HTMLAudioElement;
-    audio.play = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(audio, 'paused', { value: true, writable: true, configurable: true });
-
-    const event = press(' ');
-
-    expect(audio.play).toHaveBeenCalled();
-    expect(event.defaultPrevented).toBe(true);
   });
 });

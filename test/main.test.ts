@@ -39,8 +39,12 @@ vi.mock('../src/pages/download', () => ({
   initDownload: vi.fn()
 }));
 
-vi.mock('../src/pages/album_player', () => ({
-  initAlbumPlayer: vi.fn()
+vi.mock('../src/player', () => ({
+  initPlayer: vi.fn()
+}));
+
+vi.mock('../src/audioFeatures', () => ({
+  initAudioFeatures: vi.fn()
 }));
 
 vi.mock('../src/pages/cart', () => ({

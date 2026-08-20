@@ -93,7 +93,7 @@ describe('Cache Backend', () => {
 
       expect(result).toBe(true);
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.waitFor(() => expect(mockSendResponse).toHaveBeenCalled());
 
       expect(mockDB.get).toHaveBeenCalled();
       expect(getFindMusicToken).not.toHaveBeenCalled();
@@ -120,7 +120,7 @@ describe('Cache Backend', () => {
 
       expect(result).toBe(true);
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.waitFor(() => expect(mockSendResponse).toHaveBeenCalled());
 
       expect(mockDB.get).toHaveBeenCalled(); // Check if cached
       expect(getFindMusicToken).toHaveBeenCalled();
@@ -156,7 +156,7 @@ describe('Cache Backend', () => {
 
       processRequest(request, {} as any, mockSendResponse);
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.waitFor(() => expect(mockSendResponse).toHaveBeenCalled());
 
       expect(getFindMusicToken).toHaveBeenCalled();
       expect(mockFetch).not.toHaveBeenCalled();
@@ -180,7 +180,7 @@ describe('Cache Backend', () => {
 
       processRequest(request, {} as any, mockSendResponse);
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.waitFor(() => expect(mockSendResponse).toHaveBeenCalled());
 
       expect(mockFetch).toHaveBeenCalled();
       expect(mockSendResponse).toHaveBeenCalledWith(

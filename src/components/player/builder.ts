@@ -2,11 +2,11 @@ import Logger from '../../logger';
 import { TralbumDetailsResponse, CURRENCY_MINIMUMS } from '../../bclient';
 import { createAddToCartButton } from '../cartButton';
 import { prevIcon, nextIcon, playIcon, pauseIcon, volumeIcon, heartIcon, playedIcon } from './icons';
-import playerCenterMarkup from '../../../html/player_center.html';
+import playerCenterMarkup from '../../../html/drawer_player_center.html';
 
 const log = new Logger();
 
-export function buildPlayer(tralbumDetails: TralbumDetailsResponse): {
+export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
   transportElement: HTMLElement;
   centerElement: HTMLElement;
   volumeElement: HTMLElement;
@@ -22,11 +22,11 @@ export function buildPlayer(tralbumDetails: TralbumDetailsResponse): {
   `;
 
   const center = document.createElement('div');
-  center.className = 'bes-player-center';
+  center.className = 'bes-drawer-player-center';
   center.innerHTML = playerCenterMarkup;
 
   const volumeCol = document.createElement('div');
-  volumeCol.className = 'bes-player-volume';
+  volumeCol.className = 'bes-drawer-volume-column';
   volumeCol.innerHTML = `
     <button class="bes-volume-mute">${volumeIcon(19)}</button>
     <div class="bes-volume">

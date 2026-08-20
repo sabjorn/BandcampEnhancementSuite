@@ -1,5 +1,5 @@
 import { TrackState } from '../../clients/findmusic';
-import { inPlayer, allInPlayer } from './query';
+import { inDrawer, allInDrawer } from './query';
 
 const LIKED_CLASS = 'bes-is-liked';
 const PLAYED_CLASS = 'bes-is-played';
@@ -8,7 +8,7 @@ export function applyTrackState(state: TrackState): void {
   const liked = new Set(state.liked.map(String));
   const played = new Set(state.played.map(String));
 
-  allInPlayer('.bes-track-row').forEach(row => {
+  allInDrawer('.bes-track-row').forEach(row => {
     const { trackId } = row.dataset;
     if (!trackId) return;
 
@@ -18,5 +18,5 @@ export function applyTrackState(state: TrackState): void {
 }
 
 export function markRowPlayed(trackId: number): void {
-  inPlayer(`.bes-track-row[data-track-id="${trackId}"]`)?.classList.add(PLAYED_CLASS);
+  inDrawer(`.bes-track-row[data-track-id="${trackId}"]`)?.classList.add(PLAYED_CLASS);
 }

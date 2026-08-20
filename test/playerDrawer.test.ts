@@ -364,7 +364,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
 
-      const tracklist = drawer.querySelector('.bes-player-tracklist') as HTMLElement;
+      const tracklist = drawer.querySelector('.bes-player-drawer-tracklist') as HTMLElement;
       const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
       tracklist.dispatchEvent(event);
 
@@ -397,13 +397,13 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       expect(logo.getAttribute('aria-label')).toBe('Bandcamp Enhancement Suite');
     });
 
-    it('should keep the footer outside the player', () => {
+    it('should keep the footer outside the scrolling tracklist', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
 
-      const player = drawer.querySelector('.bes-player') as HTMLElement;
+      const content = drawer.querySelector('.bes-player-drawer-content') as HTMLElement;
 
-      expect(player.querySelector('.bes-player-drawer-footer')).toBeNull();
+      expect(content.querySelector('.bes-player-drawer-footer')).toBeNull();
       expect(drawer.querySelector(':scope > .bes-player-drawer-footer')).toBeTruthy();
     });
   });
@@ -416,7 +416,7 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       const testUrl = 'https://example.com/album.jpg';
       updatePlayerDrawerInfo(testUrl);
 
-      const fullArt = drawer.querySelector('.bes-player-art') as HTMLImageElement;
+      const fullArt = drawer.querySelector('.bes-player-drawer-album-art') as HTMLImageElement;
       const minimizedArt = drawer.querySelector('.bes-player-drawer-minimized-art') as HTMLImageElement;
 
       expect(fullArt.src).toBe(testUrl);
@@ -424,44 +424,54 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
     });
   });
 
-  describe('the player it wraps', () => {
-    it('should host a player component rather than building its own columns', () => {
+  describe('three-column layout', () => {
+    it('should create left column with album art and transport', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
 
-      expect(drawer.querySelector(':scope > .bes-player')).toBeTruthy();
+      const leftColumn = drawer.querySelector('.bes-player-drawer-left') as HTMLElement;
+      expect(leftColumn).toBeTruthy();
+
+      const albumArt = leftColumn.querySelector('.bes-player-drawer-album-art');
+      expect(albumArt).toBeTruthy();
+
+      const transport = leftColumn.querySelector('.bes-player-drawer-transport');
+      expect(transport).toBeTruthy();
     });
 
-    it('should leave the player to lay out its own art and transport', () => {
+    it('should create center column for player controls', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
 
-      const leftColumn = drawer.querySelector('.bes-player-left') as HTMLElement;
+      const centerColumn = drawer.querySelector('.bes-player-drawer-center') as HTMLElement;
+      expect(centerColumn).toBeTruthy();
 
-      expect(leftColumn.querySelector('.bes-player-art')).toBeTruthy();
-      expect(leftColumn.querySelector('.bes-player-transport')).toBeTruthy();
+      const playerContainer = drawer.querySelector('.bes-player-drawer-player');
+      expect(playerContainer).toBeTruthy();
     });
 
-    it('should put its own header actions into the player right column', () => {
+    it('should create right column with header actions', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
 
-      const rightColumn = drawer.querySelector('.bes-player-right') as HTMLElement;
+      const rightColumn = drawer.querySelector('.bes-player-drawer-right') as HTMLElement;
+      expect(rightColumn).toBeTruthy();
 
-      expect(rightColumn.querySelector('.bes-player-drawer-header-actions')).toBeTruthy();
+      const headerActions = rightColumn.querySelector('.bes-player-drawer-header-actions');
+      expect(headerActions).toBeTruthy();
     });
   });
 
   describe('layout structure', () => {
-    it('should nest the three columns inside the player', () => {
+    it('should nest the three columns inside the main container', () => {
       const { drawer } = createPlayerDrawer();
       document.body.appendChild(drawer);
 
-      const top = drawer.querySelector('.bes-player-top') as HTMLElement;
+      const main = drawer.querySelector('.bes-player-drawer-main') as HTMLElement;
 
-      expect(top.querySelector('.bes-player-left')).toBeTruthy();
-      expect(top.querySelector('.bes-player-container')).toBeTruthy();
-      expect(top.querySelector('.bes-player-right')).toBeTruthy();
+      expect(main.querySelector('.bes-player-drawer-left')).toBeTruthy();
+      expect(main.querySelector('.bes-player-drawer-center')).toBeTruthy();
+      expect(main.querySelector('.bes-player-drawer-right')).toBeTruthy();
     });
 
     it('should leave layout to the stylesheet rather than inline styles', () => {

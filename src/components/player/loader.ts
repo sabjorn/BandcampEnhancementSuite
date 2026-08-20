@@ -1,13 +1,13 @@
 import Logger from '../../logger';
 import { getTralbumDetails, TralbumDetailsResponse, TralbumTrack } from '../../bclient';
-import { updatePlayerDrawerInfo, updateMinimizedPlayButton } from './drawer';
+import { getPlayerDrawerElements, updatePlayerDrawerInfo, updateMinimizedPlayButton } from './drawer';
 import { createFetchFunction } from '../../utilities';
-import { buildPlayer, buildTrackTable, buildAlbumBuyButton } from './builder';
+import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from './builder';
 import { PlayerCommands, registerPlayerShortcuts } from '../../keyboardShortcuts';
 import { drawOverlay, generateAudioFeatures } from '../../audioFeatures';
 import { volumeIcon, mutedVolumeIcon } from './icons';
 import { replaceChildren } from '../dom';
-import { inPlayer, allInPlayer, setText, setStyle, getPlayerElements } from './query';
+import { inDrawer, allInDrawer, setText, setStyle } from './query';
 import { streamUrlOf, findPlayableTrackAfter, findPlayableTrackBefore } from './trackSelection';
 import { applyTrackState, markRowPlayed } from './trackState';
 import {
@@ -25,8 +25,8 @@ let currentAlbumData: TralbumDetailsResponse | null = null;
 let playerInitialized = false;
 let currentTrackIndex = 0;
 let audioElement: HTMLAudioElement | null = null;
-let shortcutsRegistered = false;
-let playerCreated = false;
+let drawerShortcutsRegistered = false;
+let drawerPlayerCreated = false;
 let previousVolume = 1.0;
 let configPort: chrome.runtime.Port | null = null;
 let waveformEnabled = true;
@@ -88,8 +88,8 @@ function ensureAudioElement(): HTMLAudioElement {
   return audioElement;
 }
 
-function updateBpmBadge(bpm: number | null): void {
-  const bpmNumber = inPlayer<HTMLSpanElement>('.bes-bpm-number');
+function updateDrawerBpmBadge(bpm: number | null): void {
+  const bpmNumber = document.querySelector('.bes-bpm-number') as HTMLSpanElement;
   if (bpmNumber) {
     if (bpm) {
       bpmNumber.textContent = bpm.toFixed(0);
@@ -108,10 +108,10 @@ function convertToApiType(type: string): string {
 function showWaveform(enabled: boolean): void {
   waveformEnabled = enabled;
 
-  inPlayer('.bes-waveform-container')?.classList.toggle('bes-visible', enabled);
-  inPlayer('.bes-slider-container')?.classList.toggle('bes-visible', !enabled);
-  inPlayer('.bes-toggle-waveform')?.classList.toggle('bes-toggle-active', enabled);
-  inPlayer('.bes-toggle-slider')?.classList.toggle('bes-toggle-active', !enabled);
+  inDrawer('.bes-waveform-container')?.classList.toggle('bes-visible', enabled);
+  inDrawer('.bes-slider-container')?.classList.toggle('bes-visible', !enabled);
+  inDrawer('.bes-toggle-waveform')?.classList.toggle('bes-toggle-active', enabled);
+  inDrawer('.bes-toggle-slider')?.classList.toggle('bes-toggle-active', !enabled);
 }
 
 function bindViewToggle(): void {
@@ -122,14 +122,14 @@ function bindViewToggle(): void {
     configPort?.postMessage({ toggleWaveformDisplay: {} });
   };
 
-  const waveformButton = inPlayer('.bes-toggle-waveform');
-  const sliderButton = inPlayer('.bes-toggle-slider');
+  const waveformButton = inDrawer('.bes-toggle-waveform');
+  const sliderButton = inDrawer('.bes-toggle-slider');
 
   if (waveformButton) waveformButton.onclick = requestWaveform(true);
   if (sliderButton) sliderButton.onclick = requestWaveform(false);
 }
 
-const playerCommands: PlayerCommands = {
+const drawerCommands: PlayerCommands = {
   playPause,
   prevTrack,
   nextTrack,
@@ -137,20 +137,20 @@ const playerCommands: PlayerCommands = {
   adjustVolumeBy
 };
 
-function playerIsActive(): boolean {
-  return Boolean(document.querySelector('.bes-player-drawer.open') || document.querySelector('.bes-album-player'));
+function drawerIsOpen(): boolean {
+  return Boolean(document.querySelector('.bes-player-drawer.open'));
 }
 
-function registerShortcutsOnce(): void {
-  if (shortcutsRegistered) return;
+function registerDrawerShortcuts(): void {
+  if (drawerShortcutsRegistered) return;
 
-  registerPlayerShortcuts(playerCommands, playerIsActive);
-  shortcutsRegistered = true;
+  registerPlayerShortcuts(drawerCommands, drawerIsOpen);
+  drawerShortcutsRegistered = true;
 }
 
-export function initPlayerAudioFeatures(port: chrome.runtime.Port): void {
-  const canvas = inPlayer<HTMLCanvasElement>('canvas.bes-waveform');
-  const bpmDisplay = inPlayer<HTMLSpanElement>('.bes-bpm-number');
+export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
+  const canvas = inDrawer<HTMLCanvasElement>('canvas.bes-waveform');
+  const bpmDisplay = inDrawer<HTMLSpanElement>('.bes-bpm-number');
 
   if (!canvas || !bpmDisplay) {
     log.warn('Drawer audio feature elements not found');
@@ -167,7 +167,7 @@ export function initPlayerAudioFeatures(port: chrome.runtime.Port): void {
   audio.addEventListener('canplay', () => {
     if (!waveformEnabled || currentTarget.value === audio.src) return;
 
-    generateAudioFeatures(() => audioElement, canvas, updateBpmBadge, waveformColour, log, currentTarget, {
+    generateAudioFeatures(() => audioElement, canvas, updateDrawerBpmBadge, waveformColour, log, currentTarget, {
       trackId: currentTrack()?.track_id,
       urlFormatter: audioSrc =>
         audioSrc.includes('t4.bcbits.com/stream/')
@@ -192,10 +192,10 @@ export function initPlayerAudioFeatures(port: chrome.runtime.Port): void {
   port.postMessage({ requestConfig: {} });
 }
 
-type PlayerParts = ReturnType<typeof buildPlayer>;
-type PlayerElements = ReturnType<typeof getPlayerElements>;
+type DrawerPlayerParts = ReturnType<typeof buildDrawerPlayer>;
+type DrawerElements = ReturnType<typeof getPlayerDrawerElements>;
 
-function mountPlayer(elements: PlayerElements, parts: PlayerParts): void {
+function mountDrawerPlayer(elements: DrawerElements, parts: DrawerPlayerParts): void {
   const headerActions = elements.rightColumn?.querySelector<HTMLElement>('.bes-player-drawer-header-actions') ?? null;
 
   replaceChildren(elements.transportControls, parts.transportElement);
@@ -208,17 +208,17 @@ function startPlayerOnce(): void {
 
   ensureAudioElement();
   initializePlayer();
-  registerShortcutsOnce();
+  registerDrawerShortcuts();
   playerInitialized = true;
 }
 
-export async function loadAlbum(
+export async function loadAlbumIntoDrawer(
   albumId: string,
   albumType: string,
   enableFetchCaching: boolean = false,
   port?: chrome.runtime.Port
 ): Promise<void> {
-  log.info(`Loading album ${albumId} (${albumType}) into the player`);
+  log.info(`Loading album ${albumId} (${albumType}) into drawer`);
 
   try {
     const tralbumDetails = await getTralbumDetails(
@@ -231,29 +231,29 @@ export async function loadAlbum(
     currentAlbumData = tralbumDetails;
     selectAlbum(albumId);
 
-    const elements = getPlayerElements();
+    const elements = getPlayerDrawerElements();
     if (!elements.playerContainer || !elements.tracklistContainer) {
-      log.error('Player elements not found');
+      log.error('Player drawer elements not found');
       return;
     }
 
     updatePlayerDrawerInfo(albumArtUrlFor(albumId, albumType));
 
-    if (playerCreated) {
+    if (drawerPlayerCreated) {
       replaceChildren(
         elements.tracklistContainer,
         buildAlbumBuyButton(tralbumDetails),
         buildTrackTable(tralbumDetails)
       );
     } else {
-      const parts = buildPlayer(tralbumDetails);
+      const parts = buildDrawerPlayer(tralbumDetails);
 
-      mountPlayer(elements, parts);
+      mountDrawerPlayer(elements, parts);
       replaceChildren(elements.tracklistContainer, parts.albumBuyButton, parts.tracklistElement);
-      playerCreated = true;
+      drawerPlayerCreated = true;
 
       startPlayerOnce();
-      if (port) initPlayerAudioFeatures(port);
+      if (port) initDrawerAudioFeatures(port);
     }
 
     attachTrackListHandlers();
@@ -322,15 +322,15 @@ function updateTrackInfo(title: string): void {
 }
 
 function updateTrackRows(index: number): void {
-  const trackRows = allInPlayer('.bes-track-row');
+  const trackRows = allInDrawer('.bes-track-row');
   trackRows.forEach((row, i) => {
     row.classList.toggle('bes-track-playing', i === index);
   });
 }
 
 function updatePrevNextButtons(index: number, totalTracks: number): void {
-  const prevButton = inPlayer('.bes-transport-prev');
-  const nextButton = inPlayer('.bes-transport-next');
+  const prevButton = inDrawer('.bes-transport-prev');
+  const nextButton = inDrawer('.bes-transport-next');
 
   const hasEarlierTrackOrAlbum = index > 0 || hasPreviousAlbum();
   const hasLaterTrackOrAlbum = index < totalTracks - 1 || hasNextAlbum();
@@ -465,7 +465,7 @@ function playTrackFromList(index: number): void {
 }
 
 function attachTrackListHandlers(): void {
-  allInPlayer('.bes-track-row').forEach((row, index) => {
+  allInDrawer('.bes-track-row').forEach((row, index) => {
     row.addEventListener('click', event => {
       if (!isPlaybackClick(event.target as HTMLElement)) return;
 
@@ -483,7 +483,7 @@ function updateVolumeDisplay(volume: number): void {
 }
 
 function updateMuteButton(isMuted: boolean): void {
-  const muteButton = inPlayer('.bes-volume-mute');
+  const muteButton = inDrawer('.bes-volume-mute');
   if (!muteButton) return;
 
   muteButton.innerHTML = isMuted ? mutedVolumeIcon(19) : volumeIcon(19);
@@ -491,7 +491,7 @@ function updateMuteButton(isMuted: boolean): void {
 
 function bindTransportControls(): void {
   const bind = (selector: string, handler: () => void) => {
-    const button = inPlayer(selector);
+    const button = inDrawer(selector);
     if (button) button.onclick = handler;
   };
 
@@ -502,7 +502,7 @@ function bindTransportControls(): void {
 }
 
 function bindSeeking(audio: HTMLAudioElement): void {
-  const progbar = inPlayer('.bes-progbar');
+  const progbar = inDrawer('.bes-progbar');
   if (!progbar) return;
 
   progbar.onclick = event => {
@@ -512,7 +512,7 @@ function bindSeeking(audio: HTMLAudioElement): void {
 }
 
 function bindVolumeSlider(audio: HTMLAudioElement): void {
-  const slider = inPlayer('.bes-volume');
+  const slider = inDrawer('.bes-volume');
   if (!slider) return;
 
   let dragging = false;
@@ -564,7 +564,7 @@ function initializePlayer(): void {
   log.info('Initializing player');
 
   const audio = audioElement;
-  const playButton = inPlayer('.bes-transport-play');
+  const playButton = inDrawer('.bes-transport-play');
   if (!audio || !playButton) {
     log.error('Required player elements not found');
     return;
@@ -606,7 +606,7 @@ export async function loadNextAlbum(enableFetchCaching: boolean = false): Promis
     return false;
   }
 
-  await loadAlbum(item.id, item.type, enableFetchCaching);
+  await loadAlbumIntoDrawer(item.id, item.type, enableFetchCaching);
   return true;
 }
 
@@ -617,7 +617,7 @@ export async function loadPreviousAlbum(enableFetchCaching: boolean = false): Pr
     return false;
   }
 
-  await loadAlbum(item.id, item.type, enableFetchCaching);
+  await loadAlbumIntoDrawer(item.id, item.type, enableFetchCaching);
   return true;
 }
 

@@ -1,8 +1,9 @@
 import { createLogger } from './logger';
 import { initLabelView } from './label_view';
 import { initDownload } from './pages/download';
+import { initPlayer } from './player';
 import { updateKeyboardSettings } from './keyboardShortcuts';
-import { initAlbumPlayer } from './pages/album_player';
+import { initAudioFeatures } from './audioFeatures';
 import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
 import { initFeed } from './pages/feed';
@@ -417,7 +418,9 @@ const main = async (): Promise<void> => {
 
   const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
   if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
-    await initAlbumPlayer(config_port, enableFetchCaching);
+    await initPlayer(enableFetchCaching);
+
+    initAudioFeatures(config_port);
   }
 
   const urlParams = new URLSearchParams(window.location.search);

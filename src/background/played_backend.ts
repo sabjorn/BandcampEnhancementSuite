@@ -9,31 +9,39 @@ import { getDB } from '../utilities';
 
 const log = new Logger();
 
-async function tokenWhenPlayedCachingEnabled(): Promise<string | null> {
+async function playedCachingEnabled(): Promise<boolean> {
   const db = await getDB();
   const config = await db.get('config', 'config');
 
-  if (!config?.enablePlayedCaching) {
-    log.debug('Played caching disabled');
+  return Boolean(config?.enablePlayedCaching);
+}
+
+async function fetchAlbumTrackState(albumId: string): Promise<TrackState | null> {
+  if (!(await playedCachingEnabled())) {
+    log.debug(`Skipping track state fetch for album ${albumId} - played caching disabled`);
     return null;
   }
 
   const token = await getFindMusicToken();
-  if (!token) log.debug('No FindMusic.club token available');
-
-  return token;
-}
-
-async function fetchAlbumTrackState(albumId: string): Promise<TrackState | null> {
-  const token = await tokenWhenPlayedCachingEnabled();
-  if (!token) return null;
+  if (!token) {
+    log.debug(`Skipping track state fetch for album ${albumId} - no token available`);
+    return null;
+  }
 
   return fetchAlbumTrackStateFromAPI(albumId, token);
 }
 
 async function postTrackPlayed(trackId: number): Promise<void> {
-  const token = await tokenWhenPlayedCachingEnabled();
-  if (!token) return;
+  if (!(await playedCachingEnabled())) {
+    log.debug(`Skipping play post for track ${trackId} - played caching disabled`);
+    return;
+  }
+
+  const token = await getFindMusicToken();
+  if (!token) {
+    log.debug(`Skipping play post for track ${trackId} - no token available`);
+    return;
+  }
 
   return postTrackPlayedToAPI(trackId, token);
 }

@@ -1,9 +1,8 @@
 import { createLogger } from './logger';
 import { initLabelView } from './label_view';
 import { initDownload } from './pages/download';
-import { initPlayer } from './player';
 import { updateKeyboardSettings } from './keyboardShortcuts';
-import { initAudioFeatures } from './audioFeatures';
+import { initAlbumPlayer } from './pages/album_player';
 import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
 import { initFeed } from './pages/feed';
@@ -460,9 +459,7 @@ const documentEnd = async (): Promise<void> => {
 
     const { enableFetchCaching } = await configReady;
 
-    await initPlayer(enableFetchCaching);
-
-    initAudioFeatures(config_port);
+    await initAlbumPlayer(config_port, enableFetchCaching);
   })().catch(error => log.error(`Player initialization failed: ${error}`));
 
   const hasStoredCartData =

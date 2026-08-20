@@ -483,4 +483,49 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       expect(styled).toEqual([]);
     });
   });
+
+  describe('a drawer that cannot be dismissed', () => {
+    it('should build no minimize or close buttons', () => {
+      const { drawer } = createPlayerDrawer({ dismissible: false });
+      document.body.appendChild(drawer);
+
+      expect(drawer.querySelector('.bes-player-drawer-minimize')).toBeNull();
+      expect(drawer.querySelector('.bes-player-drawer-close')).toBeNull();
+    });
+
+    it('should build no minimized bar', () => {
+      const { drawer } = createPlayerDrawer({ dismissible: false });
+      document.body.appendChild(drawer);
+
+      expect(drawer.querySelector('.bes-player-drawer-minimized-bar')).toBeNull();
+    });
+
+    it('should ignore a programmatic close', () => {
+      const { drawer, openDrawer, closeDrawer } = createPlayerDrawer({ dismissible: false });
+      document.body.appendChild(drawer);
+      openDrawer();
+
+      closeDrawer();
+
+      expect(drawer.classList.contains('open')).toBe(true);
+    });
+
+    it('should ignore a programmatic minimize', () => {
+      const { drawer, openDrawer, minimizeDrawer } = createPlayerDrawer({ dismissible: false });
+      document.body.appendChild(drawer);
+      openDrawer();
+
+      minimizeDrawer();
+
+      expect(drawer.classList.contains('minimized')).toBe(false);
+    });
+
+    it('should still carry the player and its footer', () => {
+      const { drawer } = createPlayerDrawer({ dismissible: false });
+      document.body.appendChild(drawer);
+
+      expect(drawer.querySelector('.bes-player-drawer-main')).toBeTruthy();
+      expect(drawer.querySelector('.bes-player-drawer-footer')).toBeTruthy();
+    });
+  });
 });

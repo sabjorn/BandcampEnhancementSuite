@@ -262,12 +262,6 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   findMusicButton.className = 'bes-drawer-button';
   findMusicButton.textContent = 'Enable FindMusic.club Integration';
 
-  const findMusicSettingRows = [metadataCachingSettingRow, fetchCachingSettingRow, playedCachingSettingRow];
-
-  const showFindMusicSettings = (visible: boolean) => {
-    findMusicSettingRows.forEach(row => (row.style.display = visible ? 'flex' : 'none'));
-  };
-
   const updateButtonText = async () => {
     try {
       const response = await chrome.runtime.sendMessage({
@@ -278,11 +272,15 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
         ? 'Log in to FindMusic.club'
         : 'Enable FindMusic.club Integration';
 
-      showFindMusicSettings(Boolean(response?.granted));
+      metadataCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
+      fetchCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
+      playedCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
     } catch (error) {
       log.error(`Failed to check permissions: ${error}`);
       findMusicButton.textContent = 'Enable FindMusic.club Integration';
-      showFindMusicSettings(false);
+      metadataCachingSettingRow.style.display = 'none';
+      fetchCachingSettingRow.style.display = 'none';
+      playedCachingSettingRow.style.display = 'none';
     }
   };
 

@@ -127,3 +127,19 @@ describe('discography', () => {
     });
   });
 });
+
+describe('albumArtUrlFor on an album page', () => {
+  afterEach(() => {
+    cleanupTestNodes();
+  });
+
+  it('should fall back to the page album art when there is no grid listing', async () => {
+    createDomNodes(`
+      <div id="tralbumArt"><img src="https://f4.bcbits.com/img/a0000000000_16.jpg" /></div>
+    `);
+
+    const { albumArtUrlFor } = await import('../src/discography');
+
+    expect(albumArtUrlFor('123', 'album')).toBe('https://f4.bcbits.com/img/a0000000000_16.jpg');
+  });
+});

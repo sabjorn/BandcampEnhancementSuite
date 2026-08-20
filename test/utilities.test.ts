@@ -112,7 +112,6 @@ vi.mock('../src/utilities', async () => {
 
 import DBUtils, {
   getDB,
-  mousedownCallback,
   extractBandFollowInfo,
   loadTextFile,
   cachedFetch,
@@ -129,33 +128,6 @@ vi.mock('../src/bclient', () => ({
   removeAlbumFromCart: vi.fn(),
   CURRENCY_MINIMUMS: { USD: 0.5, EUR: 0.25 }
 }));
-
-describe('mousedownCallback', () => {
-  const spyElement = { click: vi.fn(), duration: 0, currentTime: 0 };
-
-  beforeEach(() => {
-    vi.spyOn(document, 'querySelector').mockReturnValue(spyElement as any);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('positions audio play position based on click', () => {
-    spyElement.duration = 100;
-    spyElement.currentTime = 0;
-
-    const event = {
-      offsetX: 1,
-      target: { offsetWidth: 2 }
-    };
-
-    mousedownCallback(event as any);
-
-    expect(document.querySelector).toHaveBeenCalledWith('audio');
-    expect(spyElement.currentTime).toBe(50);
-  });
-});
 
 describe('getDB', () => {
   it('should be a function', () => {

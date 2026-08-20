@@ -1,59 +1,8 @@
 import { analyze } from 'web-audio-beat-detector';
 
 import Logger from './logger';
-import { mousedownCallback } from './utilities';
 
 const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
-
-interface PortMessage {
-  onMessage: {
-    addListener: (callback: (message: any) => void) => void;
-  };
-  postMessage: (message: any) => void;
-}
-
-interface AudioFeaturesConfig {
-  config: {
-    displayWaveform: boolean;
-  };
-}
-
-export function toggleWaveformCanvas(port: PortMessage): void {
-  port.postMessage({ toggleWaveformDisplay: {} });
-}
-
-export function monitorAudioCanPlay(canvasDisplayToggle: HTMLInputElement, generateAudioFeatures: () => void): void {
-  const audio = document.querySelector('audio') as HTMLAudioElement;
-  if (audio && !audio.paused && canvasDisplayToggle.checked) {
-    generateAudioFeatures();
-  }
-}
-
-export function monitorAudioTimeupdate(
-  e: Event,
-  canvas: HTMLCanvasElement,
-  waveformOverlayColour: string,
-  waveformColour: string
-): void {
-  const audio = e.target as HTMLAudioElement;
-  if (!audio || !audio.duration) return;
-
-  const progress = audio.currentTime / audio.duration;
-  drawOverlay(canvas, progress, waveformOverlayColour, waveformColour);
-}
-
-export function applyAudioConfig(
-  msg: AudioFeaturesConfig,
-  canvas: HTMLCanvasElement,
-  canvasDisplayToggle: HTMLInputElement,
-  _log: Logger
-): void {
-  if (!msg.config) {
-    return;
-  }
-  canvas.style.display = msg.config.displayWaveform ? 'inherit' : 'none';
-  canvasDisplayToggle.checked = msg.config.displayWaveform;
-}
 
 export function extractTrackId(audioSrc: string): number | null {
   const match = audioSrc.match(/stream\/[^/]+\/[^/]+\/(\d+)/);
@@ -206,109 +155,6 @@ export async function generateAudioFeatures(
   );
 }
 
-export function initAudioFeatures(port: PortMessage): void {
-  const log = new Logger();
-
-  const currentTarget = { value: undefined as string | undefined };
-
-  const canvas = createCanvas();
-  canvas.addEventListener('click', mousedownCallback);
-
-  const canvasDisplayToggle = createCanvasDisplayToggle();
-  const parentNode = canvasDisplayToggle.parentNode as HTMLElement;
-  if (parentNode) {
-    parentNode.addEventListener('click', () => toggleWaveformCanvas(port));
-  }
-
-  const bpmDisplay = createBpmDisplay();
-
-  let waveformColour: string = 'white';
-  let waveformOverlayColour: string = 'black';
-
-  const bg: Element | null = document.querySelector('h2.trackTitle');
-  if (bg) {
-    waveformColour = window.getComputedStyle(bg, null).getPropertyValue('color');
-    waveformOverlayColour = invertColour(waveformColour);
-  }
-
-  const audio = document.querySelector('audio');
-  if (audio) {
-    audio.addEventListener('canplay', () =>
-      monitorAudioCanPlay(canvasDisplayToggle, () =>
-        generateAudioFeatures(
-          () => audio,
-          canvas,
-          bpm => {
-            bpmDisplay.innerText = bpm !== null ? `bpm: ${bpm.toFixed(2)}` : '';
-          },
-          waveformColour,
-          log,
-          currentTarget
-        )
-      )
-    );
-    audio.addEventListener('timeupdate', (e: Event) =>
-      monitorAudioTimeupdate(e, canvas, waveformOverlayColour, waveformColour)
-    );
-  }
-
-  port.onMessage.addListener((msg: AudioFeaturesConfig) => applyAudioConfig(msg, canvas, canvasDisplayToggle, log));
-  port.postMessage({ requestConfig: {} });
-}
-
-export function createCanvas(): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
-  canvas.style.display = 'none';
-  canvas.classList.add('waveform');
-
-  const progbar = document.querySelector('div.progbar');
-  if (progbar) {
-    progbar.classList.add('waveform');
-
-    const div = document.createElement('div');
-    div.append(canvas);
-    progbar.prepend(div);
-  }
-  return canvas;
-}
-
-export function createCanvasDisplayToggle(): HTMLInputElement {
-  const toggle = document.createElement('input');
-
-  toggle.setAttribute('title', 'toggle waveform display');
-  toggle.setAttribute('type', 'checkbox');
-  toggle.setAttribute('class', 'bes-toggle');
-  toggle.setAttribute('id', 'switch');
-
-  const label = document.createElement('label');
-  label.setAttribute('class', 'bes-toggle');
-  label.htmlFor = 'switch';
-  label.innerHTML = 'Toggle';
-
-  const toggle_div = document.createElement('div');
-  toggle_div.append(toggle);
-  toggle_div.append(label);
-
-  const inlineplayer = document.querySelector('div.controls');
-  if (inlineplayer) {
-    inlineplayer.append(toggle_div);
-  }
-
-  return toggle;
-}
-
-export function createBpmDisplay(): HTMLDivElement {
-  const bpmDisplay = document.createElement('div');
-  bpmDisplay.setAttribute('class', 'bpm');
-
-  const inlineplayer = document.querySelector('div.progbar');
-  if (inlineplayer) {
-    inlineplayer.append(bpmDisplay);
-  }
-
-  return bpmDisplay;
-}
-
 export function fillBar(
   canvas: HTMLCanvasElement,
   amplitude: number,
@@ -338,14 +184,4 @@ export function drawOverlay(
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = colour;
   ctx.fillRect(0, 0, canvas.width * progress, canvas.height);
-}
-
-export function invertColour(colour: string): string {
-  const rgb = colour.split('rgb(')[1].split(')')[0].split(',');
-
-  const r = parseInt((255 - parseInt(rgb[0])).toString());
-  const g = parseInt((255 - parseInt(rgb[1])).toString());
-  const b = parseInt((255 - parseInt(rgb[2])).toString());
-
-  return `rgb(${r},${g},${b})`;
 }

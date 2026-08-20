@@ -1000,27 +1000,6 @@ body.bes-drawer-expanded #pgBd {
 }
 
 /* Player Drawer Styles */
-.bes-player-drawer-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: var(--bes-drawer-width);
-  height: 100%;
-  background: transparent;
-  z-index: 10003;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease;
-}
-
-.bes-player-drawer-overlay.open {
-  opacity: 1;
-  visibility: visible;
-}
-
 .bes-player-drawer {
   position: fixed;
   top: 0;

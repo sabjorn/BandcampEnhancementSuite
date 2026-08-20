@@ -45,7 +45,6 @@ function sizeDrawerToPageGutter(): void {
 
 export function createPlayerDrawer(): {
   drawer: HTMLDivElement;
-  overlay: HTMLDivElement;
   openDrawer: () => void;
   closeDrawer: () => void;
   minimizeDrawer: () => void;
@@ -149,8 +148,6 @@ export function createPlayerDrawer(): {
       })
     ]
   });
-
-  const overlay = element('div', { className: 'bes-player-drawer-overlay' });
 
   document.body.classList.add('bes-drawer-host');
 
@@ -276,7 +273,6 @@ export function createPlayerDrawer(): {
 
   return {
     drawer,
-    overlay,
     openDrawer,
     closeDrawer,
     minimizeDrawer,
@@ -288,7 +284,6 @@ export function createPlayerDrawer(): {
 export function getPlayerDrawerElements() {
   return {
     drawer: document.querySelector('.bes-player-drawer') as HTMLDivElement,
-    overlay: document.querySelector('.bes-player-drawer-overlay') as HTMLDivElement,
     playerContainer: document.querySelector('.bes-player-drawer-player') as HTMLDivElement,
     tracklistContainer: document.querySelector('.bes-player-drawer-tracklist') as HTMLDivElement,
     albumArt: document.querySelector('.bes-player-drawer-album-art') as HTMLImageElement,

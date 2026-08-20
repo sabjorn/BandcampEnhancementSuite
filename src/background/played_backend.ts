@@ -63,10 +63,10 @@ export function processRequest(
 
   if (request.contentScriptQuery === 'postTrackPlayed') {
     postTrackPlayed(request.trackId)
-      .then(recorded => sendResponse({ success: true, recorded }))
+      .then(recorded => sendResponse({ success: recorded }))
       .catch(error => {
         log.warn(`Unexpected error in postTrackPlayed: ${error.message}`);
-        sendResponse({ success: false, recorded: false, error: error.message });
+        sendResponse({ success: false, error: error.message });
       });
     return true;
   }

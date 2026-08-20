@@ -92,25 +92,25 @@ describe('Played Backend', () => {
       const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
 
       expect(postTrackPlayed).toHaveBeenCalledWith(4012, 'mock-jwt-token');
-      expect(response).toEqual({ success: true, recorded: true });
+      expect(response).toEqual({ success: true });
     });
 
-    it('should say the play was not recorded when played caching is disabled', async () => {
+    it('should not record the play when played caching is disabled', async () => {
       setConfig({ enablePlayedCaching: false });
 
       const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
 
       expect(postTrackPlayed).not.toHaveBeenCalled();
-      expect(response).toEqual({ success: true, recorded: false });
+      expect(response).toEqual({ success: false });
     });
 
-    it('should say the play was not recorded without a token', async () => {
+    it('should not record the play without a token', async () => {
       vi.mocked(getFindMusicToken).mockResolvedValue(null);
 
       const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
 
       expect(postTrackPlayed).not.toHaveBeenCalled();
-      expect(response).toEqual({ success: true, recorded: false });
+      expect(response).toEqual({ success: false });
     });
 
     it('should pass on a play the service rejected', async () => {
@@ -118,7 +118,7 @@ describe('Played Backend', () => {
 
       const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
 
-      expect(response).toEqual({ success: true, recorded: false });
+      expect(response).toEqual({ success: false });
     });
 
     it('should respond with a failure when the client throws', async () => {
@@ -126,7 +126,7 @@ describe('Played Backend', () => {
 
       const response = await send({ contentScriptQuery: 'postTrackPlayed', trackId: 4012 });
 
-      expect(response).toEqual({ success: false, recorded: false, error: 'boom' });
+      expect(response).toEqual({ success: false, error: 'boom' });
     });
   });
 });

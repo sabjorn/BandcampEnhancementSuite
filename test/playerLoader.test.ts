@@ -1194,7 +1194,7 @@ describe('FindMusic.club played and liked state', () => {
   });
 
   it('should mark a track played once the play is recorded', async () => {
-    sendMessage.mockResolvedValue({ success: true, recorded: true });
+    sendMessage.mockResolvedValue({ success: true });
 
     await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();
@@ -1206,7 +1206,7 @@ describe('FindMusic.club played and liked state', () => {
   });
 
   it('should not mark a track played when played caching is off', async () => {
-    sendMessage.mockResolvedValue({ success: true, recorded: false });
+    sendMessage.mockResolvedValue({ success: false });
 
     await player.loadAlbumIntoDrawer('123', 'album', false);
     await flush();

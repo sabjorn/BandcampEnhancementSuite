@@ -66,7 +66,7 @@ async function reportPlay(): Promise<void> {
 
   try {
     const response = await chrome.runtime.sendMessage({ contentScriptQuery: 'postTrackPlayed', trackId });
-    if (!response?.recorded) {
+    if (!response?.success) {
       log.debug(`Play of track ${trackId} was not recorded`);
       return;
     }

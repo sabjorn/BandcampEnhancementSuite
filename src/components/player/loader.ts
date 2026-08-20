@@ -47,6 +47,11 @@ async function loadTrackState(albumId: string): Promise<void> {
       return;
     }
 
+    if (String(currentAlbumData?.id) !== albumId) {
+      log.debug(`Track state for album ${albumId} arrived after the drawer moved on`);
+      return;
+    }
+
     applyTrackState(state);
   } catch (error) {
     log.warn(`Failed to load track state for album ${albumId}: ${error}`);

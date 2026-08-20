@@ -1122,6 +1122,9 @@ describe('FindMusic.club played and liked state', () => {
       <li class="music-grid-item" data-item-id="album-123">
         <img src="https://example.com/album123.jpg" />
       </li>
+      <li class="music-grid-item" data-item-id="album-456">
+        <img src="https://example.com/album456.jpg" />
+      </li>
     `);
 
     player = await import('../src/components/player/loader');
@@ -1174,6 +1177,20 @@ describe('FindMusic.club played and liked state', () => {
     await flush();
 
     expect(rows().length).toBe(3);
+  });
+
+  it('should not mark rows when the state arrives after the drawer moved to another album', async () => {
+    let resolveState: (state: unknown) => void = () => {};
+    sendMessage.mockImplementationOnce(() => new Promise(resolve => (resolveState = resolve)));
+
+    await player.loadAlbumIntoDrawer('123', 'album', false);
+    await player.loadAlbumIntoDrawer('456', 'album', false);
+
+    resolveState({ liked: [1], played: [1] });
+    await flush();
+
+    expect(rows()[0].classList.contains('bes-is-liked')).toBe(false);
+    expect(rows()[0].classList.contains('bes-is-played')).toBe(false);
   });
 
   it('should mark a track played locally as soon as it starts playing', async () => {

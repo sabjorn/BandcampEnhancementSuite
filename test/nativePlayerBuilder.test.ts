@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
-import { buildDrawerPlayer, buildTrackTable } from '../src/components/player/builder';
+import { buildPlayer, buildTrackTable } from '../src/components/player/builder';
 import { prevIcon, nextIcon, playIcon, pauseIcon } from '../src/components/player/icons';
 import { TralbumDetailsResponse } from '../src/bclient';
 
@@ -58,7 +58,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('transport controls', () => {
     it('should create transport element with prev/play/next buttons', () => {
-      const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { transportElement } = buildPlayer(mockTralbumDetails);
 
       const prevButton = transportElement.querySelector('.bes-transport-prev');
       expect(prevButton).toBeTruthy();
@@ -71,7 +71,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should create play button with play and pause icons', () => {
-      const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { transportElement } = buildPlayer(mockTralbumDetails);
 
       const playButton = transportElement.querySelector('.bes-transport-play') as HTMLElement;
       const playIconEl = playButton.querySelector('.bes-play-icon');
@@ -84,7 +84,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('track info display', () => {
     it('should create track info elements', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildPlayer(mockTralbumDetails);
 
       const albumLabel = centerElement.querySelector('.bes-album-label');
       expect(albumLabel).toBeTruthy();
@@ -97,7 +97,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should have empty text content initially', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildPlayer(mockTralbumDetails);
 
       const albumLabel = centerElement.querySelector('.bes-album-label') as HTMLElement;
       const trackTitle = centerElement.querySelector('.bes-now-playing-title') as HTMLElement;
@@ -112,7 +112,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('bpm badge', () => {
     it('should create BPM badge with number and label', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildPlayer(mockTralbumDetails);
 
       const bpmBadge = centerElement.querySelector('.bes-bpm-badge');
       expect(bpmBadge).toBeTruthy();
@@ -127,7 +127,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('progress view toggle', () => {
     it('should create waveform canvas element', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildPlayer(mockTralbumDetails);
 
       const canvas = centerElement.querySelector('canvas.bes-waveform') as HTMLCanvasElement;
       expect(canvas).toBeTruthy();
@@ -136,7 +136,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should create slider container with progress bar', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildPlayer(mockTralbumDetails);
 
       const sliderContainer = centerElement.querySelector('.bes-slider-container');
       expect(sliderContainer).toBeTruthy();
@@ -149,7 +149,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should create toggle buttons for waveform and slider modes', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildPlayer(mockTralbumDetails);
 
       const toggleSlider = centerElement.querySelector('.bes-toggle-slider') as HTMLButtonElement;
       const toggleWaveform = centerElement.querySelector('.bes-toggle-waveform') as HTMLButtonElement;
@@ -159,7 +159,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should provide both progress views for the player to switch between', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildPlayer(mockTralbumDetails);
 
       expect(centerElement.querySelector('.bes-waveform-container')).toBeTruthy();
       expect(centerElement.querySelector('.bes-slider-container')).toBeTruthy();
@@ -170,7 +170,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('volume slider', () => {
     it('should create volume container with vertical slider', () => {
-      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { volumeElement } = buildPlayer(mockTralbumDetails);
 
       const volumeContainer = volumeElement.querySelector('.bes-volume');
       expect(volumeContainer).toBeTruthy();
@@ -183,7 +183,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should create volume percentage display', () => {
-      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { volumeElement } = buildPlayer(mockTralbumDetails);
 
       const volumePercent = volumeElement.querySelector('.bes-volume-percent') as HTMLElement;
       expect(volumePercent).toBeTruthy();
@@ -193,7 +193,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('mute toggle', () => {
     it('should create mute button with icon', () => {
-      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { volumeElement } = buildPlayer(mockTralbumDetails);
 
       const muteButton = volumeElement.querySelector('.bes-volume-mute') as HTMLButtonElement;
       expect(muteButton).toBeTruthy();
@@ -206,7 +206,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('time display', () => {
     it('should create time display elements', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildPlayer(mockTralbumDetails);
 
       const timeElapsed = centerElement.querySelector('.bes-time-elapsed') as HTMLElement;
       const timeTotal = centerElement.querySelector('.bes-time-total') as HTMLElement;
@@ -324,14 +324,14 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('progress bar stylesheet hooks', () => {
     it('should expose progress bar parts by class', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildPlayer(mockTralbumDetails);
 
       expect(centerElement.querySelector('.bes-progbar-fill')).toBeTruthy();
       expect(centerElement.querySelector('.bes-progbar-thumb')).toBeTruthy();
     });
 
     it('should expose slider container by class', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildPlayer(mockTralbumDetails);
 
       expect(centerElement.querySelector('.bes-slider-container')).toBeTruthy();
     });
@@ -347,7 +347,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     };
 
     it('should draw prev and next from the shared icons', () => {
-      const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { transportElement } = buildPlayer(mockTralbumDetails);
 
       const prev = transportElement.querySelector('.bes-transport-prev path')?.getAttribute('d');
       const next = transportElement.querySelector('.bes-transport-next path')?.getAttribute('d');
@@ -357,7 +357,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should carry both play and pause icons for class based toggling', () => {
-      const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { transportElement } = buildPlayer(mockTralbumDetails);
       const play = transportElement.querySelector('.bes-transport-play') as HTMLElement;
 
       expect(play.querySelector('.bes-play-icon path')?.getAttribute('d')).toBe(pathsOf(playIcon(16))[0]);
@@ -367,7 +367,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('transport stylesheet hooks', () => {
     it('should expose transport buttons by class', () => {
-      const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { transportElement } = buildPlayer(mockTralbumDetails);
 
       expect(transportElement.querySelector('.bes-transport-prev')).toBeTruthy();
       expect(transportElement.querySelector('.bes-transport-play')).toBeTruthy();
@@ -375,7 +375,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should expose player controls by class', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildPlayer(mockTralbumDetails);
 
       expect(centerElement.querySelector('.bes-track-info')).toBeTruthy();
       expect(centerElement.querySelector('.bes-player-controls')).toBeTruthy();
@@ -383,9 +383,9 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should expose volume controls by class', () => {
-      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { volumeElement } = buildPlayer(mockTralbumDetails);
 
-      expect(volumeElement.classList.contains('bes-drawer-volume-column')).toBe(true);
+      expect(volumeElement.classList.contains('bes-player-volume')).toBe(true);
       expect(volumeElement.querySelector('.bes-volume-mute')).toBeTruthy();
       expect(volumeElement.querySelector('.bes-volume-track')).toBeTruthy();
       expect(volumeElement.querySelector('.bes-volume-fill')).toBeTruthy();
@@ -401,7 +401,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         price: 10.0
       } as TralbumDetailsResponse;
 
-      const { albumBuyButton } = buildDrawerPlayer(purchasableTralbum);
+      const { albumBuyButton } = buildPlayer(purchasableTralbum);
 
       expect(albumBuyButton).toBeTruthy();
       expect(albumBuyButton?.querySelector('.one-click-button')).toBeTruthy();
@@ -414,7 +414,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         price: 0
       } as TralbumDetailsResponse;
 
-      const { albumBuyButton } = buildDrawerPlayer(nonPurchasableTralbum);
+      const { albumBuyButton } = buildPlayer(nonPurchasableTralbum);
 
       expect(albumBuyButton).toBeNull();
     });
@@ -427,7 +427,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         currency: 'EUR'
       } as TralbumDetailsResponse;
 
-      const { albumBuyButton } = buildDrawerPlayer(purchasableTralbum);
+      const { albumBuyButton } = buildPlayer(purchasableTralbum);
 
       const input = albumBuyButton?.querySelector('input') as HTMLInputElement;
       expect(input).toBeTruthy();
@@ -446,7 +446,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         price: 10.0
       } as TralbumDetailsResponse;
 
-      const { albumBuyButton } = buildDrawerPlayer(purchasableTralbum);
+      const { albumBuyButton } = buildPlayer(purchasableTralbum);
 
       // Album buy button should exist and be ready for cart operations
       // The actual cart integration is tested in cartButton.test.ts
@@ -461,7 +461,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         price: 10.0
       } as TralbumDetailsResponse;
 
-      const { albumBuyButton, tracklistElement } = buildDrawerPlayer(purchasableTralbum);
+      const { albumBuyButton, tracklistElement } = buildPlayer(purchasableTralbum);
 
       // Both should be present
       expect(albumBuyButton).toBeTruthy();

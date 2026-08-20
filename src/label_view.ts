@@ -1,5 +1,5 @@
 import Logger from './logger';
-import { createPlayerDrawer, loadAlbumIntoDrawer } from './components/player';
+import { createPlayerDrawer, loadAlbum } from './components/player';
 import { updateDiscographyOrder } from './discography';
 
 export function setHistory(id: string, state: boolean): void {
@@ -80,7 +80,7 @@ export function fillFrame(
 
   if (port) setPreviewed(target.id, port);
 
-  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, port).catch(error =>
+  loadAlbum(target.id, target.idType, enableFetchCaching, port).catch(error =>
     log.error(`Failed to load album into drawer: ${error}`)
   );
 }

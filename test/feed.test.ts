@@ -17,13 +17,13 @@ vi.mock('../src/logger', () => ({
 }));
 
 vi.mock('../src/components/player/loader', () => ({
-  loadAlbumIntoDrawer: vi.fn(() => Promise.resolve()),
+  loadAlbum: vi.fn(() => Promise.resolve()),
   loadNextAlbum: vi.fn(() => Promise.resolve(false)),
   loadPreviousAlbum: vi.fn(() => Promise.resolve(false))
 }));
 
 import { initFeed, renderFeedPreviews, tralbumTypeToIdType } from '../src/pages/feed';
-import { loadAlbumIntoDrawer } from '../src/components/player/loader';
+import { loadAlbum } from '../src/components/player/loader';
 
 const mockPort = {
   postMessage: vi.fn(),
@@ -140,12 +140,7 @@ describe('Feed', () => {
       ) as HTMLButtonElement;
       button.click();
 
-      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith(
-        '12345',
-        'album',
-        expect.anything(),
-        expect.anything()
-      );
+      expect(vi.mocked(loadAlbum)).toHaveBeenCalledWith('12345', 'album', expect.anything(), expect.anything());
     });
 
     it('asks for a track when the story is about a track', () => {
@@ -156,12 +151,7 @@ describe('Feed', () => {
       ) as HTMLButtonElement;
       button.click();
 
-      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith(
-        '67890',
-        'track',
-        expect.anything(),
-        expect.anything()
-      );
+      expect(vi.mocked(loadAlbum)).toHaveBeenCalledWith('67890', 'track', expect.anything(), expect.anything());
     });
 
     it('no longer injects an embedded player iframe', () => {

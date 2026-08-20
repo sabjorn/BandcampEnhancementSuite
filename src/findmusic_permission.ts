@@ -51,6 +51,7 @@ button.addEventListener('click', async () => {
       const config = await db.get('config', 'config');
       config.enableMetadataCaching = true;
       config.enableFetchCaching = true;
+      config.enablePlayedCaching = true;
       await db.put('config', config, 'config');
       log.info('Enabled FindMusic.club caching after permission grant');
 

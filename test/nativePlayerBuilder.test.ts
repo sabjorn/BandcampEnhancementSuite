@@ -276,6 +276,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         expect(row.querySelector('.bes-track-num-col')).toBeTruthy();
         expect(row.querySelector('.bes-track-title-col')).toBeTruthy();
         expect(row.querySelector('.bes-track-duration-col')).toBeTruthy();
+        expect(row.querySelector('.bes-track-state-col')).toBeTruthy();
         expect(row.querySelector('.bes-track-link-col')).toBeTruthy();
         expect(row.querySelector('.bes-track-buy-col')).toBeTruthy();
       });
@@ -290,6 +291,34 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       expect(trackLink).toBeTruthy();
       expect(trackLink.href).toContain('/track/track-1');
       expect(trackLink.target).toBe('_blank');
+    });
+
+    it('should tag each row with its track id so FindMusic.club state can be matched', () => {
+      const trackTable = buildTrackTable(mockTralbumDetails);
+
+      const rows = Array.from(trackTable.querySelectorAll<HTMLElement>('.bes-track-row'));
+
+      expect(rows.map(row => row.dataset.trackId)).toEqual(['1001', '1002']);
+    });
+
+    it('should include liked and played indicators on every row', () => {
+      const trackTable = buildTrackTable(mockTralbumDetails);
+
+      const rows = trackTable.querySelectorAll('.bes-track-row');
+      rows.forEach(row => {
+        expect(row.querySelector('.bes-track-liked')).toBeTruthy();
+        expect(row.querySelector('.bes-track-played')).toBeTruthy();
+      });
+    });
+
+    it('should leave rows unmarked until FindMusic.club state arrives', () => {
+      const trackTable = buildTrackTable(mockTralbumDetails);
+
+      const rows = trackTable.querySelectorAll('.bes-track-row');
+      rows.forEach(row => {
+        expect(row.classList.contains('bes-is-liked')).toBe(false);
+        expect(row.classList.contains('bes-is-played')).toBe(false);
+      });
     });
   });
 

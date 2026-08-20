@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { updateKeyboardSettings, resetKeyboardSettings } from '../src/background/config_backend';
+import {
+  updateKeyboardSettings,
+  resetKeyboardSettings,
+  togglePlayedCaching,
+  enableFindMusicCaching,
+  setupDB
+} from '../src/background/config_backend';
 import { DEFAULT_KEYBOARD_SETTINGS, KeyboardSettings, KeyboardAction } from '../src/types/keyboard';
 import Logger from '../src/logger';
 
@@ -167,6 +173,88 @@ describe('Config Backend', () => {
       await resetKeyboardSettings(mockDb, mockLog);
 
       expect(mockDb.put).toHaveBeenCalled();
+    });
+  });
+
+  describe('togglePlayedCaching', () => {
+    const makeDb = (config: Record<string, unknown>) => ({
+      get: vi.fn().mockResolvedValue(config),
+      put: vi.fn().mockResolvedValue(undefined)
+    });
+
+    it('should default to enabled on a fresh install', async () => {
+      const mockDb = makeDb(undefined as any);
+
+      await setupDB(mockDb);
+
+      expect(mockDb.put.mock.calls[0][1]).toMatchObject({ enablePlayedCaching: true });
+    });
+
+    it('should keep a user opt-out across restarts', async () => {
+      const mockDb = makeDb({ enablePlayedCaching: false });
+
+      await setupDB(mockDb);
+
+      expect(mockDb.put.mock.calls[0][1]).toMatchObject({ enablePlayedCaching: false });
+    });
+
+    it('should turn played caching off when it is on', async () => {
+      const mockDb = makeDb({ enablePlayedCaching: true });
+      const mockPort = { postMessage: vi.fn() };
+
+      await togglePlayedCaching(mockDb, new Logger(), mockPort as any);
+
+      expect(mockDb.put).toHaveBeenCalledWith('config', { enablePlayedCaching: false }, 'config');
+    });
+
+    it('should turn played caching on when it is off', async () => {
+      const mockDb = makeDb({ enablePlayedCaching: false });
+      const mockPort = { postMessage: vi.fn() };
+
+      await togglePlayedCaching(mockDb, new Logger(), mockPort as any);
+
+      expect(mockDb.put).toHaveBeenCalledWith('config', { enablePlayedCaching: true }, 'config');
+    });
+
+    it('should broadcast the updated config', async () => {
+      const mockDb = makeDb({ enablePlayedCaching: true });
+      const mockPort = { postMessage: vi.fn() };
+
+      await togglePlayedCaching(mockDb, new Logger(), mockPort as any);
+
+      expect(mockPort.postMessage).toHaveBeenCalledWith({ config: { enablePlayedCaching: false } });
+    });
+
+    it('should leave the other caching settings alone', async () => {
+      const mockDb = makeDb({
+        enablePlayedCaching: true,
+        enableMetadataCaching: true,
+        enableFetchCaching: true
+      });
+
+      await togglePlayedCaching(mockDb, new Logger());
+
+      expect(mockDb.put).toHaveBeenCalledWith(
+        'config',
+        { enablePlayedCaching: false, enableMetadataCaching: true, enableFetchCaching: true },
+        'config'
+      );
+    });
+
+    it('should be enabled alongside the other caching settings on permission grant', async () => {
+      const mockDb = makeDb({
+        enablePlayedCaching: false,
+        enableMetadataCaching: false,
+        enableFetchCaching: false
+      });
+
+      await enableFindMusicCaching(mockDb, new Logger());
+
+      expect(mockDb.put).toHaveBeenCalledWith(
+        'config',
+        { enablePlayedCaching: true, enableMetadataCaching: true, enableFetchCaching: true },
+        'config'
+      );
     });
   });
 });

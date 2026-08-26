@@ -423,8 +423,6 @@ const documentIdle = async (): Promise<void> => {
     initAudioFeatures(config_port);
   }
 
-  // The bes_cart URL parameter is captured at document_start and handed over via
-  // sessionStorage, so by the time we get here the parameter itself is already gone.
   const hasStoredCartData =
     sessionStorage.getItem('bes_pending_cart_import') !== null ||
     sessionStorage.getItem('bes_url_cart_param') !== null;

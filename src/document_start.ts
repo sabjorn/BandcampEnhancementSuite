@@ -25,8 +25,4 @@ const captureUrlCartParam = (): void => {
   window.location.replace(newUrl);
 };
 
-const documentStart = (): void => {
-  captureUrlCartParam();
-};
-
-documentStart();
+captureUrlCartParam();

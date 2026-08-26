@@ -27,8 +27,14 @@
   "content_scripts": [
     {
       "matches": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*"],
-      "js": ["dist/main.js"],
-      "css": ["css/style.css"]
+      "js": ["dist/document_start.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*"],
+      "js": ["dist/document_idle.js"],
+      "css": ["css/style.css"],
+      "run_at": "document_idle"
     },
     {
       "matches": ["https://*.findmusic.club/*"],

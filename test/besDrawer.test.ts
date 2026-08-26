@@ -31,30 +31,6 @@ vi.mock('../src/logger', () => ({
   })
 }));
 
-vi.mock('../src/label_view', () => ({
-  initLabelView: vi.fn()
-}));
-
-vi.mock('../src/pages/download', () => ({
-  initDownload: vi.fn()
-}));
-
-vi.mock('../src/player', () => ({
-  initPlayer: vi.fn()
-}));
-
-vi.mock('../src/audioFeatures', () => ({
-  initAudioFeatures: vi.fn()
-}));
-
-vi.mock('../src/pages/cart', () => ({
-  initCart: vi.fn()
-}));
-
-vi.mock('../src/pages/hide_unhide_collection', () => ({
-  initHideUnhide: vi.fn()
-}));
-
 describe('BES Drawer', () => {
   let mockPort: any;
   let initBESDrawer: any;
@@ -67,8 +43,8 @@ describe('BES Drawer', () => {
 
     createDomNodes('<body></body>');
 
-    const mainModule = await import('../src/main');
-    initBESDrawer = mainModule.initBESDrawer;
+    const drawerModule = await import('../src/components/besDrawer');
+    initBESDrawer = drawerModule.initBESDrawer;
 
     initBESDrawer(mockPort as any);
   });
@@ -277,8 +253,8 @@ describe('Played caching setting', () => {
     document.body.innerHTML = '';
     mockRuntimeSendMessage.mockResolvedValue({ granted });
 
-    const mainModule = await import('../src/main');
-    initBESDrawer = mainModule.initBESDrawer;
+    const drawerModule = await import('../src/components/besDrawer');
+    initBESDrawer = drawerModule.initBESDrawer;
     initBESDrawer(mockPort as any);
 
     await new Promise(resolve => setTimeout(resolve, 0));

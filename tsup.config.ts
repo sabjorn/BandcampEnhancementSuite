@@ -2,7 +2,8 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig(options => ({
   entry: {
-    main: './src/main.ts',
+    document_start: './src/document_start.ts',
+    document_idle: './src/document_idle.ts',
     background: './src/background.ts',
     findmusic_permission: './src/findmusic_permission.ts',
     findmusic_autologin: './src/findmusic_autologin.ts'

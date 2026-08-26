@@ -2,9 +2,6 @@ import { createLogger } from './logger';
 
 const log = createLogger();
 
-// Runs before the page has built any DOM. Nothing here may touch document elements --
-// hand work over to document_idle through sessionStorage instead.
-
 const captureUrlCartParam = (): void => {
   const urlParams = new URLSearchParams(window.location.search);
   const besCartParamValue = urlParams.get('bes_cart');
@@ -25,8 +22,6 @@ const captureUrlCartParam = (): void => {
 
   log.info(`Redirecting to clean URL: ${window.location.origin}${newUrl}`);
 
-  // Replacing this early aborts the current load, so document_idle never runs on this
-  // navigation -- the cart data is picked up from sessionStorage after the redirect.
   window.location.replace(newUrl);
 };
 

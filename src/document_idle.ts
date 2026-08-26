@@ -365,7 +365,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   log.info('BES drawer and button added to page');
 };
 
-const main = async (): Promise<void> => {
+const documentIdle = async (): Promise<void> => {
   const checkIsDownloadPage: Element | null = document.querySelector('.download-item-container');
   if (checkIsDownloadPage) {
     initDownload();
@@ -375,7 +375,7 @@ const main = async (): Promise<void> => {
     try {
       return chrome.runtime.connect(null, { name: 'bes' });
     } catch (e: any) {
-      if (e.message?.includes('Error in invocation of runtime.connect in main.js')) {
+      if (e.message?.includes('Error in invocation of runtime.connect in document_idle.js')) {
         log.error(e);
       }
       throw e;
@@ -416,51 +416,28 @@ const main = async (): Promise<void> => {
     }
   });
 
-  const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
-  if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
+  const playerReady = (async () => {
+    const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
+    if (!checkIsPageWithPlayer || window.location.href === 'https://bandcamp.com/') return;
+
     await initPlayer(enableFetchCaching);
 
     initAudioFeatures(config_port);
-  }
+  })().catch(error => log.error(`Player initialization failed: ${error}`));
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const besCartParamValue = urlParams.get('bes_cart');
-  const hasBesCartParam = besCartParamValue !== null;
   const hasStoredCartData =
     sessionStorage.getItem('bes_pending_cart_import') !== null ||
     sessionStorage.getItem('bes_url_cart_param') !== null;
   const processingFlag = sessionStorage.getItem('bes_cart_processing');
 
-  log.info(
-    `Page load state - hasParam: ${hasBesCartParam}, hasStored: ${hasStoredCartData}, processing: ${processingFlag}`
-  );
-
-  if (hasBesCartParam) {
-    log.info(`Found bes_cart parameter in URL on page load!`);
-
-    sessionStorage.setItem('bes_url_cart_param', besCartParamValue!);
-
-    const newUrl = (() => {
-      const newSearch = Array.from(urlParams.entries())
-        .filter(([key]) => key !== 'bes_cart')
-        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-        .join('&');
-
-      return window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
-    })();
-
-    log.info(`Redirecting to clean URL: ${window.location.origin}${newUrl}`);
-
-    window.location.replace(newUrl);
-    return;
-  }
+  log.info(`Page load state - hasStored: ${hasStoredCartData}, processing: ${processingFlag}`);
 
   const dataBlobElement: Element | null = document.querySelector('[data-blob]');
   if (dataBlobElement) {
     const dataBlobAttr: string | null = dataBlobElement.getAttribute('data-blob');
     if (dataBlobAttr) {
       const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
-      if (has_cart || hasBesCartParam || hasStoredCartData) {
+      if (has_cart || hasStoredCartData) {
         await initCart(config_port);
       }
     }
@@ -477,6 +454,8 @@ const main = async (): Promise<void> => {
   }
 
   initBESDrawer(config_port);
+
+  await playerReady;
 };
 
-main();
+documentIdle();

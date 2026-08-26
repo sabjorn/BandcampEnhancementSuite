@@ -416,12 +416,14 @@ const documentIdle = async (): Promise<void> => {
     }
   });
 
-  const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
-  if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
+  const playerReady = (async () => {
+    const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
+    if (!checkIsPageWithPlayer || window.location.href === 'https://bandcamp.com/') return;
+
     await initPlayer(enableFetchCaching);
 
     initAudioFeatures(config_port);
-  }
+  })().catch(error => log.error(`Player initialization failed: ${error}`));
 
   const hasStoredCartData =
     sessionStorage.getItem('bes_pending_cart_import') !== null ||
@@ -452,6 +454,8 @@ const documentIdle = async (): Promise<void> => {
   }
 
   initBESDrawer(config_port);
+
+  await playerReady;
 };
 
 documentIdle();

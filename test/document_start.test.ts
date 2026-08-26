@@ -15,6 +15,12 @@ vi.mock('../src/logger', () => ({
   })
 }));
 
+const mockSendMessage = vi.fn(() => Promise.reject(new Error('Receiving end does not exist')));
+
+(globalThis as any).chrome = {
+  runtime: { sendMessage: mockSendMessage }
+};
+
 const mockReplace = vi.fn();
 
 const setLocation = (search: string, hash: string = '') => {
@@ -35,10 +41,31 @@ const runDocumentStart = async () => {
   await import('../src/document_start');
 };
 
+describe('document_start service worker warm-up', () => {
+  beforeEach(() => {
+    mockSendMessage.mockClear();
+  });
+
+  it('pings the service worker so it boots ahead of document_idle', async () => {
+    setLocation('');
+
+    await runDocumentStart();
+
+    expect(mockSendMessage).toHaveBeenCalledWith({ contentScriptQuery: 'warmup' });
+  });
+
+  it('survives the ping going unanswered', async () => {
+    setLocation('');
+
+    await expect(runDocumentStart()).resolves.not.toThrow();
+  });
+});
+
 describe('document_start bes_cart capture', () => {
   beforeEach(() => {
     sessionStorage.clear();
     mockReplace.mockClear();
+    mockSendMessage.mockClear();
   });
 
   afterEach(() => {

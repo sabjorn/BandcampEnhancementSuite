@@ -21,6 +21,7 @@ const mockWindowsCreate = vi.fn();
 const mockWindowsGetCurrent = vi.fn();
 const mockGetURL = vi.fn((path: string) => path);
 const mockPermissionsContains = vi.fn();
+const mockCookiesGet = vi.fn();
 
 Object.assign(global, {
   chrome: {
@@ -39,6 +40,9 @@ Object.assign(global, {
     },
     permissions: {
       contains: mockPermissionsContains
+    },
+    cookies: {
+      get: mockCookiesGet
     }
   }
 });
@@ -86,6 +90,40 @@ describe('FindMusic Backend', () => {
 
       await vi.waitFor(() => {
         expect(sendResponse).toHaveBeenCalledWith({ granted: true });
+      });
+    });
+
+    it('should report logged in when the Bandcamp identity cookie exists', async () => {
+      const request = { contentScriptQuery: 'checkBandcampLogin' };
+      const sender = {} as chrome.runtime.MessageSender;
+      const sendResponse = vi.fn();
+
+      mockCookiesGet.mockResolvedValue({ value: 'some-identity-cookie' });
+
+      const result = processRequest(request, sender, sendResponse);
+
+      expect(result).toBe(true);
+
+      await vi.waitFor(() => {
+        expect(mockCookiesGet).toHaveBeenCalledWith({ url: 'https://bandcamp.com/', name: 'identity' });
+      });
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith({ loggedIn: true });
+      });
+    });
+
+    it('should report logged out when the Bandcamp identity cookie is missing', async () => {
+      const request = { contentScriptQuery: 'checkBandcampLogin' };
+      const sender = {} as chrome.runtime.MessageSender;
+      const sendResponse = vi.fn();
+
+      mockCookiesGet.mockResolvedValue(null);
+
+      processRequest(request, sender, sendResponse);
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith({ loggedIn: false });
       });
     });
 

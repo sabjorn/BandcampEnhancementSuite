@@ -645,12 +645,48 @@ button.bes-downloadall[disabled]::after {
   transition: background 0.2s ease;
 }
 
-.bes-drawer-button:hover {
+.bes-drawer-button:hover:not(:disabled) {
   background: #158ba8;
 }
 
-.bes-drawer-button:active {
+.bes-drawer-button:active:not(:disabled) {
   background: #127a94;
+}
+
+.bes-drawer-button:disabled {
+  background: #9bb6bd;
+  cursor: not-allowed;
+}
+
+.bes-drawer-button-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.bes-drawer-button-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1000;
+  bottom: 115%;
+  left: 50%;
+  margin-left: -100px;
+  width: 200px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #333;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.bes-drawer-button-tooltip.visible {
+  visibility: visible;
+  opacity: 1;
 }
 
 .bes-drawer-setting {

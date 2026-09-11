@@ -55,6 +55,13 @@ vi.mock('../src/pages/hide_unhide_collection', () => ({
   initHideUnhide: vi.fn()
 }));
 
+const createPagedataWithLoginState = (loggedIn: boolean): void => {
+  const pagedata = document.createElement('div');
+  pagedata.setAttribute('id', 'pagedata');
+  pagedata.setAttribute('data-blob', JSON.stringify({ identities: { fan: loggedIn ? { id: 1 } : null } }));
+  document.body.appendChild(pagedata);
+};
+
 describe('BES Drawer', () => {
   let mockPort: any;
   let initBESDrawer: any;
@@ -65,6 +72,7 @@ describe('BES Drawer', () => {
       postMessage: vi.fn()
     };
 
+    createPagedataWithLoginState(true);
     createDomNodes('<body></body>');
 
     const mainModule = await import('../src/main');
@@ -258,6 +266,31 @@ describe('BES Drawer', () => {
     findMusicButton.click();
 
     expect(mockRuntimeSendMessage).toHaveBeenCalledWith({
+      contentScriptQuery: 'openFindMusic'
+    });
+  });
+
+  it('should enable the FindMusic button when signed in to Bandcamp', async () => {
+    const findMusicButton = document.querySelector('.bes-drawer-button') as HTMLButtonElement;
+
+    await vi.waitFor(() => {
+      expect(findMusicButton.disabled).toBe(false);
+    });
+  });
+
+  it('should disable the FindMusic button when not signed in to Bandcamp', async () => {
+    document.body.innerHTML = '';
+    createPagedataWithLoginState(false);
+    createDomNodes('<body></body>');
+    initBESDrawer(mockPort as any);
+
+    const findMusicButton = document.querySelector('.bes-drawer-button') as HTMLButtonElement;
+    expect(findMusicButton).toBeTruthy();
+    expect(findMusicButton.disabled).toBe(true);
+
+    mockRuntimeSendMessage.mockClear();
+    findMusicButton.click();
+    expect(mockRuntimeSendMessage).not.toHaveBeenCalledWith({
       contentScriptQuery: 'openFindMusic'
     });
   });

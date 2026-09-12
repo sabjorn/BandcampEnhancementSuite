@@ -265,7 +265,6 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   findMusicButton.className = 'bes-drawer-button';
   findMusicButton.textContent = 'Enable FindMusic.club Integration';
 
-  // A disabled button receives no pointer events, so the hover lives on the wrapper.
   const findMusicButtonWrapper = document.createElement('div');
   findMusicButtonWrapper.className = 'bes-drawer-button-wrapper';
 

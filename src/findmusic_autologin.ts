@@ -73,8 +73,6 @@ async function performLogin() {
   }
 }
 
-// The MutationObserver fires in bursts, and CONTAINER_MODIFIED_FLAG is not set
-// until after two awaits, so without this several calls can pass that check.
 async function injectLoginButton() {
   if (isInjecting) {
     return;

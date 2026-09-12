@@ -9,8 +9,11 @@ import { initHideUnhide } from './pages/hide_unhide_collection';
 import { initFeed } from './pages/feed';
 import { createKeyboardSettingsSection } from './components/keyboardSettings';
 import { KeyboardSettings } from './types/keyboard';
+import { isBandcampLoggedIn } from './utilities';
 
 const log = createLogger();
+
+const BANDCAMP_LOGIN_REQUIRED_MESSAGE = 'You must be signed in to Bandcamp';
 
 function createToggleSetting(id: string, labelText: string, visible: boolean = true, tooltipText?: string) {
   const row = document.createElement('div');
@@ -262,7 +265,28 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   findMusicButton.className = 'bes-drawer-button';
   findMusicButton.textContent = 'Enable FindMusic.club Integration';
 
+  const findMusicButtonWrapper = document.createElement('div');
+  findMusicButtonWrapper.className = 'bes-drawer-button-wrapper';
+
+  const findMusicTooltip = document.createElement('span');
+  findMusicTooltip.className = 'bes-drawer-button-tooltip';
+  findMusicTooltip.textContent = BANDCAMP_LOGIN_REQUIRED_MESSAGE;
+
+  findMusicButtonWrapper.appendChild(findMusicButton);
+  findMusicButtonWrapper.appendChild(findMusicTooltip);
+
+  findMusicButtonWrapper.addEventListener('mouseenter', () => {
+    findMusicTooltip.classList.toggle('visible', findMusicButton.disabled);
+  });
+
+  findMusicButtonWrapper.addEventListener('mouseleave', () => {
+    findMusicTooltip.classList.remove('visible');
+  });
+
   const updateButtonText = async () => {
+    findMusicButton.disabled = !isBandcampLoggedIn();
+    findMusicButtonWrapper.classList.toggle('disabled', findMusicButton.disabled);
+
     try {
       const response = await chrome.runtime.sendMessage({
         contentScriptQuery: 'checkFindMusicPermissions'
@@ -288,7 +312,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   findMusicSection.appendChild(findMusicTitle);
   findMusicSection.appendChild(findMusicDesc);
-  findMusicSection.appendChild(findMusicButton);
+  findMusicSection.appendChild(findMusicButtonWrapper);
 
   content.appendChild(findMusicSection);
   content.appendChild(settingsSection);

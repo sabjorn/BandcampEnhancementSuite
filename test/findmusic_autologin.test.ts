@@ -33,6 +33,9 @@ describe('FindMusic Auto-login', () => {
       if (message.contentScriptQuery === 'checkFindMusicPermissions') {
         return Promise.resolve({ granted: true });
       }
+      if (message.contentScriptQuery === 'checkBandcampLogin') {
+        return Promise.resolve({ loggedIn: true });
+      }
       return Promise.resolve({});
     });
 
@@ -77,6 +80,9 @@ describe('FindMusic Auto-login', () => {
     mockSendMessage.mockImplementation((message: any) => {
       if (message.contentScriptQuery === 'checkFindMusicPermissions') {
         return Promise.resolve({ granted: true });
+      }
+      if (message.contentScriptQuery === 'checkBandcampLogin') {
+        return Promise.resolve({ loggedIn: true });
       }
       if (message.contentScriptQuery === 'autoLoginFindMusic') {
         return Promise.resolve({ success: true, token: 'test-token' });
@@ -143,5 +149,49 @@ describe('FindMusic Auto-login', () => {
     const otherContent = document.querySelector('.other-content');
     expect(otherContent).toBeTruthy();
     expect(otherContent?.textContent).toBe('Should not be removed');
+  });
+
+  it('should inject a disabled login button when not signed in to Bandcamp', async () => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    document.body.innerHTML = '';
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { pathname: '/guide', href: '' }
+    });
+
+    mockSendMessage.mockImplementation((message: any) => {
+      if (message.contentScriptQuery === 'checkFindMusicPermissions') {
+        return Promise.resolve({ granted: true });
+      }
+      if (message.contentScriptQuery === 'checkBandcampLogin') {
+        return Promise.resolve({ loggedIn: false });
+      }
+      return Promise.resolve({});
+    });
+
+    document.body.innerHTML = `
+      <div class="MuiContainer-root MuiContainer-maxWidthMd">
+        <div class="MuiBox-root css-14jdev5">Header</div>
+      </div>
+    `;
+
+    await import('../src/findmusic_autologin');
+
+    await vi.waitFor(() => {
+      expect(document.getElementById('bes-findmusic-login-button')).toBeTruthy();
+    });
+
+    const button = document.getElementById('bes-findmusic-login-button') as HTMLElement;
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.style.cursor).toBe('not-allowed');
+
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(mockSendMessage).not.toHaveBeenCalledWith({
+      contentScriptQuery: 'autoLoginFindMusic'
+    });
+    expect(window.location.href).toBe('');
   });
 });

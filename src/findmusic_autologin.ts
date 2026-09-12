@@ -4,6 +4,7 @@ const log = new Logger();
 const FINDMUSIC_BASE_URL = process.env.FINDMUSIC_BASE_URL as string;
 const BUTTON_ID = 'bes-findmusic-login-button';
 const CONTAINER_MODIFIED_FLAG = 'data-bes-modified';
+const BANDCAMP_LOGIN_REQUIRED_MESSAGE = 'You must be signed in to Bandcamp';
 let isLoggingIn = false;
 
 async function performLogin() {
@@ -99,6 +100,18 @@ async function injectLoginButton() {
     return;
   }
 
+  const loggedIntoBandcamp = await (async () => {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        contentScriptQuery: 'checkBandcampLogin'
+      });
+      return Boolean(response?.loggedIn);
+    } catch (error) {
+      log.error(`Error checking Bandcamp login: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return false;
+    }
+  })();
+
   log.info('Modifying guide page content and injecting login button');
 
   const firstChild = container.firstElementChild;
@@ -117,21 +130,60 @@ async function injectLoginButton() {
 
   const buttonWrapper = document.createElement('div');
   buttonWrapper.id = BUTTON_ID;
-  buttonWrapper.style.cursor = 'pointer';
+  buttonWrapper.style.position = 'relative';
   buttonWrapper.style.padding = '1rem 2rem';
-  buttonWrapper.style.backgroundColor = '#1976d2';
   buttonWrapper.style.color = 'white';
   buttonWrapper.style.borderRadius = '4px';
   buttonWrapper.style.boxShadow = '0px 2px 4px rgba(0,0,0,0.2)';
   buttonWrapper.style.transition = 'background-color 0.3s';
-  buttonWrapper.addEventListener('mouseenter', () => {
-    buttonWrapper.style.backgroundColor = '#1565c0';
-  });
-  buttonWrapper.addEventListener('mouseleave', () => {
-    if (!isLoggingIn) {
-      buttonWrapper.style.backgroundColor = '#1976d2';
-    }
-  });
+
+  if (loggedIntoBandcamp) {
+    buttonWrapper.style.cursor = 'pointer';
+    buttonWrapper.style.backgroundColor = '#1976d2';
+    buttonWrapper.addEventListener('mouseenter', () => {
+      buttonWrapper.style.backgroundColor = '#1565c0';
+    });
+    buttonWrapper.addEventListener('mouseleave', () => {
+      if (!isLoggingIn) {
+        buttonWrapper.style.backgroundColor = '#1976d2';
+      }
+    });
+    buttonWrapper.addEventListener('click', performLogin);
+  } else {
+    buttonWrapper.style.cursor = 'not-allowed';
+    buttonWrapper.style.backgroundColor = '#9e9e9e';
+    buttonWrapper.setAttribute('aria-disabled', 'true');
+
+    const tooltip = document.createElement('span');
+    tooltip.textContent = BANDCAMP_LOGIN_REQUIRED_MESSAGE;
+    tooltip.style.visibility = 'hidden';
+    tooltip.style.opacity = '0';
+    tooltip.style.transition = 'opacity 0.2s';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.position = 'absolute';
+    tooltip.style.zIndex = '1000';
+    tooltip.style.bottom = '115%';
+    tooltip.style.left = '50%';
+    tooltip.style.marginLeft = '-100px';
+    tooltip.style.width = '200px';
+    tooltip.style.padding = '8px';
+    tooltip.style.borderRadius = '4px';
+    tooltip.style.backgroundColor = '#333';
+    tooltip.style.color = '#fff';
+    tooltip.style.fontSize = '0.75rem';
+    tooltip.style.lineHeight = '1.4';
+    tooltip.style.textAlign = 'left';
+    buttonWrapper.appendChild(tooltip);
+
+    buttonWrapper.addEventListener('mouseenter', () => {
+      tooltip.style.visibility = 'visible';
+      tooltip.style.opacity = '1';
+    });
+    buttonWrapper.addEventListener('mouseleave', () => {
+      tooltip.style.visibility = 'hidden';
+      tooltip.style.opacity = '0';
+    });
+  }
 
   const buttonText = document.createElement('p');
   buttonText.style.margin = '0';
@@ -140,7 +192,6 @@ async function injectLoginButton() {
   buttonText.textContent = 'Login with Bandcamp Enhancement Suite';
 
   buttonWrapper.appendChild(buttonText);
-  buttonWrapper.addEventListener('click', performLogin);
 
   buttonContainer.appendChild(buttonWrapper);
   container.appendChild(buttonContainer);

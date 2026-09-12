@@ -118,7 +118,8 @@ import DBUtils, {
   cachedFetch,
   storeFindMusicToken,
   getFindMusicTokenFromStorage,
-  clearFindMusicToken
+  clearFindMusicToken,
+  isBandcampLoggedIn
 } from '../src/utilities';
 import { getTralbumDetailsFromPage } from '../src/bclient';
 
@@ -534,5 +535,46 @@ describe('cachedFetch', () => {
         method: 'POST'
       })
     );
+  });
+});
+
+describe('isBandcampLoggedIn', () => {
+  const setPagedata = (blob: string): void => {
+    const pagedata = document.createElement('div');
+    pagedata.setAttribute('id', 'pagedata');
+    pagedata.setAttribute('data-blob', blob);
+    document.body.appendChild(pagedata);
+  };
+
+  afterEach(() => {
+    document.getElementById('pagedata')?.remove();
+  });
+
+  it('returns true when identities.fan is populated', () => {
+    setPagedata(JSON.stringify({ identities: { fan: { id: 123, username: 'someone' } } }));
+
+    expect(isBandcampLoggedIn()).toBe(true);
+  });
+
+  it('returns false when identities.fan is null', () => {
+    setPagedata(JSON.stringify({ identities: { user: null, fan: null } }));
+
+    expect(isBandcampLoggedIn()).toBe(false);
+  });
+
+  it('returns false when identities is absent', () => {
+    setPagedata(JSON.stringify({ lo_querystr: '?item_id=123' }));
+
+    expect(isBandcampLoggedIn()).toBe(false);
+  });
+
+  it('returns false when there is no pagedata element', () => {
+    expect(isBandcampLoggedIn()).toBe(false);
+  });
+
+  it('returns false when the blob is not valid JSON', () => {
+    setPagedata('not json');
+
+    expect(isBandcampLoggedIn()).toBe(false);
   });
 });

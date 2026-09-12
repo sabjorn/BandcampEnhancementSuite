@@ -65,8 +65,26 @@ interface FanTralbumData {
   part_of_purchased_album: boolean;
 }
 
+interface PageIdentities {
+  fan?: unknown;
+}
+
 interface PageData {
   fan_tralbum_data?: FanTralbumData;
+  identities?: PageIdentities;
+}
+
+export function isBandcampLoggedIn(): boolean {
+  const element: HTMLElement | null = document.getElementById('pagedata');
+  const data: string | null = element?.getAttribute('data-blob') ?? null;
+  if (!data) return false;
+
+  try {
+    const pageData: PageData = JSON.parse(data);
+    return Boolean(pageData.identities?.fan);
+  } catch {
+    return false;
+  }
 }
 
 export function extractFanTralbumData(): FanTralbumData {

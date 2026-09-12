@@ -23,6 +23,27 @@ export function processRequest(
     return true;
   }
 
+  if (request.contentScriptQuery === 'checkBandcampLogin') {
+    if (!chrome.cookies) {
+      log.info('Bandcamp login check - cookies permission not granted');
+      sendResponse({ loggedIn: false });
+      return true;
+    }
+
+    chrome.cookies
+      .get({ url: 'https://bandcamp.com/', name: 'identity' })
+      .then(cookie => {
+        const loggedIn = Boolean(cookie?.value);
+        log.info(`Bandcamp login check - loggedIn: ${loggedIn}`);
+        sendResponse({ loggedIn });
+      })
+      .catch(error => {
+        log.error(`Failed to check Bandcamp login: ${error.message}`);
+        sendResponse({ loggedIn: false });
+      });
+    return true;
+  }
+
   if (request.contentScriptQuery === 'autoLoginFindMusic') {
     log.info('Processing autoLoginFindMusic request');
 

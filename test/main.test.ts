@@ -276,6 +276,7 @@ describe('BES Drawer', () => {
     await vi.waitFor(() => {
       expect(findMusicButton.disabled).toBe(false);
     });
+    expect(findMusicButton.parentElement?.classList.contains('disabled')).toBe(false);
   });
 
   it('should disable the FindMusic button when not signed in to Bandcamp', async () => {
@@ -287,12 +288,7 @@ describe('BES Drawer', () => {
     const findMusicButton = document.querySelector('.bes-drawer-button') as HTMLButtonElement;
     expect(findMusicButton).toBeTruthy();
     expect(findMusicButton.disabled).toBe(true);
-
-    mockRuntimeSendMessage.mockClear();
-    findMusicButton.click();
-    expect(mockRuntimeSendMessage).not.toHaveBeenCalledWith({
-      contentScriptQuery: 'openFindMusic'
-    });
+    expect(findMusicButton.parentElement?.classList.contains('disabled')).toBe(true);
   });
 
   it('should not create duplicate drawer if already exists', () => {

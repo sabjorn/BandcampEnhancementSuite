@@ -127,6 +127,24 @@ describe('FindMusic Backend', () => {
       });
     });
 
+    it('should report logged out when the cookies permission is not granted', async () => {
+      const request = { contentScriptQuery: 'checkBandcampLogin' };
+      const sender = {} as chrome.runtime.MessageSender;
+      const sendResponse = vi.fn();
+
+      const cookies = (global as any).chrome.cookies;
+      (global as any).chrome.cookies = undefined;
+
+      try {
+        const result = processRequest(request, sender, sendResponse);
+
+        expect(result).toBe(true);
+        expect(sendResponse).toHaveBeenCalledWith({ loggedIn: false });
+      } finally {
+        (global as any).chrome.cookies = cookies;
+      }
+    });
+
     it('should return false for non-openFindMusic messages', async () => {
       const request = { contentScriptQuery: 'somethingElse' };
       const sender = {} as chrome.runtime.MessageSender;

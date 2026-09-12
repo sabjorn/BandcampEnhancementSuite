@@ -286,6 +286,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   const updateButtonText = async () => {
     findMusicButton.disabled = !isBandcampLoggedIn();
+    findMusicButtonWrapper.classList.toggle('disabled', findMusicButton.disabled);
 
     try {
       const response = await chrome.runtime.sendMessage({

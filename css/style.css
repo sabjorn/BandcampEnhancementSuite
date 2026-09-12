@@ -653,15 +653,20 @@ button.bes-downloadall[disabled]::after {
   background: #127a94;
 }
 
+/* pointer-events must pass through to the wrapper, which owns the tooltip hover */
 .bes-drawer-button:disabled {
   background: #9bb6bd;
-  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .bes-drawer-button-wrapper {
   position: relative;
   display: block;
   width: 100%;
+}
+
+.bes-drawer-button-wrapper.disabled {
+  cursor: not-allowed;
 }
 
 .bes-drawer-button-tooltip {

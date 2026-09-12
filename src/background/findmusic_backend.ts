@@ -24,6 +24,13 @@ export function processRequest(
   }
 
   if (request.contentScriptQuery === 'checkBandcampLogin') {
+    // cookies is an optional permission, so the namespace may not exist yet
+    if (!chrome.cookies) {
+      log.info('Bandcamp login check - cookies permission not granted');
+      sendResponse({ loggedIn: false });
+      return true;
+    }
+
     chrome.cookies
       .get({ url: 'https://bandcamp.com/', name: 'identity' })
       .then(cookie => {

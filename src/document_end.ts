@@ -365,7 +365,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   log.info('BES drawer and button added to page');
 };
 
-const documentIdle = async (): Promise<void> => {
+const documentEnd = async (): Promise<void> => {
   const checkIsDownloadPage: Element | null = document.querySelector('.download-item-container');
   if (checkIsDownloadPage) {
     initDownload();
@@ -375,7 +375,7 @@ const documentIdle = async (): Promise<void> => {
     try {
       return chrome.runtime.connect(null, { name: 'bes' });
     } catch (e: any) {
-      if (e.message?.includes('Error in invocation of runtime.connect in document_idle.js')) {
+      if (e.message?.includes('Error in invocation of runtime.connect in document_end.js')) {
         log.error(e);
       }
       throw e;
@@ -458,4 +458,4 @@ const documentIdle = async (): Promise<void> => {
   await playerReady;
 };
 
-documentIdle();
+documentEnd();

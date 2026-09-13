@@ -67,8 +67,8 @@ describe('BES Drawer', () => {
 
     createDomNodes('<body></body>');
 
-    const idleModule = await import('../src/document_idle');
-    initBESDrawer = idleModule.initBESDrawer;
+    const endModule = await import('../src/document_end');
+    initBESDrawer = endModule.initBESDrawer;
 
     initBESDrawer(mockPort as any);
   });
@@ -277,8 +277,8 @@ describe('Played caching setting', () => {
     document.body.innerHTML = '';
     mockRuntimeSendMessage.mockResolvedValue({ granted });
 
-    const idleModule = await import('../src/document_idle');
-    initBESDrawer = idleModule.initBESDrawer;
+    const endModule = await import('../src/document_end');
+    initBESDrawer = endModule.initBESDrawer;
     initBESDrawer(mockPort as any);
 
     await new Promise(resolve => setTimeout(resolve, 0));

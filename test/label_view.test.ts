@@ -16,7 +16,7 @@ vi.mock('../src/logger', () => ({
   }))
 }));
 
-import { initLabelView, fillFrame, addFindMusicBandLink } from '../src/label_view';
+import { initLabelView, fillFrame } from '../src/label_view';
 
 const mockPort = {
   postMessage: vi.fn(),
@@ -154,8 +154,9 @@ describe('fillFrame - clicking preview for the album already in the drawer', () 
   });
 });
 
-describe('addFindMusicBandLink', () => {
-  const bioContainer = `
+describe('initLabelView - FindMusic.club band link', () => {
+  const discographyPage = `
+    <ol class="music-grid"></ol>
     <div id="bio-container">
       <p id="band-name-location"><span class="title">Test Label</span></p>
     </div>
@@ -170,10 +171,10 @@ describe('addFindMusicBandLink', () => {
     cleanupTestNodes();
   });
 
-  it('should add a link to the band page on FindMusic.club', () => {
-    createDomNodes(bioContainer);
+  it('should add a link to the band page on FindMusic.club', async () => {
+    createDomNodes(discographyPage);
 
-    addFindMusicBandLink();
+    await initLabelView(mockPort as any);
 
     const link = document.querySelector('a.bes-findmusic-band-link') as HTMLAnchorElement;
     expect(link).toBeTruthy();
@@ -182,53 +183,13 @@ describe('addFindMusicBandLink', () => {
     expect(link.previousElementSibling?.id).toBe('band-name-location');
   });
 
-  it('should not add the link twice', () => {
-    createDomNodes(bioContainer);
-
-    addFindMusicBandLink();
-    addFindMusicBandLink();
-
-    expect(document.querySelectorAll('a.bes-findmusic-band-link').length).toBe(1);
-  });
-
-  it('should do nothing without a bio container', () => {
-    createDomNodes(`<script type="text/javascript" data-band="{&quot;id&quot;:857243381}"></script>`);
-
-    addFindMusicBandLink();
-
-    expect(document.querySelector('a.bes-findmusic-band-link')).toBeNull();
-  });
-
-  it('should do nothing without a band id', () => {
-    createDomNodes(`<div id="bio-container"></div>`);
-
-    addFindMusicBandLink();
-
-    expect(document.querySelector('a.bes-findmusic-band-link')).toBeNull();
-  });
-});
-
-describe('initLabelView - FindMusic.club band link', () => {
-  beforeEach(() => {
-    process.env.FINDMUSIC_BASE_URL = 'https://findmusic.club';
-  });
-
-  afterEach(() => {
-    cleanupTestNodes();
-  });
-
-  it('should add the link on a discography page', async () => {
-    createDomNodes(`
-      <ol class="music-grid"></ol>
-      <div id="bio-container">
-        <p id="band-name-location"><span class="title">Test Label</span></p>
-      </div>
-      <script type="text/javascript" data-band="{&quot;id&quot;:857243381}"></script>
-    `);
+  it('should not add the link twice', async () => {
+    createDomNodes(discographyPage);
 
     await initLabelView(mockPort as any);
+    await initLabelView(mockPort as any);
 
-    expect(document.querySelector('a.bes-findmusic-band-link')).toBeTruthy();
+    expect(document.querySelectorAll('a.bes-findmusic-band-link').length).toBe(1);
   });
 
   it('should not add the link without a discography grid', async () => {
@@ -237,6 +198,28 @@ describe('initLabelView - FindMusic.club band link', () => {
         <p id="band-name-location"><span class="title">Test Label</span></p>
       </div>
       <script type="text/javascript" data-band="{&quot;id&quot;:857243381}"></script>
+    `);
+
+    await initLabelView(mockPort as any);
+
+    expect(document.querySelector('a.bes-findmusic-band-link')).toBeNull();
+  });
+
+  it('should not add the link without a bio container', async () => {
+    createDomNodes(`
+      <ol class="music-grid"></ol>
+      <script type="text/javascript" data-band="{&quot;id&quot;:857243381}"></script>
+    `);
+
+    await initLabelView(mockPort as any);
+
+    expect(document.querySelector('a.bes-findmusic-band-link')).toBeNull();
+  });
+
+  it('should not add the link without a band id', async () => {
+    createDomNodes(`
+      <ol class="music-grid"></ol>
+      <div id="bio-container"></div>
     `);
 
     await initLabelView(mockPort as any);

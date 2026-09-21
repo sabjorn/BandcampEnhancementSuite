@@ -121,7 +121,7 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
   observer.observe(discographyContainer, { childList: true, subtree: true });
 }
 
-export function generateFindMusicBandLink(bandId: number): HTMLAnchorElement {
+function generateFindMusicBandLink(bandId: number): HTMLAnchorElement {
   const link = document.createElement('a');
   link.setAttribute('class', 'follow-unfollow bes-findmusic-band-link');
   link.setAttribute('title', 'open this artist/label on FindMusic.club');
@@ -133,7 +133,7 @@ export function generateFindMusicBandLink(bandId: number): HTMLAnchorElement {
   return link;
 }
 
-export function addFindMusicBandLink(): void {
+function addFindMusicBandLink(): void {
   if (document.querySelector('.bes-findmusic-band-link')) return;
 
   const bioContainer = document.querySelector('#bio-container');

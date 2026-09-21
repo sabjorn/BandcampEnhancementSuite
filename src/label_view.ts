@@ -122,13 +122,15 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 }
 
 function generateFindMusicBandLink(bandId: number): HTMLAnchorElement {
+  const bandName = document.querySelector('#band-name-location .title')?.textContent?.trim();
+
   const link = document.createElement('a');
-  link.setAttribute('class', 'follow-unfollow bes-findmusic-band-link');
+  link.setAttribute('class', 'bes-findmusic-band-link');
   link.setAttribute('title', 'open this artist/label on FindMusic.club');
   link.setAttribute('target', '_blank');
   link.setAttribute('rel', 'noopener noreferrer');
   link.href = `${process.env.FINDMUSIC_BASE_URL}/artist/${bandId}`;
-  link.append('Open in FindMusic.club');
+  link.append(bandName ? `Open ${bandName} on FindMusic.club` : 'Open in FindMusic.club');
 
   return link;
 }
@@ -136,8 +138,8 @@ function generateFindMusicBandLink(bandId: number): HTMLAnchorElement {
 async function addFindMusicBandLink(): Promise<void> {
   if (document.querySelector('.bes-findmusic-band-link')) return;
 
-  const bioContainer = document.querySelector('#bio-container');
-  if (!bioContainer) return;
+  const discographyColumn = document.querySelector('.leftMiddleColumns');
+  if (!discographyColumn) return;
 
   if (!(await checkFindMusicPermissions())) {
     log.info('FindMusic.club permissions not granted, skipping FindMusic.club band link');
@@ -150,13 +152,7 @@ async function addFindMusicBandLink(): Promise<void> {
     return;
   }
 
-  const link = generateFindMusicBandLink(bandId);
-  const followActions = bioContainer.querySelector('.following-actions-wrapper');
-  const bandName = bioContainer.querySelector('#band-name-location');
-
-  if (followActions) followActions.after(link);
-  else if (bandName) bandName.after(link);
-  else bioContainer.prepend(link);
+  discographyColumn.prepend(generateFindMusicBandLink(bandId));
 
   log.info('Added FindMusic.club band link');
 }

@@ -156,12 +156,12 @@ describe('fillFrame - clicking preview for the album already in the drawer', () 
 
 describe('initLabelView - FindMusic.club band link', () => {
   const discographyPage = `
-    <ol class="music-grid"></ol>
+    <div class="leftMiddleColumns">
+      <div class="label-band-selector-container"></div>
+      <ol class="music-grid"></ol>
+    </div>
     <div id="bio-container">
       <p id="band-name-location"><span class="title">Test Label</span></p>
-      <div class="following-actions-wrapper">
-        <div id="following-actions"><button type="button" class="follow-unfollow">Follow</button></div>
-      </div>
     </div>
     <script type="text/javascript" data-band="{&quot;id&quot;:857243381,&quot;name&quot;:&quot;Test Label&quot;}"></script>
   `;
@@ -189,22 +189,28 @@ describe('initLabelView - FindMusic.club band link', () => {
     expect(link).toBeTruthy();
     expect(link.href).toBe('https://findmusic.club/artist/857243381');
     expect(link.target).toBe('_blank');
-    expect(link.previousElementSibling?.className).toBe('following-actions-wrapper');
+    expect(link.textContent).toBe('Open Test Label on FindMusic.club');
   });
 
-  it('should fall back to the band name when there is no follow button', async () => {
+  it('should add the link at the top of the discography column', async () => {
+    createDomNodes(discographyPage);
+
+    await initLabelView(mockPort as any);
+
+    const column = document.querySelector('.leftMiddleColumns') as HTMLElement;
+    expect(column.firstElementChild?.className).toBe('bes-findmusic-band-link');
+  });
+
+  it('should fall back to generic text without a band name', async () => {
     createDomNodes(`
-      <ol class="music-grid"></ol>
-      <div id="bio-container">
-        <p id="band-name-location"><span class="title">Test Label</span></p>
-      </div>
+      <div class="leftMiddleColumns"><ol class="music-grid"></ol></div>
       <script type="text/javascript" data-band="{&quot;id&quot;:857243381}"></script>
     `);
 
     await initLabelView(mockPort as any);
 
     const link = document.querySelector('a.bes-findmusic-band-link') as HTMLAnchorElement;
-    expect(link.previousElementSibling?.id).toBe('band-name-location');
+    expect(link.textContent).toBe('Open in FindMusic.club');
   });
 
   it('should not add the link twice', async () => {
@@ -218,6 +224,7 @@ describe('initLabelView - FindMusic.club band link', () => {
 
   it('should not add the link without a discography grid', async () => {
     createDomNodes(`
+      <div class="leftMiddleColumns"></div>
       <div id="bio-container">
         <p id="band-name-location"><span class="title">Test Label</span></p>
       </div>
@@ -229,7 +236,7 @@ describe('initLabelView - FindMusic.club band link', () => {
     expect(document.querySelector('a.bes-findmusic-band-link')).toBeNull();
   });
 
-  it('should not add the link without a bio container', async () => {
+  it('should not add the link without a discography column', async () => {
     createDomNodes(`
       <ol class="music-grid"></ol>
       <script type="text/javascript" data-band="{&quot;id&quot;:857243381}"></script>
@@ -242,8 +249,7 @@ describe('initLabelView - FindMusic.club band link', () => {
 
   it('should not add the link without a band id', async () => {
     createDomNodes(`
-      <ol class="music-grid"></ol>
-      <div id="bio-container"></div>
+      <div class="leftMiddleColumns"><ol class="music-grid"></ol></div>
     `);
 
     await initLabelView(mockPort as any);

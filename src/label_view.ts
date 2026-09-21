@@ -1,6 +1,7 @@
 import Logger from './logger';
 import { createPlayerDrawer, loadAlbumIntoDrawer } from './components/player';
 import { updateDiscographyOrder } from './discography';
+import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicLinks';
 import { checkFindMusicPermissions, extractBandId } from './utilities';
 
 export function setHistory(id: string, state: boolean): void {
@@ -33,6 +34,7 @@ export function previewClicked(event: Event, port: chrome.runtime.Port): void {
 const log = new Logger();
 
 let drawerController: ReturnType<typeof createPlayerDrawer> | null = null;
+let findMusicEnabled = false;
 
 interface PreviewTarget {
   id: string;
@@ -81,6 +83,8 @@ export function fillFrame(
 
   if (port) setPreviewed(target.id, port);
 
+  updateFindMusicLinks(target.id, target.idType);
+
   loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, port).catch(error =>
     log.error(`Failed to load album into drawer: ${error}`)
   );
@@ -109,7 +113,10 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
   log.info('Rendering BES...');
   renderDom(port, previewState, enableFetchCaching);
 
-  if (document.querySelector('ol.music-grid')) await addFindMusicBandLink();
+  if (document.querySelector('ol.music-grid')) {
+    findMusicEnabled = await checkFindMusicPermissions();
+    if (!findMusicEnabled) log.info('FindMusic.club permissions not granted, skipping FindMusic.club links');
+  }
 
   updateDiscographyOrder();
 
@@ -121,40 +128,34 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
   observer.observe(discographyContainer, { childList: true, subtree: true });
 }
 
-function generateFindMusicBandLink(bandId: number): HTMLAnchorElement {
-  const bandName = document.querySelector('#band-name-location .title')?.textContent?.trim();
+function labelFindMusicLink(): FindMusicLink | null {
+  const bandId = extractBandId();
+  if (!bandId) return null;
 
-  const link = document.createElement('a');
-  link.setAttribute('class', 'bes-findmusic-band-link');
-  link.setAttribute('title', 'open this artist/label on FindMusic.club');
-  link.setAttribute('target', '_blank');
-  link.setAttribute('rel', 'noopener noreferrer');
-  link.href = `${process.env.FINDMUSIC_BASE_URL}/artist/${bandId}`;
-  link.append(bandName ? `Open ${bandName} on FindMusic.club` : 'Open in FindMusic.club');
-
-  return link;
+  const name = document.querySelector('#band-name-location .title')?.textContent?.trim();
+  return { kind: 'label', bandId, name };
 }
 
-async function addFindMusicBandLink(): Promise<void> {
-  if (document.querySelector('.bes-findmusic-band-link')) return;
+function artistFindMusicLink(albumId: string, albumType: string): FindMusicLink | null {
+  const item = document.querySelector<HTMLElement>(
+    `li.music-grid-item[data-item-id="${albumType}-${albumId}"], li.music-grid-item[data-tralbumid="${albumId}"]`
+  );
 
-  const discographyColumn = document.querySelector('.leftMiddleColumns');
-  if (!discographyColumn) return;
+  const bandId = Number(item?.dataset.bandId);
+  if (!bandId || bandId === extractBandId()) return null;
 
-  if (!(await checkFindMusicPermissions())) {
-    log.info('FindMusic.club permissions not granted, skipping FindMusic.club band link');
-    return;
-  }
+  const name = item?.querySelector('.artist-override')?.textContent?.trim();
+  return { kind: 'artist', bandId, name };
+}
 
-  const bandId = extractBandId();
-  if (!bandId) {
-    log.info('No band id found, skipping FindMusic.club band link');
-    return;
-  }
+function updateFindMusicLinks(albumId?: string, albumType?: string): void {
+  if (!findMusicEnabled) return;
 
-  discographyColumn.prepend(generateFindMusicBandLink(bandId));
+  const links = [labelFindMusicLink(), albumId && albumType ? artistFindMusicLink(albumId, albumType) : null].filter(
+    (link): link is FindMusicLink => link !== null
+  );
 
-  log.info('Added FindMusic.club band link');
+  setFindMusicLinks(links);
 }
 
 export function generatePreview(id: string, idType: string): HTMLDivElement {

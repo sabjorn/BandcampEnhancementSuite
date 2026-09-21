@@ -2147,21 +2147,36 @@ body.bes-drawer-expanded #pgBd {
   );
 }
 
-a.bes-findmusic-band-link {
-  display: inline-block;
-  box-sizing: border-box;
-  margin: 0 0 12px 0;
-  padding: 8px 14px;
-  border-radius: 4px;
-  background: #1da0c3;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: center;
-  text-decoration: none;
-  cursor: pointer;
+.bes-findmusic-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
-a.bes-findmusic-band-link:hover {
-  background: #158ba8;
+a.bes-findmusic-link {
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #52525b;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+a.bes-findmusic-link svg {
+  display: block;
+}
+
+a.bes-findmusic-link:hover {
+  background: #f4f4f5;
+  color: #1da0c3;
 }

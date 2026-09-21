@@ -1,7 +1,7 @@
 import Logger from './logger';
 import { createPlayerDrawer, loadAlbumIntoDrawer } from './components/player';
 import { updateDiscographyOrder } from './discography';
-import { extractBandId } from './utilities';
+import { checkFindMusicPermissions, extractBandId } from './utilities';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -109,7 +109,7 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
   log.info('Rendering BES...');
   renderDom(port, previewState, enableFetchCaching);
 
-  if (document.querySelector('ol.music-grid')) addFindMusicBandLink();
+  if (document.querySelector('ol.music-grid')) await addFindMusicBandLink();
 
   updateDiscographyOrder();
 
@@ -133,11 +133,16 @@ function generateFindMusicBandLink(bandId: number): HTMLAnchorElement {
   return link;
 }
 
-function addFindMusicBandLink(): void {
+async function addFindMusicBandLink(): Promise<void> {
   if (document.querySelector('.bes-findmusic-band-link')) return;
 
   const bioContainer = document.querySelector('#bio-container');
   if (!bioContainer) return;
+
+  if (!(await checkFindMusicPermissions())) {
+    log.info('FindMusic.club permissions not granted, skipping FindMusic.club band link');
+    return;
+  }
 
   const bandId = extractBandId();
   if (!bandId) {
@@ -146,9 +151,11 @@ function addFindMusicBandLink(): void {
   }
 
   const link = generateFindMusicBandLink(bandId);
+  const followActions = bioContainer.querySelector('.following-actions-wrapper');
   const bandName = bioContainer.querySelector('#band-name-location');
 
-  if (bandName) bandName.after(link);
+  if (followActions) followActions.after(link);
+  else if (bandName) bandName.after(link);
   else bioContainer.prepend(link);
 
   log.info('Added FindMusic.club band link');

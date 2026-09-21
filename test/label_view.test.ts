@@ -159,16 +159,25 @@ describe('initLabelView - FindMusic.club band link', () => {
     <ol class="music-grid"></ol>
     <div id="bio-container">
       <p id="band-name-location"><span class="title">Test Label</span></p>
+      <div class="following-actions-wrapper">
+        <div id="following-actions"><button type="button" class="follow-unfollow">Follow</button></div>
+      </div>
     </div>
     <script type="text/javascript" data-band="{&quot;id&quot;:857243381,&quot;name&quot;:&quot;Test Label&quot;}"></script>
   `;
 
+  const grantFindMusicPermissions = (granted: boolean) => {
+    (globalThis.chrome.runtime as any).sendMessage = vi.fn().mockResolvedValue({ granted });
+  };
+
   beforeEach(() => {
     process.env.FINDMUSIC_BASE_URL = 'https://findmusic.club';
+    grantFindMusicPermissions(true);
   });
 
   afterEach(() => {
     cleanupTestNodes();
+    delete (globalThis.chrome.runtime as any).sendMessage;
   });
 
   it('should add a link to the band page on FindMusic.club', async () => {
@@ -180,6 +189,21 @@ describe('initLabelView - FindMusic.club band link', () => {
     expect(link).toBeTruthy();
     expect(link.href).toBe('https://findmusic.club/artist/857243381');
     expect(link.target).toBe('_blank');
+    expect(link.previousElementSibling?.className).toBe('following-actions-wrapper');
+  });
+
+  it('should fall back to the band name when there is no follow button', async () => {
+    createDomNodes(`
+      <ol class="music-grid"></ol>
+      <div id="bio-container">
+        <p id="band-name-location"><span class="title">Test Label</span></p>
+      </div>
+      <script type="text/javascript" data-band="{&quot;id&quot;:857243381}"></script>
+    `);
+
+    await initLabelView(mockPort as any);
+
+    const link = document.querySelector('a.bes-findmusic-band-link') as HTMLAnchorElement;
     expect(link.previousElementSibling?.id).toBe('band-name-location');
   });
 
@@ -221,6 +245,24 @@ describe('initLabelView - FindMusic.club band link', () => {
       <ol class="music-grid"></ol>
       <div id="bio-container"></div>
     `);
+
+    await initLabelView(mockPort as any);
+
+    expect(document.querySelector('a.bes-findmusic-band-link')).toBeNull();
+  });
+
+  it('should not add the link when FindMusic.club permissions are not granted', async () => {
+    grantFindMusicPermissions(false);
+    createDomNodes(discographyPage);
+
+    await initLabelView(mockPort as any);
+
+    expect(document.querySelector('a.bes-findmusic-band-link')).toBeNull();
+  });
+
+  it('should not add the link when the permission check fails', async () => {
+    (globalThis.chrome.runtime as any).sendMessage = vi.fn().mockRejectedValue(new Error('no receiver'));
+    createDomNodes(discographyPage);
 
     await initLabelView(mockPort as any);
 

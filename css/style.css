@@ -2146,3 +2146,14 @@ body.bes-drawer-expanded #pgBd {
     #ececef 100%
   );
 }
+
+a.bes-findmusic-band-link {
+  display: block;
+  box-sizing: border-box;
+  margin: 8px 0;
+  padding: 6px 12px;
+  border-radius: 4px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}

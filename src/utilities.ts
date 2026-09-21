@@ -60,6 +60,19 @@ export function extractBandFollowInfo(): BandFollowInfo {
   }
 }
 
+export function extractBandId(): number | null {
+  const element: Element | null = document.querySelector('script[data-band]');
+  const data: string | null = element?.getAttribute('data-band') ?? null;
+  if (!data) return null;
+
+  try {
+    const { id }: { id?: number } = JSON.parse(data);
+    return typeof id === 'number' ? id : null;
+  } catch {
+    return null;
+  }
+}
+
 interface FanTralbumData {
   is_purchased: boolean;
   part_of_purchased_album: boolean;

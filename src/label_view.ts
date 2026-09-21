@@ -1,6 +1,7 @@
 import Logger from './logger';
 import { createPlayerDrawer, loadAlbumIntoDrawer } from './components/player';
 import { updateDiscographyOrder } from './discography';
+import { extractBandId } from './utilities';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -108,6 +109,8 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
   log.info('Rendering BES...');
   renderDom(port, previewState, enableFetchCaching);
 
+  if (document.querySelector('ol.music-grid')) addFindMusicBandLink();
+
   updateDiscographyOrder();
 
   const observer = new MutationObserver(() => {
@@ -116,6 +119,39 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   const discographyContainer = document.querySelector('ol.music-grid') || document.body;
   observer.observe(discographyContainer, { childList: true, subtree: true });
+}
+
+export function generateFindMusicBandLink(bandId: number): HTMLAnchorElement {
+  const link = document.createElement('a');
+  link.setAttribute('class', 'follow-unfollow bes-findmusic-band-link');
+  link.setAttribute('title', 'open this artist/label on FindMusic.club');
+  link.setAttribute('target', '_blank');
+  link.setAttribute('rel', 'noopener noreferrer');
+  link.href = `${process.env.FINDMUSIC_BASE_URL}/artist/${bandId}`;
+  link.append('Open in FindMusic.club');
+
+  return link;
+}
+
+export function addFindMusicBandLink(): void {
+  if (document.querySelector('.bes-findmusic-band-link')) return;
+
+  const bioContainer = document.querySelector('#bio-container');
+  if (!bioContainer) return;
+
+  const bandId = extractBandId();
+  if (!bandId) {
+    log.info('No band id found, skipping FindMusic.club band link');
+    return;
+  }
+
+  const link = generateFindMusicBandLink(bandId);
+  const bandName = bioContainer.querySelector('#band-name-location');
+
+  if (bandName) bandName.after(link);
+  else bioContainer.prepend(link);
+
+  log.info('Added FindMusic.club band link');
 }
 
 export function generatePreview(id: string, idType: string): HTMLDivElement {

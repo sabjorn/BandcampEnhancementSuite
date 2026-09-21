@@ -83,11 +83,9 @@ export function fillFrame(
 
   if (port) setPreviewed(target.id, port);
 
-  updateFindMusicLinks(target.id, target.idType);
-
-  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, port).catch(error =>
-    log.error(`Failed to load album into drawer: ${error}`)
-  );
+  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, port)
+    .then(() => updateFindMusicLinks(target.id, target.idType))
+    .catch(error => log.error(`Failed to load album into drawer: ${error}`));
 }
 
 export function attachPreviewListeners(

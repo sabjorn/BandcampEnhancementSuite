@@ -2152,6 +2152,12 @@ body.bes-drawer-expanded #pgBd {
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
+  margin-right: 4px;
+}
+
+.bes-findmusic-links-standalone {
+  justify-content: flex-end;
+  margin: 0 16px 12px 20px;
 }
 
 a.bes-findmusic-link {

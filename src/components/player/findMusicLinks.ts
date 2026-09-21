@@ -28,11 +28,20 @@ function linkElement({ kind, bandId, name }: FindMusicLink): HTMLAnchorElement {
 }
 
 export function setFindMusicLinks(links: FindMusicLink[]): void {
-  const headerActions = document.querySelector<HTMLElement>('.bes-player-drawer-header-actions');
-  if (!headerActions) return;
-
-  headerActions.querySelector(`.${CONTAINER_CLASS}`)?.remove();
+  document.querySelector(`.${CONTAINER_CLASS}`)?.remove();
   if (links.length === 0) return;
 
-  headerActions.prepend(element('div', { className: CONTAINER_CLASS, children: links.map(linkElement) }));
+  const container = element('div', { className: CONTAINER_CLASS, children: links.map(linkElement) });
+
+  const buyRow = document.querySelector<HTMLElement>('.bes-player-drawer .bes-album-buy');
+  if (buyRow) {
+    buyRow.prepend(container);
+    return;
+  }
+
+  const tracklist = document.querySelector<HTMLElement>('.bes-player-drawer-tracklist');
+  if (!tracklist) return;
+
+  container.classList.add('bes-findmusic-links-standalone');
+  tracklist.prepend(container);
 }

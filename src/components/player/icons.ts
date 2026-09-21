@@ -46,10 +46,7 @@ export function heartIcon(size: number): string {
 }
 
 export function labelIcon(size: number): string {
-  return strokedIcon(
-    size,
-    `<path d="M4 20V9l8-5 8 5v11"></path><path d="M9 20v-6h6v6"></path><line x1="3" y1="20" x2="21" y2="20"></line>`
-  );
+  return strokedIcon(size, `<circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="2.5"></circle>`);
 }
 
 export function artistIcon(size: number): string {

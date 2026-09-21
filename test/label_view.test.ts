@@ -179,23 +179,51 @@ describe('FindMusic.club links in the player drawer', () => {
     (globalThis.chrome.runtime as any).sendMessage = vi.fn().mockResolvedValue({ granted });
   };
 
+  const respondWithAlbum = (isPurchasable: boolean) => {
+    globalThis.fetch = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            id: 123,
+            type: 'a',
+            title: 'An Album',
+            tralbum_artist: 'Someone',
+            currency: 'USD',
+            price: 7,
+            is_purchasable: isPurchasable,
+            tracks: []
+          }),
+          { status: 200, headers: { 'Content-type': 'application/json' } }
+        )
+      )
+    ) as any;
+  };
+
   const clickPreviewFor = (id: string) => {
     const button = document.querySelector(`li[data-item-id="album-${id}"] button.open-iframe`) as HTMLElement;
     button.click();
   };
 
   const links = () =>
-    Array.from(document.querySelectorAll('.bes-player-drawer-header-actions a.bes-findmusic-link')).map(link => ({
+    Array.from(document.querySelectorAll('.bes-player-drawer a.bes-findmusic-link')).map(link => ({
       kind: link.className.includes('bes-findmusic-link-label') ? 'label' : 'artist',
       href: (link as HTMLAnchorElement).href,
       title: link.getAttribute('title')
     }));
+
+  const expectNoLinks = async () => {
+    await vi.waitFor(() =>
+      expect(document.querySelector('.bes-player-drawer-tracklist')?.children.length).toBeTruthy()
+    );
+    expect(links()).toEqual([]);
+  };
 
   beforeEach(async () => {
     vi.resetModules();
     document.querySelectorAll('.bes-player-drawer').forEach(d => d.remove());
     process.env.FINDMUSIC_BASE_URL = 'https://findmusic.club';
     grantFindMusicPermissions(true);
+    respondWithAlbum(true);
     ({ initLabelView: init } = await import('../src/label_view'));
   });
 
@@ -211,13 +239,15 @@ describe('FindMusic.club links in the player drawer', () => {
 
     clickPreviewFor('123');
 
-    expect(links()).toEqual([
-      {
-        kind: 'label',
-        href: 'https://findmusic.club/artist/857243381',
-        title: 'Open Test Label on FindMusic.club'
-      }
-    ]);
+    await vi.waitFor(() =>
+      expect(links()).toEqual([
+        {
+          kind: 'label',
+          href: 'https://findmusic.club/artist/857243381',
+          title: 'Open Test Label on FindMusic.club'
+        }
+      ])
+    );
   });
 
   it('should add an artist link alongside the label link for another band', async () => {
@@ -226,18 +256,46 @@ describe('FindMusic.club links in the player drawer', () => {
 
     clickPreviewFor('456');
 
-    expect(links()).toEqual([
-      {
-        kind: 'label',
-        href: 'https://findmusic.club/artist/857243381',
-        title: 'Open Test Label on FindMusic.club'
-      },
-      {
-        kind: 'artist',
-        href: 'https://findmusic.club/artist/112233',
-        title: 'Open Guest Artist on FindMusic.club'
-      }
-    ]);
+    await vi.waitFor(() =>
+      expect(links()).toEqual([
+        {
+          kind: 'label',
+          href: 'https://findmusic.club/artist/857243381',
+          title: 'Open Test Label on FindMusic.club'
+        },
+        {
+          kind: 'artist',
+          href: 'https://findmusic.club/artist/112233',
+          title: 'Open Guest Artist on FindMusic.club'
+        }
+      ])
+    );
+  });
+
+  it('should place the links left of the buy album button', async () => {
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('123');
+
+    await vi.waitFor(() => expect(links()).toHaveLength(1));
+
+    const buyRow = document.querySelector('.bes-player-drawer .bes-album-buy') as HTMLElement;
+    expect(buyRow.firstElementChild?.className).toBe('bes-findmusic-links');
+    expect(buyRow.querySelector('.bes-album-buy-label')).toBeTruthy();
+  });
+
+  it('should fall back to the top of the tracklist when the album is not purchasable', async () => {
+    respondWithAlbum(false);
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('123');
+
+    await vi.waitFor(() => expect(links()).toHaveLength(1));
+
+    const tracklist = document.querySelector('.bes-player-drawer-tracklist') as HTMLElement;
+    expect(tracklist.firstElementChild?.classList.contains('bes-findmusic-links-standalone')).toBe(true);
   });
 
   it('should swap the artist link when a different release is previewed', async () => {
@@ -245,9 +303,10 @@ describe('FindMusic.club links in the player drawer', () => {
     await init(mockPort as any);
 
     clickPreviewFor('456');
-    clickPreviewFor('123');
+    await vi.waitFor(() => expect(links()).toHaveLength(2));
 
-    expect(links().map(link => link.kind)).toEqual(['label']);
+    clickPreviewFor('123');
+    await vi.waitFor(() => expect(links().map(link => link.kind)).toEqual(['label']));
   });
 
   it('should not add links when FindMusic.club permissions are not granted', async () => {
@@ -257,7 +316,7 @@ describe('FindMusic.club links in the player drawer', () => {
 
     clickPreviewFor('456');
 
-    expect(links()).toEqual([]);
+    await expectNoLinks();
   });
 
   it('should not add links when the permission check fails', async () => {
@@ -267,7 +326,7 @@ describe('FindMusic.club links in the player drawer', () => {
 
     clickPreviewFor('456');
 
-    expect(links()).toEqual([]);
+    await expectNoLinks();
   });
 
   it('should still add the artist link when the page has no band id', async () => {
@@ -283,12 +342,14 @@ describe('FindMusic.club links in the player drawer', () => {
 
     clickPreviewFor('123');
 
-    expect(links()).toEqual([
-      {
-        kind: 'artist',
-        href: 'https://findmusic.club/artist/112233',
-        title: 'Open this artist on FindMusic.club'
-      }
-    ]);
+    await vi.waitFor(() =>
+      expect(links()).toEqual([
+        {
+          kind: 'artist',
+          href: 'https://findmusic.club/artist/112233',
+          title: 'Open this artist on FindMusic.club'
+        }
+      ])
+    );
   });
 });

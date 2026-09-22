@@ -387,27 +387,25 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   log.info('BES drawer and button added to page');
 };
 
-interface BesConfig {
+interface ConfigPayload {
+  keyboardSettings?: KeyboardSettings;
+  enableFetchCaching?: boolean;
+}
+
+interface ResolvedConfig {
   keyboardSettings?: KeyboardSettings;
   enableFetchCaching: boolean;
 }
 
-interface ConfigMessage {
-  config?: {
-    keyboardSettings?: KeyboardSettings;
-    enableFetchCaching?: boolean;
-  };
-}
-
-const requestConfig = (port: chrome.runtime.Port): Promise<BesConfig> =>
+const requestConfig = (port: chrome.runtime.Port): Promise<ResolvedConfig> =>
   new Promise(resolve => {
-    const finish = (config: BesConfig) => {
+    const finish = (config: ResolvedConfig) => {
       clearTimeout(timeout);
       port.onMessage.removeListener(listener);
       resolve(config);
     };
 
-    const listener = (msg: ConfigMessage) => {
+    const listener = (msg: { config?: ConfigPayload }) => {
       if (!msg.config?.keyboardSettings) return;
 
       finish({
@@ -446,7 +444,7 @@ const documentEnd = async (): Promise<void> => {
 
     initLabelView(config_port, enableFetchCaching);
 
-    config_port.onMessage.addListener((msg: ConfigMessage) => {
+    config_port.onMessage.addListener((msg: { config?: ConfigPayload }) => {
       if (msg.config?.keyboardSettings) {
         log.info('Keyboard settings changed, updating handlers');
         updateKeyboardSettings(msg.config.keyboardSettings);

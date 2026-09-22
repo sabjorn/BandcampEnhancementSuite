@@ -7,7 +7,7 @@ const BASE_URL = 'http://bandcamp.com';
 const BES_SUPPORT_TRALBUM_ID = 1609998585;
 const BES_SUPPORT_TRALBUM_TYPE = 'a';
 const SUPPORT_TRALBUM_KEY = 'besSupportTralbum';
-const SUPPORT_TRALBUM_TTL_MS = 3600 * 1000;
+const SUPPORT_TRALBUM_TTL_ONE_HOUR = 3600 * 1000;
 
 const log = new Logger();
 
@@ -343,7 +343,7 @@ export async function getSupportTralbumDetails(): Promise<TralbumDetailsResponse
   log.info('Fetching BES support tralbum details');
   const details = await getTralbumDetails(BES_SUPPORT_TRALBUM_ID, BES_SUPPORT_TRALBUM_TYPE, BASE_URL, fetchFn);
 
-  const entry: CachedSupportTralbum = { details, expiresAt: Date.now() + SUPPORT_TRALBUM_TTL_MS };
+  const entry: CachedSupportTralbum = { details, expiresAt: Date.now() + SUPPORT_TRALBUM_TTL_ONE_HOUR };
   await db.put('config', entry, SUPPORT_TRALBUM_KEY);
 
   return details;

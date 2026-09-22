@@ -134,21 +134,20 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
   if (!findMusicEnabled) log.info('FindMusic.club permissions not granted, skipping FindMusic.club links');
 }
 
-function labelFindMusicLink(): FindMusicLink | null {
-  const bandId = extractBandId();
-  if (!bandId) return null;
+function labelFindMusicLink(pageBandId: number | null): FindMusicLink | null {
+  if (!pageBandId) return null;
 
   const name = document.querySelector('#band-name-location .title')?.textContent?.trim();
-  return { kind: 'label', bandId, name };
+  return { kind: 'label', bandId: pageBandId, name };
 }
 
-function artistFindMusicLink(albumId: string, albumType: string): FindMusicLink | null {
+function artistFindMusicLink(pageBandId: number | null, albumId: string, albumType: string): FindMusicLink | null {
   const item = Array.from(document.querySelectorAll<HTMLElement>('li.music-grid-item')).find(
     candidate => candidate.dataset.itemId === `${albumType}-${albumId}` || candidate.dataset.tralbumid === albumId
   );
 
   const bandId = Number(item?.dataset.bandId);
-  if (!bandId || bandId === extractBandId()) return null;
+  if (!bandId || bandId === pageBandId) return null;
 
   const name = item?.querySelector('.artist-override')?.textContent?.trim();
   return { kind: 'artist', bandId, name };
@@ -157,9 +156,11 @@ function artistFindMusicLink(albumId: string, albumType: string): FindMusicLink 
 function updateFindMusicLinks(albumId?: string, albumType?: string): void {
   if (!findMusicEnabled) return;
 
-  const links = [labelFindMusicLink(), albumId && albumType ? artistFindMusicLink(albumId, albumType) : null].filter(
-    (link): link is FindMusicLink => link !== null
-  );
+  const pageBandId = extractBandId();
+  const links = [
+    labelFindMusicLink(pageBandId),
+    albumId && albumType ? artistFindMusicLink(pageBandId, albumId, albumType) : null
+  ].filter((link): link is FindMusicLink => link !== null);
 
   setFindMusicLinks(links);
 }

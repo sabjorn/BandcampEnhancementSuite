@@ -35,6 +35,7 @@ const log = new Logger();
 
 let drawerController: ReturnType<typeof createPlayerDrawer> | null = null;
 let findMusicEnabled = false;
+let currentPreview: PreviewTarget | null = null;
 
 interface PreviewTarget {
   id: string;
@@ -83,9 +84,16 @@ export function fillFrame(
 
   if (port) setPreviewed(target.id, port);
 
+  currentPreview = target;
+
+  const renderLinksForCurrentPreview = () => updateFindMusicLinks(currentPreview?.id, currentPreview?.idType);
+
   loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, port)
-    .then(() => updateFindMusicLinks(target.id, target.idType))
-    .catch(error => log.error(`Failed to load album into drawer: ${error}`));
+    .then(renderLinksForCurrentPreview)
+    .catch(error => {
+      log.error(`Failed to load album into drawer: ${error}`);
+      renderLinksForCurrentPreview();
+    });
 }
 
 export function attachPreviewListeners(

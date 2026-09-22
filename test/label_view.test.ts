@@ -328,6 +328,58 @@ describe('FindMusic.club links in the player drawer', () => {
     await vi.waitFor(() => expect(links().map(link => link.kind)).toEqual(['label']));
   });
 
+  it('should ignore a slow load that resolves after a newer preview', async () => {
+    const resolvers: Array<() => void> = [];
+    const album = (isPurchasable: boolean, id: number) =>
+      new Response(
+        JSON.stringify({
+          id,
+          type: 'a',
+          title: 'An Album',
+          tralbum_artist: 'Someone',
+          currency: 'USD',
+          price: 7,
+          is_purchasable: isPurchasable,
+          tracks: []
+        }),
+        { status: 200, headers: { 'Content-type': 'application/json' } }
+      );
+
+    globalThis.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolvers.push(() => resolve(album(true, 1)));
+        })
+    ) as any;
+
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+    clickPreviewFor('123');
+
+    // the first (guest artist) request resolves last
+    resolvers[1]();
+    await vi.waitFor(() => expect(links()).toHaveLength(1));
+    resolvers[0]();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(links().map(link => link.kind)).toEqual(['label']);
+  });
+
+  it("should keep the previewed album's links when the load fails", async () => {
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+    await vi.waitFor(() => expect(links()).toHaveLength(2));
+
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('network')) as any;
+    clickPreviewFor('123');
+
+    await vi.waitFor(() => expect(links().map(link => link.kind)).toEqual(['label']));
+  });
+
   it('should not add links when FindMusic.club permissions are not granted', async () => {
     grantFindMusicPermissions(false);
     createDomNodes(discographyPage);

@@ -15,11 +15,16 @@ vi.mock('../src/logger', () => {
   };
 });
 
-vi.mock('../src/utilities', () => ({
-  downloadFile: vi.fn(),
-  dateString: vi.fn(() => '2023-01-01'),
-  createFetchFunction: vi.fn(() => globalThis.fetch)
-}));
+vi.mock('../src/utilities', async () => {
+  const actual = await vi.importActual<typeof import('../src/utilities')>('../src/utilities');
+
+  return {
+    checkFindMusicPermissions: actual.checkFindMusicPermissions,
+    downloadFile: vi.fn(),
+    dateString: vi.fn(() => '2023-01-01'),
+    createFetchFunction: vi.fn(() => globalThis.fetch)
+  };
+});
 
 vi.mock('../src/components/notifications', () => ({
   showErrorMessage: vi.fn(),

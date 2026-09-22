@@ -1,5 +1,5 @@
 import Logger from '../logger';
-import { downloadFile, dateString } from '../utilities';
+import { checkFindMusicPermissions, downloadFile, dateString } from '../utilities';
 import {
   showErrorMessage,
   showSuccessMessage,
@@ -115,11 +115,7 @@ export function createStatusElement(): HTMLElement | undefined {
 
 async function triggerFindMusicCollectionUpdate(): Promise<void> {
   try {
-    const permissionResponse = await chrome.runtime.sendMessage({
-      contentScriptQuery: 'checkFindMusicPermissions'
-    });
-
-    if (!permissionResponse.granted) {
+    if (!(await checkFindMusicPermissions())) {
       log.info('FindMusic.club permissions not granted, skipping collection update');
       return;
     }

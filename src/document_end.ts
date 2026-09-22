@@ -9,7 +9,7 @@ import { initHideUnhide } from './pages/hide_unhide_collection';
 import { initFeed } from './pages/feed';
 import { createKeyboardSettingsSection } from './components/keyboardSettings';
 import { KeyboardSettings } from './types/keyboard';
-import { isBandcampLoggedIn } from './utilities';
+import { checkFindMusicPermissions, isBandcampLoggedIn } from './utilities';
 
 const log = createLogger();
 
@@ -287,25 +287,14 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
     findMusicButton.disabled = !isBandcampLoggedIn();
     findMusicButtonWrapper.classList.toggle('disabled', findMusicButton.disabled);
 
-    try {
-      const response = await chrome.runtime.sendMessage({
-        contentScriptQuery: 'checkFindMusicPermissions'
-      });
-      log.info(`Permission check response: ${JSON.stringify(response)}`);
-      findMusicButton.textContent = response?.granted
-        ? 'Log in to FindMusic.club'
-        : 'Enable FindMusic.club Integration';
+    const granted = await checkFindMusicPermissions();
+    log.info(`Permission check granted: ${granted}`);
 
-      metadataCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
-      fetchCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
-      playedCachingSettingRow.style.display = response?.granted ? 'flex' : 'none';
-    } catch (error) {
-      log.error(`Failed to check permissions: ${error}`);
-      findMusicButton.textContent = 'Enable FindMusic.club Integration';
-      metadataCachingSettingRow.style.display = 'none';
-      fetchCachingSettingRow.style.display = 'none';
-      playedCachingSettingRow.style.display = 'none';
-    }
+    findMusicButton.textContent = granted ? 'Log in to FindMusic.club' : 'Enable FindMusic.club Integration';
+
+    metadataCachingSettingRow.style.display = granted ? 'flex' : 'none';
+    fetchCachingSettingRow.style.display = granted ? 'flex' : 'none';
+    playedCachingSettingRow.style.display = granted ? 'flex' : 'none';
   };
 
   updateButtonText();

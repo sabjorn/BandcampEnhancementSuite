@@ -1,4 +1,5 @@
 import Logger from './logger';
+import { checkFindMusicPermissions } from './utilities';
 
 const log = new Logger();
 const FINDMUSIC_BASE_URL = process.env.FINDMUSIC_BASE_URL as string;
@@ -27,11 +28,7 @@ async function performLogin() {
   }
 
   try {
-    const response = await chrome.runtime.sendMessage({
-      contentScriptQuery: 'checkFindMusicPermissions'
-    });
-
-    if (!response.granted) {
+    if (!(await checkFindMusicPermissions())) {
       log.info('FindMusic.club permissions not granted');
       if (buttonText) {
         buttonText.textContent = '🔒 Permission Required';
@@ -86,17 +83,8 @@ async function injectLoginButton() {
     return;
   }
 
-  try {
-    const response = await chrome.runtime.sendMessage({
-      contentScriptQuery: 'checkFindMusicPermissions'
-    });
-
-    if (!response.granted) {
-      log.info('FindMusic.club permissions not granted, skipping login button injection');
-      return;
-    }
-  } catch (error) {
-    log.error(`Error checking FindMusic permissions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  if (!(await checkFindMusicPermissions())) {
+    log.info('FindMusic.club permissions not granted, skipping login button injection');
     return;
   }
 

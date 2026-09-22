@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup';
 export default defineConfig(options => ({
   entry: {
     document_start: './src/document_start.ts',
-    document_end: './src/document_end.ts',
+    document_idle: './src/document_idle.ts',
     background: './src/background.ts',
     findmusic_permission: './src/findmusic_permission.ts',
     findmusic_autologin: './src/findmusic_autologin.ts'

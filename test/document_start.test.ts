@@ -46,7 +46,7 @@ describe('document_start service worker warm-up', () => {
     mockSendMessage.mockClear();
   });
 
-  it('pings the service worker so it boots ahead of document_end', async () => {
+  it('pings the service worker so it boots ahead of document_idle', async () => {
     setLocation('');
 
     await runDocumentStart();

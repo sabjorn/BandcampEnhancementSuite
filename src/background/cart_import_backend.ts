@@ -354,17 +354,16 @@ export function processRequest(
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: any) => void
 ): boolean {
-  if (request.contentScriptQuery === 'getSupportTralbumDetails') {
-    getSupportTralbumDetails()
-      .then(sendResponse)
-      .catch(error => {
-        log.warn(`Unexpected error in getSupportTralbumDetails: ${error.message}`);
-        sendResponse(null);
-      });
-    return true;
-  }
+  if (request.contentScriptQuery !== 'getSupportTralbumDetails') return false;
 
-  return false;
+  getSupportTralbumDetails()
+    .then(sendResponse)
+    .catch(error => {
+      log.warn(`Unexpected error in getSupportTralbumDetails: ${error.message}`);
+      sendResponse(null);
+    });
+
+  return true;
 }
 
 export async function initCartImportBackend(): Promise<void> {

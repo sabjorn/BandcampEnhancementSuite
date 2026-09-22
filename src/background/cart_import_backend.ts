@@ -7,7 +7,7 @@ const BASE_URL = 'http://bandcamp.com';
 const BES_SUPPORT_TRALBUM_ID = 1609998585;
 const BES_SUPPORT_TRALBUM_TYPE = 'a';
 const SUPPORT_TRALBUM_KEY = 'besSupportTralbum';
-const SUPPORT_TRALBUM_TTL_MS = 86400 * 1000;
+const SUPPORT_TRALBUM_TTL_MS = 3600 * 1000;
 
 const log = new Logger();
 

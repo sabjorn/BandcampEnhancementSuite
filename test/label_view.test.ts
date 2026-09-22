@@ -179,24 +179,23 @@ describe('FindMusic.club links in the player drawer', () => {
     (globalThis.chrome.runtime as any).sendMessage = vi.fn().mockResolvedValue({ granted });
   };
 
+  const album = (isPurchasable: boolean, id: number = 123) =>
+    new Response(
+      JSON.stringify({
+        id,
+        type: 'a',
+        title: 'An Album',
+        tralbum_artist: 'Someone',
+        currency: 'USD',
+        price: 7,
+        is_purchasable: isPurchasable,
+        tracks: []
+      }),
+      { status: 200, headers: { 'Content-type': 'application/json' } }
+    );
+
   const respondWithAlbum = (isPurchasable: boolean) => {
-    globalThis.fetch = vi.fn().mockImplementation(() =>
-      Promise.resolve(
-        new Response(
-          JSON.stringify({
-            id: 123,
-            type: 'a',
-            title: 'An Album',
-            tralbum_artist: 'Someone',
-            currency: 'USD',
-            price: 7,
-            is_purchasable: isPurchasable,
-            tracks: []
-          }),
-          { status: 200, headers: { 'Content-type': 'application/json' } }
-        )
-      )
-    ) as any;
+    globalThis.fetch = vi.fn().mockImplementation(() => Promise.resolve(album(isPurchasable))) as any;
   };
 
   const clickPreviewFor = (id: string) => {
@@ -330,20 +329,6 @@ describe('FindMusic.club links in the player drawer', () => {
 
   it('should ignore a slow load that resolves after a newer preview', async () => {
     const resolvers: Array<() => void> = [];
-    const album = (isPurchasable: boolean, id: number) =>
-      new Response(
-        JSON.stringify({
-          id,
-          type: 'a',
-          title: 'An Album',
-          tralbum_artist: 'Someone',
-          currency: 'USD',
-          price: 7,
-          is_purchasable: isPurchasable,
-          tracks: []
-        }),
-        { status: 200, headers: { 'Content-type': 'application/json' } }
-      );
 
     globalThis.fetch = vi.fn().mockImplementation(
       () =>
@@ -374,7 +359,11 @@ describe('FindMusic.club links in the player drawer', () => {
     clickPreviewFor('456');
     await vi.waitFor(() => expect(links()).toHaveLength(2));
 
-    globalThis.fetch = vi.fn().mockRejectedValue(new Error('network')) as any;
+    globalThis.fetch = vi
+      .fn()
+      .mockImplementation((url: string) =>
+        String(url).includes('tralbum_details') ? Promise.reject(new Error('network')) : Promise.resolve(album(true))
+      ) as any;
     clickPreviewFor('123');
 
     await vi.waitFor(() => expect(links().map(link => link.kind)).toEqual(['label']));

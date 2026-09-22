@@ -465,7 +465,7 @@ const documentIdle = async (): Promise<void> => {
     }
   }
 
-  const checkIsCollectionPage: Element | null = document.querySelector('ol.collection-grid.editable.ui-sortable');
+  const checkIsCollectionPage: Element | null = document.querySelector('ol.collection-grid.editable');
   if (checkIsCollectionPage) {
     await initHideUnhide(config_port);
   }

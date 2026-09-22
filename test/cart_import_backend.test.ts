@@ -1,10 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { connectionListenerCallback, portListenerCallback } from '../src/background/cart_import_backend';
+import {
+  connectionListenerCallback,
+  portListenerCallback,
+  getSupportTralbumDetails
+} from '../src/background/cart_import_backend';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
     info = vi.fn();
     error = vi.fn();
+    warn = vi.fn();
   }
 }));
 
@@ -24,6 +29,7 @@ vi.mock('../src/utilities', () => ({
 }));
 
 import { getTralbumDetails, getTralbumDetailsFromPage } from '../src/bclient';
+import { getDB } from '../src/utilities';
 
 describe('cart_import_backend', () => {
   let mockPort: chrome.runtime.Port;
@@ -541,5 +547,61 @@ describe('cart_import_backend', () => {
         });
       });
     });
+  });
+});
+
+describe('getSupportTralbumDetails', () => {
+  const details = {
+    id: 1609998585,
+    type: 'a',
+    title: 'Vielen Dank',
+    price: 3.0,
+    currency: 'CAD',
+    is_purchasable: true
+  };
+
+  const dbWithCache = (cached: any) => ({
+    get: vi.fn((_store: string, key: string) =>
+      Promise.resolve(key === 'besSupportTralbum' ? cached : { enableFetchCaching: false })
+    ),
+    put: vi.fn(() => Promise.resolve())
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns the cached details without hitting the network', async () => {
+    const db = dbWithCache({ details, expiresAt: Date.now() + 60_000 });
+    vi.mocked(getDB).mockResolvedValue(db as any);
+
+    const result = await getSupportTralbumDetails();
+
+    expect(result).toEqual(details);
+    expect(getTralbumDetails).not.toHaveBeenCalled();
+    expect(db.put).not.toHaveBeenCalled();
+  });
+
+  it('fetches and caches when nothing is stored', async () => {
+    const db = dbWithCache(undefined);
+    vi.mocked(getDB).mockResolvedValue(db as any);
+    vi.mocked(getTralbumDetails).mockResolvedValue(details as any);
+
+    const result = await getSupportTralbumDetails();
+
+    expect(result).toEqual(details);
+    expect(getTralbumDetails).toHaveBeenCalledWith(1609998585, 'a', 'http://bandcamp.com', expect.anything());
+    expect(db.put).toHaveBeenCalledWith('config', expect.objectContaining({ details }), 'besSupportTralbum');
+  });
+
+  it('refetches once the cached entry has expired', async () => {
+    const db = dbWithCache({ details, expiresAt: Date.now() - 1 });
+    vi.mocked(getDB).mockResolvedValue(db as any);
+    vi.mocked(getTralbumDetails).mockResolvedValue(details as any);
+
+    await getSupportTralbumDetails();
+
+    expect(getTralbumDetails).toHaveBeenCalled();
+    expect(db.put).toHaveBeenCalled();
   });
 });

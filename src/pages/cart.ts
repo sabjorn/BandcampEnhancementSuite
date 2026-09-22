@@ -13,9 +13,6 @@ import {
 import { createShoppingCartItem } from '../components/shoppingCart';
 import { createAddToCartButton } from '../components/cartButton';
 
-const BES_SUPPORT_TRALBUM_ID = 1609998585;
-const BES_SUPPORT_TRALBUM_TYPE = 'a';
-
 const log = new Logger();
 
 interface CartData {
@@ -581,8 +578,11 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   }
 
   try {
-    const fetchFn = createFetchFunction(enableFetchCaching);
-    const tralbumDetails = await getTralbumDetails(BES_SUPPORT_TRALBUM_ID, BES_SUPPORT_TRALBUM_TYPE, null, fetchFn);
+    const tralbumDetails = await chrome.runtime.sendMessage({ contentScriptQuery: 'getSupportTralbumDetails' });
+    if (!tralbumDetails) {
+      log.error('Could not get BES support tralbum details. Skipping support button');
+      return;
+    }
 
     const { price, currency, id: tralbumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
 

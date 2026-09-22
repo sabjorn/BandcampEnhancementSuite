@@ -233,6 +233,25 @@ describe('FindMusic.club links in the player drawer', () => {
     delete (globalThis.chrome.runtime as any).sendMessage;
   });
 
+  it('should set up discography tracking before waiting on the permission check', async () => {
+    let resolvePermissions: (value: { granted: boolean }) => void = () => {};
+    (globalThis.chrome.runtime as any).sendMessage = vi.fn().mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolvePermissions = resolve;
+        })
+    );
+    createDomNodes(discographyPage);
+
+    const initialized = init(mockPort as any);
+
+    const { getDiscographyLength } = await import('../src/discography');
+    expect(getDiscographyLength()).toBe(2);
+
+    resolvePermissions({ granted: true });
+    await initialized;
+  });
+
   it('should add a label link when previewing a release by the page band', async () => {
     createDomNodes(discographyPage);
     await init(mockPort as any);

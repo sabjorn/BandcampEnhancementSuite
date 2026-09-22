@@ -111,11 +111,6 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
   log.info('Rendering BES...');
   renderDom(port, previewState, enableFetchCaching);
 
-  if (document.querySelector('ol.music-grid')) {
-    findMusicEnabled = await checkFindMusicPermissions();
-    if (!findMusicEnabled) log.info('FindMusic.club permissions not granted, skipping FindMusic.club links');
-  }
-
   updateDiscographyOrder();
 
   const observer = new MutationObserver(() => {
@@ -124,6 +119,11 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   const discographyContainer = document.querySelector('ol.music-grid') || document.body;
   observer.observe(discographyContainer, { childList: true, subtree: true });
+
+  if (!document.querySelector('ol.music-grid')) return;
+
+  findMusicEnabled = await checkFindMusicPermissions();
+  if (!findMusicEnabled) log.info('FindMusic.club permissions not granted, skipping FindMusic.club links');
 }
 
 function labelFindMusicLink(): FindMusicLink | null {

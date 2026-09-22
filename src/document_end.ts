@@ -13,6 +13,8 @@ import { isBandcampLoggedIn } from './utilities';
 
 const log = createLogger();
 
+const BANDCAMP_LOGIN_REQUIRED_MESSAGE = 'You must be signed in to Bandcamp';
+
 function createToggleSetting(id: string, labelText: string, visible: boolean = true, tooltipText?: string) {
   const row = document.createElement('div');
   row.className = 'bes-drawer-setting';

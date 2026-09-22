@@ -412,7 +412,7 @@ const requestConfig = (port: chrome.runtime.Port): Promise<BesConfig> =>
     }, 1000);
   });
 
-const documentIdle = async (): Promise<void> => {
+const documentEnd = async (): Promise<void> => {
   const checkIsDownloadPage: Element | null = document.querySelector('.download-item-container');
   if (checkIsDownloadPage) {
     initDownload();
@@ -422,7 +422,7 @@ const documentIdle = async (): Promise<void> => {
     try {
       return chrome.runtime.connect(null, { name: 'bes' });
     } catch (e: any) {
-      if (e.message?.includes('Error in invocation of runtime.connect in document_idle.js')) {
+      if (e.message?.includes('Error in invocation of runtime.connect in document_end.js')) {
         log.error(e);
       }
       throw e;
@@ -492,4 +492,4 @@ const documentIdle = async (): Promise<void> => {
   await Promise.all([labelViewReady, playerReady, cartReady]);
 };
 
-documentIdle();
+documentEnd();

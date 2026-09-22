@@ -32,9 +32,9 @@
     },
     {
       "matches": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*"],
-      "js": ["dist/document_idle.js"],
+      "js": ["dist/document_end.js"],
       "css": ["css/style.css"],
-      "run_at": "document_idle"
+      "run_at": "document_end"
     },
     {
       "matches": ["https://*.findmusic.club/*"],

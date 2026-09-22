@@ -28,7 +28,7 @@ function linkElement({ kind, bandId, name }: FindMusicLink): HTMLAnchorElement {
 }
 
 export function setFindMusicLinks(links: FindMusicLink[]): void {
-  document.querySelector(`.${CONTAINER_CLASS}`)?.remove();
+  document.querySelectorAll(`.${CONTAINER_CLASS}`).forEach(container => container.remove());
   if (links.length === 0) return;
 
   const container = element('div', { className: CONTAINER_CLASS, children: links.map(linkElement) });

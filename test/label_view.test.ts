@@ -207,7 +207,7 @@ describe('FindMusic.club links in the player drawer', () => {
     Array.from(document.querySelectorAll('.bes-player-drawer a.bes-findmusic-link')).map(link => ({
       kind: link.className.includes('bes-findmusic-link-label') ? 'label' : 'artist',
       href: (link as HTMLAnchorElement).href,
-      title: link.getAttribute('title')
+      label: link.getAttribute('aria-label')
     }));
 
   const expectNoLinks = async () => {
@@ -227,7 +227,7 @@ describe('FindMusic.club links in the player drawer', () => {
   });
 
   afterEach(() => {
-    document.querySelectorAll('.bes-player-drawer').forEach(d => d.remove());
+    document.querySelectorAll('.bes-player-drawer, .bes-findmusic-tooltip').forEach(node => node.remove());
     cleanupTestNodes();
     delete (globalThis.chrome.runtime as any).sendMessage;
   });
@@ -262,7 +262,7 @@ describe('FindMusic.club links in the player drawer', () => {
         {
           kind: 'label',
           href: 'https://findmusic.club/artist/857243381',
-          title: 'Open Test Label on FindMusic.club'
+          label: 'Open Test Label on FindMusic.club'
         }
       ])
     );
@@ -279,15 +279,56 @@ describe('FindMusic.club links in the player drawer', () => {
         {
           kind: 'label',
           href: 'https://findmusic.club/artist/857243381',
-          title: 'Open Test Label on FindMusic.club'
+          label: 'Open Test Label on FindMusic.club'
         },
         {
           kind: 'artist',
           href: 'https://findmusic.club/artist/112233',
-          title: 'Open Guest Artist on FindMusic.club'
+          label: 'Open Guest Artist on FindMusic.club'
         }
       ])
     );
+  });
+
+  it('should show a tooltip on hover instead of relying on the native title', async () => {
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+    await vi.waitFor(() => expect(links()).toHaveLength(2));
+
+    const artistLink = document.querySelector('a.bes-findmusic-link-artist') as HTMLElement;
+    expect(artistLink.getAttribute('title')).toBeNull();
+
+    const tooltips = () =>
+      Array.from(document.querySelectorAll('.bes-findmusic-tooltip')).map(tooltip => ({
+        text: tooltip.textContent,
+        visible: tooltip.classList.contains('visible')
+      }));
+
+    expect(tooltips()).toEqual([
+      { text: 'Open Test Label on FindMusic.club', visible: false },
+      { text: 'Open Guest Artist on FindMusic.club', visible: false }
+    ]);
+
+    artistLink.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(tooltips()[1].visible).toBe(true);
+
+    artistLink.dispatchEvent(new MouseEvent('mouseleave'));
+    expect(tooltips()[1].visible).toBe(false);
+  });
+
+  it('should not leave tooltips behind when the links are re-rendered', async () => {
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+    await vi.waitFor(() => expect(links()).toHaveLength(2));
+
+    clickPreviewFor('123');
+    await vi.waitFor(() => expect(links()).toHaveLength(1));
+
+    expect(document.querySelectorAll('.bes-findmusic-tooltip')).toHaveLength(1);
   });
 
   it('should place the links left of the buy album button', async () => {
@@ -431,7 +472,7 @@ describe('FindMusic.club links in the player drawer', () => {
         {
           kind: 'artist',
           href: 'https://findmusic.club/artist/112233',
-          title: 'Open this artist on FindMusic.club'
+          label: 'Open this artist on FindMusic.club'
         }
       ])
     );

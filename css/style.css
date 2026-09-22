@@ -2186,3 +2186,40 @@ a.bes-findmusic-link:hover {
   background: #f4f4f5;
   color: #1da0c3;
 }
+
+.bes-findmusic-tooltip {
+  position: fixed;
+  /* above the player drawer (10004), which the icons live inside */
+  z-index: 10005;
+  max-width: 260px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: normal;
+  word-wrap: break-word;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+
+.bes-findmusic-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #333;
+}
+
+.bes-findmusic-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+}

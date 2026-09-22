@@ -387,6 +387,31 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   log.info('BES drawer and button added to page');
 };
 
+interface BesConfig {
+  keyboardSettings?: KeyboardSettings;
+  enableFetchCaching: boolean;
+}
+
+const requestConfig = (port: chrome.runtime.Port): Promise<BesConfig> =>
+  new Promise(resolve => {
+    const listener = (msg: any) => {
+      if (!msg.config || !msg.config.keyboardSettings) return;
+
+      port.onMessage.removeListener(listener);
+      resolve({
+        keyboardSettings: msg.config.keyboardSettings,
+        enableFetchCaching: msg.config.enableFetchCaching ?? false
+      });
+    };
+    port.onMessage.addListener(listener);
+    port.postMessage({ requestConfig: {} });
+
+    setTimeout(() => {
+      port.onMessage.removeListener(listener);
+      resolve({ enableFetchCaching: false });
+    }, 1000);
+  });
+
 const documentIdle = async (): Promise<void> => {
   const checkIsDownloadPage: Element | null = document.querySelector('.download-item-container');
   if (checkIsDownloadPage) {
@@ -404,43 +429,28 @@ const documentIdle = async (): Promise<void> => {
     }
   })();
 
-  let keyboardSettings: KeyboardSettings | undefined;
-  let enableFetchCaching = false;
+  const configReady = requestConfig(config_port);
 
-  const getConfigPromise = new Promise<void>(resolve => {
-    const listener = (msg: any) => {
+  const labelViewReady = (async () => {
+    const { keyboardSettings, enableFetchCaching } = await configReady;
+
+    if (keyboardSettings) updateKeyboardSettings(keyboardSettings);
+
+    initLabelView(config_port, enableFetchCaching);
+
+    config_port.onMessage.addListener((msg: any) => {
       if (msg.config && msg.config.keyboardSettings) {
-        keyboardSettings = msg.config.keyboardSettings;
-        enableFetchCaching = msg.config.enableFetchCaching ?? false;
-        config_port.onMessage.removeListener(listener);
-        resolve();
+        log.info('Keyboard settings changed, updating handlers');
+        updateKeyboardSettings(msg.config.keyboardSettings);
       }
-    };
-    config_port.onMessage.addListener(listener);
-    config_port.postMessage({ requestConfig: {} });
-
-    setTimeout(() => {
-      config_port.onMessage.removeListener(listener);
-      resolve();
-    }, 1000);
-  });
-
-  await getConfigPromise;
-
-  if (keyboardSettings) updateKeyboardSettings(keyboardSettings);
-
-  initLabelView(config_port, enableFetchCaching);
-
-  config_port.onMessage.addListener((msg: any) => {
-    if (msg.config && msg.config.keyboardSettings) {
-      log.info('Keyboard settings changed, updating handlers');
-      updateKeyboardSettings(msg.config.keyboardSettings);
-    }
-  });
+    });
+  })().catch(error => log.error(`Label view initialization failed: ${error}`));
 
   const playerReady = (async () => {
     const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
     if (!checkIsPageWithPlayer || window.location.href === 'https://bandcamp.com/') return;
+
+    const { enableFetchCaching } = await configReady;
 
     await initPlayer(enableFetchCaching);
 
@@ -454,16 +464,18 @@ const documentIdle = async (): Promise<void> => {
 
   log.info(`Page load state - hasStored: ${hasStoredCartData}, processing: ${processingFlag}`);
 
-  const dataBlobElement: Element | null = document.querySelector('[data-blob]');
-  if (dataBlobElement) {
+  const cartReady = (async () => {
+    const dataBlobElement: Element | null = document.querySelector('[data-blob]');
+    if (!dataBlobElement) return;
+
     const dataBlobAttr: string | null = dataBlobElement.getAttribute('data-blob');
-    if (dataBlobAttr) {
-      const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
-      if (has_cart || hasStoredCartData) {
-        await initCart(config_port);
-      }
-    }
-  }
+    if (!dataBlobAttr) return;
+
+    const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
+    if (!has_cart && !hasStoredCartData) return;
+
+    await initCart(config_port);
+  })().catch(error => log.error(`Cart initialization failed: ${error}`));
 
   const checkIsCollectionPage: Element | null = document.querySelector('ol.collection-grid.editable');
   if (checkIsCollectionPage) {
@@ -477,7 +489,7 @@ const documentIdle = async (): Promise<void> => {
 
   initBESDrawer(config_port);
 
-  await playerReady;
+  await Promise.all([labelViewReady, playerReady, cartReady]);
 };
 
 documentIdle();

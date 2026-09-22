@@ -1,6 +1,8 @@
 import Logger from './logger';
 import { createPlayerDrawer, loadAlbumIntoDrawer } from './components/player';
 import { updateDiscographyOrder } from './discography';
+import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicLinks';
+import { extractBandId } from './utilities';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -32,6 +34,8 @@ export function previewClicked(event: Event, port: chrome.runtime.Port): void {
 const log = new Logger();
 
 let drawerController: ReturnType<typeof createPlayerDrawer> | null = null;
+let findMusicEnabled = false;
+let currentPreview: PreviewTarget | null = null;
 
 interface PreviewTarget {
   id: string;
@@ -80,9 +84,16 @@ export function fillFrame(
 
   if (port) setPreviewed(target.id, port);
 
-  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, port).catch(error =>
-    log.error(`Failed to load album into drawer: ${error}`)
-  );
+  currentPreview = target;
+
+  const renderLinksForCurrentPreview = () => updateFindMusicLinks(currentPreview?.id, currentPreview?.idType);
+
+  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, port)
+    .then(renderLinksForCurrentPreview)
+    .catch(error => {
+      log.error(`Failed to load album into drawer: ${error}`);
+      renderLinksForCurrentPreview();
+    });
 }
 
 export function attachPreviewListeners(
@@ -116,6 +127,51 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   const discographyContainer = document.querySelector('ol.music-grid') || document.body;
   observer.observe(discographyContainer, { childList: true, subtree: true });
+
+  if (!document.querySelector('ol.music-grid')) return;
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      contentScriptQuery: 'checkFindMusicPermissions'
+    });
+
+    findMusicEnabled = Boolean(response?.granted);
+    if (!findMusicEnabled) log.info('FindMusic.club permissions not granted, skipping FindMusic.club links');
+  } catch (error) {
+    log.warn(`Error checking FindMusic permissions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    findMusicEnabled = false;
+  }
+}
+
+function labelFindMusicLink(pageBandId: number | null): FindMusicLink | null {
+  if (!pageBandId) return null;
+
+  const name = document.querySelector('#band-name-location .title')?.textContent?.trim();
+  return { kind: 'label', bandId: pageBandId, name };
+}
+
+function artistFindMusicLink(pageBandId: number | null, albumId: string, albumType: string): FindMusicLink | null {
+  const item = Array.from(document.querySelectorAll<HTMLElement>('li.music-grid-item')).find(
+    candidate => candidate.dataset.itemId === `${albumType}-${albumId}` || candidate.dataset.tralbumid === albumId
+  );
+
+  const bandId = Number(item?.dataset.bandId);
+  if (!bandId || bandId === pageBandId) return null;
+
+  const name = item?.querySelector('.artist-override')?.textContent?.trim();
+  return { kind: 'artist', bandId, name };
+}
+
+function updateFindMusicLinks(albumId?: string, albumType?: string): void {
+  if (!findMusicEnabled) return;
+
+  const pageBandId = extractBandId();
+  const links = [
+    labelFindMusicLink(pageBandId),
+    albumId && albumType ? artistFindMusicLink(pageBandId, albumId, albumType) : null
+  ].filter((link): link is FindMusicLink => link !== null);
+
+  setFindMusicLinks(links);
 }
 
 export function generatePreview(id: string, idType: string): HTMLDivElement {

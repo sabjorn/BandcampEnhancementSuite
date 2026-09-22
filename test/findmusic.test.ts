@@ -12,7 +12,6 @@ vi.mock('../src/logger', () => ({
 vi.mock('../src/utilities', () => ({
   storeFindMusicToken: vi.fn(),
   getFindMusicTokenFromStorage: vi.fn(),
-  hasFindMusicPermissions: vi.fn(),
   createFetchFunction: vi.fn(() => globalThis.fetch)
 }));
 
@@ -36,7 +35,7 @@ import {
   fetchAlbumTrackState,
   postTrackPlayed
 } from '../src/clients/findmusic';
-import { storeFindMusicToken, getFindMusicTokenFromStorage, hasFindMusicPermissions } from '../src/utilities';
+import { storeFindMusicToken, getFindMusicTokenFromStorage } from '../src/utilities';
 
 describe('FindMusic Client', () => {
   beforeEach(() => {
@@ -191,9 +190,7 @@ describe('FindMusic Client', () => {
 
     it('should return stored token if valid', async () => {
       const mockStoredToken = 'stored-jwt-token';
-      const hasFindMusicPermissionsMock = vi.mocked(hasFindMusicPermissions);
       const getFindMusicTokenFromStorageMock = vi.mocked(getFindMusicTokenFromStorage);
-      hasFindMusicPermissionsMock.mockResolvedValue(true);
       getFindMusicTokenFromStorageMock.mockResolvedValue(mockStoredToken);
 
       const result = await getFindMusicToken();
@@ -205,11 +202,9 @@ describe('FindMusic Client', () => {
 
     it('should exchange new token if no stored token', async () => {
       const mockJwtToken = 'new-jwt-token';
-      const hasFindMusicPermissionsMock = vi.mocked(hasFindMusicPermissions);
       const getFindMusicTokenFromStorageMock = vi.mocked(getFindMusicTokenFromStorage);
       const storeFindMusicTokenMock = vi.mocked(storeFindMusicToken);
 
-      hasFindMusicPermissionsMock.mockResolvedValue(true);
       getFindMusicTokenFromStorageMock.mockResolvedValue(null);
       mockCookiesGet.mockResolvedValue({ value: 'test-bc-token' });
       vi.mocked(global.fetch).mockResolvedValue({

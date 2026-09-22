@@ -153,3 +153,328 @@ describe('fillFrame - clicking preview for the album already in the drawer', () 
     expect(previewState.previewId).toBe('456');
   });
 });
+
+describe('FindMusic.club links in the player drawer', () => {
+  let init: typeof initLabelView;
+
+  const discographyPage = `
+    <div id="pagedata" data-blob='{"lo_querystr": "item_id=123"}'></div>
+    <div class="leftMiddleColumns">
+      <ol class="music-grid">
+        <li class="music-grid-item" data-item-id="album-123" data-band-id="857243381">
+          <span class="artist-override">Test Label</span>
+        </li>
+        <li class="music-grid-item" data-item-id="album-456" data-band-id="112233">
+          <span class="artist-override">Guest Artist</span>
+        </li>
+      </ol>
+    </div>
+    <div id="bio-container">
+      <p id="band-name-location"><span class="title">Test Label</span></p>
+    </div>
+    <script type="text/javascript" data-band="{&quot;id&quot;:857243381,&quot;name&quot;:&quot;Test Label&quot;}"></script>
+  `;
+
+  const grantFindMusicPermissions = (granted: boolean) => {
+    (globalThis.chrome.runtime as any).sendMessage = vi.fn().mockResolvedValue({ granted });
+  };
+
+  const album = (isPurchasable: boolean, id: number = 123) =>
+    new Response(
+      JSON.stringify({
+        id,
+        type: 'a',
+        title: 'An Album',
+        tralbum_artist: 'Someone',
+        currency: 'USD',
+        price: 7,
+        is_purchasable: isPurchasable,
+        tracks: []
+      }),
+      { status: 200, headers: { 'Content-type': 'application/json' } }
+    );
+
+  const respondWithAlbum = (isPurchasable: boolean) => {
+    globalThis.fetch = vi.fn().mockImplementation(() => Promise.resolve(album(isPurchasable))) as any;
+  };
+
+  const clickPreviewFor = (id: string) => {
+    const button = document.querySelector(`li[data-item-id="album-${id}"] button.open-iframe`) as HTMLElement;
+    button.click();
+  };
+
+  const links = () =>
+    Array.from(document.querySelectorAll('.bes-player-drawer a.bes-findmusic-link')).map(link => ({
+      kind: link.className.includes('bes-findmusic-link-label') ? 'label' : 'artist',
+      href: (link as HTMLAnchorElement).href,
+      label: link.getAttribute('aria-label')
+    }));
+
+  const expectNoLinks = async () => {
+    await vi.waitFor(() =>
+      expect(document.querySelector('.bes-player-drawer-tracklist')?.children.length).toBeTruthy()
+    );
+    expect(links()).toEqual([]);
+  };
+
+  beforeEach(async () => {
+    vi.resetModules();
+    document.querySelectorAll('.bes-player-drawer').forEach(d => d.remove());
+    process.env.FINDMUSIC_BASE_URL = 'https://findmusic.club';
+    grantFindMusicPermissions(true);
+    respondWithAlbum(true);
+    ({ initLabelView: init } = await import('../src/label_view'));
+  });
+
+  afterEach(() => {
+    document.querySelectorAll('.bes-player-drawer, .bes-findmusic-tooltip').forEach(node => node.remove());
+    cleanupTestNodes();
+    delete (globalThis.chrome.runtime as any).sendMessage;
+  });
+
+  it('should set up discography tracking before waiting on the permission check', async () => {
+    let resolvePermissions: (value: { granted: boolean }) => void = () => {};
+    (globalThis.chrome.runtime as any).sendMessage = vi.fn().mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolvePermissions = resolve;
+        })
+    );
+    createDomNodes(discographyPage);
+
+    const initialized = init(mockPort as any);
+
+    const { getDiscographyLength } = await import('../src/discography');
+    expect(getDiscographyLength()).toBe(2);
+
+    resolvePermissions({ granted: true });
+    await initialized;
+  });
+
+  it('should add a label link when previewing a release by the page band', async () => {
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('123');
+
+    await vi.waitFor(() =>
+      expect(links()).toEqual([
+        {
+          kind: 'label',
+          href: 'https://findmusic.club/artist/857243381',
+          label: 'Open Test Label on FindMusic.club'
+        }
+      ])
+    );
+  });
+
+  it('should add an artist link alongside the label link for another band', async () => {
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+
+    await vi.waitFor(() =>
+      expect(links()).toEqual([
+        {
+          kind: 'label',
+          href: 'https://findmusic.club/artist/857243381',
+          label: 'Open Test Label on FindMusic.club'
+        },
+        {
+          kind: 'artist',
+          href: 'https://findmusic.club/artist/112233',
+          label: 'Open Guest Artist on FindMusic.club'
+        }
+      ])
+    );
+  });
+
+  it('should show a tooltip on hover instead of relying on the native title', async () => {
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+    await vi.waitFor(() => expect(links()).toHaveLength(2));
+
+    const artistLink = document.querySelector('a.bes-findmusic-link-artist') as HTMLElement;
+    expect(artistLink.getAttribute('title')).toBeNull();
+
+    const tooltips = () =>
+      Array.from(document.querySelectorAll('.bes-findmusic-tooltip')).map(tooltip => ({
+        text: tooltip.textContent,
+        visible: tooltip.classList.contains('visible')
+      }));
+
+    expect(tooltips()).toEqual([
+      { text: 'Open Test Label on FindMusic.club', visible: false },
+      { text: 'Open Guest Artist on FindMusic.club', visible: false }
+    ]);
+
+    artistLink.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(tooltips()[1].visible).toBe(true);
+
+    artistLink.dispatchEvent(new MouseEvent('mouseleave'));
+    expect(tooltips()[1].visible).toBe(false);
+  });
+
+  it('should not leave tooltips behind when the links are re-rendered', async () => {
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+    await vi.waitFor(() => expect(links()).toHaveLength(2));
+
+    clickPreviewFor('123');
+    await vi.waitFor(() => expect(links()).toHaveLength(1));
+
+    expect(document.querySelectorAll('.bes-findmusic-tooltip')).toHaveLength(1);
+  });
+
+  it('should place the links left of the buy album button', async () => {
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('123');
+
+    await vi.waitFor(() => expect(links()).toHaveLength(1));
+
+    const buyRow = document.querySelector('.bes-player-drawer .bes-album-buy') as HTMLElement;
+    expect(buyRow.firstElementChild?.className).toBe('bes-findmusic-links');
+    expect(buyRow.querySelector('.bes-album-buy-label')).toBeTruthy();
+  });
+
+  it('should fall back to the top of the tracklist when the album is not purchasable', async () => {
+    respondWithAlbum(false);
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('123');
+
+    await vi.waitFor(() => expect(links()).toHaveLength(1));
+
+    const tracklist = document.querySelector('.bes-player-drawer-tracklist') as HTMLElement;
+    expect(tracklist.firstElementChild?.classList.contains('bes-findmusic-links-standalone')).toBe(true);
+  });
+
+  it('should swap the artist link when a different release is previewed', async () => {
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+    await vi.waitFor(() => expect(links()).toHaveLength(2));
+
+    clickPreviewFor('123');
+    await vi.waitFor(() => expect(links().map(link => link.kind)).toEqual(['label']));
+  });
+
+  it('should ignore a slow load that resolves after a newer preview', async () => {
+    const resolvers: Array<() => void> = [];
+
+    globalThis.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolvers.push(() => resolve(album(true, 1)));
+        })
+    ) as any;
+
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+    clickPreviewFor('123');
+
+    // the first (guest artist) request resolves last
+    resolvers[1]();
+    await vi.waitFor(() => expect(links()).toHaveLength(1));
+    resolvers[0]();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(links().map(link => link.kind)).toEqual(['label']);
+  });
+
+  it("should keep the previewed album's links when the load fails", async () => {
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+    await vi.waitFor(() => expect(links()).toHaveLength(2));
+
+    globalThis.fetch = vi
+      .fn()
+      .mockImplementation((url: string) =>
+        String(url).includes('tralbum_details') ? Promise.reject(new Error('network')) : Promise.resolve(album(true))
+      ) as any;
+    clickPreviewFor('123');
+
+    await vi.waitFor(() => expect(links().map(link => link.kind)).toEqual(['label']));
+  });
+
+  it('should not add links when FindMusic.club permissions are not granted', async () => {
+    grantFindMusicPermissions(false);
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+
+    await expectNoLinks();
+  });
+
+  it('should not add links when the permission check fails', async () => {
+    (globalThis.chrome.runtime as any).sendMessage = vi.fn().mockRejectedValue(new Error('no receiver'));
+    createDomNodes(discographyPage);
+    await init(mockPort as any);
+
+    clickPreviewFor('456');
+
+    await expectNoLinks();
+  });
+
+  it('should find the release by tralbum id when there is no item id', async () => {
+    createDomNodes(`
+      <div id="pagedata" data-blob='{"lo_querystr": "item_id=123"}'></div>
+      <div class="leftMiddleColumns">
+        <ol class="music-grid">
+          <li class="music-grid-item" data-tralbumid="789" data-tralbumtype="a" data-band-id="112233">
+            <span class="artist-override">Guest Artist</span>
+          </li>
+        </ol>
+      </div>
+      <script type="text/javascript" data-band="{&quot;id&quot;:857243381,&quot;name&quot;:&quot;Test Label&quot;}"></script>
+    `);
+    await init(mockPort as any);
+
+    (document.querySelector('li[data-tralbumid="789"] button.open-iframe') as HTMLElement).click();
+
+    await vi.waitFor(() =>
+      expect(links().map(link => [link.kind, link.href])).toEqual([
+        ['label', 'https://findmusic.club/artist/857243381'],
+        ['artist', 'https://findmusic.club/artist/112233']
+      ])
+    );
+  });
+
+  it('should still add the artist link when the page has no band id', async () => {
+    createDomNodes(`
+      <div id="pagedata" data-blob='{"lo_querystr": "item_id=123"}'></div>
+      <div class="leftMiddleColumns">
+        <ol class="music-grid">
+          <li class="music-grid-item" data-item-id="album-123" data-band-id="112233"></li>
+        </ol>
+      </div>
+    `);
+    await init(mockPort as any);
+
+    clickPreviewFor('123');
+
+    await vi.waitFor(() =>
+      expect(links()).toEqual([
+        {
+          kind: 'artist',
+          href: 'https://findmusic.club/artist/112233',
+          label: 'Open this artist on FindMusic.club'
+        }
+      ])
+    );
+  });
+});

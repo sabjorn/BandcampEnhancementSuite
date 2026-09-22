@@ -60,6 +60,19 @@ export function extractBandFollowInfo(): BandFollowInfo {
   }
 }
 
+export function extractBandId(): number | null {
+  const element: Element | null = document.querySelector('script[data-band]');
+  const data: string | null = element?.getAttribute('data-band') ?? null;
+  if (!data) return null;
+
+  try {
+    const { id }: { id?: number } = JSON.parse(data);
+    return typeof id === 'number' ? id : null;
+  } catch {
+    return null;
+  }
+}
+
 interface FanTralbumData {
   is_purchased: boolean;
   part_of_purchased_album: boolean;
@@ -212,24 +225,6 @@ export function centreElement(element: HTMLElement): void {
   element.style.left = `${left}px`;
   element.style.top = `${top}px`;
   element.style.zIndex = '9999';
-}
-
-export async function hasFindMusicPermissions(): Promise<boolean> {
-  if (!chrome?.permissions) {
-    return false;
-  }
-
-  const FINDMUSIC_ORIGIN = process.env.FINDMUSIC_ORIGIN_PATTERN as string;
-  try {
-    const hasPermissions = await chrome.permissions.contains({
-      permissions: ['cookies'],
-      origins: [FINDMUSIC_ORIGIN]
-    });
-    return hasPermissions;
-  } catch (error) {
-    log.warn(`Failed to check FindMusic permissions: ${error}`);
-    return false;
-  }
 }
 
 interface FindMusicTokenData {

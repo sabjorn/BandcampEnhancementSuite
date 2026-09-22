@@ -119,7 +119,8 @@ import DBUtils, {
   storeFindMusicToken,
   getFindMusicTokenFromStorage,
   clearFindMusicToken,
-  isBandcampLoggedIn
+  isBandcampLoggedIn,
+  extractBandId
 } from '../src/utilities';
 import { getTralbumDetailsFromPage } from '../src/bclient';
 
@@ -185,6 +186,38 @@ describe('extractBandFollowInfo', () => {
       tralbum_id: 2105824806,
       tralbum_type: 'a'
     });
+  });
+});
+
+describe('extractBandId', () => {
+  afterEach(() => {
+    cleanupTestNodes();
+  });
+
+  it('should return the band id from the data-band script', () => {
+    createDomNodes(`
+            <script type="text/javascript" data-band="{&quot;id&quot;:857243381,&quot;name&quot;:&quot;Half Past Vibe Records&quot;}"></script>
+          `);
+
+    expect(extractBandId()).toBe(857243381);
+  });
+
+  it('should return null when there is no data-band script', () => {
+    createDomNodes(`<div></div>`);
+
+    expect(extractBandId()).toBeNull();
+  });
+
+  it('should return null when data-band is not valid json', () => {
+    createDomNodes(`<script type="text/javascript" data-band="not json"></script>`);
+
+    expect(extractBandId()).toBeNull();
+  });
+
+  it('should return null when data-band has no id', () => {
+    createDomNodes(`<script type="text/javascript" data-band="{&quot;name&quot;:&quot;No Id&quot;}"></script>`);
+
+    expect(extractBandId()).toBeNull();
   });
 });
 

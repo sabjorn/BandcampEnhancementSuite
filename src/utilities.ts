@@ -240,24 +240,6 @@ export async function checkFindMusicPermissions(): Promise<boolean> {
   }
 }
 
-export async function hasFindMusicPermissions(): Promise<boolean> {
-  if (!chrome?.permissions) {
-    return false;
-  }
-
-  const FINDMUSIC_ORIGIN = process.env.FINDMUSIC_ORIGIN_PATTERN as string;
-  try {
-    const hasPermissions = await chrome.permissions.contains({
-      permissions: ['cookies'],
-      origins: [FINDMUSIC_ORIGIN]
-    });
-    return hasPermissions;
-  } catch (error) {
-    log.warn(`Failed to check FindMusic permissions: ${error}`);
-    return false;
-  }
-}
-
 interface FindMusicTokenData {
   token: string;
   expiresAt: number;

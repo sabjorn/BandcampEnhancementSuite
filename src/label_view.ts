@@ -2,7 +2,7 @@ import Logger from './logger';
 import { createPlayerDrawer, loadAlbumIntoDrawer } from './components/player';
 import { updateDiscographyOrder } from './discography';
 import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicLinks';
-import { checkFindMusicPermissions, extractBandId } from './utilities';
+import { extractBandId } from './utilities';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -131,10 +131,14 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
   if (!document.querySelector('ol.music-grid')) return;
 
   try {
-    findMusicEnabled = await checkFindMusicPermissions();
+    const response = await chrome.runtime.sendMessage({
+      contentScriptQuery: 'checkFindMusicPermissions'
+    });
+
+    findMusicEnabled = Boolean(response?.granted);
     if (!findMusicEnabled) log.info('FindMusic.club permissions not granted, skipping FindMusic.club links');
   } catch (error) {
-    log.warn(`Failed to check FindMusic.club permissions: ${error}`);
+    log.warn(`Error checking FindMusic permissions: ${error instanceof Error ? error.message : 'Unknown error'}`);
     findMusicEnabled = false;
   }
 }

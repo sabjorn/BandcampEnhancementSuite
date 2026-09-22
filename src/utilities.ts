@@ -227,14 +227,6 @@ export function centreElement(element: HTMLElement): void {
   element.style.zIndex = '9999';
 }
 
-export async function checkFindMusicPermissions(): Promise<boolean> {
-  const response = await chrome.runtime.sendMessage({
-    contentScriptQuery: 'checkFindMusicPermissions'
-  });
-
-  return Boolean(response?.granted);
-}
-
 interface FindMusicTokenData {
   token: string;
   expiresAt: number;

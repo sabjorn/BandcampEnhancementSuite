@@ -1,5 +1,5 @@
 import Logger from '../logger';
-import { getTralbumDetails, getTralbumDetailsFromPage, CURRENCY_MINIMUMS } from '../bclient';
+import { getTralbumDetails, getTralbumDetailsFromPage, CURRENCY_MINIMUMS, TralbumDetailsResponse } from '../bclient';
 import { getDB, createFetchFunction } from '../utilities';
 
 const BASE_URL = 'http://bandcamp.com';
@@ -321,11 +321,11 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
 }
 
 interface CachedSupportTralbum {
-  details: any;
+  details: TralbumDetailsResponse;
   expiresAt: number;
 }
 
-export async function getSupportTralbumDetails(): Promise<any> {
+export async function getSupportTralbumDetails(): Promise<TralbumDetailsResponse> {
   const db = await getDB();
 
   const cached: CachedSupportTralbum | undefined = await db.get('config', SUPPORT_TRALBUM_KEY);
@@ -350,9 +350,9 @@ export async function getSupportTralbumDetails(): Promise<any> {
 }
 
 export function processRequest(
-  request: any,
+  request: { contentScriptQuery?: string },
   _sender: chrome.runtime.MessageSender,
-  sendResponse: (response?: any) => void
+  sendResponse: (response?: TralbumDetailsResponse | null) => void
 ): boolean {
   if (request.contentScriptQuery !== 'getSupportTralbumDetails') return false;
 

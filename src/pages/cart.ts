@@ -2,7 +2,7 @@ import Logger from '../logger';
 
 import { createButton } from '../components/buttons';
 import { downloadFile, dateString, loadTextFile, createFetchFunction } from '../utilities';
-import { CURRENCY_MINIMUMS, addAlbumToCart, getTralbumDetails } from '../bclient';
+import { CURRENCY_MINIMUMS, addAlbumToCart, getTralbumDetails, TralbumDetailsResponse } from '../bclient';
 import {
   showSuccessMessage,
   showErrorMessage,
@@ -578,7 +578,9 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   }
 
   try {
-    const tralbumDetails = await chrome.runtime.sendMessage({ contentScriptQuery: 'getSupportTralbumDetails' });
+    const tralbumDetails: TralbumDetailsResponse | null = await chrome.runtime.sendMessage({
+      contentScriptQuery: 'getSupportTralbumDetails'
+    });
     if (!tralbumDetails) {
       log.error('Could not get BES support tralbum details. Skipping support button');
       return;

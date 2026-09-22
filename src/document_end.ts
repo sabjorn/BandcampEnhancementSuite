@@ -392,6 +392,13 @@ interface BesConfig {
   enableFetchCaching: boolean;
 }
 
+interface ConfigMessage {
+  config?: {
+    keyboardSettings?: KeyboardSettings;
+    enableFetchCaching?: boolean;
+  };
+}
+
 const requestConfig = (port: chrome.runtime.Port): Promise<BesConfig> =>
   new Promise(resolve => {
     const finish = (config: BesConfig) => {
@@ -400,7 +407,7 @@ const requestConfig = (port: chrome.runtime.Port): Promise<BesConfig> =>
       resolve(config);
     };
 
-    const listener = (msg: any) => {
+    const listener = (msg: ConfigMessage) => {
       if (!msg.config?.keyboardSettings) return;
 
       finish({
@@ -424,7 +431,7 @@ const documentEnd = async (): Promise<void> => {
   const config_port: chrome.runtime.Port = (() => {
     try {
       return chrome.runtime.connect(null, { name: 'bes' });
-    } catch (e: any) {
+    } catch (e: unknown) {
       log.error(`Failed to connect to the background port: ${e}`);
       throw e;
     }
@@ -439,7 +446,7 @@ const documentEnd = async (): Promise<void> => {
 
     initLabelView(config_port, enableFetchCaching);
 
-    config_port.onMessage.addListener((msg: any) => {
+    config_port.onMessage.addListener((msg: ConfigMessage) => {
       if (msg.config?.keyboardSettings) {
         log.info('Keyboard settings changed, updating handlers');
         updateKeyboardSettings(msg.config.keyboardSettings);

@@ -143,8 +143,8 @@ function labelFindMusicLink(): FindMusicLink | null {
 }
 
 function artistFindMusicLink(albumId: string, albumType: string): FindMusicLink | null {
-  const item = document.querySelector<HTMLElement>(
-    `li.music-grid-item[data-item-id="${albumType}-${albumId}"], li.music-grid-item[data-tralbumid="${albumId}"]`
+  const item = Array.from(document.querySelectorAll<HTMLElement>('li.music-grid-item')).find(
+    candidate => candidate.dataset.itemId === `${albumType}-${albumId}` || candidate.dataset.tralbumid === albumId
   );
 
   const bandId = Number(item?.dataset.bandId);

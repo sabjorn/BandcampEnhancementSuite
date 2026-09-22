@@ -400,6 +400,30 @@ describe('FindMusic.club links in the player drawer', () => {
     await expectNoLinks();
   });
 
+  it('should find the release by tralbum id when there is no item id', async () => {
+    createDomNodes(`
+      <div id="pagedata" data-blob='{"lo_querystr": "item_id=123"}'></div>
+      <div class="leftMiddleColumns">
+        <ol class="music-grid">
+          <li class="music-grid-item" data-tralbumid="789" data-tralbumtype="a" data-band-id="112233">
+            <span class="artist-override">Guest Artist</span>
+          </li>
+        </ol>
+      </div>
+      <script type="text/javascript" data-band="{&quot;id&quot;:857243381,&quot;name&quot;:&quot;Test Label&quot;}"></script>
+    `);
+    await init(mockPort as any);
+
+    (document.querySelector('li[data-tralbumid="789"] button.open-iframe') as HTMLElement).click();
+
+    await vi.waitFor(() =>
+      expect(links().map(link => [link.kind, link.href])).toEqual([
+        ['label', 'https://findmusic.club/artist/857243381'],
+        ['artist', 'https://findmusic.club/artist/112233']
+      ])
+    );
+  });
+
   it('should still add the artist link when the page has no band id', async () => {
     createDomNodes(`
       <div id="pagedata" data-blob='{"lo_querystr": "item_id=123"}'></div>

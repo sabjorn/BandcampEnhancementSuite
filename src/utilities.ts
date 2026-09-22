@@ -228,16 +228,11 @@ export function centreElement(element: HTMLElement): void {
 }
 
 export async function checkFindMusicPermissions(): Promise<boolean> {
-  try {
-    const response = await chrome.runtime.sendMessage({
-      contentScriptQuery: 'checkFindMusicPermissions'
-    });
+  const response = await chrome.runtime.sendMessage({
+    contentScriptQuery: 'checkFindMusicPermissions'
+  });
 
-    return Boolean(response?.granted);
-  } catch (error) {
-    log.warn(`Failed to check FindMusic permissions: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    return false;
-  }
+  return Boolean(response?.granted);
 }
 
 interface FindMusicTokenData {

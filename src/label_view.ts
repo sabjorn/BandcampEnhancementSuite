@@ -130,8 +130,13 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   if (!document.querySelector('ol.music-grid')) return;
 
-  findMusicEnabled = await checkFindMusicPermissions();
-  if (!findMusicEnabled) log.info('FindMusic.club permissions not granted, skipping FindMusic.club links');
+  try {
+    findMusicEnabled = await checkFindMusicPermissions();
+    if (!findMusicEnabled) log.info('FindMusic.club permissions not granted, skipping FindMusic.club links');
+  } catch (error) {
+    log.warn(`Failed to check FindMusic.club permissions: ${error}`);
+    findMusicEnabled = false;
+  }
 }
 
 function labelFindMusicLink(pageBandId: number | null): FindMusicLink | null {

@@ -1,8 +1,13 @@
 import Logger from '../logger';
-import { getTralbumDetails, getTralbumDetailsFromPage, CURRENCY_MINIMUMS } from '../bclient';
+import { getTralbumDetails, getTralbumDetailsFromPage, CURRENCY_MINIMUMS, TralbumDetailsResponse } from '../bclient';
 import { getDB, createFetchFunction } from '../utilities';
 
 const BASE_URL = 'http://bandcamp.com';
+
+const BES_SUPPORT_TRALBUM_ID = 1609998585;
+const BES_SUPPORT_TRALBUM_TYPE = 'a';
+const SUPPORT_TRALBUM_KEY = 'besSupportTralbum';
+const SUPPORT_TRALBUM_TTL_ONE_HOUR = 3600 * 1000;
 
 const log = new Logger();
 
@@ -315,10 +320,57 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
   }
 }
 
+interface CachedSupportTralbum {
+  details: TralbumDetailsResponse;
+  expiresAt: number;
+}
+
+export async function getSupportTralbumDetails(): Promise<TralbumDetailsResponse> {
+  const db = await getDB();
+
+  const cached: CachedSupportTralbum | undefined = await db.get('config', SUPPORT_TRALBUM_KEY);
+  if (cached && Date.now() < cached.expiresAt) {
+    log.info('Using cached BES support tralbum details');
+    return cached.details;
+  }
+
+  const enableFetchCaching = await (async () => {
+    const config = await db.get('config', 'config');
+    return config?.enableFetchCaching ?? false;
+  })();
+  const fetchFn = createFetchFunction(enableFetchCaching);
+
+  log.info('Fetching BES support tralbum details');
+  const details = await getTralbumDetails(BES_SUPPORT_TRALBUM_ID, BES_SUPPORT_TRALBUM_TYPE, BASE_URL, fetchFn);
+
+  const entry: CachedSupportTralbum = { details, expiresAt: Date.now() + SUPPORT_TRALBUM_TTL_ONE_HOUR };
+  await db.put('config', entry, SUPPORT_TRALBUM_KEY);
+
+  return details;
+}
+
+export function processRequest(
+  request: { contentScriptQuery?: string },
+  _sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: TralbumDetailsResponse | null) => void
+): boolean {
+  if (request.contentScriptQuery !== 'getSupportTralbumDetails') return false;
+
+  getSupportTralbumDetails()
+    .then(sendResponse)
+    .catch(error => {
+      log.warn(`Unexpected error in getSupportTralbumDetails: ${error.message}`);
+      sendResponse(null);
+    });
+
+  return true;
+}
+
 export async function initCartImportBackend(): Promise<void> {
   const portState: { port?: chrome.runtime.Port } = {};
 
   log.info('initializing CartImportBackend');
 
   chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) => connectionListenerCallback(port, portState));
+  chrome.runtime.onMessage.addListener(processRequest);
 }

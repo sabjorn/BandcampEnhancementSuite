@@ -2,7 +2,7 @@ import Logger from '../logger';
 
 import { createButton } from '../components/buttons';
 import { downloadFile, dateString, loadTextFile, createFetchFunction } from '../utilities';
-import { CURRENCY_MINIMUMS, addAlbumToCart, getTralbumDetails } from '../bclient';
+import { CURRENCY_MINIMUMS, addAlbumToCart, getTralbumDetails, TralbumDetailsResponse } from '../bclient';
 import {
   showSuccessMessage,
   showErrorMessage,
@@ -12,9 +12,6 @@ import {
 } from '../components/notifications';
 import { createShoppingCartItem } from '../components/shoppingCart';
 import { createAddToCartButton } from '../components/cartButton';
-
-const BES_SUPPORT_TRALBUM_ID = 1609998585;
-const BES_SUPPORT_TRALBUM_TYPE = 'a';
 
 const log = new Logger();
 
@@ -581,8 +578,13 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
   }
 
   try {
-    const fetchFn = createFetchFunction(enableFetchCaching);
-    const tralbumDetails = await getTralbumDetails(BES_SUPPORT_TRALBUM_ID, BES_SUPPORT_TRALBUM_TYPE, null, fetchFn);
+    const tralbumDetails: TralbumDetailsResponse | null = await chrome.runtime.sendMessage({
+      contentScriptQuery: 'getSupportTralbumDetails'
+    });
+    if (!tralbumDetails) {
+      log.error('Could not get BES support tralbum details. Skipping support button');
+      return;
+    }
 
     const { price, currency, id: tralbumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
 

@@ -389,7 +389,40 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   log.info('BES drawer and button added to page');
 };
 
-const main = async (): Promise<void> => {
+interface ConfigPayload {
+  keyboardSettings?: KeyboardSettings;
+  enableFetchCaching?: boolean;
+}
+
+interface ResolvedConfig {
+  keyboardSettings?: KeyboardSettings;
+  enableFetchCaching: boolean;
+}
+
+const requestConfig = (port: chrome.runtime.Port): Promise<ResolvedConfig> =>
+  new Promise(resolve => {
+    const finish = (config: ResolvedConfig) => {
+      clearTimeout(timeout);
+      port.onMessage.removeListener(listener);
+      resolve(config);
+    };
+
+    const listener = (msg: { config?: ConfigPayload }) => {
+      if (!msg.config?.keyboardSettings) return;
+
+      finish({
+        keyboardSettings: msg.config.keyboardSettings,
+        enableFetchCaching: msg.config.enableFetchCaching ?? false
+      });
+    };
+
+    port.onMessage.addListener(listener);
+    port.postMessage({ requestConfig: {} });
+
+    const timeout = setTimeout(() => finish({ enableFetchCaching: false }), 1000);
+  });
+
+const documentEnd = async (): Promise<void> => {
   const checkIsDownloadPage: Element | null = document.querySelector('.download-item-container');
   if (checkIsDownloadPage) {
     initDownload();
@@ -398,99 +431,61 @@ const main = async (): Promise<void> => {
   const config_port: chrome.runtime.Port = (() => {
     try {
       return chrome.runtime.connect(null, { name: 'bes' });
-    } catch (e: any) {
-      if (e.message?.includes('Error in invocation of runtime.connect in main.js')) {
-        log.error(e);
-      }
+    } catch (e: unknown) {
+      log.error(`Failed to connect to the background port: ${e}`);
       throw e;
     }
   })();
 
-  let keyboardSettings: KeyboardSettings | undefined;
-  let enableFetchCaching = false;
+  const configReady = requestConfig(config_port);
 
-  const getConfigPromise = new Promise<void>(resolve => {
-    const listener = (msg: any) => {
-      if (msg.config && msg.config.keyboardSettings) {
-        keyboardSettings = msg.config.keyboardSettings;
-        enableFetchCaching = msg.config.enableFetchCaching ?? false;
-        config_port.onMessage.removeListener(listener);
-        resolve();
+  const labelViewReady = (async () => {
+    const { keyboardSettings, enableFetchCaching } = await configReady;
+
+    if (keyboardSettings) updateKeyboardSettings(keyboardSettings);
+
+    initLabelView(config_port, enableFetchCaching);
+
+    config_port.onMessage.addListener((msg: { config?: ConfigPayload }) => {
+      if (msg.config?.keyboardSettings) {
+        log.info('Keyboard settings changed, updating handlers');
+        updateKeyboardSettings(msg.config.keyboardSettings);
       }
-    };
-    config_port.onMessage.addListener(listener);
-    config_port.postMessage({ requestConfig: {} });
+    });
+  })().catch(error => log.error(`Label view initialization failed: ${error}`));
 
-    setTimeout(() => {
-      config_port.onMessage.removeListener(listener);
-      resolve();
-    }, 1000);
-  });
+  const playerReady = (async () => {
+    const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
+    if (!checkIsPageWithPlayer || window.location.href === 'https://bandcamp.com/') return;
 
-  await getConfigPromise;
+    const { enableFetchCaching } = await configReady;
 
-  if (keyboardSettings) updateKeyboardSettings(keyboardSettings);
-
-  initLabelView(config_port, enableFetchCaching);
-
-  config_port.onMessage.addListener((msg: any) => {
-    if (msg.config && msg.config.keyboardSettings) {
-      log.info('Keyboard settings changed, updating handlers');
-      updateKeyboardSettings(msg.config.keyboardSettings);
-    }
-  });
-
-  const checkIsPageWithPlayer: Element | null = document.querySelector('div.inline_player');
-  if (checkIsPageWithPlayer && window.location.href !== 'https://bandcamp.com/') {
     await initPlayer(enableFetchCaching);
 
     initAudioFeatures(config_port);
-  }
+  })().catch(error => log.error(`Player initialization failed: ${error}`));
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const besCartParamValue = urlParams.get('bes_cart');
-  const hasBesCartParam = besCartParamValue !== null;
   const hasStoredCartData =
     sessionStorage.getItem('bes_pending_cart_import') !== null ||
     sessionStorage.getItem('bes_url_cart_param') !== null;
-  const processingFlag = sessionStorage.getItem('bes_cart_processing');
-
   log.info(
-    `Page load state - hasParam: ${hasBesCartParam}, hasStored: ${hasStoredCartData}, processing: ${processingFlag}`
+    `Page load state - hasStored: ${hasStoredCartData}, processing: ${sessionStorage.getItem('bes_cart_processing')}`
   );
 
-  if (hasBesCartParam) {
-    log.info(`Found bes_cart parameter in URL on page load!`);
+  const cartReady = (async () => {
+    const dataBlobElement: Element | null = document.querySelector('[data-blob]');
+    if (!dataBlobElement) return;
 
-    sessionStorage.setItem('bes_url_cart_param', besCartParamValue!);
-
-    const newUrl = (() => {
-      const newSearch = Array.from(urlParams.entries())
-        .filter(([key]) => key !== 'bes_cart')
-        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-        .join('&');
-
-      return window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
-    })();
-
-    log.info(`Redirecting to clean URL: ${window.location.origin}${newUrl}`);
-
-    window.location.replace(newUrl);
-    return;
-  }
-
-  const dataBlobElement: Element | null = document.querySelector('[data-blob]');
-  if (dataBlobElement) {
     const dataBlobAttr: string | null = dataBlobElement.getAttribute('data-blob');
-    if (dataBlobAttr) {
-      const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
-      if (has_cart || hasBesCartParam || hasStoredCartData) {
-        await initCart(config_port);
-      }
-    }
-  }
+    if (!dataBlobAttr) return;
 
-  const checkIsCollectionPage: Element | null = document.querySelector('ol.collection-grid.editable.ui-sortable');
+    const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
+    if (!has_cart && !hasStoredCartData) return;
+
+    await initCart(config_port);
+  })().catch(error => log.error(`Cart initialization failed: ${error}`));
+
+  const checkIsCollectionPage: Element | null = document.querySelector('ol.collection-grid.editable');
   if (checkIsCollectionPage) {
     await initHideUnhide(config_port);
   }
@@ -501,6 +496,8 @@ const main = async (): Promise<void> => {
   }
 
   initBESDrawer(config_port);
+
+  await Promise.all([labelViewReady, playerReady, cartReady]);
 };
 
-main();
+documentEnd();

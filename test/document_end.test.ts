@@ -75,8 +75,8 @@ describe('BES Drawer', () => {
     createPagedataWithLoginState(true);
     createDomNodes('<body></body>');
 
-    const mainModule = await import('../src/main');
-    initBESDrawer = mainModule.initBESDrawer;
+    const endModule = await import('../src/document_end');
+    initBESDrawer = endModule.initBESDrawer;
 
     initBESDrawer(mockPort as any);
   });
@@ -292,7 +292,7 @@ describe('BES Drawer', () => {
   });
 
   it('should not create duplicate drawer if already exists', () => {
-    // If main() is called twice, should only have one drawer
+    // If documentEnd() is called twice, should only have one drawer
     const drawers = document.querySelectorAll('.bes-drawer');
     expect(drawers.length).toBeLessThanOrEqual(1);
   });
@@ -306,8 +306,8 @@ describe('Played caching setting', () => {
     document.body.innerHTML = '';
     mockRuntimeSendMessage.mockResolvedValue({ granted });
 
-    const mainModule = await import('../src/main');
-    initBESDrawer = mainModule.initBESDrawer;
+    const endModule = await import('../src/document_end');
+    initBESDrawer = endModule.initBESDrawer;
     initBESDrawer(mockPort as any);
 
     await new Promise(resolve => setTimeout(resolve, 0));

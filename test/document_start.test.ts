@@ -1,12 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 vi.mock('../src/logger', () => ({
-  default: class MockLogger {
-    info = vi.fn();
-    error = vi.fn();
-    debug = vi.fn();
-    warn = vi.fn();
-  },
   createLogger: () => ({
     info: vi.fn(),
     error: vi.fn(),
@@ -65,7 +59,6 @@ describe('document_start bes_cart capture', () => {
   beforeEach(() => {
     sessionStorage.clear();
     mockReplace.mockClear();
-    mockSendMessage.mockClear();
   });
 
   afterEach(() => {

@@ -292,7 +292,7 @@ describe('BES Drawer', () => {
   });
 
   it('should not create duplicate drawer if already exists', () => {
-    // If main() is called twice, should only have one drawer
+    // If documentEnd() is called twice, should only have one drawer
     const drawers = document.querySelectorAll('.bes-drawer');
     expect(drawers.length).toBeLessThanOrEqual(1);
   });

@@ -560,12 +560,16 @@ describe('getSupportTralbumDetails', () => {
     is_purchasable: true
   };
 
-  const dbWithCache = (cached: any) => ({
-    get: vi.fn((_store: string, key: string) =>
-      Promise.resolve(key === 'besSupportTralbum' ? cached : { enableFetchCaching: false })
-    ),
-    put: vi.fn(() => Promise.resolve())
-  });
+  const dbWithCache = (cached: any) => {
+    const db = {
+      get: vi.fn((_store: string, key: string) =>
+        Promise.resolve(key === 'besSupportTralbum' ? cached : { enableFetchCaching: false })
+      ),
+      put: vi.fn(() => Promise.resolve())
+    };
+    vi.mocked(getDB).mockResolvedValue(db as any);
+    return db;
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -573,7 +577,6 @@ describe('getSupportTralbumDetails', () => {
 
   it('returns the cached details without hitting the network', async () => {
     const db = dbWithCache({ details, expiresAt: Date.now() + 60_000 });
-    vi.mocked(getDB).mockResolvedValue(db as any);
 
     const result = await getSupportTralbumDetails();
 
@@ -584,7 +587,6 @@ describe('getSupportTralbumDetails', () => {
 
   it('fetches and caches when nothing is stored', async () => {
     const db = dbWithCache(undefined);
-    vi.mocked(getDB).mockResolvedValue(db as any);
     vi.mocked(getTralbumDetails).mockResolvedValue(details as any);
 
     const result = await getSupportTralbumDetails();
@@ -596,7 +598,6 @@ describe('getSupportTralbumDetails', () => {
 
   it('refetches once the cached entry has expired', async () => {
     const db = dbWithCache({ details, expiresAt: Date.now() - 1 });
-    vi.mocked(getDB).mockResolvedValue(db as any);
     vi.mocked(getTralbumDetails).mockResolvedValue(details as any);
 
     await getSupportTralbumDetails();

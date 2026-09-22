@@ -394,22 +394,25 @@ interface BesConfig {
 
 const requestConfig = (port: chrome.runtime.Port): Promise<BesConfig> =>
   new Promise(resolve => {
-    const listener = (msg: any) => {
-      if (!msg.config || !msg.config.keyboardSettings) return;
-
+    const finish = (config: BesConfig) => {
+      clearTimeout(timeout);
       port.onMessage.removeListener(listener);
-      resolve({
+      resolve(config);
+    };
+
+    const listener = (msg: any) => {
+      if (!msg.config?.keyboardSettings) return;
+
+      finish({
         keyboardSettings: msg.config.keyboardSettings,
         enableFetchCaching: msg.config.enableFetchCaching ?? false
       });
     };
+
     port.onMessage.addListener(listener);
     port.postMessage({ requestConfig: {} });
 
-    setTimeout(() => {
-      port.onMessage.removeListener(listener);
-      resolve({ enableFetchCaching: false });
-    }, 1000);
+    const timeout = setTimeout(() => finish({ enableFetchCaching: false }), 1000);
   });
 
 const documentEnd = async (): Promise<void> => {
@@ -422,9 +425,7 @@ const documentEnd = async (): Promise<void> => {
     try {
       return chrome.runtime.connect(null, { name: 'bes' });
     } catch (e: any) {
-      if (e.message?.includes('Error in invocation of runtime.connect in document_end.js')) {
-        log.error(e);
-      }
+      log.error(`Failed to connect to the background port: ${e}`);
       throw e;
     }
   })();
@@ -439,7 +440,7 @@ const documentEnd = async (): Promise<void> => {
     initLabelView(config_port, enableFetchCaching);
 
     config_port.onMessage.addListener((msg: any) => {
-      if (msg.config && msg.config.keyboardSettings) {
+      if (msg.config?.keyboardSettings) {
         log.info('Keyboard settings changed, updating handlers');
         updateKeyboardSettings(msg.config.keyboardSettings);
       }
@@ -460,9 +461,9 @@ const documentEnd = async (): Promise<void> => {
   const hasStoredCartData =
     sessionStorage.getItem('bes_pending_cart_import') !== null ||
     sessionStorage.getItem('bes_url_cart_param') !== null;
-  const processingFlag = sessionStorage.getItem('bes_cart_processing');
-
-  log.info(`Page load state - hasStored: ${hasStoredCartData}, processing: ${processingFlag}`);
+  log.info(
+    `Page load state - hasStored: ${hasStoredCartData}, processing: ${sessionStorage.getItem('bes_cart_processing')}`
+  );
 
   const cartReady = (async () => {
     const dataBlobElement: Element | null = document.querySelector('[data-blob]');

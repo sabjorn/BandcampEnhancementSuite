@@ -452,7 +452,12 @@ describe('Dark mode setting', () => {
     expect(document.documentElement.getAttribute('data-bes-theme')).toBe('light');
   });
 
-  it('should disable artist page styling when dark mode is on', async () => {
+  /*
+   * document_end sets the theme and nothing else. Neutralising the artist stylesheet is
+   * document_start's job - it owns the only enforcement observer and reacts to this attribute -
+   * so the drawer must not be doing it here, or the two bundles end up fighting over the sheet.
+   */
+  it('should set the theme without touching artist page styling itself', async () => {
     const artistStyle = document.createElement('style');
     artistStyle.id = 'custom-design-rules-style';
     document.head.appendChild(artistStyle);
@@ -460,9 +465,7 @@ describe('Dark mode setting', () => {
     await buildDrawer();
     configListener()({ config: { themeName: 'dark' } });
 
-    expect(artistStyle.disabled).toBe(true);
-
-    configListener()({ config: { themeName: 'light' } });
+    expect(document.documentElement.getAttribute('data-bes-theme')).toBe('dark');
     expect(artistStyle.disabled).toBe(false);
 
     artistStyle.remove();

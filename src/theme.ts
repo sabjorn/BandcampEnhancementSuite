@@ -39,7 +39,7 @@ function mergeThemeIntoStyleAttribute(existing: string | null, theme: Theme): st
   return preserved ? `${preserved}; ${tokens}` : tokens;
 }
 
-let customDesignObserver: MutationObserver | null = null;
+let enforcementObserver: MutationObserver | null = null;
 
 function findCustomDesignStyle(): HTMLStyleElement | null {
   return document.getElementById(CUSTOM_DESIGN_STYLE_ID) as HTMLStyleElement | null;
@@ -54,13 +54,10 @@ function setCustomDesignDisabled(element: HTMLStyleElement, disabled: boolean): 
 }
 
 /**
- * Whether a non-default theme is currently active, read back off the root element.
+ * Whether a non-default theme is currently active, read off the root element.
  *
- * This is deliberately read from the DOM rather than from module state. document_start.js and
- * document_end.js are separate bundles, so each carries its own copy of this module and its own
- * observers; a observer that trusted its captured argument would keep re-disabling the artist
- * stylesheet that the other bundle had just restored. The root attribute is the one piece of
- * state both bundles genuinely share.
+ * The attribute is the theme state - it is what the stylesheets key off and what `setTheme`
+ * writes - so enforcement reads it rather than being handed a flag.
  */
 function isThemeActive(): boolean {
   const themeName = document.documentElement?.getAttribute(THEME_ATTRIBUTE);
@@ -68,6 +65,11 @@ function isThemeActive(): boolean {
   return themeName !== null && themeName !== undefined && themeName !== DEFAULT_THEME_NAME;
 }
 
+/**
+ * Artist and label pages carry a generated `#custom-design-rules-style` sheet holding the
+ * artist's chosen background, text, link and navbar colors. A theme can only be consistent if
+ * that sheet is out of the way, so a non-default theme disables it and the default hands it back.
+ */
 function enforceCustomDesignState(): void {
   const element = findCustomDesignStyle();
   if (!element) return;
@@ -77,32 +79,6 @@ function enforceCustomDesignState(): void {
 
   log.debug(`${shouldDisable ? 'Disabling' : 'Restoring'} Bandcamp custom design rules`);
   setCustomDesignDisabled(element, shouldDisable);
-}
-
-/**
- * Artist and label pages carry a generated `#custom-design-rules-style` sheet holding the
- * artist's chosen background, text, link and navbar colors. A theme can only be consistent if
- * that sheet is out of the way, so dark mode disables it and light mode hands it back.
- */
-export function watchCustomDesignRules(disable: boolean): void {
-  customDesignObserver?.disconnect();
-  customDesignObserver = null;
-
-  const existing = findCustomDesignStyle();
-  if (existing) {
-    log.debug(`${disable ? 'Disabling' : 'Restoring'} Bandcamp custom design rules`);
-    setCustomDesignDisabled(existing, disable);
-  }
-
-  // The sheet lives inside #pgBd, so at document_start it has not been parsed yet. Watch for it,
-  // and keep watching in both themes: Bandcamp rewrites the sheet when the design changes, and
-  // the observer has to survive a toggle so it can re-assert in whichever direction is current.
-  customDesignObserver = new MutationObserver(enforceCustomDesignState);
-
-  customDesignObserver.observe(document.documentElement, {
-    childList: true,
-    subtree: true
-  });
 }
 
 /**
@@ -163,7 +139,6 @@ const SHADOW_EXCEPTION_CSS = `
   }
 `;
 
-let shadowObserver: MutationObserver | null = null;
 let shadowSheet: CSSStyleSheet | null = null;
 
 function getShadowSheet(): CSSStyleSheet | null {
@@ -242,39 +217,66 @@ function applyShadowException(root: ShadowRoot, enable: boolean): void {
   applyBandcampDarkMode(root, enable);
 }
 
-/**
- * Keeps the shadow-root exceptions in step with the active theme. Bandcamp hydrates these
- * components after first paint, so new hosts are picked up as they appear.
- */
-export function watchShadowRoots(enable: boolean): void {
-  shadowObserver?.disconnect();
-  shadowObserver = null;
-
-  refreshNativeDarkFlag(enable);
-  findShadowRoots().forEach(root => applyShadowException(root, enable));
-  applyBandcampDarkMode(document, enable);
-
-  // Same cross-bundle reasoning as watchCustomDesignRules: the observer keeps running in both
-  // themes and reads the current one off the root element rather than trusting its argument.
-  shadowObserver = new MutationObserver(() => {
-    const active = isThemeActive();
-    refreshNativeDarkFlag(active);
-    findShadowRoots().forEach(root => applyShadowException(root, active));
-    applyBandcampDarkMode(document, active);
-  });
-
-  shadowObserver.observe(document.documentElement, { childList: true, subtree: true });
+/** Brings the shadow-root exceptions and Bandcamp's own dark-mode opt-in in step with the theme. */
+function enforceShadowState(active: boolean): void {
+  refreshNativeDarkFlag(active);
+  findShadowRoots().forEach(root => applyShadowException(root, active));
+  applyBandcampDarkMode(document, active);
 }
 
-/** Applies a theme by name and brings the artist custom-design sheet in line with it. */
-export function activateTheme(themeName: string | undefined): Theme {
+/** Everything that has to be re-asserted against the DOM when the theme or the page changes. */
+function enforceTheme(): void {
+  const active = isThemeActive();
+
+  enforceCustomDesignState();
+  enforceShadowState(active);
+}
+
+/**
+ * Resolves a theme by name and writes it to the root element. This is the only way the theme is
+ * changed - it sets state and nothing else, so it is safe to call from anywhere: the drawer
+ * toggle, a config broadcast, or an extension page with no Bandcamp markup at all.
+ */
+export function setTheme(themeName: string | undefined): Theme {
   const theme = resolveTheme(themeName);
 
-  const isThemed = theme.name !== DEFAULT_THEME_NAME;
-
   applyTheme(theme);
-  watchCustomDesignRules(isThemed);
-  watchShadowRoots(isThemed);
 
   return theme;
+}
+
+/**
+ * Starts enforcing the theme against Bandcamp's DOM, and keeps doing so for the life of the page.
+ *
+ * Called once, from document_start only. The pieces this has to correct - the artist stylesheet,
+ * the menubar and footer shadow roots, Bandcamp's dialogs - are all parsed or hydrated after
+ * document_start runs, so something has to watch for them; and document_start is the entry point
+ * that runs first and lives longest, which makes it the owner.
+ *
+ * document_end must not call this. It only ever changes the theme, via `setTheme`, and the
+ * attribute observer below picks that up. Having both entry points install observers is what
+ * previously left them fighting over the artist stylesheet, because each bundle is compiled
+ * separately and cannot see - or disconnect - the other's.
+ */
+export function startThemeEnforcement(): void {
+  if (enforcementObserver) return;
+
+  enforceTheme();
+
+  enforcementObserver = new MutationObserver(enforceTheme);
+  enforcementObserver.observe(document.documentElement, {
+    // childList/subtree catches the markup arriving; the attribute filter catches the theme
+    // itself changing, so a toggle in document_end is reacted to immediately rather than on the
+    // next incidental mutation.
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: [THEME_ATTRIBUTE]
+  });
+}
+
+/** Stops enforcement and releases the observer. Exists for tests and for symmetry. */
+export function stopThemeEnforcement(): void {
+  enforcementObserver?.disconnect();
+  enforcementObserver = null;
 }

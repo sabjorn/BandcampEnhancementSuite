@@ -10,7 +10,7 @@ import { initFeed } from './pages/feed';
 import { createKeyboardSettingsSection } from './components/keyboardSettings';
 import { KeyboardSettings } from './types/keyboard';
 import { isBandcampLoggedIn } from './utilities';
-import { activateTheme } from './theme';
+import { setTheme } from './theme';
 import { DARK_THEME, LIGHT_THEME } from './types/theme';
 
 const log = createLogger();
@@ -236,7 +236,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
     if (msg.config && typeof msg.config.themeName === 'string') {
       darkModeToggle.checked = msg.config.themeName === DARK_THEME.name;
-      activateTheme(msg.config.themeName);
+      setTheme(msg.config.themeName);
     }
 
     if (msg.config && msg.config.keyboardSettings) {
@@ -250,9 +250,10 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   });
 
   darkModeToggle.addEventListener('change', () => {
-    // Re-theme immediately so the drawer responds to the click; the backend broadcast that
-    // follows confirms it and is what survives a reload.
-    activateTheme(darkModeToggle.checked ? DARK_THEME.name : LIGHT_THEME.name);
+    // Set the theme immediately so the drawer responds to the click; the backend broadcast that
+    // follows confirms it and is what survives a reload. Enforcement against Bandcamp's DOM is
+    // document_start's job - it observes this attribute and reacts.
+    setTheme(darkModeToggle.checked ? DARK_THEME.name : LIGHT_THEME.name);
     config_port.postMessage({ toggleTheme: {} });
   });
 

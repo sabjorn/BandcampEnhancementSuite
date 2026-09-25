@@ -14,8 +14,9 @@ import {
 } from '../src/types/theme';
 import {
   applyTheme,
-  watchCustomDesignRules,
-  activateTheme,
+  setTheme,
+  startThemeEnforcement,
+  stopThemeEnforcement,
   THEME_ATTRIBUTE,
   CUSTOM_DESIGN_STYLE_ID
 } from '../src/theme';
@@ -184,15 +185,18 @@ describe('Theme', () => {
     });
   });
 
-  describe('watchCustomDesignRules', () => {
+  describe('enforcement against the artist stylesheet', () => {
     beforeEach(() => {
       document.getElementById(CUSTOM_DESIGN_STYLE_ID)?.remove();
     });
 
     afterEach(() => {
-      watchCustomDesignRules(false);
+      stopThemeEnforcement();
       document.getElementById(CUSTOM_DESIGN_STYLE_ID)?.remove();
+      document.documentElement.removeAttribute(THEME_ATTRIBUTE);
     });
+
+    const settle = () => new Promise(resolve => setTimeout(resolve, 0));
 
     const addCustomDesignStyle = (): HTMLStyleElement => {
       const style = document.createElement('style');
@@ -206,22 +210,26 @@ describe('Theme', () => {
     it('should disable an artist stylesheet that is already present', () => {
       const style = addCustomDesignStyle();
 
-      watchCustomDesignRules(true);
+      setTheme('dark');
+      startThemeEnforcement();
 
       expect(style.disabled).toBe(true);
     });
 
-    it('should re-enable the artist stylesheet when theming is turned off', () => {
+    it('should re-enable the artist stylesheet when theming is turned off', async () => {
       const style = addCustomDesignStyle();
 
-      watchCustomDesignRules(true);
-      watchCustomDesignRules(false);
+      setTheme('dark');
+      startThemeEnforcement();
+      setTheme('light');
+      await settle();
 
       expect(style.disabled).toBe(false);
     });
 
     it('should disable an artist stylesheet that arrives after the watch starts', async () => {
-      watchCustomDesignRules(true);
+      setTheme('dark');
+      startThemeEnforcement();
 
       const style = addCustomDesignStyle();
       await new Promise(resolve => setTimeout(resolve, 0));
@@ -230,51 +238,64 @@ describe('Theme', () => {
     });
 
     it('should leave the page alone when nothing custom is present', () => {
-      expect(() => watchCustomDesignRules(true)).not.toThrow();
+      setTheme('dark');
+
+      expect(() => startThemeEnforcement()).not.toThrow();
     });
   });
 
-  describe('activateTheme', () => {
+  describe('setTheme with enforcement running', () => {
     afterEach(() => {
-      watchCustomDesignRules(false);
+      stopThemeEnforcement();
       document.getElementById(CUSTOM_DESIGN_STYLE_ID)?.remove();
+      document.documentElement.removeAttribute(THEME_ATTRIBUTE);
     });
+
+    const settle = () => new Promise(resolve => setTimeout(resolve, 0));
 
     it('should apply the named theme and neutralise artist styling', () => {
       const style = document.createElement('style');
       style.id = CUSTOM_DESIGN_STYLE_ID;
       document.head.appendChild(style);
 
-      const theme = activateTheme('dark');
+      const theme = setTheme('dark');
+      startThemeEnforcement();
 
       expect(theme).toBe(DARK_THEME);
       expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe('dark');
       expect(style.disabled).toBe(true);
     });
 
-    it('should hand artist styling back when the light theme is selected', () => {
+    it('should hand artist styling back when the light theme is selected', async () => {
       const style = document.createElement('style');
       style.id = CUSTOM_DESIGN_STYLE_ID;
       document.head.appendChild(style);
 
-      activateTheme('dark');
-      activateTheme('light');
+      setTheme('dark');
+      startThemeEnforcement();
+      setTheme('light');
+      await settle();
 
       expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe('light');
       expect(style.disabled).toBe(false);
     });
+
+    it('should be idempotent so a second call does not add a second observer', () => {
+      startThemeEnforcement();
+
+      expect(() => startThemeEnforcement()).not.toThrow();
+    });
   });
 
   /*
-   * document_start.js and document_end.js are separate bundles, so each ships its own copy of
-   * theme.ts with its own module-level observers. Loading the module twice through
-   * vi.resetModules() reproduces that faithfully - a single shared instance does not, because
-   * then one call tidies up the very observer the other installed.
+   * document_start.js and document_end.js are compiled separately, so each ships its own copy of
+   * theme.ts with its own module state. Loading the module twice through vi.resetModules()
+   * reproduces that; a single shared instance does not.
    *
-   * The failure this guards against: document_start themes the page dark and leaves an observer
-   * behind; the user toggles to light through document_end's copy; document_start's observer
-   * then fires on the next DOM change and re-disables the artist stylesheet that was just
-   * restored, leaving artist pages permanently stripped of their own design.
+   * The design that has to hold: document_start owns enforcement, document_end only ever sets
+   * the theme, and the attribute carries the change between them. Both installing observers is
+   * what previously left them fighting over the artist stylesheet - neither bundle can see, or
+   * disconnect, the other's.
    */
   describe('two module instances, as the two content-script bundles produce', () => {
     let artistStyle: HTMLStyleElement;
@@ -296,41 +317,52 @@ describe('Theme', () => {
     });
 
     afterEach(() => {
-      documentStart.watchCustomDesignRules(false);
-      documentEnd.watchCustomDesignRules(false);
+      documentStart.stopThemeEnforcement();
+      documentEnd.stopThemeEnforcement();
       artistStyle.remove();
       document.documentElement.removeAttribute(THEME_ATTRIBUTE);
     });
 
     const settle = () => new Promise(resolve => setTimeout(resolve, 0));
 
-    it("should not let document_start's observer undo a switch back to light", async () => {
-      documentStart.activateTheme('dark');
+    it('should follow a theme change made by the other bundle', async () => {
+      documentStart.setTheme('dark');
+      documentStart.startThemeEnforcement();
       expect(artistStyle.disabled).toBe(true);
 
-      documentEnd.activateTheme('light');
-      expect(artistStyle.disabled).toBe(false);
-
-      document.body.appendChild(document.createElement('div'));
+      // document_end's toggle only writes state; document_start's observer does the work.
+      documentEnd.setTheme('light');
       await settle();
 
       expect(artistStyle.disabled).toBe(false);
     });
 
-    it("should let document_start's observer re-assert when switched back to dark", async () => {
-      documentStart.activateTheme('dark');
-      documentEnd.activateTheme('light');
-      documentEnd.activateTheme('dark');
+    it('should re-assert when switched back to dark by the other bundle', async () => {
+      documentStart.setTheme('dark');
+      documentStart.startThemeEnforcement();
+      documentEnd.setTheme('light');
+      await settle();
 
-      document.body.appendChild(document.createElement('div'));
+      documentEnd.setTheme('dark');
       await settle();
 
       expect(artistStyle.disabled).toBe(true);
+    });
+
+    it('should not enforce from document_end, which installs no observer', async () => {
+      documentEnd.setTheme('dark');
+      await settle();
+
+      // No enforcer is running, so the attribute is set but the sheet is untouched.
+      expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe('dark');
+      expect(artistStyle.disabled).toBe(false);
     });
 
     it('should restore an artist sheet that only arrives after switching to light', async () => {
-      documentStart.activateTheme('dark');
-      documentEnd.activateTheme('light');
+      documentStart.setTheme('dark');
+      documentStart.startThemeEnforcement();
+      documentEnd.setTheme('light');
+      await settle();
 
       artistStyle.remove();
       const late = document.createElement('style');
@@ -344,15 +376,6 @@ describe('Theme', () => {
     });
   });
 
-  /*
-   * Contrast is a property of the token values themselves, so it is asserted on the struct
-   * rather than discovered in a browser. This is what caught the cart's muted currency labels
-   * sitting at 4.34:1 on the raised surface.
-   *
-   * Only the dark theme is checked. LIGHT_THEME deliberately holds Bandcamp's own palette - its
-   * #999 muted grey and #1da0c3 accent do not clear AA against white, and "fixing" them would
-   * mean BES restyling Bandcamp in light mode, which is explicitly not what this feature does.
-   */
   describe('dark theme contrast', () => {
     const relativeLuminance = (hex: string): number => {
       const channels = [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16) / 255);

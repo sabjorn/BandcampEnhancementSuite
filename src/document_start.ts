@@ -1,4 +1,6 @@
 import { createLogger } from './logger';
+import { activateTheme } from './theme';
+import { readMirroredThemeName } from './themeStorage';
 
 const log = createLogger();
 
@@ -30,5 +32,12 @@ const captureUrlCartParam = (): void => {
   window.location.replace(newUrl);
 };
 
+const applyStoredTheme = (): void => {
+  readMirroredThemeName()
+    .then(themeName => activateTheme(themeName))
+    .catch(error => log.error(`Failed to apply the stored theme: ${error}`));
+};
+
+applyStoredTheme();
 warmServiceWorker();
 captureUrlCartParam();

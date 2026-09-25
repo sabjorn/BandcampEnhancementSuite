@@ -1,0 +1,198 @@
+/*
+ * BES theme tokens and the hand-authored part of the theme.
+ *
+ * Loads at document_start alongside css/theme.generated.css, which carries the bulk of the
+ * Bandcamp overrides derived from Bandcamp's own stylesheets. Everything that needs judgement -
+ * the token values, the page-level base layer, icon-sheet inversion - lives here.
+ *
+ * Every override is scoped under [data-bes-theme='dark'], so both files are inert until
+ * src/theme.ts stamps that attribute on <html>. The tokens are also written inline onto <html>
+ * at runtime; the declarations below are what makes the stylesheet correct on its own.
+ */
+
+/* Light is Bandcamp's own palette, so selecting it is a no-op rather than a re-skin. */
+:root {
+  --bes-surface-0: #ffffff;
+  --bes-surface-1: #f5f5f5;
+  --bes-surface-2: #ebebeb;
+  --bes-border: #cccccc;
+  --bes-text-muted: #999999;
+  --bes-text-body: #666666;
+  --bes-text-strong: #333333;
+  --bes-text-max: #000000;
+  --bes-accent: #1da0c3;
+  --bes-accent-text: #ffffff;
+  --bes-danger: #c43329;
+  --bes-warning: #f9780a;
+  --bes-success: #619aa9;
+  --bes-sprite-filter: none;
+}
+
+[data-bes-theme='dark'] {
+  --bes-surface-0: #121212;
+  --bes-surface-1: #1c1c1e;
+  --bes-surface-2: #27272a;
+  --bes-border: #3f3f46;
+  --bes-text-muted: #8a8a91;
+  --bes-text-body: #b4b4bb;
+  --bes-text-strong: #e4e4e7;
+  --bes-text-max: #fafafa;
+  --bes-accent: #4cc4e3;
+  --bes-accent-text: #0b1416;
+  --bes-danger: #f2685c;
+  --bes-warning: #fba14b;
+  --bes-success: #7fc0cf;
+  --bes-sprite-filter: invert(1) hue-rotate(180deg);
+}
+
+/*
+ * Base layer.
+ *
+ * The generated file only covers elements Bandcamp gave an explicit color. Anything that simply
+ * inherited from the page - most of the layout containers - needs a floor to sit on, which is
+ * what these rules provide.
+ */
+html[data-bes-theme='dark'],
+html[data-bes-theme='dark'] body {
+  background-color: var(--bes-surface-0) !important;
+  color: var(--bes-text-strong) !important;
+}
+
+html[data-bes-theme='dark'] #pgBd,
+html[data-bes-theme='dark'] #centerWrapper,
+html[data-bes-theme='dark'] #propOpenWrapper,
+html[data-bes-theme='dark'] #bg,
+html[data-bes-theme='dark'] #collection-main,
+html[data-bes-theme='dark'] #discography,
+html[data-bes-theme='dark'] #stories,
+html[data-bes-theme='dark'] .download-item-container {
+  background-color: var(--bes-surface-0) !important;
+  color: var(--bes-text-strong) !important;
+}
+
+/*
+ * Artist and label pages paint a custom background image behind #pgBd. src/theme.ts disables the
+ * generated custom-design sheet, but the image is set on the element itself, so it is cleared
+ * here rather than left showing through.
+ */
+html[data-bes-theme='dark'] #pgBd,
+html[data-bes-theme='dark'] body {
+  background-image: none !important;
+}
+
+html[data-bes-theme='dark'] #menubar,
+html[data-bes-theme='dark'] #band-navbar,
+html[data-bes-theme='dark'] .menubar-item,
+html[data-bes-theme='dark'] #pgFt,
+html[data-bes-theme='dark'] footer:not(.bes-drawer *) {
+  background-color: var(--bes-surface-1) !important;
+  color: var(--bes-text-strong) !important;
+  border-color: var(--bes-border) !important;
+}
+
+/*
+ * Links styled as buttons (Bandcamp's green `a.buttonLink` checkout controls, its `.g-button`
+ * and buy links) carry their own background and label color, so the blanket link rule below has
+ * to leave them alone - otherwise their white labels are repainted in the page accent and sit at
+ * poor contrast on a coloured button.
+ *
+ * Bare type selectors also have to skip BES's own UI. These overrides carry !important, so without
+ * the exclusion they beat the components' own colors and repaint the drawer's links and buttons
+ * in the page accent. The same guard is applied by scripts/generate-theme.ts.
+ */
+html[data-bes-theme='dark']
+  a:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(
+    .buy-link
+  ):not(.compound-button),
+html[data-bes-theme='dark']
+  a:visited:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(
+    .buy-link
+  ):not(.compound-button),
+html[data-bes-theme='dark'] a.custom-color,
+html[data-bes-theme='dark'] .custom-link-color {
+  color: var(--bes-accent) !important;
+}
+
+/* Form controls default to the platform light chrome unless told otherwise. */
+html[data-bes-theme='dark'] input:not([class*='bes-']):not(.bes-drawer *),
+html[data-bes-theme='dark'] select:not([class*='bes-']):not(.bes-drawer *),
+html[data-bes-theme='dark'] textarea:not([class*='bes-']):not(.bes-drawer *) {
+  background-color: var(--bes-surface-1) !important;
+  color: var(--bes-text-strong) !important;
+  border-color: var(--bes-border) !important;
+}
+
+html[data-bes-theme='dark'] ::placeholder {
+  color: var(--bes-text-muted) !important;
+}
+
+/* Asks the browser for dark scrollbars, form widgets and the like. */
+html[data-bes-theme='dark'] {
+  color-scheme: dark;
+}
+
+/*
+ * Icon sheets.
+ *
+ * Bandcamp's UI icons are dark-on-transparent PNG sprites, which vanish against a dark surface.
+ * They carry no color information worth preserving, so inverting them is safe - unlike album
+ * art, which is never touched.
+ */
+html[data-bes-theme='dark'] [class*='sprite'],
+html[data-bes-theme='dark'] .ui-icon,
+html[data-bes-theme='dark'] .menubar-cart-icon,
+html[data-bes-theme='dark'] .item-action-icon,
+html[data-bes-theme='dark'] .collect-item-icon,
+html[data-bes-theme='dark'] .bc-ui {
+  filter: var(--bes-sprite-filter);
+}
+
+/*
+ * Album art, band photos, video and the waveform canvas must never be inverted - they are the
+ * content. This re-asserts that against the broad sprite rule above.
+ */
+html[data-bes-theme='dark'] img,
+html[data-bes-theme='dark'] video,
+html[data-bes-theme='dark'] canvas,
+html[data-bes-theme='dark'] .popupImage img,
+html[data-bes-theme='dark'] #tralbumArt img,
+html[data-bes-theme='dark'] .art img {
+  filter: none;
+}
+
+/*
+ * Bandcamp's newer web components (the footer, dialogs, search and discover) carry a second
+ * design system of their own: a neutral ramp plus semantic aliases, declared on `:root, :host`
+ * inside each shadow root. None of it is defined on the page's own :root, and none of it is
+ * reachable by the generated overrides, which only see the classic stylesheets.
+ *
+ * Redeclaring those variables from the outer document works because a declaration targeting a
+ * shadow host from outside beats the `:host` declaration inside it, and custom properties then
+ * inherit down through the shadow boundary. The `*` is what makes it reach hosts we cannot name;
+ * the values are identical on every element, so the inherited style is shared rather than
+ * recomputed per node.
+ *
+ * Components that are *already* dark in the light theme - the page footer chief among them - get
+ * their native values handed back by src/theme.ts, which can reach inside the shadow root to
+ * scope the exception properly.
+ */
+html[data-bes-theme='dark'] * {
+  --white: var(--bes-surface-0);
+  --gray100: var(--bes-surface-1);
+  --gray200: var(--bes-surface-2);
+  --gray300: var(--bes-border);
+  --gray400: var(--bes-text-muted);
+  --gray500: var(--bes-text-body);
+  --gray600: var(--bes-text-strong);
+  --gray700: var(--bes-text-max);
+
+  --default-background-color: var(--bes-surface-0);
+  --default-foreground-color: var(--bes-text-strong);
+  --page-background-color: var(--bes-surface-0);
+  --page-text-color: var(--bes-text-strong);
+
+  /* Bandcamp already ships a dark variant of its dialog component; these are its knobs. */
+  --dialog-background-color: var(--bes-surface-0);
+  --dialog-title-background-color: var(--bes-surface-1);
+  --border-color-subtle: var(--bes-border);
+}

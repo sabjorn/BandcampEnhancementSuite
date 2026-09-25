@@ -367,3 +367,104 @@ describe('Played caching setting', () => {
     expect(mockPort.postMessage).toHaveBeenCalledWith({ togglePlayedCaching: {} });
   });
 });
+
+describe('Dark mode setting', () => {
+  let mockPort: any;
+
+  const buildDrawer = async () => {
+    document.body.innerHTML = '';
+    mockRuntimeSendMessage.mockResolvedValue({ granted: false });
+
+    const endModule = await import('../src/document_end');
+    endModule.initBESDrawer(mockPort as any);
+
+    await new Promise(resolve => setTimeout(resolve, 0));
+  };
+
+  const toggle = () => document.getElementById('bes-dark-mode-toggle') as HTMLInputElement;
+  const configListener = () => mockPort.onMessage.addListener.mock.calls[0][0];
+
+  beforeEach(() => {
+    mockPort = {
+      onMessage: { addListener: vi.fn() },
+      postMessage: vi.fn()
+    };
+    document.documentElement.removeAttribute('data-bes-theme');
+    document.documentElement.removeAttribute('style');
+  });
+
+  afterEach(() => {
+    cleanupTestNodes();
+    vi.clearAllMocks();
+  });
+
+  it('should offer a dark mode toggle that is always visible', async () => {
+    await buildDrawer();
+
+    expect(toggle()).toBeTruthy();
+    expect(toggle().type).toBe('checkbox');
+    expect((toggle().closest('.bes-drawer-setting') as HTMLElement).style.display).not.toBe('none');
+    expect(document.body.textContent).toContain('Dark mode');
+  });
+
+  it('should ask the backend to toggle the theme when clicked', async () => {
+    await buildDrawer();
+
+    toggle().checked = true;
+    toggle().dispatchEvent(new Event('change'));
+
+    expect(mockPort.postMessage).toHaveBeenCalledWith({ toggleTheme: {} });
+  });
+
+  /*
+   * The click themes the page directly instead of waiting for the round trip, so the drawer the
+   * user is looking at changes under their cursor rather than a beat later.
+   */
+  it('should theme the page immediately rather than waiting for the broadcast', async () => {
+    await buildDrawer();
+
+    toggle().checked = true;
+    toggle().dispatchEvent(new Event('change'));
+
+    expect(document.documentElement.getAttribute('data-bes-theme')).toBe('dark');
+  });
+
+  it('should return the page to light when switched back off', async () => {
+    await buildDrawer();
+
+    toggle().checked = true;
+    toggle().dispatchEvent(new Event('change'));
+    toggle().checked = false;
+    toggle().dispatchEvent(new Event('change'));
+
+    expect(document.documentElement.getAttribute('data-bes-theme')).toBe('light');
+  });
+
+  it('should reflect the stored theme from the config broadcast', async () => {
+    await buildDrawer();
+
+    configListener()({ config: { themeName: 'dark' } });
+    expect(toggle().checked).toBe(true);
+    expect(document.documentElement.getAttribute('data-bes-theme')).toBe('dark');
+
+    configListener()({ config: { themeName: 'light' } });
+    expect(toggle().checked).toBe(false);
+    expect(document.documentElement.getAttribute('data-bes-theme')).toBe('light');
+  });
+
+  it('should disable artist page styling when dark mode is on', async () => {
+    const artistStyle = document.createElement('style');
+    artistStyle.id = 'custom-design-rules-style';
+    document.head.appendChild(artistStyle);
+
+    await buildDrawer();
+    configListener()({ config: { themeName: 'dark' } });
+
+    expect(artistStyle.disabled).toBe(true);
+
+    configListener()({ config: { themeName: 'light' } });
+    expect(artistStyle.disabled).toBe(false);
+
+    artistStyle.remove();
+  });
+});

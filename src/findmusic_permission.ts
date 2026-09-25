@@ -1,8 +1,11 @@
 import Logger from './logger';
 import { exchangeBandcampToken } from './clients/findmusic';
 import { getDB } from './utilities';
+import { applyStoredTheme } from './theme';
 
 const log = new Logger();
+
+applyStoredTheme().catch(error => log.error(`Failed to theme the permission page: ${error}`));
 const status = document.getElementById('status')!;
 const button = document.getElementById('grant-permission') as HTMLButtonElement;
 const cancelButton = document.getElementById('cancel-button')!;

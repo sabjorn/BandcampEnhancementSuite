@@ -137,13 +137,21 @@ html[data-bes-theme='dark']:not([data-bes-native-dark]) {
  * Bandcamp's UI icons are dark-on-transparent PNG sprites, which vanish against a dark surface.
  * They carry no color information worth preserving, so inverting them is safe - unlike album
  * art, which is never touched.
+ *
+ * The list is matched by class because a selector cannot ask what a background-image points at.
+ * `[class*='bc-ui']` deliberately covers the bc-ui2 sheet as well - naming only `.bc-ui` left the
+ * share/embed icons black on black. To find others, look for elements with a background-image
+ * from Bandcamp's /img/ and no filter applied.
  */
 html[data-bes-theme='dark']:not([data-bes-native-dark]) [class*='sprite'],
 html[data-bes-theme='dark']:not([data-bes-native-dark]) .ui-icon,
 html[data-bes-theme='dark']:not([data-bes-native-dark]) .menubar-cart-icon,
 html[data-bes-theme='dark']:not([data-bes-native-dark]) .item-action-icon,
 html[data-bes-theme='dark']:not([data-bes-native-dark]) .collect-item-icon,
-html[data-bes-theme='dark']:not([data-bes-native-dark]) .bc-ui {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .prevbutton,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .nextbutton,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .cc-icons,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) [class*='bc-ui'] {
   filter: var(--bes-sprite-filter);
 }
 

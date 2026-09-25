@@ -20,8 +20,10 @@ input[type='range'].volume::-webkit-slider-thumb {
   overflow: visible;
   width: 20px;
   height: 12px;
-  background-color: var(--bes-surface-0);
-  border: 1px solid var(--bes-border);
+  /* The handle carries the accent so it reads against the groove; as a surface tone it was
+     near-invisible on a dark page. The groove itself stays neutral. */
+  background-color: var(--bes-accent);
+  border: 1px solid var(--bes-accent);
   box-shadow: -100px 0 0 100px var(--bes-surface-1);
 }
 
@@ -1786,6 +1788,21 @@ body.bes-drawer-expanded #pgBd {
 .bes-player-drawer-tracklist .bes-track-row {
   cursor: pointer;
   transition: background-color 0.2s ease;
+}
+
+/*
+ * Declare the separators rather than inheriting them. BES elements are excluded from the
+ * generated Bandcamp overrides so we do not clobber our own styling, which means anything we
+ * leave unset keeps Bandcamp's raw value - here a dotted #c8c8c8 cell border that reads as
+ * scratchy on a dark surface.
+ */
+.bes-player-drawer-tracklist .bes-track-row td {
+  border-top: none;
+  border-bottom: 1px solid var(--bes-border);
+}
+
+.bes-player-drawer-tracklist .bes-track-row:last-child td {
+  border-bottom: none;
 }
 
 .bes-player-drawer .bes-track-row:hover {

@@ -161,8 +161,8 @@ describe('Theme', () => {
       applyTheme(DARK_THEME);
 
       const style = document.documentElement.getAttribute('style') ?? '';
-      expect(style).toContain('--bes-surface-0: #121212');
-      expect(style).toContain('--bes-accent: #4cc4e3');
+      expect(style).toContain(`--bes-surface-0: ${DARK_THEME.surface0}`);
+      expect(style).toContain(`--bes-accent: ${DARK_THEME.accent}`);
     });
 
     it('should replace previous tokens rather than accumulate them on re-apply', () => {
@@ -170,8 +170,8 @@ describe('Theme', () => {
       applyTheme(LIGHT_THEME);
 
       const style = document.documentElement.getAttribute('style') ?? '';
-      expect(style).toContain('--bes-surface-0: #ffffff');
-      expect(style).not.toContain('#121212');
+      expect(style).toContain(`--bes-surface-0: ${LIGHT_THEME.surface0}`);
+      expect(style).not.toContain(DARK_THEME.surface0);
       expect(style.match(/--bes-surface-0/g)).toHaveLength(1);
     });
 
@@ -368,7 +368,18 @@ describe('Theme', () => {
     };
 
     const SURFACES = ['surface0', 'surface1', 'surface2'] as const;
-    const FOREGROUNDS = ['textMuted', 'textBody', 'textStrong', 'textMax', 'accent'] as const;
+    // The semantic tones are foregrounds too - error and warning text is rendered in them,
+    // and `danger` only just cleared AA after the surfaces were re-anchored on Bandcamp's.
+    const FOREGROUNDS = [
+      'textMuted',
+      'textBody',
+      'textStrong',
+      'textMax',
+      'accent',
+      'danger',
+      'warning',
+      'success'
+    ] as const;
     const AA_NORMAL_TEXT = 4.5;
 
     it('should verify the helper against a known pair', () => {
@@ -385,6 +396,18 @@ describe('Theme', () => {
           `${foreground} (${DARK_THEME[foreground]}) on ${surface} (${DARK_THEME[surface]}) is ${ratio.toFixed(2)}:1`
         ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
       }
+    });
+
+    /*
+     * These three come straight from Bandcamp's own dark mode (sampled on /discover:
+     * --default-background-color, --default-foreground-color, --blue400). Keeping them in step
+     * is what stops pages we theme and pages Bandcamp themes itself reading as two different
+     * dark modes. Change them only alongside a deliberate decision to diverge.
+     */
+    it("should stay anchored on Bandcamp's own dark values", () => {
+      expect(DARK_THEME.surface0).toBe('#222222');
+      expect(DARK_THEME.textMax).toBe('#ffffff');
+      expect(DARK_THEME.accent).toBe('#0cacd7');
     });
 
     it('should keep accentText legible on the accent fill', () => {

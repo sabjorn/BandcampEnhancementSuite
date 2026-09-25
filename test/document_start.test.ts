@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { DARK_THEME } from '../src/types/theme';
 
 vi.mock('../src/logger', () => ({
   createLogger: () => ({
@@ -114,7 +115,7 @@ describe('document_start theming', () => {
     await runDocumentStart();
     await vi.waitFor(() => expect(document.documentElement.getAttribute('data-bes-theme')).toBe('dark'));
 
-    expect(document.documentElement.getAttribute('style')).toContain('--bes-surface-0: #121212');
+    expect(document.documentElement.getAttribute('style')).toContain(`--bes-surface-0: ${DARK_THEME.surface0}`);
   });
 
   it('falls back to the light theme when nothing is mirrored yet', async () => {

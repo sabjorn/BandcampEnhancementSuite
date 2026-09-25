@@ -205,7 +205,7 @@ input.currency-input::-webkit-outer-spin-button {
 .one-click-button .icon-plus {
   height: 10px;
   width: 10px;
-  fill: #0687f5;
+  fill: var(--bes-accent);
 }
 
 .one-click-button:is(:active, :hover) .icon-plus {
@@ -290,7 +290,7 @@ input.currency-input::-webkit-outer-spin-button {
   height: 10px;
   width: 10px;
   border: 2px solid rgba(6, 135, 245, 0.25);
-  border-top-color: #0687f5;
+  border-top-color: var(--bes-accent);
   border-radius: 50%;
   animation: besCartSpin 0.6s linear infinite;
 }
@@ -591,6 +591,17 @@ button.bes-downloadall[disabled]::after {
   margin: 0;
   font-size: 18px;
   font-weight: 500;
+  color: var(--bes-accent-text);
+}
+
+/*
+ * Headings inside the drawer name their own colour for the same reason as above: Bandcamp
+ * styles bare `h2`/`h3`, and an element rule beats the colour they would otherwise inherit from
+ * the drawer. On search that was turning them Bandcamp's teal.
+ */
+.bes-drawer-content h2,
+.bes-drawer-content h3 {
+  color: var(--bes-text-strong);
 }
 
 .bes-drawer-close {
@@ -848,6 +859,10 @@ button.bes-downloadall[disabled]::after {
 
 .bes-key-binding-display {
   padding: 6px 12px;
+  /* Set explicitly rather than inherited: Bandcamp styles bare elements (button, h2, ...) and
+     an element rule beats inheritance, so anything in here that does not name its own colour
+     gets whatever Bandcamp last said. */
+  color: var(--bes-accent);
   background: var(--bes-surface-1);
   border: 1px solid var(--bes-surface-2);
   border-radius: 4px;
@@ -1891,7 +1906,7 @@ body.bes-drawer-expanded #pgBd {
   justify-content: center;
   width: 24px;
   height: 24px;
-  color: #0687f5;
+  color: var(--bes-accent);
   text-decoration: none;
   font-size: 14px;
   border: 1px solid transparent;
@@ -1906,7 +1921,7 @@ body.bes-drawer-expanded #pgBd {
      light-mode colour, so only the dark theme changes. */
   background-color: var(--bes-surface-2);
   background-color: color-mix(in srgb, var(--bes-accent) 5%, var(--bes-surface-0));
-  border-color: #0687f5;
+  border-color: var(--bes-accent);
   text-decoration: none;
 }
 

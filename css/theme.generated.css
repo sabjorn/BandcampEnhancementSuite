@@ -1067,7 +1067,7 @@ html[data-bes-theme='dark']:not([data-bes-native-dark]) .gift-card-icon-bordered
   background: var(--bes-border) !important;
 }
 
-html[data-bes-theme='dark']:not([data-bes-native-dark]) a:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.buy-link):not(.compound-button) {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) a:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.compound-button) {
   color: var(--bes-accent) !important;
 }
 
@@ -1211,13 +1211,13 @@ html[data-bes-theme='dark']:not([data-bes-native-dark]) .minimal-hd.hd {
   background-color: var(--bes-surface-2) !important;
 }
 
-html[data-bes-theme='dark']:not([data-bes-native-dark]) body:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.buy-link):not(.compound-button) {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) body:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.compound-button) {
   background-color: var(--bes-surface-0) !important;
 }
 
-html[data-bes-theme='dark']:not([data-bes-native-dark]) a:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.buy-link):not(.compound-button),
+html[data-bes-theme='dark']:not([data-bes-native-dark]) a:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.compound-button),
 html[data-bes-theme='dark']:not([data-bes-native-dark]) .pseudoLink,
-html[data-bes-theme='dark']:not([data-bes-native-dark]) button:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.buy-link):not(.compound-button) {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) button:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.compound-button) {
   color: var(--bes-accent) !important;
 }
 
@@ -1294,7 +1294,7 @@ html[data-bes-theme='dark']:not([data-bes-native-dark]) #daily-view-all > sectio
   border-bottom: 1px solid color-mix(in srgb, var(--bes-surface-0) 30%, transparent) !important;
 }
 
-html[data-bes-theme='dark']:not([data-bes-native-dark]) dailyfooter:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.buy-link):not(.compound-button) {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) dailyfooter:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.compound-button) {
   background: var(--bes-surface-1) !important;
 }
 
@@ -1427,7 +1427,7 @@ html[data-bes-theme='dark']:not([data-bes-native-dark]) .button-group button:act
   border-left-color: var(--bes-text-strong) !important;
 }
 
-html[data-bes-theme='dark']:not([data-bes-native-dark]) button:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.buy-link):not(.compound-button) {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) button:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.compound-button) {
   border: 1px solid var(--bes-border) !important;
   background: var(--bes-surface-0) !important;
 }
@@ -1441,8 +1441,8 @@ html[data-bes-theme='dark']:not([data-bes-native-dark]) button.button-blue {
   background: var(--bes-accent) !important;
 }
 
-html[data-bes-theme='dark']:not([data-bes-native-dark]) td:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.buy-link):not(.compound-button),
-html[data-bes-theme='dark']:not([data-bes-native-dark]) th:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.buy-link):not(.compound-button) {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) td:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.compound-button),
+html[data-bes-theme='dark']:not([data-bes-native-dark]) th:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.compound-button) {
   border-top: dotted var(--bes-border) 1px !important;
   border-bottom: dotted var(--bes-border) 1px !important;
 }
@@ -1551,7 +1551,7 @@ html[data-bes-theme='dark']:not([data-bes-native-dark]) #status-spinny {
   border: 1px solid var(--bes-surface-0) !important;
 }
 
-html[data-bes-theme='dark']:not([data-bes-native-dark]) body:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.buy-link):not(.compound-button) {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) body:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(.compound-button) {
   background: var(--bes-surface-1) !important;
 }
 
@@ -2426,6 +2426,7 @@ html[data-bes-theme='dark']:not([data-bes-native-dark]) #live-ticket-item ul.edi
 }
 
 html[data-bes-theme='dark']:not([data-bes-native-dark]) .invertIconography #live-ticket-item:not(.mobile) .ticket-info .buy-link {
+  color: var(--bes-text-max) !important;
   background-color: var(--bes-surface-0) !important;
 }
 

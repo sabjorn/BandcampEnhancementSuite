@@ -29,17 +29,17 @@
 }
 
 [data-bes-theme='dark'] {
-  --bes-surface-0: #121212;
-  --bes-surface-1: #1c1c1e;
-  --bes-surface-2: #27272a;
-  --bes-border: #3f3f46;
-  --bes-text-muted: #9a9aa1;
-  --bes-text-body: #b4b4bb;
-  --bes-text-strong: #e4e4e7;
-  --bes-text-max: #fafafa;
-  --bes-accent: #4cc4e3;
-  --bes-accent-text: #0b1416;
-  --bes-danger: #f2685c;
+  --bes-surface-0: #222222;
+  --bes-surface-1: #2a2a2a;
+  --bes-surface-2: #333333;
+  --bes-border: #454545;
+  --bes-text-muted: #a8a8a8;
+  --bes-text-body: #c4c4c4;
+  --bes-text-strong: #e8e8e8;
+  --bes-text-max: #ffffff;
+  --bes-accent: #0cacd7;
+  --bes-accent-text: #222222;
+  --bes-danger: #f4857b;
   --bes-warning: #fba14b;
   --bes-success: #7fc0cf;
   --bes-sprite-filter: invert(1) hue-rotate(180deg);

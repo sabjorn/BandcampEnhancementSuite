@@ -84,7 +84,7 @@ const BES_EXCLUSION = ":not([class*='bes-']):not([class*='findmusic-']):not(.bes
  * so without this it repaints their labels in the page accent - cyan text on Bandcamp's green
  * checkout button. Dropping `!important` would not help; the prefix alone is enough to win.
  */
-const BUTTON_LIKE_EXCLUSION = ':not(.buttonLink):not(.g-button):not(.buy-link):not(.compound-button)';
+const BUTTON_LIKE_EXCLUSION = ':not(.buttonLink):not(.g-button):not(.compound-button)';
 
 const BARE_TYPE_SELECTOR = /^[a-zA-Z][a-zA-Z0-9]*(::?[a-z-]+(\([^)]*\))?)*$/;
 
@@ -327,7 +327,7 @@ function hasTranslucentGrey(property: string, value: string): boolean {
  * Their labels sit on a background we deliberately leave unthemed, so inverting the label alone
  * would put dark text on green. Their `color` is left exactly as Bandcamp set it.
  */
-const SOLID_BUTTON_CLASSES = ['buttonLink', 'g-button', 'buy-link', 'compound-button'];
+const SOLID_BUTTON_CLASSES = ['buttonLink', 'g-button', 'compound-button'];
 
 function targetsSolidButton(selector: string): boolean {
   return SOLID_BUTTON_CLASSES.some(name => selector.includes(`.${name}`));

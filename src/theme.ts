@@ -119,29 +119,47 @@ export async function applyStoredTheme(): Promise<Theme> {
 }
 
 /*
- * Components that are already dark in Bandcamp's light theme - the page footer above all - must
- * keep their native palette, or the outer-document remap in css/theme.css flips them into a
- * bright slab at the bottom of a dark page.
+ * Components that are already dark in Bandcamp's light theme - the menubar and the page footer -
+ * must keep their native palette, or the outer-document remap in css/theme.css flips them into a
+ * bright slab on a dark page.
  *
  * The exception has to be scoped *inside* the shadow root, because the footer chrome and the
  * cookie dialog live in the same tree and need opposite treatment. An outer stylesheet cannot
  * select either of them, so the rules are adopted into the shadow root directly.
  */
+const NATIVE_RAMP = `
+  --white: #ffffff;
+  --gray100: #f8f8f8;
+  --gray200: #e6e6e6;
+  --gray300: #aaaaaa;
+  --gray400: #767676;
+  --gray500: #5a5a5a;
+  --gray600: #333333;
+  --gray700: #222222;
+`;
+
 const SHADOW_EXCEPTION_CSS = `
   #page-footer,
   #page-footer * {
-    --white: #ffffff;
-    --gray100: #f8f8f8;
-    --gray200: #e6e6e6;
-    --gray300: #aaaaaa;
-    --gray400: #767676;
-    --gray500: #5a5a5a;
-    --gray600: #333333;
-    --gray700: #222222;
+    ${NATIVE_RAMP}
     --default-background-color: #333333;
     --default-foreground-color: #f8f8f8;
     --page-background-color: #333333;
     --page-text-color: #f8f8f8;
+  }
+
+  /*
+   * The menubar is the other already-dark component, and unlike the footer the whole shadow tree
+   * wants the native palette - there is no lighter region inside it needing opposite treatment.
+   * Left remapped it inverts exactly: a white bar with dark text on a dark page.
+   */
+  :host(menu-bar),
+  :host(menu-bar) * {
+    ${NATIVE_RAMP}
+    --default-background-color: #222222;
+    --default-foreground-color: #ffffff;
+    --page-background-color: #222222;
+    --page-text-color: #ffffff;
   }
 `;
 

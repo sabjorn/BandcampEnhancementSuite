@@ -52,20 +52,20 @@
  * inherited from the page - most of the layout containers - needs a floor to sit on, which is
  * what these rules provide.
  */
-html[data-bes-theme='dark'],
-html[data-bes-theme='dark'] body {
+html[data-bes-theme='dark']:not([data-bes-native-dark]),
+html[data-bes-theme='dark']:not([data-bes-native-dark]) body {
   background-color: var(--bes-surface-0) !important;
   color: var(--bes-text-strong) !important;
 }
 
-html[data-bes-theme='dark'] #pgBd,
-html[data-bes-theme='dark'] #centerWrapper,
-html[data-bes-theme='dark'] #propOpenWrapper,
-html[data-bes-theme='dark'] #bg,
-html[data-bes-theme='dark'] #collection-main,
-html[data-bes-theme='dark'] #discography,
-html[data-bes-theme='dark'] #stories,
-html[data-bes-theme='dark'] .download-item-container {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #pgBd,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #centerWrapper,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #propOpenWrapper,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #bg,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #collection-main,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #discography,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #stories,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .download-item-container {
   background-color: var(--bes-surface-0) !important;
   color: var(--bes-text-strong) !important;
 }
@@ -75,16 +75,16 @@ html[data-bes-theme='dark'] .download-item-container {
  * generated custom-design sheet, but the image is set on the element itself, so it is cleared
  * here rather than left showing through.
  */
-html[data-bes-theme='dark'] #pgBd,
-html[data-bes-theme='dark'] body {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #pgBd,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) body {
   background-image: none !important;
 }
 
-html[data-bes-theme='dark'] #menubar,
-html[data-bes-theme='dark'] #band-navbar,
-html[data-bes-theme='dark'] .menubar-item,
-html[data-bes-theme='dark'] #pgFt,
-html[data-bes-theme='dark'] footer:not(.bes-drawer *) {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #menubar,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #band-navbar,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .menubar-item,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #pgFt,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) footer:not(.bes-drawer *) {
   background-color: var(--bes-surface-1) !important;
   color: var(--bes-text-strong) !important;
   border-color: var(--bes-border) !important;
@@ -100,34 +100,34 @@ html[data-bes-theme='dark'] footer:not(.bes-drawer *) {
  * the exclusion they beat the components' own colors and repaint the drawer's links and buttons
  * in the page accent. The same guard is applied by scripts/generate-theme.ts.
  */
-html[data-bes-theme='dark']
+html[data-bes-theme='dark']:not([data-bes-native-dark])
   a:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(
     .buy-link
   ):not(.compound-button),
-html[data-bes-theme='dark']
+html[data-bes-theme='dark']:not([data-bes-native-dark])
   a:visited:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(.g-button):not(
     .buy-link
   ):not(.compound-button),
-html[data-bes-theme='dark'] a.custom-color,
-html[data-bes-theme='dark'] .custom-link-color {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) a.custom-color,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .custom-link-color {
   color: var(--bes-accent) !important;
 }
 
 /* Form controls default to the platform light chrome unless told otherwise. */
-html[data-bes-theme='dark'] input:not([class*='bes-']):not(.bes-drawer *),
-html[data-bes-theme='dark'] select:not([class*='bes-']):not(.bes-drawer *),
-html[data-bes-theme='dark'] textarea:not([class*='bes-']):not(.bes-drawer *) {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) input:not([class*='bes-']):not(.bes-drawer *),
+html[data-bes-theme='dark']:not([data-bes-native-dark]) select:not([class*='bes-']):not(.bes-drawer *),
+html[data-bes-theme='dark']:not([data-bes-native-dark]) textarea:not([class*='bes-']):not(.bes-drawer *) {
   background-color: var(--bes-surface-1) !important;
   color: var(--bes-text-strong) !important;
   border-color: var(--bes-border) !important;
 }
 
-html[data-bes-theme='dark'] ::placeholder {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) ::placeholder {
   color: var(--bes-text-muted) !important;
 }
 
 /* Asks the browser for dark scrollbars, form widgets and the like. */
-html[data-bes-theme='dark'] {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) {
   color-scheme: dark;
 }
 
@@ -138,12 +138,12 @@ html[data-bes-theme='dark'] {
  * They carry no color information worth preserving, so inverting them is safe - unlike album
  * art, which is never touched.
  */
-html[data-bes-theme='dark'] [class*='sprite'],
-html[data-bes-theme='dark'] .ui-icon,
-html[data-bes-theme='dark'] .menubar-cart-icon,
-html[data-bes-theme='dark'] .item-action-icon,
-html[data-bes-theme='dark'] .collect-item-icon,
-html[data-bes-theme='dark'] .bc-ui {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) [class*='sprite'],
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .ui-icon,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .menubar-cart-icon,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .item-action-icon,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .collect-item-icon,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .bc-ui {
   filter: var(--bes-sprite-filter);
 }
 
@@ -151,12 +151,12 @@ html[data-bes-theme='dark'] .bc-ui {
  * Album art, band photos, video and the waveform canvas must never be inverted - they are the
  * content. This re-asserts that against the broad sprite rule above.
  */
-html[data-bes-theme='dark'] img,
-html[data-bes-theme='dark'] video,
-html[data-bes-theme='dark'] canvas,
-html[data-bes-theme='dark'] .popupImage img,
-html[data-bes-theme='dark'] #tralbumArt img,
-html[data-bes-theme='dark'] .art img {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) img,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) video,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) canvas,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .popupImage img,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #tralbumArt img,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .art img {
   filter: none;
 }
 
@@ -176,7 +176,7 @@ html[data-bes-theme='dark'] .art img {
  * their native values handed back by src/theme.ts, which can reach inside the shadow root to
  * scope the exception properly.
  */
-html[data-bes-theme='dark'] * {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) * {
   --white: var(--bes-surface-0);
   --gray100: var(--bes-surface-1);
   --gray200: var(--bes-surface-2);
@@ -216,8 +216,50 @@ html[data-bes-theme='dark'] .findmusic-button-icon {
  * away; it is darkened just enough to clear the threshold at 4.98:1, which is visually the same
  * green. The label is left white, as Bandcamp intends.
  */
-html[data-bes-theme='dark'] .buttonLink,
-html[data-bes-theme='dark'] a.buttonLink {
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .buttonLink,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) a.buttonLink {
   background-color: #467d21 !important;
+  color: #ffffff !important;
+}
+
+/*
+ * Search page, and the tralbum edit controls.
+ *
+ * These are the corners scripts/generate-theme.ts cannot reach. The search bundles
+ * (search_desktop, bandmember) sit behind a check that wants a real session, so a headless
+ * scrape never sees them; the edit button is painted `lightyellow`, a hued keyword the generator
+ * deliberately leaves alone along with every other non-greyscale colour.
+ */
+html[data-bes-theme='dark']:not([data-bes-native-dark]) #search-filters .filter-link,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .pagelist .pagenum {
+  color: var(--bes-text-strong) !important;
+  border-color: var(--bes-border) !important;
+}
+
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .searchresult .subhead,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .rightcol .block p {
+  color: var(--bes-text-body) !important;
+}
+
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .pagelist .pagenum,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .pager .nextprev {
+  background-color: var(--bes-surface-1) !important;
+  border-color: var(--bes-border) !important;
+}
+
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .tralbum-edit-button {
+  background-color: var(--bes-surface-2) !important;
+  color: var(--bes-text-strong) !important;
+}
+
+/*
+ * Bandcamp's follow/following control labels itself white on #619aa9, which measures 3.13:1 -
+ * short of the 4.5:1 body text needs. Same treatment as the green checkout buttons: the teal is
+ * a brand colour rather than a ramp colour, so it is darkened just far enough to clear the
+ * threshold at 5.09:1 rather than themed away, and the label stays white.
+ */
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .follow-unfollow,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) .follow-unfollow div {
+  background-color: #467581 !important;
   color: #ffffff !important;
 }

@@ -344,6 +344,59 @@ describe('Theme', () => {
     });
   });
 
+  /*
+   * Contrast is a property of the token values themselves, so it is asserted on the struct
+   * rather than discovered in a browser. This is what caught the cart's muted currency labels
+   * sitting at 4.34:1 on the raised surface.
+   *
+   * Only the dark theme is checked. LIGHT_THEME deliberately holds Bandcamp's own palette - its
+   * #999 muted grey and #1da0c3 accent do not clear AA against white, and "fixing" them would
+   * mean BES restyling Bandcamp in light mode, which is explicitly not what this feature does.
+   */
+  describe('dark theme contrast', () => {
+    const relativeLuminance = (hex: string): number => {
+      const channels = [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16) / 255);
+      const [r, g, b] = channels.map(c => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)));
+
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+
+    const contrast = (a: string, b: string): number => {
+      const [high, low] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+
+      return (high + 0.05) / (low + 0.05);
+    };
+
+    const SURFACES = ['surface0', 'surface1', 'surface2'] as const;
+    const FOREGROUNDS = ['textMuted', 'textBody', 'textStrong', 'textMax', 'accent'] as const;
+    const AA_NORMAL_TEXT = 4.5;
+
+    it('should verify the helper against a known pair', () => {
+      expect(contrast('#ffffff', '#000000')).toBeCloseTo(21, 1);
+      expect(contrast('#767676', '#ffffff')).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+    });
+
+    it.each(FOREGROUNDS)('should clear AA for %s on every surface', foreground => {
+      for (const surface of SURFACES) {
+        const ratio = contrast(DARK_THEME[foreground], DARK_THEME[surface]);
+
+        expect(
+          ratio,
+          `${foreground} (${DARK_THEME[foreground]}) on ${surface} (${DARK_THEME[surface]}) is ${ratio.toFixed(2)}:1`
+        ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+      }
+    });
+
+    it('should keep accentText legible on the accent fill', () => {
+      expect(contrast(DARK_THEME.accentText, DARK_THEME.accent)).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+    });
+
+    it('should keep the muted tone distinguishable from body text', () => {
+      expect(DARK_THEME.textMuted).not.toBe(DARK_THEME.textBody);
+      expect(relativeLuminance(DARK_THEME.textMuted)).toBeLessThan(relativeLuminance(DARK_THEME.textBody));
+    });
+  });
+
   describe('theme storage mirror', () => {
     beforeEach(() => {
       globalThis.chrome = {

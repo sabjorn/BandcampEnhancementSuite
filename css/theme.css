@@ -33,7 +33,7 @@
   --bes-surface-1: #1c1c1e;
   --bes-surface-2: #27272a;
   --bes-border: #3f3f46;
-  --bes-text-muted: #8a8a91;
+  --bes-text-muted: #9a9aa1;
   --bes-text-body: #b4b4bb;
   --bes-text-strong: #e4e4e7;
   --bes-text-max: #fafafa;
@@ -195,4 +195,29 @@ html[data-bes-theme='dark'] * {
   --dialog-background-color: var(--bes-surface-0);
   --dialog-title-background-color: var(--bes-surface-1);
   --border-color-subtle: var(--bes-border);
+}
+
+/*
+ * The BES button's icon is dark "BES+" artwork on a transparent background, so it disappears
+ * against a dark button. Inverting it is the same treatment Bandcamp's own icon sheets get: the
+ * hue-rotate puts the blue mark back roughly where it started after the inversion flips it.
+ *
+ * This needs to outrank the `img { filter: none }` rule above, which exists to keep album art
+ * untouched - hence matching on the class rather than the element.
+ */
+html[data-bes-theme='dark'] .findmusic-button-icon {
+  filter: var(--bes-sprite-filter);
+}
+
+/*
+ * Bandcamp's green action buttons (checkout, and the import/export controls BES puts beside
+ * them) label themselves white on #4f8e25, which measures 4.02:1 - under the 4.5:1 needed for
+ * body-sized text. The green is a brand colour rather than a ramp colour, so it is not themed
+ * away; it is darkened just enough to clear the threshold at 4.98:1, which is visually the same
+ * green. The label is left white, as Bandcamp intends.
+ */
+html[data-bes-theme='dark'] .buttonLink,
+html[data-bes-theme='dark'] a.buttonLink {
+  background-color: #467d21 !important;
+  color: #ffffff !important;
 }

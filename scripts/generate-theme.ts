@@ -88,6 +88,36 @@ const BARE_TYPE_SELECTOR = /^[a-zA-Z][a-zA-Z0-9]*(::?[a-z-]+(\([^)]*\))?)*$/;
 const RGBA_PATTERN = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)/g;
 
 /**
+ * Bandcamp writes a fair number of colours as CSS keywords rather than hex - `#sidecart .item
+ * .price { color: black }` is why the cart price was rendering black-on-black. Only the
+ * greyscale keywords are listed: anything with a hue is left alone, exactly as for hex.
+ */
+const NAMED_GREYS: Record<string, string> = {
+  white: '#ffffff',
+  whitesmoke: '#f5f5f5',
+  gainsboro: '#dcdcdc',
+  lightgray: '#d3d3d3',
+  lightgrey: '#d3d3d3',
+  silver: '#c0c0c0',
+  darkgray: '#a9a9a9',
+  darkgrey: '#a9a9a9',
+  gray: '#808080',
+  grey: '#808080',
+  dimgray: '#696969',
+  dimgrey: '#696969',
+  black: '#000000'
+};
+
+// Longest first so `lightgray` is not consumed as `gray`, and word-bounded so `white-space`
+// and similar keywords are never touched.
+const NAMED_PATTERN = new RegExp(
+  `(?<![\\w-])(${Object.keys(NAMED_GREYS)
+    .sort((a, b) => b.length - a.length)
+    .join('|')})(?![\\w-])`,
+  'gi'
+);
+
+/**
  * jQuery UI paints its surfaces with flat single-color PNG tiles layered over the background
  * color. Left in place they sit on top of the themed color and undo it, and because they carry
  * no detail they can simply be dropped.
@@ -246,7 +276,18 @@ function hasTranslucentGrey(value: string): boolean {
   return [...value.matchAll(RGBA_PATTERN)].some(m => isGrey([Number(m[1]), Number(m[2]), Number(m[3])]));
 }
 
-function themeDeclarations(declarations: string): string[] {
+/**
+ * Classes Bandcamp paints with a solid brand colour (the green checkout buttons and friends).
+ * Their labels sit on a background we deliberately leave unthemed, so inverting the label alone
+ * would put dark text on green. Their `color` is left exactly as Bandcamp set it.
+ */
+const SOLID_BUTTON_CLASSES = ['buttonLink', 'g-button', 'buy-link', 'compound-button'];
+
+function targetsSolidButton(selector: string): boolean {
+  return SOLID_BUTTON_CLASSES.some(name => selector.includes(`.${name}`));
+}
+
+function themeDeclarations(declarations: string, selector: string): string[] {
   const themed: string[] = [];
 
   for (const declaration of declarations.split(';')) {
@@ -258,12 +299,15 @@ function themeDeclarations(declarations: string): string[] {
 
     if (!THEMED_PROPERTIES.has(property)) continue;
     if (value.includes('!important')) continue;
+    if (property === 'color' && targetsSolidButton(selector)) continue;
 
     const colors = value.match(HEX_PATTERN);
     const translucent = hasTranslucentGrey(value);
+    NAMED_PATTERN.lastIndex = 0;
+    const named = NAMED_PATTERN.test(value);
 
-    // A declaration earns an override if it carries a mappable hex, a translucent grey, or both.
-    if (!colors && !translucent) continue;
+    // A declaration earns an override if it carries any colour form we know how to map.
+    if (!colors && !translucent && !named) continue;
 
     const mapped = (colors ?? []).map(mapColor);
     if (mapped.some(entry => entry === null)) continue;
@@ -271,6 +315,7 @@ function themeDeclarations(declarations: string): string[] {
     let index = 0;
     const base = value
       .replace(HEX_PATTERN, () => mapped[index++] as string)
+      .replace(NAMED_PATTERN, keyword => mapColor(NAMED_GREYS[keyword.toLowerCase()]) as string)
       .replace(FLAT_TILE_PATTERN, ' ')
       .trim();
 
@@ -382,7 +427,7 @@ async function main(): Promise<void> {
     const css = stripComments(await response.text());
 
     for (const rule of parseRules(css)) {
-      const themed = themeDeclarations(rule.declarations);
+      const themed = themeDeclarations(rule.declarations, rule.selector);
       if (themed.length === 0) continue;
 
       const scoped = scopeSelector(rule.selector);

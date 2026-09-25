@@ -67,7 +67,7 @@ export const DARK_THEME: Theme = {
   surface1: '#1c1c1e',
   surface2: '#27272a',
   border: '#3f3f46',
-  textMuted: '#8a8a91',
+  textMuted: '#9a9aa1',
   textBody: '#b4b4bb',
   textStrong: '#e4e4e7',
   textMax: '#fafafa',

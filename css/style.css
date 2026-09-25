@@ -264,7 +264,12 @@ input.currency-input::-webkit-outer-spin-button {
 }
 
 .one-click-button[data-cart-state='in-cart']:is(:hover, :active) {
-  background-color: #fdeaea;
+  /* Tinted state background: a solid token for older engines, then the themed tint.
+     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
+     first declaration has to stand on its own. The percentage reproduces the original
+     light-mode colour, so only the dark theme changes. */
+  background-color: var(--bes-surface-2);
+  background-color: color-mix(in srgb, var(--bes-danger) 8%, var(--bes-surface-0));
 }
 
 .one-click-button[data-cart-state='in-cart']:hover .bes-cart-icon-check {
@@ -806,7 +811,12 @@ button.bes-downloadall[disabled]::after {
 }
 
 .bes-keyboard-control-row.conflict {
-  background-color: #fff3cd;
+  /* Tinted state background: a solid token for older engines, then the themed tint.
+     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
+     first declaration has to stand on its own. The percentage reproduces the original
+     light-mode colour, so only the dark theme changes. */
+  background-color: var(--bes-surface-2);
+  background-color: color-mix(in srgb, var(--bes-warning) 10%, var(--bes-surface-0));
   padding: 10px;
   margin: 0 -10px;
   border-radius: 4px;
@@ -912,7 +922,12 @@ button.bes-downloadall[disabled]::after {
 
 .bes-keyboard-reset-confirmation {
   padding: 16px;
-  background: #fff3cd;
+  /* Tinted state background: a solid token for older engines, then the themed tint.
+     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
+     first declaration has to stand on its own. The percentage reproduces the original
+     light-mode colour, so only the dark theme changes. */
+  background: var(--bes-surface-2);
+  background: color-mix(in srgb, var(--bes-warning) 10%, var(--bes-surface-0));
   border: 1px solid #ffc107;
   border-radius: 6px;
 }
@@ -974,7 +989,12 @@ button.bes-downloadall[disabled]::after {
   border: 2px solid #ffd700 !important;
   border-radius: 0 !important;
   margin: -2px !important;
-  background: #fff9e6 !important;
+  /* Tinted state background: a solid token for older engines, then the themed tint.
+     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
+     first declaration has to stand on its own. The percentage reproduces the original
+     light-mode colour, so only the dark theme changes. */
+  background: var(--bes-surface-2) !important;
+  background: color-mix(in srgb, var(--bes-warning) 5%, var(--bes-surface-0)) !important;
   box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3) !important;
   transition: all 0.2s ease;
 }
@@ -1755,7 +1775,12 @@ body.bes-drawer-expanded #pgBd {
 }
 
 .bes-player-drawer .bes-track-row.bes-track-playing {
-  background-color: #e8f4f8;
+  /* Tinted state background: a solid token for older engines, then the themed tint.
+     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
+     first declaration has to stand on its own. The percentage reproduces the original
+     light-mode colour, so only the dark theme changes. */
+  background-color: var(--bes-surface-2);
+  background-color: color-mix(in srgb, var(--bes-accent) 11%, var(--bes-surface-0));
   font-weight: 500;
 }
 
@@ -1872,7 +1897,12 @@ body.bes-drawer-expanded #pgBd {
 }
 
 .bes-player-drawer .bes-track-link:hover {
-  background-color: #f0f7ff;
+  /* Tinted state background: a solid token for older engines, then the themed tint.
+     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
+     first declaration has to stand on its own. The percentage reproduces the original
+     light-mode colour, so only the dark theme changes. */
+  background-color: var(--bes-surface-2);
+  background-color: color-mix(in srgb, var(--bes-accent) 5%, var(--bes-surface-0));
   border-color: #0687f5;
   text-decoration: none;
 }

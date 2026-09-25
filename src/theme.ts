@@ -7,6 +7,7 @@ export { readMirroredThemeName, writeMirroredThemeName, THEME_STORAGE_KEY } from
 const log = createLogger();
 
 export const THEME_ATTRIBUTE = 'data-bes-theme';
+export const NATIVE_DARK_ATTRIBUTE = 'data-bes-native-dark';
 export const CUSTOM_DESIGN_STYLE_ID = 'custom-design-rules-style';
 
 /**
@@ -178,6 +179,35 @@ function findShadowRoots(): ShadowRoot[] {
 const BANDCAMP_DIALOG_SELECTOR = '.g-dialog.dialog';
 const BANDCAMP_DARK_MODE_CLASS = 'dark-mode';
 
+/**
+ * Bandcamp's newer pages (discover, search, the purchase browser) implement dark mode themselves,
+ * keyed off prefers-color-scheme, and mark every participating element `.dark-mode`. Where that
+ * has happened our remap of their design-system variables is not merely redundant, it breaks
+ * them: those components read `--white` expecting white so they can put a light label on a dark
+ * button, and handing them #121212 turns the label black-on-black.
+ *
+ * Presence of that class is the signal that Bandcamp has it covered, so the whole modern-variable
+ * remap stands down for the page. The classic stylesheets still get their overrides - Bandcamp's
+ * native dark does not reach those.
+ */
+function refreshNativeDarkFlag(enable: boolean): void {
+  const root = document.documentElement;
+  if (!root) return;
+
+  // A dialog we opted in ourselves must not be mistaken for Bandcamp having themed the page.
+  const bandcampOwned = Array.from(document.querySelectorAll(`.${BANDCAMP_DARK_MODE_CLASS}`)).some(
+    element => !element.matches(BANDCAMP_DIALOG_SELECTOR)
+  );
+
+  if (enable && bandcampOwned) {
+    root.setAttribute(NATIVE_DARK_ATTRIBUTE, 'true');
+
+    return;
+  }
+
+  root.removeAttribute(NATIVE_DARK_ATTRIBUTE);
+}
+
 function applyBandcampDarkMode(scope: ParentNode, enable: boolean): void {
   scope.querySelectorAll(BANDCAMP_DIALOG_SELECTOR).forEach(dialog => {
     dialog.classList.toggle(BANDCAMP_DARK_MODE_CLASS, enable);
@@ -202,6 +232,7 @@ export function watchShadowRoots(enable: boolean): void {
   shadowObserver?.disconnect();
   shadowObserver = null;
 
+  refreshNativeDarkFlag(enable);
   findShadowRoots().forEach(root => applyShadowException(root, enable));
   applyBandcampDarkMode(document, enable);
 
@@ -209,6 +240,7 @@ export function watchShadowRoots(enable: boolean): void {
   // themes and reads the current one off the root element rather than trusting its argument.
   shadowObserver = new MutationObserver(() => {
     const active = isThemeActive();
+    refreshNativeDarkFlag(active);
     findShadowRoots().forEach(root => applyShadowException(root, active));
     applyBandcampDarkMode(document, active);
   });

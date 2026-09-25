@@ -40,6 +40,7 @@
     "build:dev": "tsup --env.NODE_ENV=development",
     "build:watch": "tsup --env.NODE_ENV=development --watch",
     "theme:generate": "tsx scripts/generate-theme.ts",
+    "theme:audit": "tsx scripts/audit-contrast.ts",
     "dev": "pnpm run build:watch",
     "snapshots": "percy exec -- node snapshots.js",
     "clean": "rm -fr ./node_modules ./dist",

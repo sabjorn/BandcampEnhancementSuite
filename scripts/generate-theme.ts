@@ -13,12 +13,14 @@
  */
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
+import puppeteer from 'puppeteer';
 
 /** Pages whose stylesheet links are scraped. Add a URL here when a page type renders untheme. */
 const SEED_PAGES = [
   'https://bandcamp.com/',
   'https://bandcamp.com/discover',
   'https://bandcamp.com/search?q=ambient',
+  'https://daily.bandcamp.com/',
   'https://halfpastvibe.bandcamp.com/',
   'https://halfpastvibe.bandcamp.com/music',
   'https://halfpastvibe.bandcamp.com/album/stonks-market'
@@ -66,6 +68,14 @@ const HEX_PATTERN = /#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b/g;
  * label in the same cyan as its background. BES owns everything under a `bes-`/`findmusic-`
  * class, so bare type selectors are told to skip that subtree.
  */
+/*
+ * Every generated rule targets Bandcamp's own markup, so all of them stand down when Bandcamp
+ * has themed the page itself - src/theme.ts flags that with data-bes-native-dark. Double-theming
+ * a page that is already dark is what put light text on light backgrounds across /discover.
+ */
+const THEME_SCOPE_SUFFIX = "[data-bes-theme='dark']:not([data-bes-native-dark])";
+const THEME_SCOPE = `html${THEME_SCOPE_SUFFIX}`;
+
 const BES_EXCLUSION = ":not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *)";
 
 /**
@@ -168,6 +178,34 @@ function greyToToken(value: number): string {
   return 'text-max';
 }
 
+/**
+ * Bandcamp is not uniformly light. Its footer, parts of Bandcamp Daily and various buttons are
+ * dark slabs with light labels *in the light theme*, and a straight ramp inversion flips those
+ * the wrong way - the slab goes bright and its label goes black-on-black.
+ *
+ * So the mapping is asymmetric: only change what would actually be wrong on a dark page.
+ *   - text that is already light needs no help, so leave it
+ *   - a background that is already dark needs no help, so leave it
+ * Everything else - dark text, light backgrounds - still inverts as before.
+ */
+const ALREADY_LIGHT = 200;
+const ALREADY_DARK = 80;
+
+function toHex(rgb: [number, number, number]): string {
+  return `#${rgb.map(channel => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function needsMapping(property: string, hex: string): boolean {
+  const rgb = expandHex(hex);
+  if (!isGrey(rgb)) return true;
+
+  const value = luminance(rgb);
+  if (property === 'color' || property === 'fill' || property === 'stroke') return value < ALREADY_LIGHT;
+  if (property === 'background' || property === 'background-color') return value > ALREADY_DARK;
+
+  return true;
+}
+
 function mapColor(color: string): string | null {
   const normalized = color.toLowerCase();
 
@@ -258,22 +296,30 @@ function skipBlock(css: string, openIndex: number): number {
  * A mixed declaration (a gradient blending grey into a brand color) is dropped rather than
  * half-translated.
  */
-/** Rewrites translucent greys as a color-mix of the matching token, preserving the alpha. */
-function mapTranslucentGreys(value: string): string {
-  return value.replace(RGBA_PATTERN, (whole, r, g, b, a) => {
-    const rgb: [number, number, number] = [Number(r), Number(g), Number(b)];
-    if (!isGrey(rgb)) return whole;
+/** Whether a translucent grey needs remapping, by the same asymmetric rule as opaque colours. */
+function translucentNeedsMapping(property: string, r: string, g: string, b: string): boolean {
+  const rgb: [number, number, number] = [Number(r), Number(g), Number(b)];
+  if (!isGrey(rgb)) return false;
 
+  return needsMapping(property, toHex(rgb));
+}
+
+/** Rewrites translucent greys as a color-mix of the matching token, preserving the alpha. */
+function mapTranslucentGreys(property: string, value: string): string {
+  return value.replace(RGBA_PATTERN, (whole, r, g, b, a) => {
+    if (!translucentNeedsMapping(property, r, g, b)) return whole;
+
+    const rgb: [number, number, number] = [Number(r), Number(g), Number(b)];
     const percent = Math.round(Number(a) * 1000) / 10;
 
     return `color-mix(in srgb, var(--bes-${greyToToken(luminance(rgb))}) ${percent}%, transparent)`;
   });
 }
 
-function hasTranslucentGrey(value: string): boolean {
+function hasTranslucentGrey(property: string, value: string): boolean {
   RGBA_PATTERN.lastIndex = 0;
 
-  return [...value.matchAll(RGBA_PATTERN)].some(m => isGrey([Number(m[1]), Number(m[2]), Number(m[3])]));
+  return [...value.matchAll(RGBA_PATTERN)].some(m => translucentNeedsMapping(property, m[1], m[2], m[3]));
 }
 
 /**
@@ -302,7 +348,7 @@ function themeDeclarations(declarations: string, selector: string): string[] {
     if (property === 'color' && targetsSolidButton(selector)) continue;
 
     const colors = value.match(HEX_PATTERN);
-    const translucent = hasTranslucentGrey(value);
+    const translucent = hasTranslucentGrey(property, value);
     NAMED_PATTERN.lastIndex = 0;
     const named = NAMED_PATTERN.test(value);
 
@@ -314,14 +360,21 @@ function themeDeclarations(declarations: string, selector: string): string[] {
 
     let index = 0;
     const base = value
-      .replace(HEX_PATTERN, () => mapped[index++] as string)
-      .replace(NAMED_PATTERN, keyword => mapColor(NAMED_GREYS[keyword.toLowerCase()]) as string)
+      .replace(HEX_PATTERN, match => (needsMapping(property, match) ? (mapped[index++] as string) : (index++, match)))
+      .replace(NAMED_PATTERN, keyword => {
+        const hex = NAMED_GREYS[keyword.toLowerCase()];
+
+        return needsMapping(property, hex) ? (mapColor(hex) as string) : keyword;
+      })
       .replace(FLAT_TILE_PATTERN, ' ')
       .trim();
 
+    // Nothing actually changed - every colour in this declaration was already fine for dark.
+    if (base === value.replace(FLAT_TILE_PATTERN, ' ').trim() && !translucent) continue;
+
     themed.push(`${property}: ${base} !important`);
 
-    if (translucent) themed.push(`${property}: ${mapTranslucentGreys(base)} !important`);
+    if (translucent) themed.push(`${property}: ${mapTranslucentGreys(property, base)} !important`);
   }
 
   return themed;
@@ -337,12 +390,12 @@ function scopeSelector(selector: string): string {
     .map(part => part.trim())
     .filter(Boolean)
     .map(part => {
-      if (part.startsWith('html')) return part.replace(/^html/, "html[data-bes-theme='dark']");
-      if (part.startsWith(':root')) return part.replace(/^:root/, ":root[data-bes-theme='dark']");
+      if (part.startsWith('html')) return part.replace(/^html/, THEME_SCOPE);
+      if (part.startsWith(':root')) return part.replace(/^:root/, `:root${THEME_SCOPE_SUFFIX}`);
 
       const scoped = BARE_TYPE_SELECTOR.test(part) ? `${part}${BES_EXCLUSION}${BUTTON_LIKE_EXCLUSION}` : part;
 
-      return `html[data-bes-theme='dark'] ${scoped}`;
+      return `${THEME_SCOPE} ${scoped}`;
     })
     .join(',\n');
 }
@@ -369,42 +422,51 @@ function wrapInConditions(selector: string, declarations: string[], conditions: 
 }
 
 /**
- * Pulls every same-origin stylesheet off a page. Bandcamp serves its CSS from several places -
- * hashed `client-bundle` files on tralbum pages, a per-deploy `assets/styles.css` on the newer
- * search and discover pages - so match on the link rather than on any one path shape.
+ * Collects stylesheet URLs from a real browser rather than by scraping markup.
+ *
+ * Fetching the HTML directly is not good enough: some Bandcamp URLs answer a bot check rather
+ * than the page, so plain requests miss `search_desktop`, the Bandcamp Daily bundles and others
+ * entirely, and can return a stale `global-*` hash. Reading `document.styleSheets` after the
+ * page has actually rendered gets the same files a visitor loads, including any added by script.
  */
-function extractStylesheetUrls(html: string, pageUrl: string): string[] {
-  const urls: string[] = [];
-
-  for (const link of html.match(/<link[^>]+>/g) ?? []) {
-    if (!/rel\s*=\s*["']?stylesheet/i.test(link)) continue;
-
-    const href = link.match(/href\s*=\s*["']([^"']+)["']/i)?.[1];
-    if (!href) continue;
-
-    const resolved = new URL(href, pageUrl);
-    if (!STYLESHEET_HOSTS.some(host => resolved.hostname.endsWith(host))) continue;
-
-    urls.push(resolved.toString());
-  }
-
-  return urls;
-}
-
 async function collectStylesheetUrls(): Promise<string[]> {
   const urls = new Set(EXTRA_STYLESHEETS);
+  /*
+   * A fresh headless browser gets served a bot check on some Bandcamp URLs, which silently costs
+   * whole bundles - search_desktop, bandmember and the Bandcamp Daily files among them.
+   * Presenting a normal desktop user agent gets most of them served. The search page is the
+   * known exception - its check wants a real session, so search_desktop and bandmember are not
+   * covered here and /search keeps a few unthemed greys. Attaching to an already-running Chrome
+   * does get them, but puppeteer will not finish attaching to a browser that has an extension
+   * service worker in it, so that route is not offered.
+   */
+  const browser = await puppeteer.launch({ headless: true });
+  const USER_AGENT =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) ' +
+    'Chrome/131.0.0.0 Safari/537.36';
 
-  for (const page of SEED_PAGES) {
-    const response = await fetch(page);
-    if (!response.ok) {
-      console.warn(`  ! ${page} responded ${response.status}, skipping`);
-      continue;
+  try {
+    for (const url of SEED_PAGES) {
+      const page = await browser.newPage();
+
+      try {
+        await page.setUserAgent(USER_AGENT);
+        // Some of these are long-polling single-page apps that never go network-idle, so wait
+        // for the document and then give late-added stylesheets a fixed moment to land.
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
+        await new Promise(settle => setTimeout(settle, 4000));
+        const found: string[] = await page.evaluate(`[...document.styleSheets].map(s => s.href).filter(Boolean)`);
+        const kept = found.filter(href => STYLESHEET_HOSTS.some(host => new URL(href).hostname.endsWith(host)));
+        kept.forEach(href => urls.add(href));
+        console.log(`  ${url} -> ${kept.length} stylesheet(s)`);
+      } catch (error: unknown) {
+        console.warn(`  ! ${url} failed (${error}), skipping`);
+      } finally {
+        await page.close();
+      }
     }
-
-    const html = await response.text();
-    const found = extractStylesheetUrls(html, response.url);
-    found.forEach(url => urls.add(url));
-    console.log(`  ${page} -> ${found.length} stylesheet(s)`);
+  } finally {
+    await browser.close();
   }
 
   return [...urls];

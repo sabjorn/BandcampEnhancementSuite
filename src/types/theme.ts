@@ -61,19 +61,27 @@ export const LIGHT_THEME: Theme = {
   invertSprites: false
 };
 
+/*
+ * Anchored on Bandcamp's own dark mode rather than invented, so pages we theme and the newer
+ * pages Bandcamp themes itself do not read as two different dark modes when you move between
+ * them. Their values, sampled from /discover: page background #222, body text #fff, accent
+ * #0CACD7 (--blue400). The surface ramp and muted tones are ours - their design is effectively
+ * flat, one surface and white text, which is not enough for the drawer, cart panel and
+ * tracklist - but they are stepped in the same neutral grey family rather than a blue-tinted one.
+ */
 export const DARK_THEME: Theme = {
   name: 'dark',
-  surface0: '#121212',
-  surface1: '#1c1c1e',
-  surface2: '#27272a',
-  border: '#3f3f46',
-  textMuted: '#9a9aa1',
-  textBody: '#b4b4bb',
-  textStrong: '#e4e4e7',
-  textMax: '#fafafa',
-  accent: '#4cc4e3',
-  accentText: '#0b1416',
-  danger: '#f2685c',
+  surface0: '#222222',
+  surface1: '#2a2a2a',
+  surface2: '#333333',
+  border: '#454545',
+  textMuted: '#a8a8a8',
+  textBody: '#c4c4c4',
+  textStrong: '#e8e8e8',
+  textMax: '#ffffff',
+  accent: '#0cacd7',
+  accentText: '#222222',
+  danger: '#f4857b',
   warning: '#fba14b',
   success: '#7fc0cf',
   invertSprites: true

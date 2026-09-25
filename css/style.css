@@ -945,7 +945,10 @@ button.bes-downloadall[disabled]::after {
 }
 
 .bes-keyboard-confirm-button {
-  background: #dc3545;
+  /* Darkened from #dc3545 so the white label clears AA at 5.61:1 rather than 4.14:1. The
+     shared .bes-drawer-button colour is tuned for the accent fill and is too dark on red. */
+  background: #c82333;
+  color: #ffffff;
   flex: 1;
 }
 

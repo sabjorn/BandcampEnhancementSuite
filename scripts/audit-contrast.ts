@@ -94,8 +94,9 @@ const AUDIT_SCRIPT = String.raw`(() => {
 
   const textFails = [], brightAreas = [], seenText = new Set(), seenBright = new Set();
   document.querySelectorAll('*').forEach(el => {
-    // The drawer is BES's own surface and is audited separately.
-    if (el.closest('.bes-drawer')) return;
+    // BES's own UI is audited too. Excluding it is how a dark logo on a dark button and a
+    // sub-AA label in the drawer both went unnoticed; the drawer is simply skipped by the
+    // visibility check when it is closed.
     if (!visible(el)) return;
     const cs = getComputedStyle(el);
 
@@ -184,9 +185,12 @@ async function main(): Promise<void> {
     const result = await send('Runtime.evaluate', { expression: AUDIT_SCRIPT, returnByValue: true });
     const report: PageReport = JSON.parse(result.result?.result?.value ?? '{}');
 
+    const ours = (f: Finding) => /\bbes-|findmusic-/.test(f.where);
     const native = report.nativeDark ? ' (Bandcamp themes this page itself)' : '';
     console.log(`\n=== ${report.url}  [${report.theme}]${native}`);
     console.log(`    text failures: ${report.totals.text}   bright areas: ${report.totals.bright}`);
+    const besFails = report.textFails.filter(ours);
+    if (besFails.length) console.log(`    ${besFails.length} of these are BES's own UI`);
     report.textFails.forEach(f =>
       console.log(
         `      ${String(f.ratio).padStart(5)} (need ${f.need})  ${JSON.stringify(f.text)}\n` +

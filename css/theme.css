@@ -150,8 +150,13 @@ html[data-bes-theme='dark']:not([data-bes-native-dark]) .bc-ui {
 /*
  * Album art, band photos, video and the waveform canvas must never be inverted - they are the
  * content. This re-asserts that against the broad sprite rule above.
+ *
+ * BES's own images are excluded rather than left to specificity. Scoping this rule to
+ * :not([data-bes-native-dark]) pushed it above the .findmusic-button-icon rule below, which
+ * cancelled the BES logo's inversion on every page except the ones where this rule happens not
+ * to match - leaving a dark logo on a dark button nearly everywhere, and inverted on /discover.
  */
-html[data-bes-theme='dark']:not([data-bes-native-dark]) img,
+html[data-bes-theme='dark']:not([data-bes-native-dark]) img:not([class*='bes-']):not([class*='findmusic-']),
 html[data-bes-theme='dark']:not([data-bes-native-dark]) video,
 html[data-bes-theme='dark']:not([data-bes-native-dark]) canvas,
 html[data-bes-theme='dark']:not([data-bes-native-dark]) .popupImage img,

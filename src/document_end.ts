@@ -10,6 +10,8 @@ import { initFeed } from './pages/feed';
 import { createKeyboardSettingsSection } from './components/keyboardSettings';
 import { KeyboardSettings } from './types/keyboard';
 import { isBandcampLoggedIn } from './utilities';
+import { activateTheme } from './theme';
+import { DARK_THEME, LIGHT_THEME } from './types/theme';
 
 const log = createLogger();
 
@@ -29,7 +31,7 @@ function createToggleSetting(id: string, labelText: string, visible: boolean = t
 
   const label = document.createElement('span');
   label.style.fontSize = '14px';
-  label.style.color = '#333';
+  label.style.color = 'var(--bes-text-strong)';
   label.textContent = labelText;
 
   labelContainer.appendChild(label);
@@ -59,8 +61,8 @@ function createToggleSetting(id: string, labelText: string, visible: boolean = t
     tooltipContent.textContent = tooltipText;
     tooltipContent.style.visibility = 'hidden';
     tooltipContent.style.width = '200px';
-    tooltipContent.style.backgroundColor = '#333';
-    tooltipContent.style.color = '#fff';
+    tooltipContent.style.backgroundColor = 'var(--bes-text-strong)';
+    tooltipContent.style.color = 'var(--bes-surface-0)';
     tooltipContent.style.textAlign = 'left';
     tooltipContent.style.borderRadius = '4px';
     tooltipContent.style.padding = '8px';
@@ -149,6 +151,13 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
     'Show audio waveform visualization and BPM (beats per minute) analysis for each track'
   );
 
+  const { row: darkModeSettingRow, toggle: darkModeToggle } = createToggleSetting(
+    'bes-dark-mode-toggle',
+    'Dark mode',
+    true,
+    'Theme Bandcamp with a dark palette, overriding the colors artists and labels set on their own pages'
+  );
+
   const { row: metadataCachingSettingRow, toggle: metadataCachingToggle } = createToggleSetting(
     'bes-metadata-caching-toggle',
     'Enable metadata caching',
@@ -171,6 +180,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   );
 
   settingsSection.appendChild(settingsTitle);
+  settingsSection.appendChild(darkModeSettingRow);
   settingsSection.appendChild(waveformSettingRow);
   settingsSection.appendChild(metadataCachingSettingRow);
   settingsSection.appendChild(fetchCachingSettingRow);
@@ -224,6 +234,11 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       playedCachingToggle.checked = msg.config.enablePlayedCaching;
     }
 
+    if (msg.config && typeof msg.config.themeName === 'string') {
+      darkModeToggle.checked = msg.config.themeName === DARK_THEME.name;
+      activateTheme(msg.config.themeName);
+    }
+
     if (msg.config && msg.config.keyboardSettings) {
       initKeyboardSection(msg.config.keyboardSettings);
     }
@@ -232,6 +247,13 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
       log.error(`Keyboard settings error: ${msg.keyboardSettingsError.join(', ')}`);
       alert(`Keyboard settings error: ${msg.keyboardSettingsError.join(', ')}`);
     }
+  });
+
+  darkModeToggle.addEventListener('change', () => {
+    // Re-theme immediately so the drawer responds to the click; the backend broadcast that
+    // follows confirms it and is what survives a reload.
+    activateTheme(darkModeToggle.checked ? DARK_THEME.name : LIGHT_THEME.name);
+    config_port.postMessage({ toggleTheme: {} });
   });
 
   waveformToggle.addEventListener('change', () => {

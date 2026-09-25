@@ -1,6 +1,8 @@
 import Logger from '../logger';
 import { getDB } from '../utilities';
 import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings } from '../types/keyboard';
+import { DEFAULT_THEME_NAME, LIGHT_THEME, DARK_THEME } from '../types/theme';
+import { writeMirroredThemeName } from '../themeStorage';
 
 interface Config {
   displayWaveform: boolean;
@@ -11,6 +13,7 @@ interface Config {
   albumOnCheckoutDisabled: boolean;
   albumPurchaseTimeDelaySeconds: number;
   installDateUnixSeconds: number;
+  themeName: string;
   keyboardSettings?: KeyboardSettings;
 }
 
@@ -23,6 +26,7 @@ const defaultConfig: Config = {
   albumOnCheckoutDisabled: false,
   albumPurchaseTimeDelaySeconds: 60 * 60 * 24 * 30,
   installDateUnixSeconds: Math.floor(Date.now() / 1000),
+  themeName: DEFAULT_THEME_NAME,
   keyboardSettings: DEFAULT_KEYBOARD_SETTINGS
 };
 
@@ -65,6 +69,8 @@ export async function portListenerCallback(
 
   if (msg.togglePlayedCaching) await togglePlayedCaching(db, log, portState.port);
 
+  if (msg.toggleTheme) await toggleTheme(db, log, portState.port);
+
   if (msg.enableFindMusicCaching) await enableFindMusicCaching(db, log, portState.port);
 
   if (msg.requestConfig) await broadcastConfig(db, log, portState.port);
@@ -90,6 +96,7 @@ export async function synchronizeConfig(db: any, config: Partial<Config>, port?:
   const merged_config = mergeData(db_config, config);
 
   await db.put('config', merged_config, 'config');
+  await writeMirroredThemeName(merged_config.themeName);
   port?.postMessage({ config: merged_config });
 }
 
@@ -141,6 +148,18 @@ export async function togglePlayedCaching(db: any, log: Logger, port?: chrome.ru
   port?.postMessage({ config: db_config });
 }
 
+export async function toggleTheme(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+  log.info('toggling theme');
+
+  const db_config = await db.get('config', 'config');
+  const newThemeName = db_config['themeName'] === DARK_THEME.name ? LIGHT_THEME.name : DARK_THEME.name;
+  db_config['themeName'] = newThemeName;
+
+  await db.put('config', db_config, 'config');
+  await writeMirroredThemeName(newThemeName);
+  port?.postMessage({ config: db_config });
+}
+
 export async function enableFindMusicCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
   log.info('enabling FindMusic.club caching after permission grant');
 
@@ -163,6 +182,7 @@ export async function setupDB(db: any): Promise<void> {
   const dbConfig = await db.get('config', 'config');
   const mergedConfig = mergeData(defaultConfig, dbConfig);
   await db.put('config', mergedConfig, 'config');
+  await writeMirroredThemeName(mergedConfig.themeName);
 }
 
 export function mergeData(reference_config: Config, new_config: Partial<Config>): Config {

@@ -10,9 +10,11 @@ vi.mock('../src/logger', () => ({
 }));
 
 const mockSendMessage = vi.fn(() => Promise.reject(new Error('Receiving end does not exist')));
+const mockStorageGet = vi.fn(() => Promise.resolve({} as Record<string, string>));
 
 (globalThis as any).chrome = {
-  runtime: { sendMessage: mockSendMessage }
+  runtime: { sendMessage: mockSendMessage },
+  storage: { local: { get: mockStorageGet, set: vi.fn(() => Promise.resolve()) } }
 };
 
 const mockReplace = vi.fn();
@@ -90,5 +92,50 @@ describe('document_start bes_cart capture', () => {
 
     expect(sessionStorage.getItem('bes_url_cart_param')).toBeNull();
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+});
+
+describe('document_start theming', () => {
+  beforeEach(() => {
+    mockStorageGet.mockReset();
+    mockStorageGet.mockResolvedValue({});
+    document.documentElement.removeAttribute('data-bes-theme');
+    document.documentElement.removeAttribute('style');
+    setLocation('');
+  });
+
+  /*
+   * The whole point of reading the mirror here rather than over the config port is to beat first
+   * paint, so what matters is that the attribute and tokens land without waiting on the worker.
+   */
+  it('applies the mirrored dark theme before the page paints', async () => {
+    mockStorageGet.mockResolvedValue({ besThemeName: 'dark' });
+
+    await runDocumentStart();
+    await vi.waitFor(() => expect(document.documentElement.getAttribute('data-bes-theme')).toBe('dark'));
+
+    expect(document.documentElement.getAttribute('style')).toContain('--bes-surface-0: #121212');
+  });
+
+  it('falls back to the light theme when nothing is mirrored yet', async () => {
+    await runDocumentStart();
+    await vi.waitFor(() => expect(document.documentElement.getAttribute('data-bes-theme')).toBe('light'));
+  });
+
+  it('does not read the theme over the service worker port', async () => {
+    mockStorageGet.mockResolvedValue({ besThemeName: 'dark' });
+
+    await runDocumentStart();
+    await vi.waitFor(() => expect(document.documentElement.getAttribute('data-bes-theme')).toBe('dark'));
+
+    expect(mockSendMessage).not.toHaveBeenCalledWith(expect.objectContaining({ requestConfig: {} }));
+  });
+
+  it('still warms the worker when the theme lookup fails', async () => {
+    mockStorageGet.mockRejectedValue(new Error('no storage'));
+
+    await runDocumentStart();
+
+    expect(mockSendMessage).toHaveBeenCalledWith({ contentScriptQuery: 'warmup' });
   });
 });

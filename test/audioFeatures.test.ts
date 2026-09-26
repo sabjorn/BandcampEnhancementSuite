@@ -395,14 +395,6 @@ describe('AudioFeatures - waveform and bpm generation', () => {
   });
 });
 
-/*
- * The waveform is drawn into a canvas, so it cannot pick colours up from a stylesheet. Under the
- * default theme it derives them from the page, which keeps it in step with an artist's own
- * design; under any other theme the page colours are ours, so it reads the tokens instead.
- *
- * This is what stopped the played portion inverting to near-black on a dark page - 1.13:1
- * against the background, effectively invisible.
- */
 describe('waveform colour source', () => {
   const setTheme = (name: string | null) => {
     if (name === null) document.documentElement.removeAttribute('data-bes-theme');

@@ -23,11 +23,6 @@ import {
 } from '../src/theme';
 
 describe('Theme', () => {
-  /*
-   * The tokens exist in two places that must agree exactly: the struct, and the stylesheets that
-   * consume them. A token renamed on one side alone silently resolves to nothing at runtime, so
-   * the contract is asserted here rather than discovered in a browser.
-   */
   describe('stylesheet contract', () => {
     const readCss = (name: string) => readFileSync(resolve(__dirname, '..', 'css', name), 'utf8');
 
@@ -49,7 +44,6 @@ describe('Theme', () => {
     });
 
     it('should only reference tokens the struct defines from css/style.css', () => {
-      // Layout custom properties share the --bes- prefix but carry no color, so they are not tokens.
       const layoutProperties = ['--bes-drawer-width'];
       const declared = new Set([
         ...THEME_TOKENS.map(themeTokenToCssVariable),
@@ -287,16 +281,6 @@ describe('Theme', () => {
     });
   });
 
-  /*
-   * themeToken feeds canvas fillStyle, where an empty string is silently ignored and the last
-   * colour set is used instead. It has to return something usable even before the stylesheets
-   * have applied, which is the state the drawer player reads it in.
-   */
-  /*
-   * The popup and the permission page are not Bandcamp tabs - no artist styling to neutralise
-   * and no late-hydrating markup - so they need the tokens and nothing else. They read config
-   * over the same `bes` port the content script uses, because that is the one way config is read.
-   */
   describe('applyThemeFromConfig', () => {
     let listener: ((msg: unknown) => void) | undefined;
     let port: { onMessage: { addListener: ReturnType<typeof vi.fn> }; postMessage: ReturnType<typeof vi.fn> };
@@ -351,7 +335,6 @@ describe('Theme', () => {
       expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBeNull();
     });
 
-    // Unlike a Bandcamp tab there is no markup to correct, so it must not start an observer.
     it('should not start enforcement', () => {
       const observe = vi.spyOn(MutationObserver.prototype, 'observe');
 
@@ -403,8 +386,6 @@ describe('Theme', () => {
     };
 
     const SURFACES = ['surface0', 'surface1', 'surface2'] as const;
-    // The semantic tones are foregrounds too - error and warning text is rendered in them,
-    // and `danger` only just cleared AA after the surfaces were re-anchored on Bandcamp's.
     const FOREGROUNDS = [
       'textMuted',
       'textBody',
@@ -433,12 +414,6 @@ describe('Theme', () => {
       }
     });
 
-    /*
-     * These three come straight from Bandcamp's own dark mode (sampled on /discover:
-     * --default-background-color, --default-foreground-color, --blue400). Keeping them in step
-     * is what stops pages we theme and pages Bandcamp themes itself reading as two different
-     * dark modes. Change them only alongside a deliberate decision to diverge.
-     */
     it("should stay anchored on Bandcamp's own dark values", () => {
       expect(DARK_THEME.surface0).toBe('#222222');
       expect(DARK_THEME.textMax).toBe('#ffffff');
@@ -449,12 +424,6 @@ describe('Theme', () => {
       expect(contrast(DARK_THEME.accentText, DARK_THEME.accent)).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
     });
 
-    /*
-     * The waveform tokens are graphics, not text, so they are not in the AA list above. What has
-     * to hold is that the bars are visible on the page and that the played portion is tellable
-     * from the unplayed - drawOverlay composites source-atop, so the edge between the two is
-     * what conveys progress. 3:1 is the non-text threshold.
-     */
     it('should keep the waveform legible against the page and against itself', () => {
       const bars = contrast(DARK_THEME.waveform, DARK_THEME.surface0);
       const played = contrast(DARK_THEME.waveformPlayed, DARK_THEME.surface0);

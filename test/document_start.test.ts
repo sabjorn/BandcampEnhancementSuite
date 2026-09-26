@@ -93,11 +93,6 @@ describe('document_start bes_cart capture', () => {
   });
 });
 
-/*
- * document_start exists to keep the fast phase free of anything it would have to wait on - see
- * the split in 660f680. It warms the worker and rewrites a bes_cart URL, both without awaiting
- * a reply, and it reads no config. The theme deliberately lives in document_end for this reason.
- */
 describe('document_start stays free of round trips', () => {
   beforeEach(() => {
     mockSendMessage.mockClear();

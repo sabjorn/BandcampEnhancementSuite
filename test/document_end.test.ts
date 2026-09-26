@@ -416,10 +416,6 @@ describe('Dark mode setting', () => {
     expect(mockPort.postMessage).toHaveBeenCalledWith({ toggleTheme: {} });
   });
 
-  /*
-   * The click themes the page directly instead of waiting for the round trip, so the drawer the
-   * user is looking at changes under their cursor rather than a beat later.
-   */
   it('should theme the page immediately rather than waiting for the broadcast', async () => {
     await buildDrawer();
 
@@ -452,11 +448,6 @@ describe('Dark mode setting', () => {
     expect(document.documentElement.getAttribute('data-bes-theme')).toBe('light');
   });
 
-  /*
-   * document_end sets the theme and nothing else. Neutralising the artist stylesheet is
-   * document_start's job - it owns the only enforcement observer and reacts to this attribute -
-   * so the drawer must not be doing it here, or the two bundles end up fighting over the sheet.
-   */
   it('should set the theme without touching artist page styling itself', async () => {
     const artistStyle = document.createElement('style');
     artistStyle.id = 'custom-design-rules-style';
@@ -472,12 +463,6 @@ describe('Dark mode setting', () => {
   });
 });
 
-/*
- * The config read can time out - the mock port here never answers, which is exactly that case.
- * When it does, document_end must leave the theme attribute alone. Resolving an absent name
- * gives the default, and writing that would overwrite what the registered document_start script
- * already applied, flipping a correctly dark page to light a second after it settled.
- */
 describe('theme when the config read times out', () => {
   beforeEach(() => {
     vi.useFakeTimers();

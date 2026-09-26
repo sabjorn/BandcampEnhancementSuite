@@ -1,22 +1,3 @@
-/**
- * Audits a live Bandcamp page for dark-mode contrast problems.
- *
- * Hunting these by eye is slow and misses things - a label the same colour as its background is
- * invisible rather than obviously wrong. This walks the rendered page and reports two things:
- *
- *   1. text failing WCAG AA against its effective background (4.5:1, or 3:1 for large text)
- *   2. elements still painting a light background, which flags an unthemed area even where the
- *      text on it happens to be readable
- *
- * Needs the remote-debugging Chrome with the extension loaded - see the project memory on
- * extension debugging. Usage:
- *
- *   pnpm run theme:audit https://bandcamp.com/search?q=techno https://daily.bandcamp.com/
- *
- * A finding is not automatically ours. Bandcamp's newer pages do their own dark mode and have
- * their own contrast bugs; before chasing one, re-run with the theme switched off and compare. If
- * the count is unchanged, it is Bandcamp's.
- */
 const BROWSER_URL = process.env.BES_BROWSER_URL ?? 'http://127.0.0.1:9222';
 
 interface Finding {
@@ -38,7 +19,6 @@ interface PageReport {
   totals: { text: number; bright: number };
 }
 
-/** Runs in the page: everything below this line is evaluated in the browser. */
 const AUDIT_SCRIPT = String.raw`(() => {
   const parse = c => {
     const m = String(c).match(/[\d.]+/g);
@@ -62,19 +42,16 @@ const AUDIT_SCRIPT = String.raw`(() => {
   const visible = el => {
     const cs = getComputedStyle(el);
     if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0) return false;
-    // Off-screen label text, e.g. the visually hidden caption on .bes-toggle.
     if (parseFloat(cs.textIndent) < -999) return false;
     if (cs.clip === 'rect(0px, 0px, 0px, 0px)' || cs.clipPath === 'inset(50%)') return false;
     const r = el.getBoundingClientRect();
     return r.width > 1 && r.height > 1;
   };
-  // Walks up for the first opaque background, compositing any translucent layers on the way.
   const effBg = el => {
     let cur = el, acc = null;
     while (cur) {
       const cs = getComputedStyle(cur);
       const c = parse(cs.backgroundColor);
-      // Text over an image cannot be judged from colours alone, so it is skipped.
       if (cs.backgroundImage && cs.backgroundImage !== 'none') return { img: true, ...(acc || { r: 128, g: 128, b: 128, a: 1 }) };
       if (c && c.a > 0) { acc = acc ? over(acc, c) : c; if (c.a >= 1) return acc; }
       cur = cur.parentElement;
@@ -94,9 +71,6 @@ const AUDIT_SCRIPT = String.raw`(() => {
 
   const textFails = [], brightAreas = [], seenText = new Set(), seenBright = new Set();
   document.querySelectorAll('*').forEach(el => {
-    // BES's own UI is audited too. Excluding it is how a dark logo on a dark button and a
-    // sub-AA label in the drawer both went unnoticed; the drawer is simply skipped by the
-    // visibility check when it is closed.
     if (!visible(el)) return;
     const cs = getComputedStyle(el);
 
@@ -179,7 +153,6 @@ async function main(): Promise<void> {
 
   for (const url of urls) {
     await send('Page.navigate', { url });
-    // No reliable "settled" signal on these pages; give scripts a moment to render.
     await new Promise(resolve => setTimeout(resolve, 8000));
 
     const result = await send('Runtime.evaluate', { expression: AUDIT_SCRIPT, returnByValue: true });

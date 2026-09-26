@@ -250,9 +250,6 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   });
 
   darkModeToggle.addEventListener('change', () => {
-    // Set the theme immediately so the drawer responds to the click; the backend broadcast that
-    // follows confirms it and is what survives a reload. Enforcement against Bandcamp's DOM is
-    // document_start's job - it observes this attribute and reacts.
     setTheme(darkModeToggle.checked ? DARK_THEME.name : LIGHT_THEME.name);
     config_port.postMessage({ toggleTheme: {} });
   });
@@ -465,22 +462,9 @@ const documentEnd = async (): Promise<void> => {
 
   const configReady = requestConfig(config_port);
 
-  /*
-   * The theme rides on the config read that already happens here - it is another field alongside
-   * the keyboard settings and caching toggles, not a second round trip. document_end is also the
-   * only phase with theme code at all: document_start is deliberately free of anything it would
-   * have to wait on, so it neither reads config nor ships the theme stylesheets.
-   */
   const themeReady = (async () => {
     const { themeName } = await configReady;
 
-    /*
-     * Only when config actually answered. requestConfig resolves without a themeName if it times
-     * out, and resolving an absent name gives the default - which would overwrite what the
-     * registered document_start script already applied, flipping a correctly dark page to light
-     * a second in. Leaving the attribute alone is right in that case: it is either already
-     * correct or there is nothing to correct it with.
-     */
     if (themeName) setTheme(themeName);
 
     startThemeEnforcement();

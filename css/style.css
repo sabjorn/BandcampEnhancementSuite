@@ -20,8 +20,6 @@ input[type='range'].volume::-webkit-slider-thumb {
   overflow: visible;
   width: 20px;
   height: 12px;
-  /* The handle carries the accent so it reads against the groove; as a surface tone it was
-     near-invisible on a dark page. The groove itself stays neutral. */
   background-color: var(--bes-accent);
   border: 1px solid var(--bes-accent);
   box-shadow: -100px 0 0 100px var(--bes-surface-1);
@@ -266,10 +264,6 @@ input.currency-input::-webkit-outer-spin-button {
 }
 
 .one-click-button[data-cart-state='in-cart']:is(:hover, :active) {
-  /* Tinted state background: a solid token for older engines, then the themed tint.
-     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
-     first declaration has to stand on its own. The percentage reproduces the original
-     light-mode colour, so only the dark theme changes. */
   background-color: var(--bes-surface-2);
   background-color: color-mix(in srgb, var(--bes-danger) 8%, var(--bes-surface-0));
 }
@@ -596,11 +590,6 @@ button.bes-downloadall[disabled]::after {
   color: var(--bes-accent-text);
 }
 
-/*
- * Headings inside the drawer name their own colour for the same reason as above: Bandcamp
- * styles bare `h2`/`h3`, and an element rule beats the colour they would otherwise inherit from
- * the drawer. On search that was turning them Bandcamp's teal.
- */
 .bes-drawer-content h2,
 .bes-drawer-content h3 {
   color: var(--bes-text-strong);
@@ -824,10 +813,6 @@ button.bes-downloadall[disabled]::after {
 }
 
 .bes-keyboard-control-row.conflict {
-  /* Tinted state background: a solid token for older engines, then the themed tint.
-     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
-     first declaration has to stand on its own. The percentage reproduces the original
-     light-mode colour, so only the dark theme changes. */
   background-color: var(--bes-surface-2);
   background-color: color-mix(in srgb, var(--bes-warning) 10%, var(--bes-surface-0));
   padding: 10px;
@@ -861,9 +846,6 @@ button.bes-downloadall[disabled]::after {
 
 .bes-key-binding-display {
   padding: 6px 12px;
-  /* Set explicitly rather than inherited: Bandcamp styles bare elements (button, h2, ...) and
-     an element rule beats inheritance, so anything in here that does not name its own colour
-     gets whatever Bandcamp last said. */
   color: var(--bes-accent);
   background: var(--bes-surface-1);
   border: 1px solid var(--bes-surface-2);
@@ -939,10 +921,6 @@ button.bes-downloadall[disabled]::after {
 
 .bes-keyboard-reset-confirmation {
   padding: 16px;
-  /* Tinted state background: a solid token for older engines, then the themed tint.
-     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
-     first declaration has to stand on its own. The percentage reproduces the original
-     light-mode colour, so only the dark theme changes. */
   background: var(--bes-surface-2);
   background: color-mix(in srgb, var(--bes-warning) 10%, var(--bes-surface-0));
   border: 1px solid #ffc107;
@@ -962,8 +940,6 @@ button.bes-downloadall[disabled]::after {
 }
 
 .bes-keyboard-confirm-button {
-  /* Darkened from #dc3545 so the white label clears AA at 5.61:1 rather than 4.14:1. The
-     shared .bes-drawer-button colour is tuned for the accent fill and is too dark on red. */
   background: #c82333;
   color: #ffffff;
   flex: 1;
@@ -1009,10 +985,6 @@ button.bes-downloadall[disabled]::after {
   border: 2px solid #ffd700 !important;
   border-radius: 0 !important;
   margin: -2px !important;
-  /* Tinted state background: a solid token for older engines, then the themed tint.
-     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
-     first declaration has to stand on its own. The percentage reproduces the original
-     light-mode colour, so only the dark theme changes. */
   background: var(--bes-surface-2) !important;
   background: color-mix(in srgb, var(--bes-warning) 5%, var(--bes-surface-0)) !important;
   box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3) !important;
@@ -1790,12 +1762,6 @@ body.bes-drawer-expanded #pgBd {
   transition: background-color 0.2s ease;
 }
 
-/*
- * Declare the separators rather than inheriting them. BES elements are excluded from the
- * generated Bandcamp overrides so we do not clobber our own styling, which means anything we
- * leave unset keeps Bandcamp's raw value - here a dotted #c8c8c8 cell border that reads as
- * scratchy on a dark surface.
- */
 .bes-player-drawer-tracklist .bes-track-row td {
   border-top: none;
   border-bottom: 1px solid var(--bes-border);
@@ -1810,10 +1776,6 @@ body.bes-drawer-expanded #pgBd {
 }
 
 .bes-player-drawer .bes-track-row.bes-track-playing {
-  /* Tinted state background: a solid token for older engines, then the themed tint.
-     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
-     first declaration has to stand on its own. The percentage reproduces the original
-     light-mode colour, so only the dark theme changes. */
   background-color: var(--bes-surface-2);
   background-color: color-mix(in srgb, var(--bes-accent) 11%, var(--bes-surface-0));
   font-weight: 500;
@@ -1932,10 +1894,6 @@ body.bes-drawer-expanded #pgBd {
 }
 
 .bes-player-drawer .bes-track-link:hover {
-  /* Tinted state background: a solid token for older engines, then the themed tint.
-     color-mix lands in Chrome 111 / Firefox 113 and the manifest floor is lower, so the
-     first declaration has to stand on its own. The percentage reproduces the original
-     light-mode colour, so only the dark theme changes. */
   background-color: var(--bes-surface-2);
   background-color: color-mix(in srgb, var(--bes-accent) 5%, var(--bes-surface-0));
   border-color: var(--bes-accent);

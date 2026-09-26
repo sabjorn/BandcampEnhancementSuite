@@ -230,20 +230,12 @@ export function initAudioFeatures(port: PortMessage): void {
    * The waveform is painted into a canvas, so it cannot inherit anything from the stylesheets.
    * In the default theme it takes its colour from the page, which is what keeps it in step with
    * whatever an artist chose for their own design. Under a theme that no longer holds - the page
-   * colours are ours - so it reads the tokens instead, the same way the drawer player uses a
-   * fixed pair rather than deriving from a page it does not match.
+   * colours are ours - so it reads the same two tokens the drawer player uses, which is what
+   * keeps the two waveforms looking like one feature.
    */
   if (isThemeActive()) {
-    /*
-     * drawOverlay paints source-atop, so both colours land only on the bars: unplayed bars keep
-     * waveformColour and played bars take the overlay. All three relationships matter, and this
-     * is the only pairing in the palette that holds up - 15.9:1 for the bars against the page,
-     * 6.0:1 for the played portion, and 2.7:1 between the two. That last number is modest, but
-     * the boundary it has to convey is a hard vertical edge between a neutral and a saturated
-     * cyan, which reads far more easily than the ratio alone suggests.
-     */
-    waveformColour = themeToken('textMax') || waveformColour;
-    waveformOverlayColour = themeToken('accent') || waveformOverlayColour;
+    waveformColour = themeToken('waveform') || waveformColour;
+    waveformOverlayColour = themeToken('waveformPlayed') || waveformOverlayColour;
   } else {
     const bg: Element | null = document.querySelector('h2.trackTitle');
     if (bg) {

@@ -25,6 +25,8 @@
   --bes-danger: #c43329;
   --bes-warning: #f9780a;
   --bes-success: #619aa9;
+  --bes-waveform: #e2e2e6;
+  --bes-waveform-played: #5b53e8;
   --bes-sprite-filter: none;
 }
 
@@ -42,6 +44,8 @@
   --bes-danger: #f4857b;
   --bes-warning: #fba14b;
   --bes-success: #7fc0cf;
+  --bes-waveform: #e2e2e6;
+  --bes-waveform-played: #5b53e8;
   --bes-sprite-filter: invert(1) hue-rotate(180deg);
 }
 

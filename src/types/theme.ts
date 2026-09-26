@@ -22,6 +22,15 @@ export interface Theme {
   danger: string;
   warning: string;
   success: string;
+  /*
+   * The waveform is drawn into a canvas, so it cannot take these from a stylesheet - both
+   * players read them through themeToken(). `waveform` is the unplayed bars, `waveformPlayed`
+   * the portion behind the playhead. drawOverlay composites source-atop, so both land only on
+   * the bars: what has to read clearly is the edge between them, as much as either against the
+   * page.
+   */
+  waveform: string;
+  waveformPlayed: string;
   /** Bandcamp's icon sheets are dark-on-transparent; a dark surface needs them inverted. */
   invertSprites: boolean;
 }
@@ -39,7 +48,9 @@ export const THEME_TOKENS: ReadonlyArray<keyof Theme> = [
   'accentText',
   'danger',
   'warning',
-  'success'
+  'success',
+  'waveform',
+  'waveformPlayed'
 ];
 
 /** Bandcamp's own values, so selecting the light theme is a no-op rather than a re-skin. */
@@ -58,6 +69,8 @@ export const LIGHT_THEME: Theme = {
   danger: '#c43329',
   warning: '#f9780a',
   success: '#619aa9',
+  waveform: '#e2e2e6',
+  waveformPlayed: '#5b53e8',
   invertSprites: false
 };
 
@@ -84,6 +97,8 @@ export const DARK_THEME: Theme = {
   danger: '#f4857b',
   warning: '#fba14b',
   success: '#7fc0cf',
+  waveform: '#e2e2e6',
+  waveformPlayed: '#5b53e8',
   invertSprites: true
 };
 

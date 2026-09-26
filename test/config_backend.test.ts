@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
+  syncDarkThemeRegistration,
   updateKeyboardSettings,
   resetKeyboardSettings,
   togglePlayedCaching,
@@ -19,6 +20,11 @@ describe('Config Backend', () => {
           get: vi.fn(),
           set: vi.fn()
         }
+      },
+      scripting: {
+        getRegisteredContentScripts: vi.fn().mockResolvedValue([]),
+        registerContentScripts: vi.fn().mockResolvedValue(undefined),
+        unregisterContentScripts: vi.fn().mockResolvedValue(undefined)
       }
     } as any;
   });
@@ -260,6 +266,59 @@ describe('Config Backend', () => {
     });
   });
 
+  /*
+   * The dark theme is applied before first paint by a content script registered only while dark
+   * mode is on - its presence is the setting, so document_start never has to look anything up.
+   * Config stays the source of truth; this registration is derived from it.
+   */
+  describe('syncDarkThemeRegistration', () => {
+    const scripting = () => (globalThis.chrome as any).scripting;
+
+    it('should register the script when the theme is dark', async () => {
+      await syncDarkThemeRegistration(DARK_THEME.name, new Logger());
+
+      expect(scripting().registerContentScripts).toHaveBeenCalledWith([
+        expect.objectContaining({
+          id: 'bes-theme-dark',
+          js: ['dist/theme_dark.js'],
+          runAt: 'document_start',
+          persistAcrossSessions: true
+        })
+      ]);
+    });
+
+    it('should not register a second copy when one is already registered', async () => {
+      scripting().getRegisteredContentScripts.mockResolvedValue([{ id: 'bes-theme-dark' }]);
+
+      await syncDarkThemeRegistration(DARK_THEME.name, new Logger());
+
+      expect(scripting().registerContentScripts).not.toHaveBeenCalled();
+    });
+
+    it('should unregister when the theme goes back to light', async () => {
+      scripting().getRegisteredContentScripts.mockResolvedValue([{ id: 'bes-theme-dark' }]);
+
+      await syncDarkThemeRegistration(LIGHT_THEME.name, new Logger());
+
+      expect(scripting().unregisterContentScripts).toHaveBeenCalledWith({ ids: ['bes-theme-dark'] });
+    });
+
+    it('should do nothing when light and nothing is registered', async () => {
+      await syncDarkThemeRegistration(LIGHT_THEME.name, new Logger());
+
+      expect(scripting().registerContentScripts).not.toHaveBeenCalled();
+      expect(scripting().unregisterContentScripts).not.toHaveBeenCalled();
+    });
+
+    // Losing the registration costs the pre-paint application, not the theme - document_end
+    // still applies it from config - so a failure here must not take the toggle down with it.
+    it('should swallow a registration failure', async () => {
+      scripting().registerContentScripts.mockRejectedValue(new Error('no scripting'));
+
+      await expect(syncDarkThemeRegistration(DARK_THEME.name, new Logger())).resolves.toBeUndefined();
+    });
+  });
+
   describe('toggleTheme', () => {
     const setup = (themeName: string) => ({
       mockDb: {
@@ -292,6 +351,23 @@ describe('Config Backend', () => {
       await toggleTheme(mockDb, mockLog, mockPort as any);
 
       expect(mockPort.postMessage).toHaveBeenCalledWith({ config: { themeName: DARK_THEME.name } });
+    });
+
+    it('should register the script when switching to dark', async () => {
+      const { mockDb, mockPort, mockLog } = setup(LIGHT_THEME.name);
+
+      await toggleTheme(mockDb, mockLog, mockPort as any);
+
+      expect((globalThis.chrome as any).scripting.registerContentScripts).toHaveBeenCalled();
+    });
+
+    it('should unregister the script when switching to light', async () => {
+      (globalThis.chrome as any).scripting.getRegisteredContentScripts.mockResolvedValue([{ id: 'bes-theme-dark' }]);
+      const { mockDb, mockPort, mockLog } = setup(DARK_THEME.name);
+
+      await toggleTheme(mockDb, mockLog, mockPort as any);
+
+      expect((globalThis.chrome as any).scripting.unregisterContentScripts).toHaveBeenCalled();
     });
 
     it('should treat a config with no theme yet as light', async () => {

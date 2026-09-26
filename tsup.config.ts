@@ -7,7 +7,8 @@ export default defineConfig(options => ({
     background: './src/background.ts',
     findmusic_permission: './src/findmusic_permission.ts',
     findmusic_autologin: './src/findmusic_autologin.ts',
-    browser_action: './src/browser_action.ts'
+    browser_action: './src/browser_action.ts',
+    theme_dark: './src/theme_dark.ts'
   },
   format: ['iife'],
   target: 'es2022',

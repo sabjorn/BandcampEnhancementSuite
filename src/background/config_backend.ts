@@ -3,6 +3,48 @@ import { getDB } from '../utilities';
 import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings } from '../types/keyboard';
 import { DEFAULT_THEME_NAME, LIGHT_THEME, DARK_THEME } from '../types/theme';
 
+/*
+ * The dark theme is applied before first paint by a content script that is registered only while
+ * dark mode is on - its presence is the setting, so nothing has to be looked up at document_start.
+ * The config below stays the source of truth; this registration is derived from it.
+ *
+ * Registrations persist across browser restarts but are dropped when the extension updates, so
+ * this is re-synced from setupDB on every worker start rather than only on toggle.
+ */
+const DARK_THEME_SCRIPT_ID = 'bes-theme-dark';
+const BANDCAMP_MATCHES = ['http://*.bandcamp.com/*', 'https://*.bandcamp.com/*'];
+
+export async function syncDarkThemeRegistration(themeName: string, log: Logger): Promise<void> {
+  try {
+    const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [DARK_THEME_SCRIPT_ID] });
+    const wantDark = themeName === DARK_THEME.name;
+
+    if (wantDark && existing.length === 0) {
+      await chrome.scripting.registerContentScripts([
+        {
+          id: DARK_THEME_SCRIPT_ID,
+          matches: BANDCAMP_MATCHES,
+          js: ['dist/theme_dark.js'],
+          runAt: 'document_start',
+          persistAcrossSessions: true
+        }
+      ]);
+      log.info('Registered the dark theme content script');
+
+      return;
+    }
+
+    if (!wantDark && existing.length > 0) {
+      await chrome.scripting.unregisterContentScripts({ ids: [DARK_THEME_SCRIPT_ID] });
+      log.info('Unregistered the dark theme content script');
+    }
+  } catch (error: unknown) {
+    // A failure here costs the pre-paint application, not the theme itself - document_end still
+    // applies it from config.
+    log.error(`Failed to sync the dark theme registration: ${error}`);
+  }
+}
+
 interface Config {
   displayWaveform: boolean;
   enableMetadataCaching: boolean;
@@ -54,7 +96,7 @@ export async function portListenerCallback(
 
   const db = await getDB();
 
-  if (msg.config) await synchronizeConfig(db, msg.config, portState.port);
+  if (msg.config) await synchronizeConfig(db, msg.config, log, portState.port);
 
   if (msg.toggleWaveformDisplay) await toggleWaveformDisplay(db, log, portState.port);
 
@@ -82,7 +124,7 @@ export async function initConfigBackend(): Promise<void> {
   log.info('initializing ConfigBackend');
 
   const db = await getDB();
-  await setupDB(db);
+  await setupDB(db, log);
   log.info('Config database initialized');
 
   chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) =>
@@ -90,11 +132,17 @@ export async function initConfigBackend(): Promise<void> {
   );
 }
 
-export async function synchronizeConfig(db: any, config: Partial<Config>, port?: chrome.runtime.Port): Promise<void> {
+export async function synchronizeConfig(
+  db: any,
+  config: Partial<Config>,
+  log: Logger,
+  port?: chrome.runtime.Port
+): Promise<void> {
   const db_config = await db.get('config', 'config');
   const merged_config = mergeData(db_config, config);
 
   await db.put('config', merged_config, 'config');
+  await syncDarkThemeRegistration(merged_config.themeName, log);
   port?.postMessage({ config: merged_config });
 }
 
@@ -154,6 +202,7 @@ export async function toggleTheme(db: any, log: Logger, port?: chrome.runtime.Po
   db_config['themeName'] = newThemeName;
 
   await db.put('config', db_config, 'config');
+  await syncDarkThemeRegistration(newThemeName, log);
   port?.postMessage({ config: db_config });
 }
 
@@ -175,10 +224,12 @@ export async function broadcastConfig(db: any, log: Logger, port?: chrome.runtim
   port?.postMessage({ config: config });
 }
 
-export async function setupDB(db: any): Promise<void> {
+export async function setupDB(db: any, log?: Logger): Promise<void> {
   const dbConfig = await db.get('config', 'config');
   const mergedConfig = mergeData(defaultConfig, dbConfig);
   await db.put('config', mergedConfig, 'config');
+
+  if (log) await syncDarkThemeRegistration(mergedConfig.themeName, log);
 }
 
 export function mergeData(reference_config: Config, new_config: Partial<Config>): Config {

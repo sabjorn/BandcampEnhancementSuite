@@ -224,12 +224,12 @@ export async function broadcastConfig(db: any, log: Logger, port?: chrome.runtim
   port?.postMessage({ config: config });
 }
 
-export async function setupDB(db: any, log?: Logger): Promise<void> {
+export async function setupDB(db: any, log: Logger): Promise<void> {
   const dbConfig = await db.get('config', 'config');
   const mergedConfig = mergeData(defaultConfig, dbConfig);
   await db.put('config', mergedConfig, 'config');
 
-  if (log) await syncDarkThemeRegistration(mergedConfig.themeName, log);
+  await syncDarkThemeRegistration(mergedConfig.themeName, log);
 }
 
 export function mergeData(reference_config: Config, new_config: Partial<Config>): Config {

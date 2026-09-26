@@ -4,7 +4,7 @@ import { Theme, resolveTheme, themeToCssVariables, themeTokenToCssVariable, DEFA
 const log = createLogger();
 
 export const THEME_ATTRIBUTE = 'data-bes-theme';
-export const NATIVE_DARK_ATTRIBUTE = 'data-bes-native-dark';
+const NATIVE_DARK_ATTRIBUTE = 'data-bes-native-dark';
 export const CUSTOM_DESIGN_STYLE_ID = 'custom-design-rules-style';
 
 /**
@@ -12,7 +12,7 @@ export const CUSTOM_DESIGN_STYLE_ID = 'custom-design-rules-style';
  * stylesheets ship with every rule scoped under `[data-bes-theme='dark']`, so they stay inert
  * until this attribute lands.
  */
-export function applyTheme(theme: Theme): void {
+function applyTheme(theme: Theme): void {
   const root = document.documentElement;
   if (!root) return;
 
@@ -293,7 +293,14 @@ export function startThemeEnforcement(): void {
   });
 }
 
-/** Stops enforcement and releases the observer. Exists for tests and for symmetry. */
+/**
+ * Stops enforcement and releases the observer.
+ *
+ * Nothing in the extension calls this - enforcement runs for the life of the page and follows
+ * the attribute rather than being torn down on a toggle. It exists so tests can disconnect an
+ * observer between cases, which they cannot do any other way once one is running against the
+ * shared document.
+ */
 export function stopThemeEnforcement(): void {
   enforcementObserver?.disconnect();
   enforcementObserver = null;

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import {
@@ -13,7 +13,7 @@ import {
   themeTokenToCssVariable
 } from '../src/types/theme';
 import {
-  applyTheme,
+  applyThemeFromConfig,
   setTheme,
   themeToken,
   startThemeEnforcement,
@@ -146,20 +146,20 @@ describe('Theme', () => {
     });
   });
 
-  describe('applyTheme', () => {
+  describe('setTheme writes the tokens onto the root element', () => {
     beforeEach(() => {
       document.documentElement.removeAttribute('style');
       document.documentElement.removeAttribute(THEME_ATTRIBUTE);
     });
 
     it('should stamp the theme name on the root element', () => {
-      applyTheme(DARK_THEME);
+      setTheme(DARK_THEME.name);
 
       expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe('dark');
     });
 
     it('should write every token onto the root element', () => {
-      applyTheme(DARK_THEME);
+      setTheme(DARK_THEME.name);
 
       const style = document.documentElement.getAttribute('style') ?? '';
       expect(style).toContain(`--bes-surface-0: ${DARK_THEME.surface0}`);
@@ -167,8 +167,8 @@ describe('Theme', () => {
     });
 
     it('should replace previous tokens rather than accumulate them on re-apply', () => {
-      applyTheme(DARK_THEME);
-      applyTheme(LIGHT_THEME);
+      setTheme(DARK_THEME.name);
+      setTheme(LIGHT_THEME.name);
 
       const style = document.documentElement.getAttribute('style') ?? '';
       expect(style).toContain(`--bes-surface-0: ${LIGHT_THEME.surface0}`);
@@ -179,7 +179,7 @@ describe('Theme', () => {
     it('should preserve unrelated inline styles', () => {
       document.documentElement.setAttribute('style', 'overflow: hidden');
 
-      applyTheme(DARK_THEME);
+      setTheme(DARK_THEME.name);
 
       expect(document.documentElement.getAttribute('style')).toContain('overflow: hidden');
     });
@@ -292,6 +292,76 @@ describe('Theme', () => {
    * colour set is used instead. It has to return something usable even before the stylesheets
    * have applied, which is the state the drawer player reads it in.
    */
+  /*
+   * The popup and the permission page are not Bandcamp tabs - no artist styling to neutralise
+   * and no late-hydrating markup - so they need the tokens and nothing else. They read config
+   * over the same `bes` port the content script uses, because that is the one way config is read.
+   */
+  describe('applyThemeFromConfig', () => {
+    let listener: ((msg: unknown) => void) | undefined;
+    let port: { onMessage: { addListener: ReturnType<typeof vi.fn> }; postMessage: ReturnType<typeof vi.fn> };
+
+    beforeEach(() => {
+      listener = undefined;
+      port = {
+        onMessage: {
+          addListener: vi.fn((fn: (msg: unknown) => void) => {
+            listener = fn;
+          })
+        },
+        postMessage: vi.fn()
+      };
+      globalThis.chrome = { runtime: { connect: vi.fn(() => port) } } as any;
+      document.documentElement.removeAttribute(THEME_ATTRIBUTE);
+      document.documentElement.removeAttribute('style');
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      document.documentElement.removeAttribute(THEME_ATTRIBUTE);
+      document.documentElement.removeAttribute('style');
+    });
+
+    it('should request config over the bes port', () => {
+      applyThemeFromConfig();
+
+      expect((globalThis.chrome as any).runtime.connect).toHaveBeenCalledWith(null, { name: 'bes' });
+      expect(port.postMessage).toHaveBeenCalledWith({ requestConfig: {} });
+    });
+
+    it('should apply the theme the config reports', () => {
+      applyThemeFromConfig();
+      listener?.({ config: { themeName: 'dark' } });
+
+      expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe('dark');
+      expect(document.documentElement.getAttribute('style')).toContain(`--bes-surface-0: ${DARK_THEME.surface0}`);
+    });
+
+    it('should fall back to the default for a theme it does not know', () => {
+      applyThemeFromConfig();
+      listener?.({ config: { themeName: 'solarized' } });
+
+      expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe(DEFAULT_THEME_NAME);
+    });
+
+    it('should ignore messages that carry no config', () => {
+      applyThemeFromConfig();
+      listener?.({ keyboardSettingsError: ['nope'] });
+
+      expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBeNull();
+    });
+
+    // Unlike a Bandcamp tab there is no markup to correct, so it must not start an observer.
+    it('should not start enforcement', () => {
+      const observe = vi.spyOn(MutationObserver.prototype, 'observe');
+
+      applyThemeFromConfig();
+      listener?.({ config: { themeName: 'dark' } });
+
+      expect(observe).not.toHaveBeenCalled();
+    });
+  });
+
   describe('themeToken fallback', () => {
     afterEach(() => {
       document.documentElement.removeAttribute('style');

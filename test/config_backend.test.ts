@@ -193,7 +193,7 @@ describe('Config Backend', () => {
     it('should default to enabled on a fresh install', async () => {
       const mockDb = makeDb(undefined as any);
 
-      await setupDB(mockDb);
+      await setupDB(mockDb, new Logger());
 
       expect(mockDb.put.mock.calls[0][1]).toMatchObject({ enablePlayedCaching: true });
     });
@@ -201,9 +201,17 @@ describe('Config Backend', () => {
     it('should keep a user opt-out across restarts', async () => {
       const mockDb = makeDb({ enablePlayedCaching: false });
 
-      await setupDB(mockDb);
+      await setupDB(mockDb, new Logger());
 
       expect(mockDb.put.mock.calls[0][1]).toMatchObject({ enablePlayedCaching: false });
+    });
+
+    it('should leave the script unregistered when the stored theme is light', async () => {
+      const mockDb = makeDb({ themeName: LIGHT_THEME.name });
+
+      await setupDB(mockDb, new Logger());
+
+      expect((globalThis.chrome as any).scripting.registerContentScripts).not.toHaveBeenCalled();
     });
 
     it('should turn played caching off when it is on', async () => {
@@ -271,6 +279,25 @@ describe('Config Backend', () => {
    * mode is on - its presence is the setting, so document_start never has to look anything up.
    * Config stays the source of truth; this registration is derived from it.
    */
+  describe('setupDB dark theme registration', () => {
+    const makeDb = (config: Record<string, unknown>) => ({
+      get: vi.fn().mockResolvedValue(config),
+      put: vi.fn().mockResolvedValue(undefined)
+    });
+    /*
+     * Dynamic content script registrations survive a browser restart but are dropped when the
+     * extension updates, so the worker has to re-derive this from config every time it boots.
+     * Without it a dark-mode user silently loses the pre-paint application after an update.
+     */
+    it('should re-register the dark theme script from the stored config', async () => {
+      const mockDb = makeDb({ themeName: DARK_THEME.name });
+
+      await setupDB(mockDb, new Logger());
+
+      expect((globalThis.chrome as any).scripting.registerContentScripts).toHaveBeenCalled();
+    });
+  });
+
   describe('syncDarkThemeRegistration', () => {
     const scripting = () => (globalThis.chrome as any).scripting;
 

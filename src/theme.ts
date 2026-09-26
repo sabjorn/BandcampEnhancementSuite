@@ -1,5 +1,5 @@
 import { createLogger } from './logger';
-import { Theme, resolveTheme, themeToCssVariables, DEFAULT_THEME_NAME } from './types/theme';
+import { Theme, resolveTheme, themeToCssVariables, themeTokenToCssVariable, DEFAULT_THEME_NAME } from './types/theme';
 
 const log = createLogger();
 
@@ -56,7 +56,7 @@ function setCustomDesignDisabled(element: HTMLStyleElement, disabled: boolean): 
  * The attribute is the theme state - it is what the stylesheets key off and what `setTheme`
  * writes - so enforcement reads it rather than being handed a flag.
  */
-function isThemeActive(): boolean {
+export function isThemeActive(): boolean {
   const themeName = document.documentElement?.getAttribute(THEME_ATTRIBUTE);
 
   return themeName !== null && themeName !== undefined && themeName !== DEFAULT_THEME_NAME;
@@ -238,6 +238,14 @@ function enforceTheme(): void {
  * changed - it sets state and nothing else, so it is safe to call from anywhere: the drawer
  * toggle, a config broadcast, or an extension page with no Bandcamp markup at all.
  */
+/**
+ * Reads a token off the root element, for the few places that need a colour in JavaScript rather
+ * than CSS - the waveform is drawn into a canvas, so it cannot pick one up from a stylesheet.
+ */
+export function themeToken(token: keyof Theme): string {
+  return window.getComputedStyle(document.documentElement).getPropertyValue(themeTokenToCssVariable(token)).trim();
+}
+
 export function setTheme(themeName: string | undefined): Theme {
   const theme = resolveTheme(themeName);
 

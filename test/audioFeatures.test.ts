@@ -394,3 +394,55 @@ describe('AudioFeatures - waveform and bpm generation', () => {
     });
   });
 });
+
+/*
+ * The waveform is drawn into a canvas, so it cannot pick colours up from a stylesheet. Under the
+ * default theme it derives them from the page, which keeps it in step with an artist's own
+ * design; under any other theme the page colours are ours, so it reads the tokens instead.
+ *
+ * This is what stopped the played portion inverting to near-black on a dark page - 1.13:1
+ * against the background, effectively invisible.
+ */
+describe('waveform colour source', () => {
+  const setTheme = (name: string | null) => {
+    if (name === null) document.documentElement.removeAttribute('data-bes-theme');
+    else document.documentElement.setAttribute('data-bes-theme', name);
+  };
+
+  afterEach(() => {
+    setTheme(null);
+    document.documentElement.removeAttribute('style');
+    document.querySelectorAll('h2.trackTitle').forEach(node => node.remove());
+  });
+
+  const addTrackTitle = (colour: string) => {
+    const title = document.createElement('h2');
+    title.className = 'trackTitle';
+    title.style.color = colour;
+    document.body.appendChild(title);
+  };
+
+  it('derives from the page under the default theme', async () => {
+    setTheme('light');
+    addTrackTitle('rgb(51, 51, 51)');
+    const { isThemeActive } = await import('../src/theme');
+
+    expect(isThemeActive()).toBe(false);
+  });
+
+  it('treats a non-default theme as active', async () => {
+    setTheme('dark');
+    const { isThemeActive } = await import('../src/theme');
+
+    expect(isThemeActive()).toBe(true);
+  });
+
+  it('reads token values off the root element', async () => {
+    setTheme('dark');
+    document.documentElement.setAttribute('style', '--bes-text-max: #ffffff; --bes-accent: #0cacd7;');
+    const { themeToken } = await import('../src/theme');
+
+    expect(themeToken('textMax')).toBe('#ffffff');
+    expect(themeToken('accent')).toBe('#0cacd7');
+  });
+});

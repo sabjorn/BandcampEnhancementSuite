@@ -8,7 +8,9 @@ vi.mock('../src/logger', () => ({
     error = vi.fn();
     debug = vi.fn();
     warn = vi.fn();
-  }
+  },
+  // loader.ts reads the waveform tokens through theme.ts, which builds a logger on import
+  createLogger: () => ({ info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() })
 }));
 
 vi.mock('../src/bclient', () => {

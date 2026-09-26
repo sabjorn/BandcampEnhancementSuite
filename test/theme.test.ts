@@ -347,6 +347,25 @@ describe('Theme', () => {
       expect(contrast(DARK_THEME.accentText, DARK_THEME.accent)).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
     });
 
+    /*
+     * The waveform tokens are graphics, not text, so they are not in the AA list above. What has
+     * to hold is that the bars are visible on the page and that the played portion is tellable
+     * from the unplayed - drawOverlay composites source-atop, so the edge between the two is
+     * what conveys progress. 3:1 is the non-text threshold.
+     */
+    it('should keep the waveform legible against the page and against itself', () => {
+      const bars = contrast(DARK_THEME.waveform, DARK_THEME.surface0);
+      const played = contrast(DARK_THEME.waveformPlayed, DARK_THEME.surface0);
+      const between = contrast(DARK_THEME.waveformPlayed, DARK_THEME.waveform);
+
+      expect(bars, `waveform ${DARK_THEME.waveform} on surface0 is ${bars.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
+      expect(
+        between,
+        `waveformPlayed ${DARK_THEME.waveformPlayed} on waveform ${DARK_THEME.waveform} is ${between.toFixed(2)}:1`
+      ).toBeGreaterThanOrEqual(3);
+      expect(played).toBeGreaterThan(1.5);
+    });
+
     it('should keep the muted tone distinguishable from body text', () => {
       expect(DARK_THEME.textMuted).not.toBe(DARK_THEME.textBody);
       expect(relativeLuminance(DARK_THEME.textMuted)).toBeLessThan(relativeLuminance(DARK_THEME.textBody));

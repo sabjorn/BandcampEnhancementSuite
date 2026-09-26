@@ -2,7 +2,6 @@ import Logger from '../logger';
 import { getDB } from '../utilities';
 import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings } from '../types/keyboard';
 import { DEFAULT_THEME_NAME, LIGHT_THEME, DARK_THEME } from '../types/theme';
-import { writeMirroredThemeName } from '../themeStorage';
 
 interface Config {
   displayWaveform: boolean;
@@ -96,7 +95,6 @@ export async function synchronizeConfig(db: any, config: Partial<Config>, port?:
   const merged_config = mergeData(db_config, config);
 
   await db.put('config', merged_config, 'config');
-  await writeMirroredThemeName(merged_config.themeName);
   port?.postMessage({ config: merged_config });
 }
 
@@ -156,7 +154,6 @@ export async function toggleTheme(db: any, log: Logger, port?: chrome.runtime.Po
   db_config['themeName'] = newThemeName;
 
   await db.put('config', db_config, 'config');
-  await writeMirroredThemeName(newThemeName);
   port?.postMessage({ config: db_config });
 }
 
@@ -182,7 +179,6 @@ export async function setupDB(db: any): Promise<void> {
   const dbConfig = await db.get('config', 'config');
   const mergedConfig = mergeData(defaultConfig, dbConfig);
   await db.put('config', mergedConfig, 'config');
-  await writeMirroredThemeName(mergedConfig.themeName);
 }
 
 export function mergeData(reference_config: Config, new_config: Partial<Config>): Config {

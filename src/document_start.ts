@@ -1,6 +1,4 @@
 import { createLogger } from './logger';
-import { setTheme, startThemeEnforcement } from './theme';
-import { readMirroredThemeName } from './themeStorage';
 
 const log = createLogger();
 
@@ -32,21 +30,5 @@ const captureUrlCartParam = (): void => {
   window.location.replace(newUrl);
 };
 
-/*
- * document_start owns theme enforcement for the page: the artist stylesheet, the menubar and
- * footer shadow roots and Bandcamp's dialogs are all parsed after this runs, so they need
- * watching, and this is the entry point that runs first and lives longest. document_end only
- * ever changes the theme; it must not start a second enforcer.
- */
-const applyStoredTheme = (): void => {
-  readMirroredThemeName()
-    .then(themeName => {
-      setTheme(themeName);
-      startThemeEnforcement();
-    })
-    .catch(error => log.error(`Failed to apply the stored theme: ${error}`));
-};
-
-applyStoredTheme();
 warmServiceWorker();
 captureUrlCartParam();

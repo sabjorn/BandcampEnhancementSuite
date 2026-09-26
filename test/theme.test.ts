@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import {
@@ -20,7 +20,6 @@ import {
   THEME_ATTRIBUTE,
   CUSTOM_DESIGN_STYLE_ID
 } from '../src/theme';
-import { readMirroredThemeName, writeMirroredThemeName, THEME_STORAGE_KEY } from '../src/themeStorage';
 
 describe('Theme', () => {
   /*
@@ -287,95 +286,6 @@ describe('Theme', () => {
     });
   });
 
-  /*
-   * document_start.js and document_end.js are compiled separately, so each ships its own copy of
-   * theme.ts with its own module state. Loading the module twice through vi.resetModules()
-   * reproduces that; a single shared instance does not.
-   *
-   * The design that has to hold: document_start owns enforcement, document_end only ever sets
-   * the theme, and the attribute carries the change between them. Both installing observers is
-   * what previously left them fighting over the artist stylesheet - neither bundle can see, or
-   * disconnect, the other's.
-   */
-  describe('two module instances, as the two content-script bundles produce', () => {
-    let artistStyle: HTMLStyleElement;
-    let documentStart: typeof import('../src/theme');
-    let documentEnd: typeof import('../src/theme');
-
-    beforeEach(async () => {
-      document.getElementById(CUSTOM_DESIGN_STYLE_ID)?.remove();
-      artistStyle = document.createElement('style');
-      artistStyle.id = CUSTOM_DESIGN_STYLE_ID;
-      artistStyle.textContent = '#pgBd { background: #FCEE21; }';
-      document.head.appendChild(artistStyle);
-
-      vi.resetModules();
-      documentStart = await import('../src/theme');
-      vi.resetModules();
-      documentEnd = await import('../src/theme');
-      expect(documentStart).not.toBe(documentEnd);
-    });
-
-    afterEach(() => {
-      documentStart.stopThemeEnforcement();
-      documentEnd.stopThemeEnforcement();
-      artistStyle.remove();
-      document.documentElement.removeAttribute(THEME_ATTRIBUTE);
-    });
-
-    const settle = () => new Promise(resolve => setTimeout(resolve, 0));
-
-    it('should follow a theme change made by the other bundle', async () => {
-      documentStart.setTheme('dark');
-      documentStart.startThemeEnforcement();
-      expect(artistStyle.disabled).toBe(true);
-
-      // document_end's toggle only writes state; document_start's observer does the work.
-      documentEnd.setTheme('light');
-      await settle();
-
-      expect(artistStyle.disabled).toBe(false);
-    });
-
-    it('should re-assert when switched back to dark by the other bundle', async () => {
-      documentStart.setTheme('dark');
-      documentStart.startThemeEnforcement();
-      documentEnd.setTheme('light');
-      await settle();
-
-      documentEnd.setTheme('dark');
-      await settle();
-
-      expect(artistStyle.disabled).toBe(true);
-    });
-
-    it('should not enforce from document_end, which installs no observer', async () => {
-      documentEnd.setTheme('dark');
-      await settle();
-
-      // No enforcer is running, so the attribute is set but the sheet is untouched.
-      expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe('dark');
-      expect(artistStyle.disabled).toBe(false);
-    });
-
-    it('should restore an artist sheet that only arrives after switching to light', async () => {
-      documentStart.setTheme('dark');
-      documentStart.startThemeEnforcement();
-      documentEnd.setTheme('light');
-      await settle();
-
-      artistStyle.remove();
-      const late = document.createElement('style');
-      late.id = CUSTOM_DESIGN_STYLE_ID;
-      late.disabled = true;
-      document.head.appendChild(late);
-      await settle();
-
-      expect(late.disabled).toBe(false);
-      late.remove();
-    });
-  });
-
   describe('dark theme contrast', () => {
     const relativeLuminance = (hex: string): number => {
       const channels = [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16) / 255);
@@ -440,45 +350,6 @@ describe('Theme', () => {
     it('should keep the muted tone distinguishable from body text', () => {
       expect(DARK_THEME.textMuted).not.toBe(DARK_THEME.textBody);
       expect(relativeLuminance(DARK_THEME.textMuted)).toBeLessThan(relativeLuminance(DARK_THEME.textBody));
-    });
-  });
-
-  describe('theme storage mirror', () => {
-    beforeEach(() => {
-      globalThis.chrome = {
-        storage: {
-          local: {
-            get: vi.fn().mockResolvedValue({}),
-            set: vi.fn().mockResolvedValue(undefined)
-          }
-        }
-      } as any;
-    });
-
-    afterEach(() => {
-      vi.restoreAllMocks();
-    });
-
-    it('should read the stored theme name', async () => {
-      (globalThis.chrome.storage.local.get as any).mockResolvedValue({ [THEME_STORAGE_KEY]: 'dark' });
-
-      await expect(readMirroredThemeName()).resolves.toBe('dark');
-    });
-
-    it('should fall back to the default when nothing is stored', async () => {
-      await expect(readMirroredThemeName()).resolves.toBe(DEFAULT_THEME_NAME);
-    });
-
-    it('should fall back to the default rather than throwing when storage fails', async () => {
-      (globalThis.chrome.storage.local.get as any).mockRejectedValue(new Error('no storage'));
-
-      await expect(readMirroredThemeName()).resolves.toBe(DEFAULT_THEME_NAME);
-    });
-
-    it('should write the theme name under the shared key', async () => {
-      await writeMirroredThemeName('dark');
-
-      expect(globalThis.chrome.storage.local.set).toHaveBeenCalledWith({ [THEME_STORAGE_KEY]: 'dark' });
     });
   });
 });

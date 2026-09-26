@@ -1,8 +1,5 @@
 import { createLogger } from './logger';
 import { Theme, resolveTheme, themeToCssVariables, DEFAULT_THEME_NAME } from './types/theme';
-import { readMirroredThemeName } from './themeStorage';
-
-export { readMirroredThemeName, writeMirroredThemeName, THEME_STORAGE_KEY } from './themeStorage';
 
 const log = createLogger();
 
@@ -82,16 +79,20 @@ function enforceCustomDesignState(): void {
 }
 
 /**
- * Applies the stored theme's tokens to an extension page. Unlike a Bandcamp tab there is no
- * artist styling to neutralise here, so only the custom properties are needed - and because
- * `applyTheme` writes them inline onto <html>, these pages need no stylesheet of their own.
+ * Themes an extension page - the popup, the permission page - from the config.
+ *
+ * These are not Bandcamp tabs: there is no artist styling to neutralise and no late-hydrating
+ * markup, so they need the tokens and nothing else. They read config over the same `bes` port
+ * the content script uses, because that is the one way config is read.
  */
-export async function applyStoredTheme(): Promise<Theme> {
-  const theme = resolveTheme(await readMirroredThemeName());
+export function applyThemeFromConfig(): void {
+  const port = chrome.runtime.connect(null, { name: 'bes' });
 
-  applyTheme(theme);
+  port.onMessage.addListener((msg: { config?: { themeName?: string } }) => {
+    if (msg.config) setTheme(msg.config.themeName);
+  });
 
-  return theme;
+  port.postMessage({ requestConfig: {} });
 }
 
 /*

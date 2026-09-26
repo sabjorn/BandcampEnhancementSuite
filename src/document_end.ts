@@ -10,7 +10,7 @@ import { initFeed } from './pages/feed';
 import { createKeyboardSettingsSection } from './components/keyboardSettings';
 import { KeyboardSettings } from './types/keyboard';
 import { isBandcampLoggedIn } from './utilities';
-import { setTheme } from './theme';
+import { setTheme, startThemeEnforcement } from './theme';
 import { DARK_THEME, LIGHT_THEME } from './types/theme';
 
 const log = createLogger();
@@ -416,11 +416,13 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 interface ConfigPayload {
   keyboardSettings?: KeyboardSettings;
   enableFetchCaching?: boolean;
+  themeName?: string;
 }
 
 interface ResolvedConfig {
   keyboardSettings?: KeyboardSettings;
   enableFetchCaching: boolean;
+  themeName?: string;
 }
 
 const requestConfig = (port: chrome.runtime.Port): Promise<ResolvedConfig> =>
@@ -436,7 +438,8 @@ const requestConfig = (port: chrome.runtime.Port): Promise<ResolvedConfig> =>
 
       finish({
         keyboardSettings: msg.config.keyboardSettings,
-        enableFetchCaching: msg.config.enableFetchCaching ?? false
+        enableFetchCaching: msg.config.enableFetchCaching ?? false,
+        themeName: msg.config.themeName
       });
     };
 
@@ -462,6 +465,19 @@ const documentEnd = async (): Promise<void> => {
   })();
 
   const configReady = requestConfig(config_port);
+
+  /*
+   * The theme rides on the config read that already happens here - it is another field alongside
+   * the keyboard settings and caching toggles, not a second round trip. document_end is also the
+   * only phase with theme code at all: document_start is deliberately free of anything it would
+   * have to wait on, so it neither reads config nor ships the theme stylesheets.
+   */
+  const themeReady = (async () => {
+    const { themeName } = await configReady;
+
+    setTheme(themeName);
+    startThemeEnforcement();
+  })().catch(error => log.error(`Theme initialization failed: ${error}`));
 
   const labelViewReady = (async () => {
     const { keyboardSettings, enableFetchCaching } = await configReady;
@@ -521,7 +537,7 @@ const documentEnd = async (): Promise<void> => {
 
   initBESDrawer(config_port);
 
-  await Promise.all([labelViewReady, playerReady, cartReady]);
+  await Promise.all([themeReady, labelViewReady, playerReady, cartReady]);
 };
 
 documentEnd();

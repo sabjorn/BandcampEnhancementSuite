@@ -7,8 +7,7 @@ import {
   toggleTheme,
   setupDB
 } from '../src/background/config_backend';
-import { DARK_THEME, LIGHT_THEME, DEFAULT_THEME_NAME } from '../src/types/theme';
-import { THEME_STORAGE_KEY } from '../src/themeStorage';
+import { DARK_THEME, LIGHT_THEME } from '../src/types/theme';
 import { DEFAULT_KEYBOARD_SETTINGS, KeyboardSettings, KeyboardAction } from '../src/types/keyboard';
 import Logger from '../src/logger';
 
@@ -295,14 +294,6 @@ describe('Config Backend', () => {
       expect(mockPort.postMessage).toHaveBeenCalledWith({ config: { themeName: DARK_THEME.name } });
     });
 
-    it('should mirror the new theme to storage for document_start to read', async () => {
-      const { mockDb, mockPort, mockLog } = setup(LIGHT_THEME.name);
-
-      await toggleTheme(mockDb, mockLog, mockPort as any);
-
-      expect(globalThis.chrome.storage.local.set).toHaveBeenCalledWith({ [THEME_STORAGE_KEY]: DARK_THEME.name });
-    });
-
     it('should treat a config with no theme yet as light', async () => {
       const mockDb = {
         get: vi.fn().mockResolvedValue({ displayWaveform: true }),
@@ -316,32 +307,6 @@ describe('Config Backend', () => {
         expect.objectContaining({ themeName: DARK_THEME.name }),
         'config'
       );
-    });
-  });
-
-  describe('setupDB theme seeding', () => {
-    it('should seed the storage mirror with the default theme on first run', async () => {
-      const mockDb = {
-        get: vi.fn().mockResolvedValue(undefined),
-        put: vi.fn().mockResolvedValue(undefined)
-      };
-
-      await setupDB(mockDb);
-
-      expect(globalThis.chrome.storage.local.set).toHaveBeenCalledWith({
-        [THEME_STORAGE_KEY]: DEFAULT_THEME_NAME
-      });
-    });
-
-    it('should seed the storage mirror from an existing stored theme', async () => {
-      const mockDb = {
-        get: vi.fn().mockResolvedValue({ themeName: DARK_THEME.name }),
-        put: vi.fn().mockResolvedValue(undefined)
-      };
-
-      await setupDB(mockDb);
-
-      expect(globalThis.chrome.storage.local.set).toHaveBeenCalledWith({ [THEME_STORAGE_KEY]: DARK_THEME.name });
     });
   });
 });

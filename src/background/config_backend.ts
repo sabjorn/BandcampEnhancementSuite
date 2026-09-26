@@ -3,14 +3,6 @@ import { getDB } from '../utilities';
 import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings } from '../types/keyboard';
 import { DEFAULT_THEME_NAME, LIGHT_THEME, DARK_THEME } from '../types/theme';
 
-/*
- * The dark theme is applied before first paint by a content script that is registered only while
- * dark mode is on - its presence is the setting, so nothing has to be looked up at document_start.
- * The config below stays the source of truth; this registration is derived from it.
- *
- * Registrations persist across browser restarts but are dropped when the extension updates, so
- * this is re-synced from setupDB on every worker start rather than only on toggle.
- */
 const DARK_THEME_SCRIPT_ID = 'bes-theme-dark';
 const BANDCAMP_MATCHES = ['http://*.bandcamp.com/*', 'https://*.bandcamp.com/*'];
 
@@ -39,8 +31,6 @@ export async function syncDarkThemeRegistration(themeName: string, log: Logger):
       log.info('Unregistered the dark theme content script');
     }
   } catch (error: unknown) {
-    // A failure here costs the pre-paint application, not the theme itself - document_end still
-    // applies it from config.
     log.error(`Failed to sync the dark theme registration: ${error}`);
   }
 }

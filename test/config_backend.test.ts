@@ -274,21 +274,11 @@ describe('Config Backend', () => {
     });
   });
 
-  /*
-   * The dark theme is applied before first paint by a content script registered only while dark
-   * mode is on - its presence is the setting, so document_start never has to look anything up.
-   * Config stays the source of truth; this registration is derived from it.
-   */
   describe('setupDB dark theme registration', () => {
     const makeDb = (config: Record<string, unknown>) => ({
       get: vi.fn().mockResolvedValue(config),
       put: vi.fn().mockResolvedValue(undefined)
     });
-    /*
-     * Dynamic content script registrations survive a browser restart but are dropped when the
-     * extension updates, so the worker has to re-derive this from config every time it boots.
-     * Without it a dark-mode user silently loses the pre-paint application after an update.
-     */
     it('should re-register the dark theme script from the stored config', async () => {
       const mockDb = makeDb({ themeName: DARK_THEME.name });
 
@@ -337,8 +327,6 @@ describe('Config Backend', () => {
       expect(scripting().unregisterContentScripts).not.toHaveBeenCalled();
     });
 
-    // Losing the registration costs the pre-paint application, not the theme - document_end
-    // still applies it from config - so a failure here must not take the toggle down with it.
     it('should swallow a registration failure', async () => {
       scripting().registerContentScripts.mockRejectedValue(new Error('no scripting'));
 

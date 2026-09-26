@@ -1,12 +1,3 @@
-/**
- * Theme tokens.
- *
- * Bandcamp's stylesheets are built almost entirely out of a greyscale ramp plus a cyan accent,
- * so a theme is expressed as that same ramp. `surface0` is the furthest-back background and
- * `textMax` the highest-contrast foreground; every step in between moves monotonically. A dark
- * theme is simply the ramp walked in the other direction, which keeps every contrast
- * relationship Bandcamp's own CSS relies on intact.
- */
 export interface Theme {
   name: string;
   surface0: string;
@@ -22,16 +13,8 @@ export interface Theme {
   danger: string;
   warning: string;
   success: string;
-  /*
-   * The waveform is drawn into a canvas, so it cannot take these from a stylesheet - both
-   * players read them through themeToken(). `waveform` is the unplayed bars, `waveformPlayed`
-   * the portion behind the playhead. drawOverlay composites source-atop, so both land only on
-   * the bars: what has to read clearly is the edge between them, as much as either against the
-   * page.
-   */
   waveform: string;
   waveformPlayed: string;
-  /** Bandcamp's icon sheets are dark-on-transparent; a dark surface needs them inverted. */
   invertSprites: boolean;
 }
 
@@ -53,7 +36,6 @@ export const THEME_TOKENS: ReadonlyArray<keyof Theme> = [
   'waveformPlayed'
 ];
 
-/** Bandcamp's own values, so selecting the light theme is a no-op rather than a re-skin. */
 export const LIGHT_THEME: Theme = {
   name: 'light',
   surface0: '#ffffff',
@@ -74,14 +56,6 @@ export const LIGHT_THEME: Theme = {
   invertSprites: false
 };
 
-/*
- * Anchored on Bandcamp's own dark mode rather than invented, so pages we theme and the newer
- * pages Bandcamp themes itself do not read as two different dark modes when you move between
- * them. Their values, sampled from /discover: page background #222, body text #fff, accent
- * #0CACD7 (--blue400). The surface ramp and muted tones are ours - their design is effectively
- * flat, one surface and white text, which is not enough for the drawer, cart panel and
- * tracklist - but they are stepped in the same neutral grey family rather than a blue-tinted one.
- */
 export const DARK_THEME: Theme = {
   name: 'dark',
   surface0: '#222222',
@@ -109,10 +83,6 @@ export const BUILTIN_THEMES: Record<string, Theme> = {
 
 export const DEFAULT_THEME_NAME = LIGHT_THEME.name;
 
-/**
- * The single lookup seam. A future user-theme editor extends this to consult stored custom
- * themes before falling back to the built-ins; nothing else needs to change.
- */
 export function resolveTheme(name: string | undefined): Theme {
   if (!name) return BUILTIN_THEMES[DEFAULT_THEME_NAME];
 
@@ -143,11 +113,6 @@ export function validateTheme(theme: Theme): string[] {
   return errors;
 }
 
-/**
- * Kebab-cases a token name so `textStrong` becomes `--bes-text-strong` and `surface0` becomes
- * `--bes-surface-0`. The trailing-digit split matters: css/theme.css and the generated overrides
- * both spell the ramp `--bes-surface-0`, so the two must agree exactly.
- */
 export function themeTokenToCssVariable(token: keyof Theme): string {
   const kebab = String(token)
     .replace(/([a-z])([A-Z])/g, '$1-$2')
@@ -157,7 +122,6 @@ export function themeTokenToCssVariable(token: keyof Theme): string {
   return `--bes-${kebab}`;
 }
 
-/** Serializes a theme into a `--bes-*: value;` declaration list for a style attribute or block. */
 export function themeToCssVariables(theme: Theme): string {
   const declarations = THEME_TOKENS.map(token => `${themeTokenToCssVariable(token)}: ${theme[token]};`);
 

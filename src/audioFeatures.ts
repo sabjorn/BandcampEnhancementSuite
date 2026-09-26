@@ -207,6 +207,17 @@ export async function generateAudioFeatures(
   );
 }
 
+function resolveWaveformColours(): [string, string] {
+  if (isThemeActive()) return [themeToken('waveform'), themeToken('waveformPlayed')];
+
+  const bg: Element | null = document.querySelector('h2.trackTitle');
+  if (!bg) return ['white', 'black'];
+
+  const colour = window.getComputedStyle(bg, null).getPropertyValue('color');
+
+  return [colour, invertColour(colour)];
+}
+
 export function initAudioFeatures(port: PortMessage): void {
   const log = new Logger();
 
@@ -223,26 +234,7 @@ export function initAudioFeatures(port: PortMessage): void {
 
   const bpmDisplay = createBpmDisplay();
 
-  let waveformColour: string = 'white';
-  let waveformOverlayColour: string = 'black';
-
-  /*
-   * The waveform is painted into a canvas, so it cannot inherit anything from the stylesheets.
-   * In the default theme it takes its colour from the page, which is what keeps it in step with
-   * whatever an artist chose for their own design. Under a theme that no longer holds - the page
-   * colours are ours - so it reads the same two tokens the drawer player uses, which is what
-   * keeps the two waveforms looking like one feature.
-   */
-  if (isThemeActive()) {
-    waveformColour = themeToken('waveform');
-    waveformOverlayColour = themeToken('waveformPlayed');
-  } else {
-    const bg: Element | null = document.querySelector('h2.trackTitle');
-    if (bg) {
-      waveformColour = window.getComputedStyle(bg, null).getPropertyValue('color');
-      waveformOverlayColour = invertColour(waveformColour);
-    }
-  }
+  const [waveformColour, waveformOverlayColour] = resolveWaveformColours();
 
   const audio = document.querySelector('audio');
   if (audio) {

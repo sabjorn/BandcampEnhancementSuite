@@ -15,7 +15,6 @@ import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 import puppeteer from 'puppeteer';
 
-/** Pages whose stylesheet links are scraped. Add a URL here when a page type renders untheme. */
 const SEED_PAGES = [
   'https://bandcamp.com/',
   'https://bandcamp.com/discover',
@@ -26,10 +25,8 @@ const SEED_PAGES = [
   'https://halfpastvibe.bandcamp.com/album/stonks-market'
 ];
 
-/** Hosts whose stylesheets are Bandcamp's own and therefore safe to theme. */
 const STYLESHEET_HOSTS = ['bandcamp.com', 'bcbits.com'];
 
-/** Bundles loaded only after client-side routing, which link-scraping cannot discover. */
 const EXTRA_STYLESHEETS: string[] = [];
 
 const OUTPUT_PATH = resolve(import.meta.dirname, '../css/theme.generated.css');
@@ -56,52 +53,21 @@ const THEMED_PROPERTIES = new Set([
   'stroke'
 ]);
 
-/** Bandcamp's accent cyan, in the spellings it actually appears in. */
 const ACCENT_COLORS = new Set(['#1da0c3', '#00a1c6', '#0687f5', 'rgb(0,161,198)', 'rgb(0, 161, 198)']);
 
 const HEX_PATTERN = /#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b/g;
 
-/**
- * Bandcamp styles a handful of bare element types (`a`, `button`, `body`, `td`, `th`). Those
- * selectors also match BES's own UI, and because every override carries `!important` they beat
- * the component's own colors - which is how the drawer's FindMusic button ended up painting its
- * label in the same cyan as its background. BES owns everything under a `bes-`/`findmusic-`
- * class, so bare type selectors are told to skip that subtree.
- */
-/*
- * Every generated rule targets Bandcamp's own markup, so all of them stand down when Bandcamp
- * has themed the page itself - src/theme.ts flags that with data-bes-native-dark. Double-theming
- * a page that is already dark is what put light text on light backgrounds across /discover.
- */
 const THEME_SCOPE_SUFFIX = "[data-bes-theme='dark']:not([data-bes-native-dark])";
 const THEME_SCOPE = `html${THEME_SCOPE_SUFFIX}`;
 
 const BES_EXCLUSION = ":not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *)";
 
-/**
- * Links that Bandcamp styles as buttons carry their own background and label color. Scoping a
- * bare `a` rule under `html[data-bes-theme='dark']` raises its specificity above `.buttonLink`,
- * so without this it repaints their labels in the page accent - cyan text on Bandcamp's green
- * checkout button. Dropping `!important` would not help; the prefix alone is enough to win.
- */
 const BUTTON_LIKE_EXCLUSION = ':not(.buttonLink):not(.g-button):not(.compound-button)';
 
 const BARE_TYPE_SELECTOR = /^[a-zA-Z][a-zA-Z0-9]*(::?[a-z-]+(\([^)]*\))?)*$/;
 
-/**
- * Translucent greys - `rgba(255,255,255,.5)` panels, `rgba(0,0,0,.1)` shadows - cannot be
- * expressed as a plain token swap, because the alpha has to survive. `color-mix` does it, but it
- * lands in Chrome 111 and the manifest still supports 93, so every such declaration is emitted
- * twice: the token-swapped legacy value first, then the color-mix version. Old browsers drop the
- * second as unparseable and keep a working (if untranslucent) result.
- */
 const RGBA_PATTERN = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)/g;
 
-/**
- * Bandcamp writes a fair number of colours as CSS keywords rather than hex - `#sidecart .item
- * .price { color: black }` is why the cart price was rendering black-on-black. Only the
- * greyscale keywords are listed: anything with a hue is left alone, exactly as for hex.
- */
 const NAMED_GREYS: Record<string, string> = {
   white: '#ffffff',
   whitesmoke: '#f5f5f5',
@@ -118,8 +84,6 @@ const NAMED_GREYS: Record<string, string> = {
   black: '#000000'
 };
 
-// Longest first so `lightgray` is not consumed as `gray`, and word-bounded so `white-space`
-// and similar keywords are never touched.
 const NAMED_PATTERN = new RegExp(
   `(?<![\\w-])(${Object.keys(NAMED_GREYS)
     .sort((a, b) => b.length - a.length)
@@ -127,11 +91,6 @@ const NAMED_PATTERN = new RegExp(
   'gi'
 );
 
-/**
- * jQuery UI paints its surfaces with flat single-color PNG tiles layered over the background
- * color. Left in place they sit on top of the themed color and undo it, and because they carry
- * no detail they can simply be dropped.
- */
 const FLAT_TILE_PATTERN = /\s*url\((['"]?)[^)]*\/ui-bg_[^)]*\1\)\s*/g;
 
 interface Rule {
@@ -178,16 +137,6 @@ function greyToToken(value: number): string {
   return 'text-max';
 }
 
-/**
- * Bandcamp is not uniformly light. Its footer, parts of Bandcamp Daily and various buttons are
- * dark slabs with light labels *in the light theme*, and a straight ramp inversion flips those
- * the wrong way - the slab goes bright and its label goes black-on-black.
- *
- * So the mapping is asymmetric: only change what would actually be wrong on a dark page.
- *   - text that is already light needs no help, so leave it
- *   - a background that is already dark needs no help, so leave it
- * Everything else - dark text, light backgrounds - still inverts as before.
- */
 const ALREADY_LIGHT = 200;
 const ALREADY_DARK = 80;
 
@@ -219,10 +168,6 @@ function mapColor(color: string): string | null {
   return `var(--bes-${greyToToken(luminance(rgb))})`;
 }
 
-/**
- * Splits a stylesheet into flat rules, carrying the enclosing at-rule preludes along so a rule
- * inside `@media (max-width: 767px)` is re-emitted inside the same query.
- */
 function parseRules(css: string): Rule[] {
   const rules: Rule[] = [];
   const conditions: string[] = [];
@@ -231,43 +176,41 @@ function parseRules(css: string): Rule[] {
   for (let i = 0; i < css.length; i += 1) {
     const char = css[i];
 
-    if (char === '{') {
-      const prelude = buffer.trim();
-      buffer = '';
-
-      if (prelude.startsWith('@')) {
-        // Only conditional groups wrap rules; @font-face and friends are skipped wholesale.
-        conditions.push(/^@(media|supports|layer|container)\b/.test(prelude) ? prelude : '');
-
-        if (conditions[conditions.length - 1] === '') {
-          i = skipBlock(css, i);
-          conditions.pop();
-        }
-
-        continue;
-      }
-
-      const end = findBlockEnd(css, i);
-      const body = css.slice(i + 1, end);
-
-      // A nested block means this prelude was an unrecognised group; treat it as a container.
-      if (body.includes('{')) {
-        conditions.push('');
-        continue;
-      }
-
-      rules.push({ selector: prelude, declarations: body, conditions: conditions.filter(Boolean).slice() });
-      i = end;
-      continue;
-    }
-
     if (char === '}') {
       conditions.pop();
       buffer = '';
       continue;
     }
 
-    buffer += char;
+    if (char !== '{') {
+      buffer += char;
+      continue;
+    }
+
+    const prelude = buffer.trim();
+    buffer = '';
+
+    if (prelude.startsWith('@')) {
+      conditions.push(/^@(media|supports|layer|container)\b/.test(prelude) ? prelude : '');
+
+      if (conditions[conditions.length - 1] === '') {
+        i = skipBlock(css, i);
+        conditions.pop();
+      }
+
+      continue;
+    }
+
+    const end = findBlockEnd(css, i);
+    const body = css.slice(i + 1, end);
+
+    if (body.includes('{')) {
+      conditions.push('');
+      continue;
+    }
+
+    rules.push({ selector: prelude, declarations: body, conditions: conditions.filter(Boolean).slice() });
+    i = end;
   }
 
   return rules;
@@ -291,12 +234,6 @@ function skipBlock(css: string, openIndex: number): number {
   return findBlockEnd(css, openIndex);
 }
 
-/**
- * Rewrites a declaration block, keeping only declarations where every color maps onto the ramp.
- * A mixed declaration (a gradient blending grey into a brand color) is dropped rather than
- * half-translated.
- */
-/** Whether a translucent grey needs remapping, by the same asymmetric rule as opaque colours. */
 function translucentNeedsMapping(property: string, r: string, g: string, b: string): boolean {
   const rgb: [number, number, number] = [Number(r), Number(g), Number(b)];
   if (!isGrey(rgb)) return false;
@@ -304,7 +241,6 @@ function translucentNeedsMapping(property: string, r: string, g: string, b: stri
   return needsMapping(property, toHex(rgb));
 }
 
-/** Rewrites translucent greys as a color-mix of the matching token, preserving the alpha. */
 function mapTranslucentGreys(property: string, value: string): string {
   return value.replace(RGBA_PATTERN, (whole, r, g, b, a) => {
     if (!translucentNeedsMapping(property, r, g, b)) return whole;
@@ -322,11 +258,6 @@ function hasTranslucentGrey(property: string, value: string): boolean {
   return [...value.matchAll(RGBA_PATTERN)].some(m => translucentNeedsMapping(property, m[1], m[2], m[3]));
 }
 
-/**
- * Classes Bandcamp paints with a solid brand colour (the green checkout buttons and friends).
- * Their labels sit on a background we deliberately leave unthemed, so inverting the label alone
- * would put dark text on green. Their `color` is left exactly as Bandcamp set it.
- */
 const SOLID_BUTTON_CLASSES = ['buttonLink', 'g-button', 'compound-button'];
 
 function targetsSolidButton(selector: string): boolean {
@@ -352,7 +283,6 @@ function themeDeclarations(declarations: string, selector: string): string[] {
     NAMED_PATTERN.lastIndex = 0;
     const named = NAMED_PATTERN.test(value);
 
-    // A declaration earns an override if it carries any colour form we know how to map.
     if (!colors && !translucent && !named) continue;
 
     const mapped = (colors ?? []).map(mapColor);
@@ -369,7 +299,6 @@ function themeDeclarations(declarations: string, selector: string): string[] {
       .replace(FLAT_TILE_PATTERN, ' ')
       .trim();
 
-    // Nothing actually changed - every colour in this declaration was already fine for dark.
     if (base === value.replace(FLAT_TILE_PATTERN, ' ').trim() && !translucent) continue;
 
     themed.push(`${property}: ${base} !important`);
@@ -380,10 +309,6 @@ function themeDeclarations(declarations: string, selector: string): string[] {
   return themed;
 }
 
-/**
- * Scopes a selector to the dark theme. `html`-rooted selectors take the attribute directly so
- * specificity rises without inserting a descendant combinator that would never match.
- */
 function scopeSelector(selector: string): string {
   return selector
     .split(',')
@@ -404,7 +329,6 @@ function stripComments(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
-/** Re-nests a rule inside the at-rule preludes it was found under, indenting one level each. */
 function wrapInConditions(selector: string, declarations: string[], conditions: string[]): string {
   const indent = (depth: number) => '  '.repeat(depth);
   const depth = conditions.length;
@@ -421,25 +345,8 @@ function wrapInConditions(selector: string, declarations: string[], conditions: 
   );
 }
 
-/**
- * Collects stylesheet URLs from a real browser rather than by scraping markup.
- *
- * Fetching the HTML directly is not good enough: some Bandcamp URLs answer a bot check rather
- * than the page, so plain requests miss `search_desktop`, the Bandcamp Daily bundles and others
- * entirely, and can return a stale `global-*` hash. Reading `document.styleSheets` after the
- * page has actually rendered gets the same files a visitor loads, including any added by script.
- */
 async function collectStylesheetUrls(): Promise<string[]> {
   const urls = new Set(EXTRA_STYLESHEETS);
-  /*
-   * A fresh headless browser gets served a bot check on some Bandcamp URLs, which silently costs
-   * whole bundles - search_desktop, bandmember and the Bandcamp Daily files among them.
-   * Presenting a normal desktop user agent gets most of them served. The search page is the
-   * known exception - its check wants a real session, so search_desktop and bandmember are not
-   * covered here and /search keeps a few unthemed greys. Attaching to an already-running Chrome
-   * does get them, but puppeteer will not finish attaching to a browser that has an extension
-   * service worker in it, so that route is not offered.
-   */
   const browser = await puppeteer.launch({ headless: true });
   const USER_AGENT =
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) ' +
@@ -451,8 +358,6 @@ async function collectStylesheetUrls(): Promise<string[]> {
 
       try {
         await page.setUserAgent(USER_AGENT);
-        // Some of these are long-polling single-page apps that never go network-idle, so wait
-        // for the document and then give late-added stylesheets a fixed moment to land.
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
         await new Promise(settle => setTimeout(settle, 4000));
         const found: string[] = await page.evaluate(`[...document.styleSheets].map(s => s.href).filter(Boolean)`);
@@ -497,7 +402,6 @@ async function main(): Promise<void> {
 
       const wrapped = wrapInConditions(scoped, themed, rule.conditions);
 
-      // Identical rules recur across bundles that share a base; emit each only once.
       if (seen.has(wrapped)) continue;
       seen.add(wrapped);
 

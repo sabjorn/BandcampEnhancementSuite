@@ -3,7 +3,7 @@ import { createDomNodes, cleanupTestNodes } from './utils';
 
 const mockRuntimeSendMessage = vi.fn();
 const mockRuntimeConnect = vi.fn(() => ({
-  onMessage: { addListener: vi.fn() },
+  onMessage: { addListener: vi.fn(), removeListener: vi.fn() },
   postMessage: vi.fn()
 }));
 const mockRuntimeGetURL = vi.fn((path: string) => `chrome-extension://mock/${path}`);
@@ -469,5 +469,45 @@ describe('Dark mode setting', () => {
     expect(artistStyle.disabled).toBe(false);
 
     artistStyle.remove();
+  });
+});
+
+/*
+ * The config read can time out - the mock port here never answers, which is exactly that case.
+ * When it does, document_end must leave the theme attribute alone. Resolving an absent name
+ * gives the default, and writing that would overwrite what the registered document_start script
+ * already applied, flipping a correctly dark page to light a second after it settled.
+ */
+describe('theme when the config read times out', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    document.body.innerHTML = '';
+    mockRuntimeSendMessage.mockResolvedValue({ granted: false });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    document.documentElement.removeAttribute('data-bes-theme');
+    vi.clearAllMocks();
+  });
+
+  it('leaves a theme already applied at document_start untouched', async () => {
+    document.documentElement.setAttribute('data-bes-theme', 'dark');
+
+    vi.resetModules();
+    await import('../src/document_end');
+    await vi.advanceTimersByTimeAsync(2000);
+
+    expect(document.documentElement.getAttribute('data-bes-theme')).toBe('dark');
+  });
+
+  it('does not invent a theme when none was applied', async () => {
+    document.documentElement.removeAttribute('data-bes-theme');
+
+    vi.resetModules();
+    await import('../src/document_end');
+    await vi.advanceTimersByTimeAsync(2000);
+
+    expect(document.documentElement.getAttribute('data-bes-theme')).toBeNull();
   });
 });

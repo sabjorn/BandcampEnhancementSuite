@@ -234,8 +234,8 @@ export function initAudioFeatures(port: PortMessage): void {
    * keeps the two waveforms looking like one feature.
    */
   if (isThemeActive()) {
-    waveformColour = themeToken('waveform') || waveformColour;
-    waveformOverlayColour = themeToken('waveformPlayed') || waveformOverlayColour;
+    waveformColour = themeToken('waveform');
+    waveformOverlayColour = themeToken('waveformPlayed');
   } else {
     const bg: Element | null = document.querySelector('h2.trackTitle');
     if (bg) {

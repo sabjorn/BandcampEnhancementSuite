@@ -474,7 +474,15 @@ const documentEnd = async (): Promise<void> => {
   const themeReady = (async () => {
     const { themeName } = await configReady;
 
-    setTheme(themeName);
+    /*
+     * Only when config actually answered. requestConfig resolves without a themeName if it times
+     * out, and resolving an absent name gives the default - which would overwrite what the
+     * registered document_start script already applied, flipping a correctly dark page to light
+     * a second in. Leaving the attribute alone is right in that case: it is either already
+     * correct or there is nothing to correct it with.
+     */
+    if (themeName) setTheme(themeName);
+
     startThemeEnforcement();
   })().catch(error => log.error(`Theme initialization failed: ${error}`));
 

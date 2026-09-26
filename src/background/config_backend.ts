@@ -1,6 +1,39 @@
 import Logger from '../logger';
 import { getDB } from '../utilities';
 import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings } from '../types/keyboard';
+import { DEFAULT_THEME_NAME, LIGHT_THEME, DARK_THEME } from '../types/theme';
+
+const DARK_THEME_SCRIPT_ID = 'bes-theme-dark';
+const BANDCAMP_MATCHES = ['http://*.bandcamp.com/*', 'https://*.bandcamp.com/*'];
+
+export async function syncDarkThemeRegistration(themeName: string, log: Logger): Promise<void> {
+  try {
+    const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [DARK_THEME_SCRIPT_ID] });
+    const wantDark = themeName === DARK_THEME.name;
+
+    if (wantDark && existing.length === 0) {
+      await chrome.scripting.registerContentScripts([
+        {
+          id: DARK_THEME_SCRIPT_ID,
+          matches: BANDCAMP_MATCHES,
+          js: ['dist/theme_dark.js'],
+          runAt: 'document_start',
+          persistAcrossSessions: true
+        }
+      ]);
+      log.info('Registered the dark theme content script');
+
+      return;
+    }
+
+    if (!wantDark && existing.length > 0) {
+      await chrome.scripting.unregisterContentScripts({ ids: [DARK_THEME_SCRIPT_ID] });
+      log.info('Unregistered the dark theme content script');
+    }
+  } catch (error: unknown) {
+    log.error(`Failed to sync the dark theme registration: ${error}`);
+  }
+}
 
 interface Config {
   displayWaveform: boolean;
@@ -11,6 +44,7 @@ interface Config {
   albumOnCheckoutDisabled: boolean;
   albumPurchaseTimeDelaySeconds: number;
   installDateUnixSeconds: number;
+  themeName: string;
   keyboardSettings?: KeyboardSettings;
 }
 
@@ -23,6 +57,7 @@ const defaultConfig: Config = {
   albumOnCheckoutDisabled: false,
   albumPurchaseTimeDelaySeconds: 60 * 60 * 24 * 30,
   installDateUnixSeconds: Math.floor(Date.now() / 1000),
+  themeName: DEFAULT_THEME_NAME,
   keyboardSettings: DEFAULT_KEYBOARD_SETTINGS
 };
 
@@ -51,7 +86,7 @@ export async function portListenerCallback(
 
   const db = await getDB();
 
-  if (msg.config) await synchronizeConfig(db, msg.config, portState.port);
+  if (msg.config) await synchronizeConfig(db, msg.config, log, portState.port);
 
   if (msg.toggleWaveformDisplay) await toggleWaveformDisplay(db, log, portState.port);
 
@@ -65,6 +100,8 @@ export async function portListenerCallback(
 
   if (msg.togglePlayedCaching) await togglePlayedCaching(db, log, portState.port);
 
+  if (msg.toggleTheme) await toggleTheme(db, log, portState.port);
+
   if (msg.enableFindMusicCaching) await enableFindMusicCaching(db, log, portState.port);
 
   if (msg.requestConfig) await broadcastConfig(db, log, portState.port);
@@ -77,7 +114,7 @@ export async function initConfigBackend(): Promise<void> {
   log.info('initializing ConfigBackend');
 
   const db = await getDB();
-  await setupDB(db);
+  await setupDB(db, log);
   log.info('Config database initialized');
 
   chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) =>
@@ -85,11 +122,17 @@ export async function initConfigBackend(): Promise<void> {
   );
 }
 
-export async function synchronizeConfig(db: any, config: Partial<Config>, port?: chrome.runtime.Port): Promise<void> {
+export async function synchronizeConfig(
+  db: any,
+  config: Partial<Config>,
+  log: Logger,
+  port?: chrome.runtime.Port
+): Promise<void> {
   const db_config = await db.get('config', 'config');
   const merged_config = mergeData(db_config, config);
 
   await db.put('config', merged_config, 'config');
+  await syncDarkThemeRegistration(merged_config.themeName, log);
   port?.postMessage({ config: merged_config });
 }
 
@@ -141,6 +184,18 @@ export async function togglePlayedCaching(db: any, log: Logger, port?: chrome.ru
   port?.postMessage({ config: db_config });
 }
 
+export async function toggleTheme(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+  log.info('toggling theme');
+
+  const db_config = await db.get('config', 'config');
+  const newThemeName = db_config['themeName'] === DARK_THEME.name ? LIGHT_THEME.name : DARK_THEME.name;
+  db_config['themeName'] = newThemeName;
+
+  await db.put('config', db_config, 'config');
+  await syncDarkThemeRegistration(newThemeName, log);
+  port?.postMessage({ config: db_config });
+}
+
 export async function enableFindMusicCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
   log.info('enabling FindMusic.club caching after permission grant');
 
@@ -159,10 +214,12 @@ export async function broadcastConfig(db: any, log: Logger, port?: chrome.runtim
   port?.postMessage({ config: config });
 }
 
-export async function setupDB(db: any): Promise<void> {
+export async function setupDB(db: any, log: Logger): Promise<void> {
   const dbConfig = await db.get('config', 'config');
   const mergedConfig = mergeData(defaultConfig, dbConfig);
   await db.put('config', mergedConfig, 'config');
+
+  await syncDarkThemeRegistration(mergedConfig.themeName, log);
 }
 
 export function mergeData(reference_config: Config, new_config: Partial<Config>): Config {

@@ -8,15 +8,16 @@
         margin: 0;
         padding: 0;
         line-height: 1.6;
-        color: #333;
+        background: var(--bes-surface-0);
+        color: var(--bes-text-strong);
         display: flex;
         flex-direction: column;
         height: 100vh;
         overflow: hidden;
       }
       .header {
-        background: #1da0c3;
-        color: white;
+        background: var(--bes-accent);
+        color: var(--bes-accent-text);
         padding: 20px;
         text-align: center;
       }
@@ -39,16 +40,16 @@
         overflow-y: auto;
       }
       .partnership {
-        background: #f8f9fa;
+        background: var(--bes-surface-1);
         border-radius: 6px;
         padding: 16px;
         margin-bottom: 24px;
-        border: 1px solid #e0e0e0;
+        border: 1px solid var(--bes-surface-2);
       }
       .partnership p {
         margin: 0;
         font-size: 14px;
-        color: #555;
+        color: var(--bes-text-body);
       }
       .section {
         margin-bottom: 24px;
@@ -57,7 +58,7 @@
         font-size: 16px;
         font-weight: 600;
         margin: 0 0 12px 0;
-        color: #1da0c3;
+        color: var(--bes-accent);
       }
       .section ul {
         margin: 0;
@@ -79,7 +80,7 @@
         margin-bottom: 4px;
       }
       .privacy-link {
-        color: #1da0c3;
+        color: var(--bes-accent);
         text-decoration: none;
       }
       .privacy-link:hover {
@@ -89,8 +90,8 @@
         display: flex;
         gap: 12px;
         padding: 20px 40px;
-        border-top: 1px solid #e0e0e0;
-        background: #fafafa;
+        border-top: 1px solid var(--bes-surface-2);
+        background: var(--bes-surface-1);
       }
       button {
         flex: 1;
@@ -103,8 +104,8 @@
         transition: all 0.2s ease;
       }
       #grant-permission {
-        background: #1da0c3;
-        color: white;
+        background: var(--bes-accent);
+        color: var(--bes-accent-text);
       }
       #grant-permission:hover {
         background: #158ba8;
@@ -114,18 +115,18 @@
         cursor: not-allowed;
       }
       #cancel-button {
-        background: white;
-        color: #666;
-        border: 1px solid #ddd;
+        background: var(--bes-surface-0);
+        color: var(--bes-text-body);
+        border: 1px solid var(--bes-surface-2);
       }
       #cancel-button:hover {
-        background: #f5f5f5;
-        border-color: #ccc;
+        background: var(--bes-surface-1);
+        border-color: var(--bes-border);
       }
       #status {
         padding: 12px 40px;
         font-style: italic;
-        color: #666;
+        color: var(--bes-text-body);
         font-size: 14px;
         background: #fff3cd;
         border-top: 1px solid #ffc107;
@@ -172,7 +173,7 @@
 
       <div class="section">
         <h2>Managing Permissions</h2>
-        <p style="font-size: 13px; color: #666">
+        <p style="font-size: 13px; color: var(--bes-text-body)">
           You can revoke this authorization at any time by visiting Chrome's extension settings:
           <strong>chrome://extensions</strong> &rarr; Bandcamp Enhancement Suite &rarr; Permissions &rarr; Remove
           access to cookies.
@@ -180,12 +181,12 @@
       </div>
 
       <div class="section">
-        <p style="font-size: 13px; color: #666">
+        <p style="font-size: 13px; color: var(--bes-text-body)">
           By authorizing, you agree to FindMusic.club's
           <a id="privacy-link" href="#" target="_blank" class="privacy-link">Privacy Policy</a> and
           <a id="terms-link" href="#" target="_blank" class="privacy-link">Terms of Service</a>.
         </p>
-        <p style="font-size: 12px; color: #888; margin-top: 12px">
+        <p style="font-size: 12px; color: var(--bes-text-muted); margin-top: 12px">
           This integration is also covered in the
           <a href="https://bes.sabjorn.net/privacy.html" target="_blank" class="privacy-link"
             >Bandcamp Enhancement Suite Privacy Policy</a

@@ -92,3 +92,26 @@ describe('document_start bes_cart capture', () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 });
+
+describe('document_start stays free of round trips', () => {
+  beforeEach(() => {
+    mockSendMessage.mockClear();
+    setLocation('');
+  });
+
+  it('does not read config', async () => {
+    await runDocumentStart();
+
+    expect(mockSendMessage).not.toHaveBeenCalledWith(expect.objectContaining({ requestConfig: expect.anything() }));
+    expect((globalThis as any).chrome.runtime.connect).toBeUndefined();
+  });
+
+  it('does not theme the page', async () => {
+    document.documentElement.removeAttribute('data-bes-theme');
+
+    await runDocumentStart();
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(document.documentElement.getAttribute('data-bes-theme')).toBeNull();
+  });
+});

@@ -1,4 +1,5 @@
 import Logger from '../../logger';
+import { themeToken } from '../../theme';
 import { getTralbumDetails, TralbumDetailsResponse, TralbumTrack } from '../../bclient';
 import { getPlayerDrawerElements, updatePlayerDrawerInfo, updateMinimizedPlayButton } from './drawer';
 import { createFetchFunction } from '../../utilities';
@@ -161,8 +162,8 @@ export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
 
   const audio = ensureAudioElement();
   const currentTarget = { value: undefined as string | undefined };
-  const waveformColour = '#e2e2e6';
-  const waveformOverlayColour = '#5b53e8';
+  const waveformColour = themeToken('waveform');
+  const waveformOverlayColour = themeToken('waveformPlayed');
 
   audio.addEventListener('canplay', () => {
     if (!waveformEnabled || currentTarget.value === audio.src) return;

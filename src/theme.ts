@@ -243,7 +243,16 @@ function enforceTheme(): void {
  * than CSS - the waveform is drawn into a canvas, so it cannot pick one up from a stylesheet.
  */
 export function themeToken(token: keyof Theme): string {
-  return window.getComputedStyle(document.documentElement).getPropertyValue(themeTokenToCssVariable(token)).trim();
+  const declared = window
+    .getComputedStyle(document.documentElement)
+    .getPropertyValue(themeTokenToCssVariable(token))
+    .trim();
+  if (declared) return declared;
+
+  // The stylesheets may not have applied yet, and an empty string is silently ignored as a
+  // canvas fillStyle - which would paint with whatever colour was set last. Fall back to the
+  // struct so callers always get a usable colour.
+  return String(resolveTheme(document.documentElement?.getAttribute(THEME_ATTRIBUTE) ?? undefined)[token]);
 }
 
 export function setTheme(themeName: string | undefined): Theme {

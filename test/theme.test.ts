@@ -15,6 +15,7 @@ import {
 import {
   applyTheme,
   setTheme,
+  themeToken,
   startThemeEnforcement,
   stopThemeEnforcement,
   THEME_ATTRIBUTE,
@@ -283,6 +284,37 @@ describe('Theme', () => {
       startThemeEnforcement();
 
       expect(() => startThemeEnforcement()).not.toThrow();
+    });
+  });
+
+  /*
+   * themeToken feeds canvas fillStyle, where an empty string is silently ignored and the last
+   * colour set is used instead. It has to return something usable even before the stylesheets
+   * have applied, which is the state the drawer player reads it in.
+   */
+  describe('themeToken fallback', () => {
+    afterEach(() => {
+      document.documentElement.removeAttribute('style');
+      document.documentElement.removeAttribute(THEME_ATTRIBUTE);
+    });
+
+    it('should prefer the declared custom property', () => {
+      document.documentElement.setAttribute('style', '--bes-waveform: #abcdef;');
+
+      expect(themeToken('waveform')).toBe('#abcdef');
+    });
+
+    it('should fall back to the struct when the property is not declared', () => {
+      document.documentElement.setAttribute(THEME_ATTRIBUTE, 'dark');
+
+      expect(themeToken('waveform')).toBe(DARK_THEME.waveform);
+      expect(themeToken('waveformPlayed')).toBe(DARK_THEME.waveformPlayed);
+    });
+
+    it('should never return an empty string for any token', () => {
+      for (const token of THEME_TOKENS) {
+        expect(themeToken(token), `${token} returned empty`).not.toBe('');
+      }
     });
   });
 

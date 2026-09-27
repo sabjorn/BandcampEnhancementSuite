@@ -24,7 +24,10 @@ import { fetchAlbumTrackState, postTrackPlayed, getFindMusicToken } from '../src
 import { getDB } from '../src/utilities';
 
 const setConfig = (config: Record<string, unknown>) => {
-  vi.mocked(getDB).mockResolvedValue({ get: vi.fn().mockResolvedValue(config) } as any);
+  vi.mocked(getDB).mockResolvedValue({
+    get: vi.fn().mockResolvedValue(config),
+    put: vi.fn().mockResolvedValue(undefined)
+  } as any);
 };
 
 const send = (request: Record<string, unknown>): Promise<any> =>

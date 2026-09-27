@@ -7,9 +7,11 @@ import { initCartImportBackend } from './background/cart_import_backend';
 import { initFindMusicBackend } from './background/findmusic_backend';
 import { initCacheBackend } from './background/cache_backend';
 import { initPlayedBackend } from './background/played_backend';
+import Logger from './logger';
+
+const log = new Logger();
 
 (async () => {
-  await initConfigBackend();
   initLabelViewBackend();
   initWaveformBackend();
   initHideUnhideCollectionBackend();
@@ -18,4 +20,5 @@ import { initPlayedBackend } from './background/played_backend';
   initFindMusicBackend();
   initCacheBackend();
   initPlayedBackend();
-})();
+  await initConfigBackend();
+})().catch((error: unknown) => log.error(`Backend initialization failed: ${error}`));

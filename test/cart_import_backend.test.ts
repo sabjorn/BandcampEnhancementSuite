@@ -22,7 +22,8 @@ vi.mock('../src/bclient', () => ({
 vi.mock('../src/utilities', () => ({
   getDB: vi.fn(() =>
     Promise.resolve({
-      get: vi.fn(() => Promise.resolve({ enableFetchCaching: false }))
+      get: vi.fn(() => Promise.resolve({ enableFetchCaching: false })),
+      put: vi.fn(() => Promise.resolve())
     })
   ),
   createFetchFunction: vi.fn(() => globalThis.fetch)

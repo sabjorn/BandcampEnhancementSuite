@@ -5,15 +5,14 @@ import {
   getFindMusicToken,
   TrackState
 } from '../clients/findmusic';
-import { getDB } from '../utilities';
+import { getConfig } from './config_backend';
 
 const log = new Logger();
 
 async function playedCachingEnabled(): Promise<boolean> {
-  const db = await getDB();
-  const config = await db.get('config', 'config');
+  const config = await getConfig();
 
-  return Boolean(config?.enablePlayedCaching);
+  return config.enablePlayedCaching;
 }
 
 async function fetchAlbumTrackState(albumId: string): Promise<TrackState | null> {

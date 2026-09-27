@@ -2,7 +2,7 @@ import Logger from '../logger';
 import { getDB } from '../utilities';
 import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings } from '../types/keyboard';
 
-interface Config {
+export interface Config {
   displayWaveform: boolean;
   enableMetadataCaching: boolean;
   enableFetchCaching: boolean;
@@ -50,6 +50,7 @@ export async function portListenerCallback(
   log.info('port listener callback');
 
   const db = await getDB();
+  await ensureSeeded(db);
 
   if (msg.config) await synchronizeConfig(db, msg.config, portState.port);
 
@@ -70,19 +71,33 @@ export async function portListenerCallback(
   if (msg.requestConfig) await broadcastConfig(db, log, portState.port);
 }
 
+let seedingPromise: Promise<void> | null = null;
+
+function ensureSeeded(db: any): Promise<void> {
+  seedingPromise ??= setupDB(db);
+  return seedingPromise;
+}
+
+export async function getConfig(): Promise<Config> {
+  const db = await getDB();
+  await ensureSeeded(db);
+  const stored = await db.get('config', 'config');
+
+  return mergeData(defaultConfig, stored ?? {});
+}
+
 export async function initConfigBackend(): Promise<void> {
   const log = new Logger();
   const portState: { port?: chrome.runtime.Port } = {};
 
   log.info('initializing ConfigBackend');
 
-  const db = await getDB();
-  await setupDB(db);
-  log.info('Config database initialized');
-
   chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) =>
     connectionListenerCallback(port, log, portState)
   );
+
+  await getConfig();
+  log.info('Config database initialized');
 }
 
 export async function synchronizeConfig(db: any, config: Partial<Config>, port?: chrome.runtime.Port): Promise<void> {

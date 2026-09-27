@@ -1,6 +1,7 @@
 import Logger from '../logger';
 import { getTralbumDetails, getTralbumDetailsFromPage, CURRENCY_MINIMUMS, TralbumDetailsResponse } from '../bclient';
 import { getDB, createFetchFunction } from '../utilities';
+import { getConfig } from './config_backend';
 
 const BASE_URL = 'http://bandcamp.com';
 
@@ -106,11 +107,7 @@ class CartImportTracker {
         })();
 
         log.info(`Fetching full details for item ${item.item_id} (${item.item_type})`);
-        const enableFetchCaching = await (async () => {
-          const db = await getDB();
-          const config = await db.get('config', 'config');
-          return config?.enableFetchCaching ?? false;
-        })();
+        const enableFetchCaching = (await getConfig()).enableFetchCaching;
         const fetchFn = createFetchFunction(enableFetchCaching);
         const apiDetails = await getTralbumDetails(item.item_id, item.item_type, BASE_URL, fetchFn);
 
@@ -271,11 +268,7 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
 
       log.info(`Processing donation item ${item_id} (${item_type})`);
 
-      const enableFetchCaching = await (async () => {
-        const db = await getDB();
-        const config = await db.get('config', 'config');
-        return config?.enableFetchCaching ?? false;
-      })();
+      const enableFetchCaching = (await getConfig()).enableFetchCaching;
 
       const fetchFn = createFetchFunction(enableFetchCaching);
       const apiDetails = await getTralbumDetails(item_id, item_type, BASE_URL, fetchFn);
@@ -334,10 +327,7 @@ export async function getSupportTralbumDetails(): Promise<TralbumDetailsResponse
     return cached.details;
   }
 
-  const enableFetchCaching = await (async () => {
-    const config = await db.get('config', 'config');
-    return config?.enableFetchCaching ?? false;
-  })();
+  const enableFetchCaching = (await getConfig()).enableFetchCaching;
   const fetchFn = createFetchFunction(enableFetchCaching);
 
   log.info('Fetching BES support tralbum details');

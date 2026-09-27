@@ -127,7 +127,8 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
   const closeButton = document.createElement('button');
   closeButton.className = 'bes-drawer-close';
-  closeButton.innerHTML = '×';
+  closeButton.innerHTML =
+    '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3 13 13 M13 3 3 13" /></svg>';
   closeButton.setAttribute('aria-label', 'Close settings');
 
   header.appendChild(title);

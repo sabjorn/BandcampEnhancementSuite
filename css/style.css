@@ -591,8 +591,6 @@ button.bes-downloadall[disabled]::after {
 .bes-drawer-close {
   background: transparent;
   border: none;
-  font-size: 32px;
-  line-height: 1;
   cursor: pointer;
   padding: 0;
   width: 32px;
@@ -601,11 +599,23 @@ button.bes-downloadall[disabled]::after {
   align-items: center;
   justify-content: center;
   color: white;
+  text-decoration: none;
   transition: opacity 0.2s ease;
+}
+
+.bes-drawer-close svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 
 .bes-drawer-close:hover {
   opacity: 0.7;
+  text-decoration: none;
 }
 
 .bes-drawer-content {

@@ -176,3 +176,12 @@ html[data-bes-theme='dark']:not([data-bes-native-dark]) .follow-unfollow div {
   background-color: #467581 !important;
   color: #ffffff !important;
 }
+
+html[data-bes-theme='dark']:not([data-bes-native-dark])
+  button.following:not([class*='bes-']):not([class*='findmusic-']):not(.bes-drawer *):not(.buttonLink):not(
+    .g-button
+  ):not(.compound-button) {
+  background-color: var(--bes-accent) !important;
+  border-color: var(--bes-accent) !important;
+  color: var(--bes-accent-text) !important;
+}

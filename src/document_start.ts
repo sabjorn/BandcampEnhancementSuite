@@ -2,12 +2,6 @@ import { createLogger } from './logger';
 
 const log = createLogger();
 
-const warmServiceWorker = (): void => {
-  chrome.runtime
-    .sendMessage({ contentScriptQuery: 'warmup' })
-    .catch(() => log.debug('Warm-up message went unanswered; the worker still booted'));
-};
-
 const captureUrlCartParam = (): void => {
   if (!window.location.search.includes('bes_cart')) return;
 
@@ -30,5 +24,4 @@ const captureUrlCartParam = (): void => {
   window.location.replace(newUrl);
 };
 
-warmServiceWorker();
 captureUrlCartParam();

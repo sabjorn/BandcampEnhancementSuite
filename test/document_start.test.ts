@@ -35,23 +35,17 @@ const runDocumentStart = async () => {
   await import('../src/document_start');
 };
 
-describe('document_start service worker warm-up', () => {
+describe('document_start service worker messaging', () => {
   beforeEach(() => {
     mockSendMessage.mockClear();
   });
 
-  it('pings the service worker so it boots ahead of document_end', async () => {
+  it('does not message the service worker, so nothing depends on it being awake', async () => {
     setLocation('');
 
     await runDocumentStart();
 
-    expect(mockSendMessage).toHaveBeenCalledWith({ contentScriptQuery: 'warmup' });
-  });
-
-  it('survives the ping going unanswered', async () => {
-    setLocation('');
-
-    await expect(runDocumentStart()).resolves.not.toThrow();
+    expect(mockSendMessage).not.toHaveBeenCalled();
   });
 });
 

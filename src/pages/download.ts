@@ -107,7 +107,7 @@ export function createStatusElement(): HTMLElement | undefined {
   statusElement.style.marginBottom = '10px';
   statusElement.style.marginTop = '10px';
   statusElement.style.fontSize = '13px';
-  statusElement.style.color = '#666';
+  statusElement.style.color = 'var(--bes-text-body)';
 
   downloadTitlesLocation.appendChild(statusElement);
   return statusElement;

@@ -1,4 +1,5 @@
 import { analyze } from 'web-audio-beat-detector';
+import { isThemeActive, themeToken } from './theme';
 
 import Logger from './logger';
 import { mousedownCallback } from './utilities';
@@ -206,6 +207,17 @@ export async function generateAudioFeatures(
   );
 }
 
+function resolveWaveformColours(): [string, string] {
+  if (isThemeActive()) return [themeToken('waveform'), themeToken('waveformPlayed')];
+
+  const bg: Element | null = document.querySelector('h2.trackTitle');
+  if (!bg) return ['white', 'black'];
+
+  const colour = window.getComputedStyle(bg, null).getPropertyValue('color');
+
+  return [colour, invertColour(colour)];
+}
+
 export function initAudioFeatures(port: PortMessage): void {
   const log = new Logger();
 
@@ -222,14 +234,7 @@ export function initAudioFeatures(port: PortMessage): void {
 
   const bpmDisplay = createBpmDisplay();
 
-  let waveformColour: string = 'white';
-  let waveformOverlayColour: string = 'black';
-
-  const bg: Element | null = document.querySelector('h2.trackTitle');
-  if (bg) {
-    waveformColour = window.getComputedStyle(bg, null).getPropertyValue('color');
-    waveformOverlayColour = invertColour(waveformColour);
-  }
+  const [waveformColour, waveformOverlayColour] = resolveWaveformColours();
 
   const audio = document.querySelector('audio');
   if (audio) {

@@ -12,6 +12,9 @@ import {
 describe('bclient', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    // vitest 4 no longer restores the global fetch spy back to a non-mock, so
+    // clear its call history explicitly to keep tests isolated
+    vi.clearAllMocks();
   });
 
   describe('addAlbumToCart', () => {

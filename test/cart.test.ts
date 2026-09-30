@@ -125,10 +125,11 @@ describe('Cart', () => {
       reload: vi.fn()
     } as any;
 
-    global.MutationObserver = vi.fn().mockImplementation(() => ({
-      observe: vi.fn(),
-      disconnect: vi.fn()
-    }));
+    global.MutationObserver = class MockMutationObserver {
+      observe = vi.fn();
+      disconnect = vi.fn();
+      takeRecords = vi.fn(() => []);
+    } as any;
   });
 
   afterEach(() => {

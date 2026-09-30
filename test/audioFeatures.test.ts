@@ -40,12 +40,14 @@ describe('AudioFeatures', () => {
   };
 
   beforeEach(() => {
-    globalThis.AudioContext = vi.fn().mockImplementation(() => ({
-      decodeAudioData: vi.fn().mockResolvedValue({}),
-      createAnalyser: vi.fn(),
-      createBufferSource: vi.fn(),
-      close: vi.fn()
-    }));
+    globalThis.AudioContext = vi.fn(function () {
+      return {
+        decodeAudioData: vi.fn().mockResolvedValue({}),
+        createAnalyser: vi.fn(),
+        createBufferSource: vi.fn(),
+        close: vi.fn()
+      };
+    }) as any;
 
     createDomNodes(`
       <audio></audio>
@@ -163,27 +165,29 @@ describe('AudioFeatures - waveform and bpm generation', () => {
     };
 
     // Mock AudioContext
-    globalThis.AudioContext = vi.fn().mockImplementation(() => ({
-      decodeAudioData: vi.fn().mockResolvedValue({
-        length: 44100,
-        sampleRate: 44100,
-        numberOfChannels: 2,
-        getChannelData: vi.fn().mockReturnValue(new Float32Array(44100))
-      }),
-      createAnalyser: vi.fn(() => ({
-        fftSize: 2048,
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-        getByteTimeDomainData: vi.fn()
-      })),
-      createBufferSource: vi.fn(() => ({
-        buffer: null,
-        connect: vi.fn(),
-        start: vi.fn()
-      })),
-      destination: {},
-      close: vi.fn()
-    }));
+    globalThis.AudioContext = vi.fn(function () {
+      return {
+        decodeAudioData: vi.fn().mockResolvedValue({
+          length: 44100,
+          sampleRate: 44100,
+          numberOfChannels: 2,
+          getChannelData: vi.fn().mockReturnValue(new Float32Array(44100))
+        }),
+        createAnalyser: vi.fn(() => ({
+          fftSize: 2048,
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          getByteTimeDomainData: vi.fn()
+        })),
+        createBufferSource: vi.fn(() => ({
+          buffer: null,
+          connect: vi.fn(),
+          start: vi.fn()
+        })),
+        destination: {},
+        close: vi.fn()
+      };
+    }) as any;
   });
 
   afterEach(() => {

@@ -8,12 +8,12 @@ vi.mock('../src/bclient', () => ({
 }));
 
 vi.mock('../src/logger', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    info: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-    warn: vi.fn()
-  }))
+  default: class MockLogger {
+    info = vi.fn();
+    error = vi.fn();
+    debug = vi.fn();
+    warn = vi.fn();
+  }
 }));
 
 import { getCollectionSummary, getHiddenItemsRateLimited, hideUnhideRateLimited } from '../src/bclient';

@@ -10,7 +10,9 @@ vi.mock('../src/logger', () => {
   };
 
   return {
-    default: vi.fn(() => mockLogMethods),
+    default: vi.fn(function () {
+      return mockLogMethods;
+    }),
     mockLogMethods
   };
 });
@@ -95,6 +97,9 @@ describe('DownloadHelper', () => {
   afterEach(() => {
     cleanupTestNodes();
     vi.restoreAllMocks();
+    // vitest 4 restricts restoreAllMocks to vi.spyOn spies, so module mocks
+    // created by the vi.mock factories above need clearing explicitly
+    vi.clearAllMocks();
   });
 
   describe('createCurlButton()', () => {
@@ -739,10 +744,10 @@ describe('DownloadHelper', () => {
 
       // Mock Blob constructor to capture the data
       let capturedBlobData: any = null;
-      global.Blob = vi.fn().mockImplementation((data, options) => {
+      global.Blob = vi.fn(function (data: any, options: any) {
         capturedBlobData = data[0]; // Capture the Uint8Array
         return { size: data[0].length, type: options?.type };
-      });
+      }) as any;
 
       // Mock DOM methods
       const mockAnchor = {

@@ -245,7 +245,9 @@ describe('loadTextFile', () => {
     mockFile = new File(['test content'], 'test.txt', { type: 'text/plain' });
 
     vi.spyOn(document, 'createElement').mockReturnValue(mockInput);
-    vi.spyOn(window, 'FileReader').mockReturnValue(mockReader);
+    vi.spyOn(window, 'FileReader').mockImplementation(function () {
+      return mockReader;
+    } as any);
   });
 
   afterEach(() => {

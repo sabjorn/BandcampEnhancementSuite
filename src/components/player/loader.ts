@@ -7,17 +7,22 @@ import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from './build
 import { PlayerCommands, registerPlayerShortcuts } from '../../keyboardShortcuts';
 import { drawOverlay, generateAudioFeatures } from '../../audioFeatures';
 import { volumeIcon, mutedVolumeIcon } from './icons';
-import { replaceChildren } from '../dom';
+import { element, replaceChildren } from '../dom';
 import { inDrawer, allInDrawer, setText, setStyle } from './query';
 import { streamUrlOf, findPlayableTrackAfter, findPlayableTrackBefore } from './trackSelection';
 import { applyTrackState, markRowPlayed } from './trackState';
+import { buildAlbumNav, updateAlbumNav } from './albumNav';
 import {
   selectAlbum,
   hasNextAlbum,
   hasPreviousAlbum,
   nextAlbum,
   previousAlbum,
-  albumArtUrlFor
+  albumArtUrlFor,
+  canLoadMoreAlbums,
+  loadMoreAlbums,
+  revealAlbum,
+  showAlbumControls
 } from '../../discography';
 
 const log = new Logger();
@@ -31,6 +36,9 @@ let drawerPlayerCreated = false;
 let previousVolume = 1.0;
 let configPort: chrome.runtime.Port | null = null;
 let waveformEnabled = true;
+let requestedAlbumId: string | null = null;
+let fetchCaching = false;
+let albumNavLoading = false;
 
 const ALBUM_LOAD_SETTLE_MS = 300;
 
@@ -220,6 +228,8 @@ export async function loadAlbumIntoDrawer(
   port?: chrome.runtime.Port
 ): Promise<void> {
   log.info(`Loading album ${albumId} (${albumType}) into drawer`);
+  requestedAlbumId = albumId;
+  fetchCaching = enableFetchCaching;
 
   try {
     const tralbumDetails = await getTralbumDetails(
@@ -228,6 +238,11 @@ export async function loadAlbumIntoDrawer(
       null,
       createFetchFunction(enableFetchCaching)
     );
+
+    if (requestedAlbumId !== albumId) {
+      log.debug(`Album ${albumId} arrived after the drawer moved on`);
+      return;
+    }
 
     currentAlbumData = tralbumDetails;
     selectAlbum(albumId);
@@ -243,14 +258,14 @@ export async function loadAlbumIntoDrawer(
     if (drawerPlayerCreated) {
       replaceChildren(
         elements.tracklistContainer,
-        buildAlbumBuyButton(tralbumDetails),
+        albumToolbar(buildAlbumBuyButton(tralbumDetails)),
         buildTrackTable(tralbumDetails)
       );
     } else {
       const parts = buildDrawerPlayer(tralbumDetails);
 
       mountDrawerPlayer(elements, parts);
-      replaceChildren(elements.tracklistContainer, parts.albumBuyButton, parts.tracklistElement);
+      replaceChildren(elements.tracklistContainer, albumToolbar(parts.albumBuyButton), parts.tracklistElement);
       drawerPlayerCreated = true;
 
       startPlayerOnce();
@@ -265,6 +280,52 @@ export async function loadAlbumIntoDrawer(
   } catch (error) {
     log.error(`Failed to load album: ${error}`);
     throw error;
+  }
+}
+
+export function getLoadedAlbumId(): string | null {
+  return requestedAlbumId;
+}
+
+function hasLaterAlbum(): boolean {
+  return hasNextAlbum() || canLoadMoreAlbums();
+}
+
+function albumToolbar(buyButton: HTMLElement | null): HTMLElement | null {
+  if (!showAlbumControls()) return buyButton;
+
+  const nav = buildAlbumNav(
+    () => void skipAlbum(loadPreviousAlbum),
+    () => void skipAlbum(loadNextAlbum)
+  );
+  updateAlbumNav(nav, { hasPrevious: hasPreviousAlbum(), hasNext: hasLaterAlbum(), loading: albumNavLoading });
+
+  return element('div', { className: 'bes-album-toolbar', children: [nav, buyButton] });
+}
+
+function refreshAlbumNav(): void {
+  updateAlbumNav(inDrawer('.bes-album-nav'), {
+    hasPrevious: hasPreviousAlbum(),
+    hasNext: hasLaterAlbum(),
+    loading: albumNavLoading
+  });
+}
+
+async function skipAlbum(load: () => Promise<boolean>): Promise<void> {
+  if (albumNavLoading) return;
+
+  const keepPlaying = Boolean(audioElement && !audioElement.paused);
+  albumNavLoading = true;
+  refreshAlbumNav();
+
+  try {
+    if ((await load()) && keepPlaying) resumePlayback();
+  } catch (error) {
+    log.error(`Failed to skip album: ${error}`);
+  } finally {
+    albumNavLoading = false;
+    refreshAlbumNav();
+    if (currentAlbumData?.tracks) updatePrevNextButtons(currentTrackIndex, currentAlbumData.tracks.length);
   }
 }
 
@@ -334,7 +395,7 @@ function updatePrevNextButtons(index: number, totalTracks: number): void {
   const nextButton = inDrawer('.bes-transport-next');
 
   const hasEarlierTrackOrAlbum = index > 0 || hasPreviousAlbum();
-  const hasLaterTrackOrAlbum = index < totalTracks - 1 || hasNextAlbum();
+  const hasLaterTrackOrAlbum = index < totalTracks - 1 || hasLaterAlbum();
 
   prevButton?.classList.toggle('bes-hidden', !hasEarlierTrackOrAlbum);
   nextButton?.classList.toggle('bes-hidden', !hasLaterTrackOrAlbum);
@@ -366,7 +427,7 @@ interface TrackStep {
 const forward: TrackStep = {
   name: 'next',
   nextWithinAlbum: findPlayableTrackAfter,
-  hasAdjacentAlbum: hasNextAlbum,
+  hasAdjacentAlbum: hasLaterAlbum,
   loadAdjacentAlbum: loadNextAlbum,
   entryTrack: tracks => findPlayableTrackAfter(tracks, -1)
 };
@@ -395,7 +456,7 @@ async function step(direction: TrackStep, keepPlaying: boolean): Promise<void> {
   }
 
   log.info(`No playable track ${direction.name}: loading ${direction.name} album in discography`);
-  await direction.loadAdjacentAlbum();
+  if (!(await direction.loadAdjacentAlbum())) return;
 
   setTimeout(() => {
     const entry = direction.entryTrack(currentAlbumData?.tracks);
@@ -600,7 +661,12 @@ function adjustVolumeBy(delta: number): void {
   updateMuteButton(audioElement.volume === 0);
 }
 
-export async function loadNextAlbum(enableFetchCaching: boolean = false): Promise<boolean> {
+export async function loadNextAlbum(enableFetchCaching: boolean = fetchCaching): Promise<boolean> {
+  if (!hasNextAlbum() && canLoadMoreAlbums()) {
+    log.info('Reached the end of the loaded albums, loading more');
+    await loadMoreAlbums();
+  }
+
   const item = nextAlbum();
   if (!item) {
     log.info('No next album available');
@@ -608,10 +674,11 @@ export async function loadNextAlbum(enableFetchCaching: boolean = false): Promis
   }
 
   await loadAlbumIntoDrawer(item.id, item.type, enableFetchCaching);
+  revealAlbum(item);
   return true;
 }
 
-export async function loadPreviousAlbum(enableFetchCaching: boolean = false): Promise<boolean> {
+export async function loadPreviousAlbum(enableFetchCaching: boolean = fetchCaching): Promise<boolean> {
   const item = previousAlbum();
   if (!item) {
     log.info('No previous album available');
@@ -619,6 +686,7 @@ export async function loadPreviousAlbum(enableFetchCaching: boolean = false): Pr
   }
 
   await loadAlbumIntoDrawer(item.id, item.type, enableFetchCaching);
+  revealAlbum(item);
   return true;
 }
 

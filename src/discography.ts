@@ -8,8 +8,19 @@ export interface DiscographyItem {
   element: Element;
 }
 
+export interface AlbumSource {
+  extract: () => DiscographyItem[];
+  // Pulls more items into the page (e.g. the next page of a feed); resolves true if any arrived.
+  loadMore?: () => Promise<boolean>;
+  reveal?: (item: DiscographyItem) => void;
+  showAlbumControls?: boolean;
+}
+
 let order: DiscographyItem[] = [];
 let selectedIndex = -1;
+let source: AlbumSource = { extract: extractDiscographyOrder };
+let pendingLoadMore: Promise<boolean> | null = null;
+let sourceExhausted = false;
 
 export function extractDiscographyOrder(): DiscographyItem[] {
   const items: DiscographyItem[] = [];
@@ -33,8 +44,55 @@ export function extractDiscographyOrder(): DiscographyItem[] {
   return items;
 }
 
+export function setAlbumSource(next: AlbumSource): void {
+  source = next;
+  sourceExhausted = false;
+  updateDiscographyOrder();
+}
+
 export function updateDiscographyOrder(): void {
-  order = extractDiscographyOrder();
+  const selectedId = order[selectedIndex]?.id;
+  const previousLength = order.length;
+
+  order = source.extract();
+  if (selectedId) selectedIndex = findAlbumIndexById(selectedId);
+  if (order.length > previousLength) sourceExhausted = false;
+}
+
+export function canLoadMoreAlbums(): boolean {
+  return selectedIndex !== -1 && Boolean(source.loadMore) && !sourceExhausted;
+}
+
+export function loadMoreAlbums(): Promise<boolean> {
+  if (!source.loadMore || sourceExhausted) return Promise.resolve(false);
+
+  pendingLoadMore ??= source
+    .loadMore()
+    .catch(error => {
+      log.warn(`Failed to load more albums: ${error}`);
+      return false;
+    })
+    .then(loaded => {
+      const previousLength = order.length;
+      updateDiscographyOrder();
+
+      const grew = order.length > previousLength;
+      if (!loaded && !grew) sourceExhausted = true;
+      return loaded || grew;
+    })
+    .finally(() => {
+      pendingLoadMore = null;
+    });
+
+  return pendingLoadMore;
+}
+
+export function showAlbumControls(): boolean {
+  return Boolean(source.showAlbumControls) && selectedIndex !== -1 && order.length > 1;
+}
+
+export function revealAlbum(item: DiscographyItem): void {
+  source.reveal?.(item);
 }
 
 export function findAlbumIndexById(albumId: string): number {

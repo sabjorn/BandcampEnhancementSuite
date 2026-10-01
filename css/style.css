@@ -1931,6 +1931,54 @@ body.bes-drawer-expanded #pgBd {
   flex: 0 0 auto;
 }
 
+/* Previous/next album controls, shown when browsing a feed */
+.bes-album-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 0 16px 0 20px;
+}
+
+.bes-album-toolbar .bes-album-buy {
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.bes-album-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.bes-album-nav button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bes-text-strong);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.bes-album-nav button:hover:not(:disabled) {
+  background: var(--bes-surface-1);
+  color: var(--bes-text-max);
+}
+
+.bes-album-nav button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.bes-album-nav.bes-loading {
+  cursor: progress;
+}
+
 /* Play status icons in track list */
 .bes-player-drawer .play_status {
   background: var(--bes-surface-0);

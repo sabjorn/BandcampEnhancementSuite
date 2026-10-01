@@ -1,5 +1,5 @@
 import Logger from './logger';
-import { createPlayerDrawer, loadAlbumIntoDrawer } from './components/player';
+import { createPlayerDrawer, loadAlbumIntoDrawer, getLoadedAlbumId } from './components/player';
 import { updateDiscographyOrder } from './discography';
 import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicLinks';
 import { extractBandId } from './utilities';
@@ -72,7 +72,7 @@ export function fillFrame(
   const player = drawer();
   const { isOpen, isMinimized } = player.getState();
 
-  if (isOpen && previewState.previewId === target.id) {
+  if (isOpen && getLoadedAlbumId() === target.id) {
     if (isMinimized) player.maximizeDrawer();
     else player.minimizeDrawer();
     return;

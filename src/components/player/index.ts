@@ -1,2 +1,2 @@
 export { createPlayerDrawer } from './drawer';
-export { loadAlbumIntoDrawer, loadNextAlbum, loadPreviousAlbum } from './loader';
+export { loadAlbumIntoDrawer, loadNextAlbum, loadPreviousAlbum, getLoadedAlbumId } from './loader';

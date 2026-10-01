@@ -19,10 +19,18 @@ vi.mock('../src/logger', () => ({
 vi.mock('../src/components/player/loader', () => ({
   loadAlbumIntoDrawer: vi.fn(() => Promise.resolve()),
   loadNextAlbum: vi.fn(() => Promise.resolve(false)),
-  loadPreviousAlbum: vi.fn(() => Promise.resolve(false))
+  loadPreviousAlbum: vi.fn(() => Promise.resolve(false)),
+  getLoadedAlbumId: vi.fn(() => null)
 }));
 
-import { initFeed, renderFeedPreviews, tralbumTypeToIdType } from '../src/pages/feed';
+import {
+  initFeed,
+  renderFeedPreviews,
+  tralbumTypeToIdType,
+  extractFeedOrder,
+  loadMoreFeedItems
+} from '../src/pages/feed';
+import * as discography from '../src/discography';
 import { loadAlbumIntoDrawer } from '../src/components/player/loader';
 
 const mockPort = {
@@ -227,6 +235,64 @@ describe('Feed', () => {
       await expect(initFeed(mockPort as any)).resolves.not.toThrow();
       expect(document.querySelector('.collection-item-container .preview')).toBeTruthy();
       expect(document.querySelector('.collection-item-container .historybox')).toBeNull();
+    });
+  });
+
+  describe('feed album order', () => {
+    const story = (id: string, type = 'a') =>
+      `<li class="story"><div class="collection-item-container" data-tralbumid="${id}" data-tralbumtype="${type}"></div></li>`;
+
+    beforeEach(() => {
+      createDomNodes(
+        `<div id="stories"><ol class="story-list">${story('1')}${story('2', 't')}${story('1')}${story('3', 'x')}</ol></div>`
+      );
+    });
+
+    it('ignores the new-releases carousel above the story list', () => {
+      document.body.insertAdjacentHTML(
+        'afterbegin',
+        '<div id="carousel-test"><div class="new-release collection-item-container" data-tralbumid="2" data-tralbumtype="t"></div><div class="new-release collection-item-container" data-tralbumid="50" data-tralbumtype="a"></div></div>'
+      );
+
+      const items = extractFeedOrder();
+      document.getElementById('carousel-test')?.remove();
+
+      expect(items.map(({ id, type }) => `${type}-${id}`)).toEqual(['album-1', 'track-2']);
+      expect(items.every(item => item.element.closest('#stories'))).toBe(true);
+    });
+
+    it('lists playable feed items once each, in page order', () => {
+      expect(extractFeedOrder().map(({ id, type }) => `${type}-${id}`)).toEqual(['album-1', 'track-2']);
+    });
+
+    it('resolves once the feed pages in more stories', async () => {
+      const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+      const loading = loadMoreFeedItems(1000);
+
+      expect(scrollTo).toHaveBeenCalled();
+      document.querySelector('.story-list')!.insertAdjacentHTML('beforeend', story('4'));
+
+      await expect(loading).resolves.toBe(true);
+    });
+
+    it('gives up when no new stories arrive', async () => {
+      vi.useFakeTimers();
+      vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+      const loading = loadMoreFeedItems(1000);
+      document.querySelector('.story-list')!.insertAdjacentHTML('beforeend', story('1'));
+      await vi.advanceTimersByTimeAsync(1000);
+
+      await expect(loading).resolves.toBe(false);
+      vi.useRealTimers();
+    });
+
+    it('makes the feed the source for drawer album navigation', async () => {
+      await initFeed(mockPort as any);
+
+      expect(discography.getDiscographyLength()).toBe(2);
+      discography.selectAlbum('1');
+      expect(discography.showAlbumControls()).toBe(true);
     });
   });
 });

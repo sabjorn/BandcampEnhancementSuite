@@ -62,6 +62,7 @@ export interface TralbumDetailsResponse {
   price: number;
   is_purchasable: boolean;
   bandcamp_url?: string;
+  album_id?: number | null;
   tracks?: TralbumTrack[];
 }
 

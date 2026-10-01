@@ -222,12 +222,7 @@ export async function loadAlbumIntoDrawer(
   log.info(`Loading album ${albumId} (${albumType}) into drawer`);
 
   try {
-    const tralbumDetails = await getTralbumDetails(
-      albumId,
-      convertToApiType(albumType),
-      null,
-      createFetchFunction(enableFetchCaching)
-    );
+    const { tralbumDetails, startTrackId } = await fetchTralbumForDrawer(albumId, albumType, enableFetchCaching);
 
     currentAlbumData = tralbumDetails;
     selectAlbum(albumId);
@@ -258,14 +253,40 @@ export async function loadAlbumIntoDrawer(
     }
 
     attachTrackListHandlers();
-    loadTrack(0);
-    void loadTrackState(albumId);
+    loadTrack(startTrackIndex(tralbumDetails, startTrackId));
+    void loadTrackState(String(tralbumDetails.id));
 
     log.info(`Album loaded: ${tralbumDetails.title} by ${tralbumDetails.tralbum_artist}`);
   } catch (error) {
     log.error(`Failed to load album: ${error}`);
     throw error;
   }
+}
+
+// A track that belongs to an album is shown as its whole album, starting on that track.
+async function fetchTralbumForDrawer(
+  id: string,
+  type: string,
+  enableFetchCaching: boolean
+): Promise<{ tralbumDetails: TralbumDetailsResponse; startTrackId?: number }> {
+  const fetchFn = createFetchFunction(enableFetchCaching);
+  const details = await getTralbumDetails(id, convertToApiType(type), null, fetchFn);
+  if (details.type !== 't' || !details.album_id) return { tralbumDetails: details };
+
+  try {
+    const album = await getTralbumDetails(details.album_id, 'a', null, fetchFn);
+    return { tralbumDetails: album, startTrackId: details.id };
+  } catch (error) {
+    log.warn(`Failed to load album ${details.album_id} for track ${id}, showing the track alone: ${error}`);
+    return { tralbumDetails: details };
+  }
+}
+
+function startTrackIndex(tralbumDetails: TralbumDetailsResponse, trackId?: number): number {
+  if (!trackId) return 0;
+
+  const index = tralbumDetails.tracks?.findIndex(track => track.track_id === trackId) ?? -1;
+  return Math.max(index, 0);
 }
 
 function currentTrack(): TralbumTrack | undefined {

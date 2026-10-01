@@ -102,7 +102,11 @@ export function attachPreviewListeners(
   previewState: { previewOpen: boolean; previewId?: string },
   enableFetchCaching: boolean = false
 ): void {
-  root.querySelectorAll('.open-iframe').forEach(button => {
+  root.querySelectorAll<HTMLElement>('.open-iframe').forEach(button => {
+    // Feed previews are bound by the feed and again by the label view's page-wide pass.
+    if (button.dataset.besBound === 'true') return;
+
+    button.dataset.besBound = 'true';
     button.addEventListener('click', event => {
       fillFrame(event, previewState, enableFetchCaching, port);
     });

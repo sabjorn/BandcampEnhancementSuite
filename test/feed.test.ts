@@ -31,6 +31,7 @@ import {
   loadMoreFeedItems
 } from '../src/pages/feed';
 import * as discography from '../src/discography';
+import { attachPreviewListeners } from '../src/label_view';
 import { loadAlbumIntoDrawer } from '../src/components/player/loader';
 
 const mockPort = {
@@ -138,6 +139,19 @@ describe('Feed', () => {
       const drawer = document.querySelector('.bes-player-drawer');
       expect(drawer).toBeTruthy();
       expect(drawer?.classList.contains('open')).toBe(true);
+    });
+
+    it('handles a click once when the label view also binds the page', () => {
+      renderFeedPreviews(mockPort as any, createPreviewState());
+      attachPreviewListeners(document, mockPort as any, createPreviewState());
+
+      const button = document.querySelector(
+        '.collection-item-container[data-tralbumid="12345"] button.open-iframe'
+      ) as HTMLButtonElement;
+      button.click();
+
+      // A second handler would see the album already open and collapse the drawer.
+      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledTimes(1);
     });
 
     it('asks the drawer for the album the story is about', () => {

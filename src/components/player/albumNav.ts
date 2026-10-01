@@ -13,12 +13,12 @@ export function buildAlbumNav(onPrevious: () => void, onNext: () => void): HTMLE
   const previous = element('button', {
     className: 'bes-album-nav-prev',
     html: `${chevron('15 18 9 12 15 6')}<span>Previous album</span>`,
-    attributes: { type: 'button', title: 'Previous album in feed' }
+    attributes: { type: 'button', title: 'Previous album' }
   });
   const next = element('button', {
     className: 'bes-album-nav-next',
     html: `<span>Next album</span>${chevron('9 18 15 12 9 6')}`,
-    attributes: { type: 'button', title: 'Next album in feed' }
+    attributes: { type: 'button', title: 'Next album' }
   });
 
   previous.addEventListener('click', onPrevious);

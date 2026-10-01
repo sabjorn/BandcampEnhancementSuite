@@ -293,11 +293,32 @@ describe('PlayerLoader - Main Player Logic', () => {
     });
   });
 
-  describe('Album controls when browsing a feed', () => {
+  describe('Album controls', () => {
     const feedItems = (...ids: string[]) =>
       ids.map(id => ({ id, type: 'album', element: document.querySelector(`[data-item-id="album-${id}"]`)! }));
 
-    it('should not show album controls outside a feed', async () => {
+    it('should show album controls for a label or artist discography', async () => {
+      discography.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('456', 'album', false);
+
+      expect(document.querySelector<HTMLButtonElement>('.bes-album-nav-prev')?.disabled).toBe(false);
+      expect(document.querySelector<HTMLButtonElement>('.bes-album-nav-next')?.disabled).toBe(false);
+    });
+
+    it('should scroll the discography to the album it moves to', async () => {
+      discography.updateDiscographyOrder();
+      const next = document.querySelector('[data-item-id="album-456"]') as HTMLElement;
+      const scrollIntoView = vi.fn();
+      next.scrollIntoView = scrollIntoView;
+      await player.loadAlbumIntoDrawer('123', 'album', false);
+
+      await player.loadNextAlbum(false);
+
+      expect(scrollIntoView).toHaveBeenCalled();
+    });
+
+    it('should not show album controls for a single album', async () => {
+      discography.setAlbumSource({ extract: () => feedItems('123'), showAlbumControls: true });
       await player.loadAlbumIntoDrawer('123', 'album', false);
 
       expect(document.querySelector('.bes-album-nav')).toBeNull();

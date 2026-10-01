@@ -448,6 +448,12 @@ function updateProgressBar(): void {
   updateTimeDisplay(audioElement.currentTime, audioElement.duration);
 }
 
+function resetProgressBar(): void {
+  setStyle('.bes-progbar-fill', style => (style.width = '0%'));
+  setStyle('.bes-slider-container .bes-progbar-thumb', style => (style.left = '0%'));
+  setText('.bes-time-elapsed', formatTime(0));
+}
+
 export function isPlaybackClick(target: HTMLElement | null): boolean {
   if (!target) return false;
   return !target.closest('.bes-track-link, .bes-track-buy-col');
@@ -557,6 +563,11 @@ function bindAudioEvents(audio: HTMLAudioElement, playButton: HTMLElement): void
     void reportPlay();
   };
   audio.onpause = reflectPlaying(false);
+  // Swapping src on a playing element pauses it without firing `pause`.
+  audio.onemptied = () => {
+    reflectPlaying(false)();
+    resetProgressBar();
+  };
   audio.onended = () => step(forward, true);
   audio.ontimeupdate = updateProgressBar;
 }

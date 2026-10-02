@@ -563,7 +563,6 @@ function bindAudioEvents(audio: HTMLAudioElement, playButton: HTMLElement): void
     void reportPlay();
   };
   audio.onpause = reflectPlaying(false);
-  // Swapping src on a playing element pauses it without firing `pause`.
   audio.onemptied = () => {
     reflectPlaying(false)();
     resetProgressBar();

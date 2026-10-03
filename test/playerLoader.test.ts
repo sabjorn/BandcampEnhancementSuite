@@ -30,6 +30,34 @@ vi.mock('../src/bclient', () => {
   return {
     getTralbumDetails: vi.fn(async (albumId: string | number) => {
       const id = Number(albumId);
+
+      // Track 7772 is the second track of album 777; track 8000 is a standalone single
+      if (id === 7772 || id === 8000) {
+        return {
+          id,
+          type: 't',
+          album_id: id === 7772 ? 777 : null,
+          title: `Track ${id}`,
+          tralbum_artist: 'Test Artist',
+          is_purchasable: true,
+          price: 1.0,
+          currency: 'USD',
+          tracks: [playableTrack(id)]
+        };
+      }
+
+      if (id === 777) {
+        return {
+          id,
+          type: 'a',
+          title: 'Test Album 777',
+          tralbum_artist: 'Test Artist',
+          is_purchasable: true,
+          price: 10.0,
+          currency: 'USD',
+          tracks: [playableTrack(7771), playableTrack(7772), playableTrack(7773)]
+        };
+      }
       // Album 456 has a playable first track and nothing playable after it
       const tracks =
         id === 456
@@ -277,6 +305,23 @@ describe('PlayerLoader - Main Player Logic', () => {
       // Album art extraction is verified by the function call
       // The actual URL is extracted in extractAlbumArtFromPage
       expect(player.getCurrentAlbumData()).toBeDefined();
+    });
+  });
+
+  describe('Previewing a track', () => {
+    it('should show the whole album and start on that track', async () => {
+      await player.loadAlbumIntoDrawer('7772', 'track', false);
+
+      expect(player.getCurrentAlbumData()?.id).toBe(777);
+      expect(player.getCurrentTrackIndex()).toBe(1);
+      expect((document.querySelector('audio') as HTMLAudioElement).src).toContain('track7772.mp3');
+    });
+
+    it('should show a single on its own', async () => {
+      await player.loadAlbumIntoDrawer('8000', 'track', false);
+
+      expect(player.getCurrentAlbumData()?.id).toBe(8000);
+      expect(player.getCurrentTrackIndex()).toBe(0);
     });
   });
 

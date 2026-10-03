@@ -312,8 +312,6 @@ function refreshAlbumNav(): void {
 }
 
 async function skipAlbum(load: () => Promise<boolean>): Promise<void> {
-  if (albumNavLoading) return;
-
   const keepPlaying = Boolean(audioElement && !audioElement.paused);
   albumNavLoading = true;
   refreshAlbumNav();

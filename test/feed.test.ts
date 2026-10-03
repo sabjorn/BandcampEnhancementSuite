@@ -262,14 +262,19 @@ describe('Feed', () => {
       );
     });
 
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('ignores the new-releases carousel above the story list', () => {
-      document.body.insertAdjacentHTML(
-        'afterbegin',
-        '<div id="carousel-test"><div class="new-release collection-item-container" data-tralbumid="2" data-tralbumtype="t"></div><div class="new-release collection-item-container" data-tralbumid="50" data-tralbumtype="a"></div></div>'
-      );
+      document
+        .getElementById('stories')!
+        .insertAdjacentHTML(
+          'beforebegin',
+          '<div class="new-release collection-item-container" data-tralbumid="2" data-tralbumtype="t"></div><div class="new-release collection-item-container" data-tralbumid="50" data-tralbumtype="a"></div>'
+        );
 
       const items = extractFeedOrder();
-      document.getElementById('carousel-test')?.remove();
 
       expect(items.map(({ id, type }) => `${type}-${id}`)).toEqual(['album-1', 'track-2']);
       expect(items.every(item => item.element.closest('#stories'))).toBe(true);
@@ -298,7 +303,6 @@ describe('Feed', () => {
       await vi.advanceTimersByTimeAsync(1000);
 
       await expect(loading).resolves.toBe(false);
-      vi.useRealTimers();
     });
 
     it('makes the feed the source for drawer album navigation', async () => {

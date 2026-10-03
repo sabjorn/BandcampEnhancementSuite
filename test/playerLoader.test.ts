@@ -297,6 +297,52 @@ describe('PlayerLoader - Main Player Logic', () => {
     const feedItems = (...ids: string[]) =>
       ids.map(id => ({ id, type: 'album', element: document.querySelector(`[data-item-id="album-${id}"]`)! }));
 
+    it('should ignore an album that finishes loading after the drawer moved on', async () => {
+      const { getTralbumDetails } = await import('../src/bclient');
+      const realDetails = vi.mocked(getTralbumDetails).getMockImplementation()!;
+      let releaseSlowAlbum: () => void = () => {};
+      vi.mocked(getTralbumDetails).mockImplementationOnce(
+        (...args) =>
+          new Promise(resolve => {
+            releaseSlowAlbum = () => resolve(realDetails(...args));
+          })
+      );
+
+      const slow = player.loadAlbumIntoDrawer('123', 'album', false);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
+      releaseSlowAlbum();
+      await slow;
+
+      expect(player.getCurrentAlbumData()?.id).toBe(456);
+      expect(player.getLoadedAlbumId()).toBe('456');
+    });
+
+    it('should ignore album clicks while an album is still loading', async () => {
+      const { getTralbumDetails } = await import('../src/bclient');
+      discography.setAlbumSource({ extract: () => feedItems('123', '456', '789'), showAlbumControls: true });
+      await player.loadAlbumIntoDrawer('123', 'album', false);
+      vi.mocked(getTralbumDetails).mockClear();
+
+      const next = document.querySelector<HTMLButtonElement>('.bes-album-nav-next')!;
+      next.click();
+      expect(next.disabled).toBe(true);
+      next.click();
+
+      await vi.waitFor(() => expect(player.getLoadedAlbumId()).toBe('456'));
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(getTralbumDetails).toHaveBeenCalledTimes(1);
+    });
+
+    it('should keep the caching preference when hopping albums', async () => {
+      const { createFetchFunction } = await import('../src/utilities');
+      discography.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('123', 'album', true);
+
+      await player.loadNextAlbum();
+
+      expect(vi.mocked(createFetchFunction)).toHaveBeenLastCalledWith(true);
+    });
+
     it('should show album controls for a label or artist discography', async () => {
       discography.updateDiscographyOrder();
       await player.loadAlbumIntoDrawer('456', 'album', false);

@@ -39,32 +39,25 @@ export function renderFeedPreviews(
   });
 }
 
-function feedContainer(): HTMLElement {
-  return document.getElementById('stories') || document.body;
-}
-
 export function extractFeedOrder(): DiscographyItem[] {
   const seen = new Set<string>();
   const items: DiscographyItem[] = [];
 
-  // Only walk the story list; the new-releases carousel above it repeats stories in hidden slides.
-  feedContainer()
-    .querySelectorAll<HTMLElement>(FEED_ITEM_SELECTOR)
-    .forEach(element => {
-      const id = element.dataset.tralbumid;
-      const type = tralbumTypeToIdType(element.dataset.tralbumtype);
-      if (!id || !type || seen.has(`${type}-${id}`)) return;
+  const feedContainer = document.getElementById('stories') || document.body;
+  feedContainer.querySelectorAll<HTMLElement>(FEED_ITEM_SELECTOR).forEach(element => {
+    const id = element.dataset.tralbumid;
+    const type = tralbumTypeToIdType(element.dataset.tralbumtype);
+    if (!id || !type || seen.has(`${type}-${id}`)) return;
 
-      seen.add(`${type}-${id}`);
-      items.push({ id, type, element });
-    });
+    seen.add(`${type}-${id}`);
+    items.push({ id, type, element });
+  });
 
   return items;
 }
 
-// The feed pages in more stories as the reader nears the bottom, so scroll there and wait for them.
 export function loadMoreFeedItems(timeoutMs: number = LOAD_MORE_TIMEOUT_MS): Promise<boolean> {
-  const container = feedContainer();
+  const feedContainer = document.getElementById('stories') || document.body;
   const countBefore = extractFeedOrder().length;
 
   return new Promise(resolve => {
@@ -79,7 +72,7 @@ export function loadMoreFeedItems(timeoutMs: number = LOAD_MORE_TIMEOUT_MS): Pro
     });
     const timer = setTimeout(() => finish(false), timeoutMs);
 
-    observer.observe(container, { childList: true, subtree: true });
+    observer.observe(feedContainer, { childList: true, subtree: true });
     window.scrollTo({ top: document.documentElement.scrollHeight });
   });
 }
@@ -102,12 +95,12 @@ export async function initFeed(port: chrome.runtime.Port): Promise<void> {
     showAlbumControls: true
   });
 
-  const container = feedContainer();
+  const feedContainer = document.getElementById('stories') || document.body;
   const observer = new MutationObserver(() => {
     observer.disconnect();
     renderFeedPreviews(port, previewState);
     updateDiscographyOrder();
-    observer.observe(container, { childList: true, subtree: true });
+    observer.observe(feedContainer, { childList: true, subtree: true });
   });
-  observer.observe(container, { childList: true, subtree: true });
+  observer.observe(feedContainer, { childList: true, subtree: true });
 }

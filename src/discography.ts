@@ -18,13 +18,11 @@ export interface AlbumSource {
 
 let order: DiscographyItem[] = [];
 let selectedIndex = -1;
-const discographySource: AlbumSource = {
+let source: AlbumSource = {
   extract: extractDiscographyOrder,
   reveal: item => item.element.scrollIntoView?.({ behavior: 'smooth', block: 'center' }),
   showAlbumControls: true
 };
-
-let source: AlbumSource = discographySource;
 let pendingLoadMore: Promise<boolean> | null = null;
 let sourceExhausted = false;
 

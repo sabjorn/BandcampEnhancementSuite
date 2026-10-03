@@ -1,5 +1,5 @@
 import Logger from './logger';
-import { createPlayerDrawer, loadAlbumIntoDrawer } from './components/player';
+import { createPlayerDrawer, loadAlbumIntoDrawer, getLoadedAlbumId } from './components/player';
 import { updateDiscographyOrder } from './discography';
 import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicLinks';
 import { extractBandId } from './utilities';
@@ -72,7 +72,7 @@ export function fillFrame(
   const player = drawer();
   const { isOpen, isMinimized } = player.getState();
 
-  if (isOpen && previewState.previewId === target.id) {
+  if (isOpen && getLoadedAlbumId() === target.id) {
     if (isMinimized) player.maximizeDrawer();
     else player.minimizeDrawer();
     return;
@@ -102,7 +102,11 @@ export function attachPreviewListeners(
   previewState: { previewOpen: boolean; previewId?: string },
   enableFetchCaching: boolean = false
 ): void {
-  root.querySelectorAll('.open-iframe').forEach(button => {
+  root.querySelectorAll<HTMLElement>('.open-iframe').forEach(button => {
+    const feedPreviewsBounded = button.dataset.besBound === 'true';
+    if (feedPreviewsBounded) return;
+
+    button.dataset.besBound = 'true';
     button.addEventListener('click', event => {
       fillFrame(event, previewState, enableFetchCaching, port);
     });

@@ -143,9 +143,19 @@ vi.mock('../src/audioFeatures', () => ({
 describe('PlayerLoader - Main Player Logic', () => {
   let player: typeof import('../src/components/player/loader');
   let discography: typeof import('../src/discography');
+  let keydownListeners: EventListenerOrEventListenerObject[] = [];
+  let addListenerSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(async () => {
     vi.resetModules();
+
+    // Each fresh loader registers document-level shortcuts; collect them so they don't drive later suites.
+    keydownListeners = [];
+    const addEventListener = document.addEventListener.bind(document);
+    addListenerSpy = vi.spyOn(document, 'addEventListener').mockImplementation((type, listener, options) => {
+      if (type === 'keydown' && listener) keydownListeners.push(listener);
+      addEventListener(type, listener, options);
+    });
     createDomNodes(`
       <div class="bes-player-drawer">
         <div class="bes-player-drawer-player"></div>
@@ -170,6 +180,9 @@ describe('PlayerLoader - Main Player Logic', () => {
   });
 
   afterEach(() => {
+    keydownListeners.forEach(listener => document.removeEventListener('keydown', listener));
+    addListenerSpy.mockRestore();
+    document.querySelectorAll('audio').forEach(audio => audio.remove());
     cleanupTestNodes();
     vi.clearAllMocks();
   });
@@ -277,6 +290,134 @@ describe('PlayerLoader - Main Player Logic', () => {
       // Album art extraction is verified by the function call
       // The actual URL is extracted in extractAlbumArtFromPage
       expect(player.getCurrentAlbumData()).toBeDefined();
+    });
+  });
+
+  describe('Album controls', () => {
+    const feedItems = (...ids: string[]) =>
+      ids.map(id => ({ id, type: 'album', element: document.querySelector(`[data-item-id="album-${id}"]`)! }));
+
+    it('should ignore an album that finishes loading after the drawer moved on', async () => {
+      const { getTralbumDetails } = await import('../src/bclient');
+      const realDetails = vi.mocked(getTralbumDetails).getMockImplementation()!;
+      let releaseSlowAlbum: () => void = () => {};
+      vi.mocked(getTralbumDetails).mockImplementationOnce(
+        (...args) =>
+          new Promise(resolve => {
+            releaseSlowAlbum = () => resolve(realDetails(...args));
+          })
+      );
+
+      const slow = player.loadAlbumIntoDrawer('123', 'album', false);
+      await player.loadAlbumIntoDrawer('456', 'album', false);
+      releaseSlowAlbum();
+      await slow;
+
+      expect(player.getCurrentAlbumData()?.id).toBe(456);
+      expect(player.getLoadedAlbumId()).toBe('456');
+    });
+
+    it('should ignore album clicks while an album is still loading', async () => {
+      const { getTralbumDetails } = await import('../src/bclient');
+      discography.setAlbumSource({ extract: () => feedItems('123', '456', '789'), showAlbumControls: true });
+      await player.loadAlbumIntoDrawer('123', 'album', false);
+      vi.mocked(getTralbumDetails).mockClear();
+
+      const next = document.querySelector<HTMLButtonElement>('.bes-album-nav-next')!;
+      next.click();
+      expect(next.disabled).toBe(true);
+      next.click();
+
+      await vi.waitFor(() => expect(player.getLoadedAlbumId()).toBe('456'));
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(getTralbumDetails).toHaveBeenCalledTimes(1);
+    });
+
+    it('should keep the caching preference when hopping albums', async () => {
+      const { createFetchFunction } = await import('../src/utilities');
+      discography.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('123', 'album', true);
+
+      await player.loadNextAlbum();
+
+      expect(vi.mocked(createFetchFunction)).toHaveBeenLastCalledWith(true);
+    });
+
+    it('should show album controls for a label or artist discography', async () => {
+      discography.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('456', 'album', false);
+
+      expect(document.querySelector<HTMLButtonElement>('.bes-album-nav-prev')?.disabled).toBe(false);
+      expect(document.querySelector<HTMLButtonElement>('.bes-album-nav-next')?.disabled).toBe(false);
+    });
+
+    it('should scroll the discography to the album it moves to', async () => {
+      discography.updateDiscographyOrder();
+      const next = document.querySelector('[data-item-id="album-456"]') as HTMLElement;
+      const scrollIntoView = vi.fn();
+      next.scrollIntoView = scrollIntoView;
+      await player.loadAlbumIntoDrawer('123', 'album', false);
+
+      await player.loadNextAlbum(false);
+
+      expect(scrollIntoView).toHaveBeenCalled();
+    });
+
+    it('should not show album controls for a single album', async () => {
+      discography.setAlbumSource({ extract: () => feedItems('123'), showAlbumControls: true });
+      await player.loadAlbumIntoDrawer('123', 'album', false);
+
+      expect(document.querySelector('.bes-album-nav')).toBeNull();
+    });
+
+    it('should show album controls next to the buy button', async () => {
+      discography.setAlbumSource({ extract: () => feedItems('123', '456'), showAlbumControls: true });
+
+      await player.loadAlbumIntoDrawer('123', 'album', false);
+
+      const toolbar = document.querySelector('.bes-album-toolbar');
+      expect(toolbar?.querySelector('.bes-album-nav')).toBeTruthy();
+      expect(toolbar?.querySelector('.bes-album-buy')).toBeTruthy();
+      expect(document.querySelector<HTMLButtonElement>('.bes-album-nav-prev')?.disabled).toBe(true);
+      expect(document.querySelector<HTMLButtonElement>('.bes-album-nav-next')?.disabled).toBe(false);
+    });
+
+    it('should move to the next album and scroll it into view', async () => {
+      const reveal = vi.fn();
+      discography.setAlbumSource({ extract: () => feedItems('123', '456'), reveal, showAlbumControls: true });
+      await player.loadAlbumIntoDrawer('123', 'album', false);
+
+      document.querySelector<HTMLButtonElement>('.bes-album-nav-next')!.click();
+      await vi.waitFor(() => expect(player.getLoadedAlbumId()).toBe('456'));
+      await vi.waitFor(() => expect(reveal).toHaveBeenCalledWith(expect.objectContaining({ id: '456' })));
+    });
+
+    it('should load more of the feed when stepping past the last loaded album', async () => {
+      let ids = ['123', '456'];
+      const loadMore = vi.fn(async () => {
+        ids = ['123', '456', '789'];
+        return true;
+      });
+      discography.setAlbumSource({ extract: () => feedItems(...ids), loadMore, showAlbumControls: true });
+      await player.loadAlbumIntoDrawer('456', 'album', false);
+
+      expect(document.querySelector<HTMLButtonElement>('.bes-album-nav-next')?.disabled).toBe(false);
+
+      await expect(player.loadNextAlbum(false)).resolves.toBe(true);
+      expect(loadMore).toHaveBeenCalledTimes(1);
+      expect(player.getLoadedAlbumId()).toBe('789');
+    });
+
+    it('should keep playing when skipping albums mid-song', async () => {
+      discography.setAlbumSource({ extract: () => feedItems('123', '456'), showAlbumControls: true });
+      await player.loadAlbumIntoDrawer('123', 'album', false);
+
+      const audio = document.querySelector('audio') as HTMLAudioElement;
+      Object.defineProperty(audio, 'paused', { configurable: true, get: () => false });
+      const play = vi.spyOn(audio, 'play').mockResolvedValue();
+
+      document.querySelector<HTMLButtonElement>('.bes-album-nav-next')!.click();
+      await vi.waitFor(() => expect(play).toHaveBeenCalled());
     });
   });
 

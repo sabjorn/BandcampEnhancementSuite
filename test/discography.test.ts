@@ -126,4 +126,97 @@ describe('discography', () => {
       expect(discography.albumArtUrlFor('99', 'album')).toBe('');
     });
   });
+
+  describe('a pluggable album source', () => {
+    const itemsFor = (...ids: string[]) =>
+      ids.map(id => ({ id, type: 'album', element: document.createElement('div') }));
+
+    it('should read the order from the source instead of the discography grid', () => {
+      createDomNodes(gridOf('1', '2'));
+      discography.setAlbumSource({ extract: () => itemsFor('7', '8', '9') });
+
+      expect(discography.getDiscographyLength()).toBe(3);
+      expect(discography.findAlbumIndexById('8')).toBe(1);
+    });
+
+    it('should only show album controls when the source asks and has more than one album', () => {
+      discography.setAlbumSource({ extract: () => itemsFor('1', '2'), showAlbumControls: true });
+      discography.selectAlbum('1');
+      expect(discography.showAlbumControls()).toBe(true);
+
+      discography.setAlbumSource({ extract: () => itemsFor('1'), showAlbumControls: true });
+      discography.selectAlbum('1');
+      expect(discography.showAlbumControls()).toBe(false);
+
+      discography.setAlbumSource({ extract: () => itemsFor('1', '2') });
+      discography.selectAlbum('1');
+      expect(discography.showAlbumControls()).toBe(false);
+    });
+
+    it('should hide album controls for an album the source does not list', () => {
+      discography.setAlbumSource({ extract: () => itemsFor('1', '2'), showAlbumControls: true });
+      discography.selectAlbum('99');
+
+      expect(discography.showAlbumControls()).toBe(false);
+    });
+
+    it('should keep the selection on the same album when more items arrive', async () => {
+      let ids = ['1', '2'];
+      discography.setAlbumSource({
+        extract: () => itemsFor(...ids),
+        loadMore: async () => {
+          ids = ['1', '2', '3', '4'];
+          return true;
+        }
+      });
+      discography.selectAlbum('2');
+
+      expect(discography.hasNextAlbum()).toBe(false);
+      expect(discography.canLoadMoreAlbums()).toBe(true);
+
+      await expect(discography.loadMoreAlbums()).resolves.toBe(true);
+
+      expect(discography.getCurrentAlbumIndex()).toBe(1);
+      expect(discography.nextAlbum()?.id).toBe('3');
+    });
+
+    it('should share one pending load between callers', async () => {
+      const loadMore = vi.fn(async () => false);
+      discography.setAlbumSource({ extract: () => itemsFor('1'), loadMore });
+      discography.selectAlbum('1');
+
+      await Promise.all([discography.loadMoreAlbums(), discography.loadMoreAlbums()]);
+
+      expect(loadMore).toHaveBeenCalledTimes(1);
+    });
+
+    it('should stop offering more once the source runs dry, until new items appear', async () => {
+      let ids = ['1'];
+      discography.setAlbumSource({ extract: () => itemsFor(...ids), loadMore: async () => false });
+      discography.selectAlbum('1');
+
+      await discography.loadMoreAlbums();
+      expect(discography.canLoadMoreAlbums()).toBe(false);
+
+      ids = ['1', '2'];
+      discography.updateDiscographyOrder();
+      expect(discography.canLoadMoreAlbums()).toBe(true);
+    });
+
+    it('should not offer more albums before one is selected', () => {
+      discography.setAlbumSource({ extract: () => itemsFor('1'), loadMore: async () => true });
+
+      expect(discography.canLoadMoreAlbums()).toBe(false);
+    });
+
+    it('should hand the item to the source to reveal', () => {
+      const reveal = vi.fn();
+      const [item] = itemsFor('1');
+      discography.setAlbumSource({ extract: () => [item], reveal });
+
+      discography.revealAlbum(item);
+
+      expect(reveal).toHaveBeenCalledWith(item);
+    });
+  });
 });

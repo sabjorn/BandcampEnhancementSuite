@@ -849,6 +849,13 @@ describe('PlayerLoader - Player Interactions', () => {
 
       expect(document.querySelector('.bes-transport-play')?.classList.contains('playing')).toBe(false);
     });
+
+    it('should unmark the play button when a new source replaces the playing one', () => {
+      audio.dispatchEvent(new Event('play'));
+      audio.dispatchEvent(new Event('emptied'));
+
+      expect(document.querySelector('.bes-transport-play')?.classList.contains('playing')).toBe(false);
+    });
   });
 
   describe('seeking by clicking the progress bar', () => {

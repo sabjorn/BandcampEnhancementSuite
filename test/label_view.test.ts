@@ -25,7 +25,7 @@ vi.mock('../src/logger', () => ({
   }))
 }));
 
-import { initLabelView, fillFrame, renderDom, addGridWishlistStars } from '../src/label_view';
+import { initLabelView, fillFrame, renderDom, addGridWishlistStars, generatePreview } from '../src/label_view';
 
 const mockPort = {
   postMessage: vi.fn(),
@@ -622,5 +622,37 @@ describe('album wishlist star on the label page grid', () => {
     addStars();
 
     expect(stars().length).toBe(2);
+  });
+});
+
+describe('preview controls staying within the album art width', () => {
+  it('should lay the preview button and history box out in one contained row', () => {
+    const preview = generatePreview('123', 'album');
+
+    const controls = preview.querySelector('.bes-preview-controls') as HTMLElement;
+
+    expect(controls).toBeTruthy();
+    expect(Array.from(controls.children).map(child => child.className)).toEqual([
+      'follow-unfollow open-iframe',
+      'follow-unfollow historybox'
+    ]);
+  });
+
+  // 90% + a 5px margin + a 28px box came to more than the art's width, so the pair spilled past it.
+  it('should leave the widths to the stylesheet rather than inline styles', () => {
+    const preview = generatePreview('123', 'album');
+
+    const button = preview.querySelector<HTMLElement>('.open-iframe') as HTMLElement;
+    const historybox = preview.querySelector<HTMLElement>('.historybox') as HTMLElement;
+
+    expect(button.getAttribute('style')).toBeNull();
+    expect(historybox.getAttribute('style')).toBeNull();
+  });
+
+  it('should keep the frame placeholder out of that row', () => {
+    const preview = generatePreview('123', 'album');
+
+    expect(preview.querySelector('.bes-preview-controls .preview-frame')).toBeNull();
+    expect(preview.querySelector('.preview-frame')?.id).toBe('album-123');
   });
 });

@@ -2376,6 +2376,34 @@ tr.track_row_view td.bes-wishlist-col {
   overflow-wrap: anywhere;
 }
 
+/* Preview row under the album art: the button takes the remaining space and the history box keeps
+   its size, so the pair can never be wider than the art above it. */
+.bes-preview-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.bes-preview-controls .open-iframe {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bes-preview-controls .historybox {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+}
+
+.music-grid-item .preview {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
 .music-grid-item .bes-grid-title-row button.bes-wishlist-button {
   flex: 0 0 auto;
   width: 22px;

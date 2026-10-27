@@ -127,10 +127,6 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   updateDiscographyOrder();
 
-  void initWishlistState().then(available => {
-    if (available) addGridWishlistStars();
-  });
-
   const observer = new MutationObserver(() => {
     updateDiscographyOrder();
     addGridWishlistStars();
@@ -138,6 +134,10 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   const discographyContainer = document.querySelector('ol.music-grid') || document.body;
   observer.observe(discographyContainer, { childList: true, subtree: true });
+
+  // The grid is already on screen; this only decorates it, so awaiting the round trip here costs
+  // nothing visible and leaves no promise running loose after init returns.
+  if (await initWishlistState()) addGridWishlistStars();
 
   if (!document.querySelector('ol.music-grid')) return;
 
@@ -231,13 +231,18 @@ export function generatePreview(id: string, idType: string): HTMLDivElement {
   button.setAttribute('title', 'load preview player');
   button.setAttribute('type', 'button');
   button.setAttribute('class', 'follow-unfollow open-iframe');
-  button.setAttribute('style', 'width: 90%');
   button.append('Preview');
 
   const checkbox = document.createElement('button');
   checkbox.setAttribute('title', 'preview history (click to toggle)');
-  checkbox.setAttribute('style', 'margin: 0px 0px 0px 5px; width: 28px; height: 28px; position: absolute;');
   checkbox.setAttribute('class', 'follow-unfollow historybox');
+
+  // One row, sized by the stylesheet. These used to be a 90% wide button plus an absolutely
+  // positioned 28px box, which together overflowed the album art they sit under.
+  const controls = document.createElement('div');
+  controls.setAttribute('class', 'bes-preview-controls');
+  controls.appendChild(button);
+  controls.appendChild(checkbox);
 
   const preview = document.createElement('div');
   preview.setAttribute('class', 'preview-frame');
@@ -246,8 +251,7 @@ export function generatePreview(id: string, idType: string): HTMLDivElement {
   const parent = document.createElement('div');
   parent.setAttribute('id', id);
   parent.setAttribute('class', 'preview');
-  parent.appendChild(button);
-  parent.appendChild(checkbox);
+  parent.appendChild(controls);
   parent.appendChild(preview);
 
   return parent;

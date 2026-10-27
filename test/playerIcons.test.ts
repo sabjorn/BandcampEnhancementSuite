@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { prevIcon, nextIcon, playIcon, pauseIcon } from '../src/components/player/icons';
+import { prevIcon, nextIcon, playIcon, pauseIcon, starIcon } from '../src/components/player/icons';
 
 const parse = (markup: string): SVGElement => {
   const holder = document.createElement('div');
@@ -47,5 +47,34 @@ describe('playerIcons', () => {
     expect(prev).toBeTruthy();
     expect(next).toBeTruthy();
     expect(prev).not.toBe(next);
+  });
+
+  describe('starIcon', () => {
+    it('should render at the requested size and share the common viewBox', () => {
+      [starIcon(12, true), starIcon(12, false)].forEach(markup => {
+        const svg = parse(markup);
+        expect(svg.getAttribute('width')).toBe('12');
+        expect(svg.getAttribute('height')).toBe('12');
+        expect(svg.getAttribute('viewBox')).toBe('0 0 24 24');
+      });
+    });
+
+    it('should fill the star when the item is wishlisted and outline it when it is not', () => {
+      expect(parse(starIcon(12, true)).getAttribute('fill')).toBe('currentColor');
+      expect(parse(starIcon(12, false)).getAttribute('fill')).toBe('none');
+      expect(parse(starIcon(12, false)).getAttribute('stroke')).toBe('currentColor');
+    });
+
+    it('should draw the same shape whether filled or not', () => {
+      const filled = parse(starIcon(12, true)).querySelector('path')?.getAttribute('d');
+      const outline = parse(starIcon(12, false)).querySelector('path')?.getAttribute('d');
+
+      expect(filled).toBeTruthy();
+      expect(filled).toBe(outline);
+    });
+
+    it('should hide the star from assistive technology', () => {
+      expect(parse(starIcon(12, true)).getAttribute('aria-hidden')).toBe('true');
+    });
   });
 });

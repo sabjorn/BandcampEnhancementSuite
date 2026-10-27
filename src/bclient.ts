@@ -41,6 +41,7 @@ function createRateLimitedFunction<T extends (...args: any[]) => Promise<any>>(f
 
 export interface TralbumTrack {
   track_id: number;
+  band_id: number;
   title: string;
   price: number;
   currency: string;
@@ -62,6 +63,8 @@ export interface TralbumDetailsResponse {
   price: number;
   is_purchasable: boolean;
   bandcamp_url?: string;
+  // present on the album-level response; the top level has no band_id of its own
+  band?: { band_id: number };
   tracks?: TralbumTrack[];
 }
 
@@ -188,14 +191,16 @@ interface TrackItem {
   item_type: string;
   item_id: number;
   band_id: number;
-  purchased: string;
+  // a date string for owned items; null/absent for wishlist-only items
+  purchased: string | null;
 }
 
 export interface CollectionSummary {
   fan_id: number;
   username: string;
   url: string;
-  tralbum_lookup: Record<string, TrackItem>;
+  // The band subdomains answer without this; only bandcamp.com returns it.
+  tralbum_lookup?: Record<string, TrackItem>;
   follows: {
     following: Record<string, boolean>;
   };
@@ -288,6 +293,96 @@ export async function hideUnhide(
   }
 
   return data.ok === true;
+}
+
+export interface WishlistItem {
+  fan_id: number;
+  item_type: 't' | 'a';
+  item_id: number;
+  band_id: number;
+  ref_token?: string | null;
+}
+
+interface CollectItemResponse {
+  ok?: boolean;
+  // `error` is the string 'invalid_crumb' on a stale crumb, but just `true` on a flat rejection
+  error?: string | boolean;
+  error_message?: string;
+  exception?: string;
+  crumb?: string;
+}
+
+function wishlistBody(item: WishlistItem, crumb: string | null, includeRefToken: boolean): string {
+  const params = new URLSearchParams({
+    fan_id: String(item.fan_id),
+    item_id: String(item.item_id),
+    item_type: item.item_type,
+    band_id: String(item.band_id)
+  });
+
+  if (includeRefToken && item.ref_token) params.append('ref_token', item.ref_token);
+  if (crumb) params.append('crumb', crumb);
+
+  return params.toString();
+}
+
+// Bandcamp's own wishlist star posts to these endpoints; `crumb` is appended to the form body and
+// the server answers `{error: 'invalid_crumb', crumb}` — as a 200 or a 403 — when it has gone stale.
+async function postWishlistItem(
+  path: 'collect_item_cb' | 'uncollect_item_cb',
+  item: WishlistItem,
+  crumb: string | null,
+  baseUrl: string | null,
+  includeRefToken: boolean
+): Promise<boolean> {
+  const url = baseUrl ? `${baseUrl}/${path}` : `/${path}`;
+
+  const makeRequest = (crumbValue: string | null) =>
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        accept: 'application/json, text/javascript, */*; q=0.01',
+        'content-type': 'application/x-www-form-urlencoded',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'x-requested-with': 'XMLHttpRequest'
+      },
+      body: wishlistBody(item, crumbValue, includeRefToken),
+      mode: 'cors'
+    });
+
+  let response = await makeRequest(crumb);
+  let data: CollectItemResponse = await response.json();
+
+  if (data.error === 'invalid_crumb' && data.crumb) {
+    response = await makeRequest(data.crumb);
+    data = await response.json();
+  }
+
+  if (data.ok !== true) {
+    // Bandcamp reports a missing or stale crumb as an InsistError in `exception` rather than the
+    // `invalid_crumb` shape above, so surface whatever reason it gave instead of a bare false.
+    throw new Error(data.exception ?? data.error_message ?? 'Bandcamp rejected the wishlist change');
+  }
+
+  return true;
+}
+
+export function collectItem(
+  item: WishlistItem,
+  crumb: string | null = null,
+  baseUrl: string | null = null
+): Promise<boolean> {
+  return postWishlistItem('collect_item_cb', item, crumb, baseUrl, true);
+}
+
+export function uncollectItem(
+  item: WishlistItem,
+  crumb: string | null = null,
+  baseUrl: string | null = null
+): Promise<boolean> {
+  return postWishlistItem('uncollect_item_cb', item, crumb, baseUrl, false);
 }
 
 interface GetHiddenItemsBody {
@@ -424,6 +519,15 @@ export async function getHiddenItems(
   return data;
 }
 
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'");
+}
+
 export async function getTralbumDetailsFromPage(url: string): Promise<TralbumDetailsResponse> {
   const response = await fetch(url);
   if (!response.ok) {
@@ -438,14 +542,7 @@ export async function getTralbumDetailsFromPage(url: string): Promise<TralbumDet
       throw new Error('Could not find tralbum data in page');
     }
 
-    const decodedJson = tralbumMatch[1]
-      .replace(/&quot;/g, '"')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&#39;/g, "'");
-
-    return JSON.parse(decodedJson);
+    return JSON.parse(decodeHtmlEntities(tralbumMatch[1]));
   })();
 
   const currency = tralbumData.current.minimum_price_currency || 'USD';
@@ -462,6 +559,25 @@ export async function getTralbumDetailsFromPage(url: string): Promise<TralbumDet
     is_purchasable: true,
     bandcamp_url: url
   };
+}
+
+// Crumbs are rendered into each page's #js-crumbs-data, and only for the endpoints that page's own
+// UI calls. A track or album page always carries `collect_item_cb`, because its wishlist button
+// posts there — so that page is a reliable source when the current page has no such crumb.
+export async function getCrumbsFromPage(url: string): Promise<Record<string, string>> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch page: ${response.status}`);
+  }
+
+  const html = await response.text();
+
+  const crumbsMatch = html.match(/id="js-crumbs-data"[^>]*data-crumbs="([^"]*)"/);
+  if (!crumbsMatch) {
+    throw new Error('Could not find crumbs data in page');
+  }
+
+  return JSON.parse(decodeHtmlEntities(crumbsMatch[1]));
 }
 
 export const getHiddenItemsRateLimited = createRateLimitedFunction(getHiddenItems, API_RATE_LIMIT_DELAY_MS);

@@ -1,8 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
-import { buildDrawerPlayer, buildTrackTable } from '../src/components/player/builder';
+import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from '../src/components/player/builder';
 import { prevIcon, nextIcon, playIcon, pauseIcon } from '../src/components/player/icons';
 import { TralbumDetailsResponse } from '../src/bclient';
+import { isWishlistAvailable, isWishlisted } from '../src/wishlist';
+
+vi.mock('../src/wishlist', () => ({
+  isWishlistAvailable: vi.fn(() => true),
+  isWishlisted: vi.fn(() => false),
+  toggleWishlist: vi.fn()
+}));
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -27,9 +34,12 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       currency: 'USD',
       price: 10.0,
       is_purchasable: true,
+      band: { band_id: 857243381 },
+      bandcamp_url: 'https://label.bandcamp.com/album/test-album',
       tracks: [
         {
           track_id: 1001,
+          band_id: 857243381,
           title: 'Track 1',
           price: 1.0,
           currency: 'USD',
@@ -40,6 +50,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         },
         {
           track_id: 1002,
+          band_id: 857243381,
           title: 'Track 2',
           price: 0,
           currency: 'USD',
@@ -322,6 +333,50 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
+  describe('wishlist star in the track state cell', () => {
+    beforeEach(() => {
+      vi.mocked(isWishlistAvailable).mockReturnValue(true);
+      vi.mocked(isWishlisted).mockReturnValue(false);
+    });
+
+    it('should put a star in every row alongside the liked and played indicators', () => {
+      const trackTable = buildTrackTable(mockTralbumDetails);
+
+      const rows = trackTable.querySelectorAll('.bes-track-row');
+      expect(rows.length).toBe(2);
+      rows.forEach(row => {
+        expect(row.querySelector('.bes-track-state-col .bes-wishlist-button')).toBeTruthy();
+      });
+    });
+
+    it('should wire each star to its own track and band', () => {
+      const trackTable = buildTrackTable(mockTralbumDetails);
+
+      const stars = Array.from(trackTable.querySelectorAll<HTMLElement>('.bes-wishlist-button'));
+
+      expect(stars.map(star => star.dataset.wishlistId)).toEqual(['1001', '1002']);
+      stars.forEach(star => expect(star.dataset.wishlistType).toBe('t'));
+    });
+
+    it('should show the star filled for a track that is already wishlisted', () => {
+      vi.mocked(isWishlisted).mockImplementation((_type, id) => id === 1002);
+
+      const trackTable = buildTrackTable(mockTralbumDetails);
+
+      const stars = Array.from(trackTable.querySelectorAll<HTMLElement>('.bes-wishlist-button'));
+      expect(stars.map(star => star.dataset.wishlistState)).toEqual(['out', 'in']);
+    });
+
+    it('should leave the rows without a star when the wishlist is unavailable', () => {
+      vi.mocked(isWishlistAvailable).mockReturnValue(false);
+
+      const trackTable = buildTrackTable(mockTralbumDetails);
+
+      expect(trackTable.querySelector('.bes-wishlist-button')).toBeNull();
+      expect(trackTable.querySelectorAll('.bes-track-state-col').length).toBe(2);
+    });
+  });
+
   describe('progress bar stylesheet hooks', () => {
     it('should expose progress bar parts by class', () => {
       const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
@@ -362,6 +417,57 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
       expect(play.querySelector('.bes-play-icon path')?.getAttribute('d')).toBe(pathsOf(playIcon(16))[0]);
       expect(play.querySelectorAll('.bes-pause-icon rect').length).toBe(pathsOf(pauseIcon(16)).length);
+    });
+  });
+
+  describe('album wishlist star', () => {
+    beforeEach(() => {
+      vi.mocked(isWishlistAvailable).mockReturnValue(true);
+      vi.mocked(isWishlisted).mockReturnValue(false);
+    });
+
+    it('should sit to the left of the Buy Album label', () => {
+      const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
+
+      expect(Array.from(container.children).map(child => child.className)).toEqual([
+        'bes-wishlist-button',
+        'bes-album-buy-label',
+        'one-click-button-container'
+      ]);
+    });
+
+    it('should wishlist the album rather than a track', () => {
+      const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
+      const star = container.querySelector<HTMLElement>('.bes-wishlist-button') as HTMLElement;
+
+      expect(star.dataset.wishlistType).toBe('a');
+      expect(star.dataset.wishlistId).toBe('123');
+      expect(star.dataset.wishlistNoun).toBe('album');
+    });
+
+    it('should show filled for an album that is already wishlisted', () => {
+      vi.mocked(isWishlisted).mockImplementation((type, id) => type === 'a' && id === 123);
+
+      const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
+
+      expect(container.querySelector<HTMLElement>('.bes-wishlist-button')?.dataset.wishlistState).toBe('in');
+    });
+
+    it('should fall back to a track band id when the album carries none', () => {
+      const withoutBand = { ...mockTralbumDetails, band: undefined };
+
+      const container = buildAlbumBuyButton(withoutBand) as HTMLElement;
+
+      expect(container.querySelector('.bes-wishlist-button')).toBeTruthy();
+    });
+
+    it('should leave the buy row alone when the wishlist is unavailable', () => {
+      vi.mocked(isWishlistAvailable).mockReturnValue(false);
+
+      const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
+
+      expect(container.querySelector('.bes-wishlist-button')).toBeNull();
+      expect(container.querySelector('.bes-album-buy-label')).toBeTruthy();
     });
   });
 

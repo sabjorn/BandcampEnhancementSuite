@@ -1834,7 +1834,7 @@ body.bes-drawer-expanded #pgBd {
 }
 
 .bes-player-drawer .bes-track-state-col {
-  width: 38px;
+  width: 58px;
   text-align: right;
   padding: 8px 4px;
   vertical-align: middle;
@@ -2303,4 +2303,81 @@ a.bes-findmusic-link:hover {
 .bes-findmusic-tooltip.visible {
   opacity: 1;
   visibility: visible;
+}
+
+/* Wishlist star — the drawer rows, the drawer header and the native album page rows */
+button.bes-wishlist-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  border-radius: 4px;
+  color: var(--bes-text-muted);
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+button.bes-wishlist-button svg {
+  display: block;
+}
+
+button.bes-wishlist-button:hover {
+  color: var(--bes-text-max);
+}
+
+button.bes-wishlist-button[data-wishlist-state='in'] {
+  color: var(--bes-accent);
+}
+
+button.bes-wishlist-button[data-wishlist-state='in']:hover {
+  transform: scale(1.12);
+}
+
+button.bes-wishlist-button[aria-busy='true'] {
+  cursor: progress;
+  opacity: 0.5;
+}
+
+tr.track_row_view td.bes-wishlist-col {
+  width: 24px;
+  padding: 0 4px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.bes-album-buy button.bes-wishlist-button {
+  flex: 0 0 auto;
+}
+
+/* Album star on the label page grid. The row has to stay within the album art's width, so the
+   title is allowed to shrink and the star never is. */
+.music-grid-item .bes-grid-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.music-grid-item .bes-grid-title-row .title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.music-grid-item .bes-grid-title-row button.bes-wishlist-button {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
 }

@@ -3,6 +3,8 @@ import { createPlayerDrawer, loadAlbumIntoDrawer, getLoadedAlbumId } from './com
 import { updateDiscographyOrder } from './discography';
 import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicLinks';
 import { extractBandId } from './utilities';
+import { createWishlistButton } from './components/wishlistButton';
+import { initWishlistState } from './wishlist';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -125,8 +127,13 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   updateDiscographyOrder();
 
+  void initWishlistState().then(available => {
+    if (available) addGridWishlistStars();
+  });
+
   const observer = new MutationObserver(() => {
     updateDiscographyOrder();
+    addGridWishlistStars();
   });
 
   const discographyContainer = document.querySelector('ol.music-grid') || document.body;
@@ -176,6 +183,47 @@ function updateFindMusicLinks(albumId?: string, albumType?: string): void {
   ].filter((link): link is FindMusicLink => link !== null);
 
   setFindMusicLinks(links);
+}
+
+// The grid item's title block lives inside the album link, so the star goes in a flex row beside
+// it rather than replacing it — the title must stay clickable.
+export function addGridWishlistStar(item: HTMLElement, albumId: string): void {
+  if (item.querySelector('.bes-grid-title-row')) return;
+
+  const title = item.querySelector<HTMLElement>('p.title');
+  const bandId = Number(item.dataset.bandId);
+  if (!title || !bandId) return;
+
+  const star = createWishlistButton({
+    itemType: 'a',
+    itemId: Number(albumId),
+    bandId,
+    itemUrl: item.querySelector<HTMLAnchorElement>('a')?.href ?? '',
+    log,
+    size: 18
+  });
+  if (!star) return;
+
+  const row = document.createElement('div');
+  row.className = 'bes-grid-title-row';
+
+  title.replaceWith(row);
+  row.appendChild(title);
+  row.appendChild(star);
+}
+
+// The collection summary takes a round trip through the service worker, so the grid is rendered
+// without stars and decorated once the state lands — and again when more albums appear.
+export function addGridWishlistStars(): void {
+  document.querySelectorAll<HTMLElement>('li.music-grid-item[data-item-id]').forEach(item => {
+    const [idType, id] = (item.dataset.itemId ?? '').split('-');
+    if (idType === 'album' && id) addGridWishlistStar(item, id);
+  });
+
+  document.querySelectorAll<HTMLElement>('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').forEach(item => {
+    const id = item.dataset.tralbumid;
+    if (id) addGridWishlistStar(item, id);
+  });
 }
 
 export function generatePreview(id: string, idType: string): HTMLDivElement {

@@ -25,7 +25,14 @@ vi.mock('../src/logger', () => ({
   }))
 }));
 
-import { initLabelView, fillFrame, renderDom, addGridWishlistStars, generatePreview } from '../src/label_view';
+import {
+  initLabelView,
+  fillFrame,
+  renderDom,
+  addGridWishlistStars,
+  generatePreview,
+  addedGridItems
+} from '../src/label_view';
 
 const mockPort = {
   postMessage: vi.fn(),
@@ -592,8 +599,8 @@ describe('album wishlist star on the label page grid', () => {
     expect(link.querySelector('.artist-override')?.textContent).toContain('Mitchellitchell');
   });
 
-  it('should skip a grid item whose title block is missing', () => {
-    document.querySelectorAll('.music-grid-item p.title').forEach(title => title.remove());
+  it('should skip a grid item with no band id, since the write needs one', () => {
+    document.querySelectorAll<HTMLElement>('.music-grid-item').forEach(item => delete item.dataset.bandId);
 
     addStars();
 
@@ -654,5 +661,38 @@ describe('preview controls staying within the album art width', () => {
 
     expect(preview.querySelector('.bes-preview-controls .preview-frame')).toBeNull();
     expect(preview.querySelector('.preview-frame')?.id).toBe('album-123');
+  });
+});
+
+describe('reacting only to albums entering the grid', () => {
+  const mutation = (added: Node[]): MutationRecord => ({ addedNodes: added as unknown as NodeList }) as MutationRecord;
+
+  const gridItem = () => {
+    const item = document.createElement('li');
+    item.className = 'music-grid-item square';
+    return item;
+  };
+
+  it('should be true when a grid item is added', () => {
+    expect(addedGridItems([mutation([gridItem()])])).toBe(true);
+  });
+
+  it('should be false when a star redraws its own icon', () => {
+    expect(addedGridItems([mutation([document.createElementNS('http://www.w3.org/2000/svg', 'svg')])])).toBe(false);
+  });
+
+  it('should be false when the star row is inserted into an item', () => {
+    const row = document.createElement('div');
+    row.className = 'bes-grid-title-row';
+
+    expect(addedGridItems([mutation([row])])).toBe(false);
+  });
+
+  it('should be false for text nodes, which carry no matches method', () => {
+    expect(addedGridItems([mutation([document.createTextNode('Preview')])])).toBe(false);
+  });
+
+  it('should be true if any one mutation in the batch added a grid item', () => {
+    expect(addedGridItems([mutation([document.createElement('span')]), mutation([gridItem()])])).toBe(true);
   });
 });

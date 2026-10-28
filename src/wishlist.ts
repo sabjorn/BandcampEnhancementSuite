@@ -14,7 +14,7 @@ let loading: Promise<boolean> | null = null;
 
 type CrumbPath = 'collect_item_cb' | 'uncollect_item_cb';
 
-function readCrumb(path: CrumbPath): string | null {
+function readPageCrumb(path: CrumbPath): string | null {
   const element = document.getElementById('js-crumbs-data');
   if (!element?.dataset.crumbs) return null;
 
@@ -23,6 +23,19 @@ function readCrumb(path: CrumbPath): string | null {
   } catch {
     return null;
   }
+}
+
+async function readCrumb(path: CrumbPath, itemUrl: string): Promise<string | null> {
+  const pageCrumb = readPageCrumb(path);
+  if (pageCrumb) return pageCrumb;
+
+  log.info(`No ${path} crumb on this page; asking the service worker for one`);
+
+  return chrome.runtime.sendMessage({
+    contentScriptQuery: 'fetchWishlistCrumb',
+    itemUrl,
+    path
+  });
 }
 
 function readReferrerToken(): string | null {
@@ -83,7 +96,12 @@ export function isWishlisted(itemType: WishlistItemType, itemId: number): boolea
   return wishlisted?.has(lookupKey(itemType, itemId)) ?? false;
 }
 
-export async function toggleWishlist(itemType: WishlistItemType, itemId: number): Promise<boolean> {
+export async function toggleWishlist(
+  itemType: WishlistItemType,
+  itemId: number,
+  bandId: number,
+  itemUrl: string
+): Promise<boolean> {
   if (fanId === null || wishlisted === null) throw new Error('Wishlist is unavailable');
 
   const key = lookupKey(itemType, itemId);
@@ -93,11 +111,12 @@ export async function toggleWishlist(itemType: WishlistItemType, itemId: number)
     fan_id: fanId,
     item_type: itemType,
     item_id: itemId,
+    band_id: bandId,
     ref_token: readReferrerToken()
   };
 
-  if (adding) await collectItem(item, readCrumb('collect_item_cb'));
-  else await uncollectItem(item, readCrumb('uncollect_item_cb'));
+  if (adding) await collectItem(item, await readCrumb('collect_item_cb', itemUrl));
+  else await uncollectItem(item, await readCrumb('uncollect_item_cb', itemUrl));
 
   if (adding) wishlisted.add(key);
   else wishlisted.delete(key);

@@ -8,7 +8,8 @@ import {
   hideUnhide,
   getHiddenItems,
   collectItem,
-  uncollectItem
+  uncollectItem,
+  getCrumbsFromPage
 } from '../src/bclient';
 
 describe('bclient', () => {
@@ -467,7 +468,7 @@ describe('bclient', () => {
   describe('collectItem', () => {
     let fetchSpy: any;
 
-    const item = { fan_id: 896389, item_type: 't' as const, item_id: 123456 };
+    const item = { fan_id: 896389, item_type: 't' as const, item_id: 123456, band_id: 857243381 };
 
     beforeEach(() => {
       fetchSpy = vi.spyOn(global, 'fetch');
@@ -487,7 +488,7 @@ describe('bclient', () => {
             'content-type': 'application/x-www-form-urlencoded',
             'x-requested-with': 'XMLHttpRequest'
           }),
-          body: 'fan_id=896389&item_id=123456&item_type=t&crumb=valid_crumb',
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&crumb=valid_crumb',
           mode: 'cors'
         })
       );
@@ -501,7 +502,7 @@ describe('bclient', () => {
       expect(fetchSpy).toHaveBeenCalledWith(
         '/collect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=123456&item_type=t&ref_token=abc123&crumb=valid_crumb'
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&ref_token=abc123&crumb=valid_crumb'
         })
       );
     });
@@ -514,7 +515,7 @@ describe('bclient', () => {
       expect(fetchSpy).toHaveBeenCalledWith(
         '/collect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=123456&item_type=t'
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381'
         })
       );
     });
@@ -569,14 +570,14 @@ describe('bclient', () => {
         1,
         '/collect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=123456&item_type=t&crumb=stale_crumb'
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&crumb=stale_crumb'
         })
       );
       expect(fetchSpy).toHaveBeenNthCalledWith(
         2,
         '/collect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=123456&item_type=t&crumb=fresh_crumb'
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&crumb=fresh_crumb'
         })
       );
       expect(result).toBe(true);
@@ -617,7 +618,7 @@ describe('bclient', () => {
       expect(fetchSpy).toHaveBeenCalledWith(
         '/collect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=1609998585&item_type=a&crumb=crumb'
+          body: 'fan_id=896389&item_id=1609998585&item_type=a&band_id=857243381&crumb=crumb'
         })
       );
     });
@@ -626,7 +627,7 @@ describe('bclient', () => {
   describe('uncollectItem', () => {
     let fetchSpy: any;
 
-    const item = { fan_id: 896389, item_type: 't' as const, item_id: 123456 };
+    const item = { fan_id: 896389, item_type: 't' as const, item_id: 123456, band_id: 857243381 };
 
     beforeEach(() => {
       fetchSpy = vi.spyOn(global, 'fetch');
@@ -644,7 +645,7 @@ describe('bclient', () => {
           headers: expect.objectContaining({
             'content-type': 'application/x-www-form-urlencoded'
           }),
-          body: 'fan_id=896389&item_id=123456&item_type=t&crumb=valid_crumb',
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&crumb=valid_crumb',
           mode: 'cors'
         })
       );
@@ -658,7 +659,7 @@ describe('bclient', () => {
       expect(fetchSpy).toHaveBeenCalledWith(
         '/uncollect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=123456&item_type=t&crumb=valid_crumb'
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&crumb=valid_crumb'
         })
       );
     });
@@ -680,6 +681,50 @@ describe('bclient', () => {
       );
 
       await expect(uncollectItem(item, 'valid_crumb')).rejects.toThrow('nope');
+    });
+  });
+
+  describe('getCrumbsFromPage', () => {
+    let fetchSpy: any;
+
+    const pageWith = (crumbsAttr: string) =>
+      new Response(`<html><body><div id="js-crumbs-data" data-crumbs="${crumbsAttr}"></div></body></html>`, {
+        status: 200
+      });
+
+    beforeEach(() => {
+      fetchSpy = vi.spyOn(global, 'fetch');
+    });
+
+    it('should pull the crumbs map out of the page html', async () => {
+      fetchSpy.mockResolvedValue(pageWith('{&quot;collect_item_cb&quot;:&quot;|collect_item_cb|123|abc=&quot;}'));
+
+      await expect(getCrumbsFromPage('https://label.bandcamp.com/track/one')).resolves.toEqual({
+        collect_item_cb: '|collect_item_cb|123|abc='
+      });
+      expect(fetchSpy).toHaveBeenCalledWith('https://label.bandcamp.com/track/one');
+    });
+
+    it('should return an empty map when the page carries no crumbs', async () => {
+      fetchSpy.mockResolvedValue(pageWith('{}'));
+
+      await expect(getCrumbsFromPage('https://label.bandcamp.com/track/one')).resolves.toEqual({});
+    });
+
+    it('should throw when the page has no crumbs element at all', async () => {
+      fetchSpy.mockResolvedValue(new Response('<html><body></body></html>', { status: 200 }));
+
+      await expect(getCrumbsFromPage('https://label.bandcamp.com/track/one')).rejects.toThrow(
+        'Could not find crumbs data in page'
+      );
+    });
+
+    it('should throw when the page cannot be fetched', async () => {
+      fetchSpy.mockResolvedValue(new Response('nope', { status: 404 }));
+
+      await expect(getCrumbsFromPage('https://label.bandcamp.com/track/one')).rejects.toThrow(
+        'Failed to fetch page: 404'
+      );
     });
   });
 

@@ -19,10 +19,14 @@ vi.mock('../src/wishlist', () => ({
   toggleWishlist: vi.fn()
 }));
 
+const ITEM_URL = 'https://label.bandcamp.com/track/one';
+
 const buildButton = (overrides: Record<string, any> = {}) =>
   createWishlistButton({
     itemType: 't',
     itemId: 123456,
+    bandId: 857243381,
+    itemUrl: ITEM_URL,
     log: new Logger(),
     ...overrides
   });
@@ -98,11 +102,18 @@ describe('wishlistButton', () => {
 
   describe('clicking', () => {
     it('should toggle the item it was built for', async () => {
-      const button = buildButton({ itemType: 'a', itemId: 1609998585 })!;
+      const button = buildButton({
+        itemType: 'a',
+        itemId: 1609998585,
+        bandId: 42,
+        itemUrl: 'https://label.bandcamp.com/album/one'
+      })!;
 
       button.click();
 
-      await vi.waitFor(() => expect(toggleWishlist).toHaveBeenCalledWith('a', 1609998585));
+      await vi.waitFor(() =>
+        expect(toggleWishlist).toHaveBeenCalledWith('a', 1609998585, 42, 'https://label.bandcamp.com/album/one')
+      );
     });
 
     it('should go through a busy state while the request is in flight', async () => {

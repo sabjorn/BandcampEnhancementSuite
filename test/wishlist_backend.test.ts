@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import { getCollectionSummary } from '../src/bclient';
-import { processRequest, initWishlistBackend } from '../src/background/wishlist_backend';
+import { getCollectionSummary, getCrumbsFromPage } from '../src/bclient';
+import { processRequest, initWishlistBackend, resetCrumbCache } from '../src/background/wishlist_backend';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -13,7 +13,8 @@ vi.mock('../src/logger', () => ({
 }));
 
 vi.mock('../src/bclient', () => ({
-  getCollectionSummary: vi.fn()
+  getCollectionSummary: vi.fn(),
+  getCrumbsFromPage: vi.fn()
 }));
 
 const summary = {
@@ -31,6 +32,8 @@ describe('wishlist backend', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getCollectionSummary).mockResolvedValue(summary as any);
+    vi.mocked(getCrumbsFromPage).mockResolvedValue({ collect_item_cb: '|collect_item_cb|1|abc=' });
+    resetCrumbCache();
     (globalThis as any).chrome = { runtime: { onMessage: { addListener: vi.fn() } } };
   });
 
@@ -81,5 +84,70 @@ describe('wishlist backend', () => {
     processRequest({ contentScriptQuery: 'fetchCollectionSummary' }, {} as any, sendResponse);
 
     await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith(null));
+  });
+
+  describe('serving a wishlist crumb', () => {
+    const ask = (sendResponse: any, itemUrl = 'https://label.bandcamp.com/track/one') =>
+      processRequest(
+        { contentScriptQuery: 'fetchWishlistCrumb', itemUrl, path: 'collect_item_cb' },
+        {} as any,
+        sendResponse
+      );
+
+    it('should read the crumb off the item page', async () => {
+      const sendResponse = vi.fn();
+
+      ask(sendResponse);
+
+      await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith('|collect_item_cb|1|abc='));
+      expect(getCrumbsFromPage).toHaveBeenCalledWith('https://label.bandcamp.com/track/one');
+    });
+
+    it('should keep the listener alive for the async reply', () => {
+      expect(ask(vi.fn())).toBe(true);
+    });
+
+    it('should fetch the page only once per session, however many stars are clicked', async () => {
+      const first = vi.fn();
+      const second = vi.fn();
+
+      ask(first);
+      await vi.waitFor(() => expect(first).toHaveBeenCalled());
+      ask(second, 'https://label.bandcamp.com/track/two');
+      await vi.waitFor(() => expect(second).toHaveBeenCalled());
+
+      expect(getCrumbsFromPage).toHaveBeenCalledTimes(1);
+      expect(second).toHaveBeenCalledWith('|collect_item_cb|1|abc=');
+    });
+
+    it('should answer null when the page has no crumb for that path', async () => {
+      vi.mocked(getCrumbsFromPage).mockResolvedValue({ something_else: 'x' });
+      const sendResponse = vi.fn();
+
+      ask(sendResponse);
+
+      await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith(null));
+    });
+
+    it('should answer null rather than hanging when the page cannot be read', async () => {
+      vi.mocked(getCrumbsFromPage).mockRejectedValue(new Error('404'));
+      const sendResponse = vi.fn();
+
+      ask(sendResponse);
+
+      await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith(null));
+    });
+
+    it('should not cache a failure, so a later click can try again', async () => {
+      vi.mocked(getCrumbsFromPage).mockRejectedValueOnce(new Error('404'));
+      const first = vi.fn();
+      const second = vi.fn();
+
+      ask(first);
+      await vi.waitFor(() => expect(first).toHaveBeenCalledWith(null));
+      ask(second);
+
+      await vi.waitFor(() => expect(second).toHaveBeenCalledWith('|collect_item_cb|1|abc='));
+    });
   });
 });

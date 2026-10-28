@@ -115,6 +115,12 @@ export function attachPreviewListeners(
   });
 }
 
+export function addedGridItems(mutations: MutationRecord[]): boolean {
+  return mutations.some(mutation =>
+    Array.from(mutation.addedNodes).some(node => node instanceof HTMLElement && node.matches('li.music-grid-item'))
+  );
+}
+
 export async function initLabelView(port: chrome.runtime.Port, enableFetchCaching: boolean = false): Promise<void> {
   const previewState = { previewOpen: false, previewId: undefined };
 
@@ -130,7 +136,9 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
   const discographyContainer = document.querySelector('ol.music-grid');
   if (!discographyContainer) return;
 
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver(mutations => {
+    if (!addedGridItems(mutations)) return;
+
     updateDiscographyOrder();
     addGridWishlistStars();
   });
@@ -187,11 +195,14 @@ function addGridWishlistStar(item: HTMLElement, albumId: string): void {
   if (item.querySelector('.bes-grid-title-row')) return;
 
   const title = item.querySelector<HTMLElement>('p.title');
-  if (!title) return;
+  const bandId = Number(item.dataset.bandId);
+  if (!title || !bandId) return;
 
   const star = createWishlistButton({
     itemType: 'a',
     itemId: Number(albumId),
+    bandId,
+    itemUrl: item.querySelector<HTMLAnchorElement>('a')?.href ?? '',
     log,
     size: 18
   });

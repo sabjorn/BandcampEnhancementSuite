@@ -1,7 +1,9 @@
 import Logger from './logger';
 import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, createFetchFunction } from './utilities';
-import { CURRENCY_MINIMUMS, getTralbumDetails } from './bclient';
+import { CURRENCY_MINIMUMS, getTralbumDetails, TralbumDetailsResponse } from './bclient';
 import { createAddToCartButton } from './components/cartButton';
+import { createWishlistButton } from './components/wishlistButton';
+import { initWishlistState } from './wishlist';
 import { PlayerCommands, registerPlayerShortcuts } from './keyboardShortcuts';
 
 let nativeShortcutsRegistered = false;
@@ -69,43 +71,23 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
 
   updatePlayerControlInterface();
 
-  const { is_purchased, part_of_purchased_album } = extractFanTralbumData();
-  if (is_purchased || part_of_purchased_album) return;
-
   const bandFollowInfo = extractBandFollowInfo();
   const tralbumId = bandFollowInfo.tralbum_id;
   const tralbumType = bandFollowInfo.tralbum_type;
 
   try {
     const fetchFn = createFetchFunction(enableFetchCaching);
-    const tralbumDetails = await getTralbumDetails(tralbumId, tralbumType, null, fetchFn);
-    document.querySelectorAll('tr.track_row_view').forEach((row, i) => {
-      if (tralbumDetails.tracks[i] === undefined) return;
+    const [tralbumDetails] = await Promise.all([
+      getTralbumDetails(tralbumId, tralbumType, null, fetchFn),
+      initWishlistState()
+    ]);
 
-      const { price, currency, track_id: trackId, title: itemTitle, is_purchasable } = tralbumDetails.tracks[i];
-      const type = 't';
+    addWishlistStars(tralbumDetails, log);
 
-      if (!is_purchasable) return;
+    const { is_purchased, part_of_purchased_album } = extractFanTralbumData();
+    if (is_purchased || part_of_purchased_album) return;
 
-      const infoCol = row.querySelector('.info-col');
-      if (infoCol) infoCol.remove();
-
-      const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
-      if (!minimumPrice) return;
-
-      const oneClick = createAddToCartButton({
-        price: minimumPrice,
-        currency,
-        tralbumId: String(trackId),
-        itemTitle,
-        type,
-        log
-      });
-
-      const downloadCol = row.querySelector('.download-col');
-      downloadCol.innerHTML = '';
-      downloadCol.append(oneClick);
-    });
+    addOneClickBuyButtons(tralbumDetails, log);
 
     const { price, currency, id: albumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
     if (!is_purchasable) return;
@@ -129,6 +111,59 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
   } catch (error) {
     log.error(error);
   }
+}
+
+function addWishlistStars(tralbumDetails: TralbumDetailsResponse, log: Logger): void {
+  document.querySelectorAll('tr.track_row_view').forEach((row, i) => {
+    const track = tralbumDetails.tracks?.[i];
+    if (!track) return;
+
+    const star = createWishlistButton({
+      itemType: 't',
+      itemId: track.track_id,
+      bandId: track.band_id,
+      log
+    });
+    if (!star) return;
+
+    const cell = document.createElement('td');
+    cell.className = 'bes-wishlist-col';
+    cell.append(star);
+
+    const downloadCol = row.querySelector('.download-col');
+    if (downloadCol) downloadCol.before(cell);
+    else row.append(cell);
+  });
+}
+
+function addOneClickBuyButtons(tralbumDetails: TralbumDetailsResponse, log: Logger): void {
+  document.querySelectorAll('tr.track_row_view').forEach((row, i) => {
+    if (tralbumDetails.tracks[i] === undefined) return;
+
+    const { price, currency, track_id: trackId, title: itemTitle, is_purchasable } = tralbumDetails.tracks[i];
+    const type = 't';
+
+    if (!is_purchasable) return;
+
+    const infoCol = row.querySelector('.info-col');
+    if (infoCol) infoCol.remove();
+
+    const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
+    if (!minimumPrice) return;
+
+    const oneClick = createAddToCartButton({
+      price: minimumPrice,
+      currency,
+      tralbumId: String(trackId),
+      itemTitle,
+      type,
+      log
+    });
+
+    const downloadCol = row.querySelector('.download-col');
+    downloadCol.innerHTML = '';
+    downloadCol.append(oneClick);
+  });
 }
 
 export function updatePlayerControlInterface(): void {

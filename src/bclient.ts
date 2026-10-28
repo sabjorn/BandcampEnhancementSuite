@@ -41,6 +41,7 @@ function createRateLimitedFunction<T extends (...args: any[]) => Promise<any>>(f
 
 export interface TralbumTrack {
   track_id: number;
+  band_id: number;
   title: string;
   price: number;
   currency: string;
@@ -62,6 +63,7 @@ export interface TralbumDetailsResponse {
   price: number;
   is_purchasable: boolean;
   bandcamp_url?: string;
+  band?: { band_id: number };
   tracks?: TralbumTrack[];
 }
 
@@ -188,14 +190,14 @@ interface TrackItem {
   item_type: string;
   item_id: number;
   band_id: number;
-  purchased: string;
+  purchased: string | null;
 }
 
 export interface CollectionSummary {
   fan_id: number;
   username: string;
   url: string;
-  tralbum_lookup: Record<string, TrackItem>;
+  tralbum_lookup?: Record<string, TrackItem>;
   follows: {
     following: Record<string, boolean>;
   };
@@ -288,6 +290,91 @@ export async function hideUnhide(
   }
 
   return data.ok === true;
+}
+
+export interface WishlistItem {
+  fan_id: number;
+  item_type: 't' | 'a';
+  item_id: number;
+  band_id: number;
+  ref_token?: string | null;
+}
+
+interface CollectItemResponse {
+  ok?: boolean;
+  error?: string | boolean;
+  error_message?: string;
+  exception?: string;
+  crumb?: string;
+}
+
+function wishlistBody(item: WishlistItem, crumb: string | null, includeRefToken: boolean): string {
+  const params = new URLSearchParams({
+    fan_id: String(item.fan_id),
+    item_id: String(item.item_id),
+    item_type: item.item_type,
+    band_id: String(item.band_id)
+  });
+
+  if (includeRefToken && item.ref_token) params.append('ref_token', item.ref_token);
+  if (crumb) params.append('crumb', crumb);
+
+  return params.toString();
+}
+
+async function postWishlistItem(
+  path: 'collect_item_cb' | 'uncollect_item_cb',
+  item: WishlistItem,
+  crumb: string | null,
+  baseUrl: string | null,
+  includeRefToken: boolean
+): Promise<boolean> {
+  const url = baseUrl ? `${baseUrl}/${path}` : `/${path}`;
+
+  const makeRequest = (crumbValue: string | null) =>
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        accept: 'application/json, text/javascript, */*; q=0.01',
+        'content-type': 'application/x-www-form-urlencoded',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'x-requested-with': 'XMLHttpRequest'
+      },
+      body: wishlistBody(item, crumbValue, includeRefToken),
+      mode: 'cors'
+    });
+
+  let response = await makeRequest(crumb);
+  let data: CollectItemResponse = await response.json();
+
+  if (data.error === 'invalid_crumb' && data.crumb) {
+    response = await makeRequest(data.crumb);
+    data = await response.json();
+  }
+
+  if (data.ok !== true) {
+    throw new Error(data.exception ?? data.error_message ?? 'Bandcamp rejected the wishlist change');
+  }
+
+  return true;
+}
+
+export function collectItem(
+  item: WishlistItem,
+  crumb: string | null = null,
+  baseUrl: string | null = null
+): Promise<boolean> {
+  return postWishlistItem('collect_item_cb', item, crumb, baseUrl, true);
+}
+
+export function uncollectItem(
+  item: WishlistItem,
+  crumb: string | null = null,
+  baseUrl: string | null = null
+): Promise<boolean> {
+  return postWishlistItem('uncollect_item_cb', item, crumb, baseUrl, false);
 }
 
 interface GetHiddenItemsBody {

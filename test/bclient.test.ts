@@ -6,7 +6,9 @@ import {
   getTralbumDetails,
   getCollectionSummary,
   hideUnhide,
-  getHiddenItems
+  getHiddenItems,
+  collectItem,
+  uncollectItem
 } from '../src/bclient';
 
 describe('bclient', () => {
@@ -459,6 +461,225 @@ describe('bclient', () => {
           method: 'POST'
         })
       );
+    });
+  });
+
+  describe('collectItem', () => {
+    let fetchSpy: any;
+
+    const item = { fan_id: 896389, item_type: 't' as const, item_id: 123456, band_id: 857243381 };
+
+    beforeEach(() => {
+      fetchSpy = vi.spyOn(global, 'fetch');
+    });
+
+    it('should make a form encoded POST request to the collect_item_cb endpoint', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await collectItem(item, 'valid_crumb');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/collect_item_cb',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            accept: 'application/json, text/javascript, */*; q=0.01',
+            'content-type': 'application/x-www-form-urlencoded',
+            'x-requested-with': 'XMLHttpRequest'
+          }),
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&crumb=valid_crumb',
+          mode: 'cors'
+        })
+      );
+    });
+
+    it('should include ref_token when one is supplied', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await collectItem({ ...item, ref_token: 'abc123' }, 'valid_crumb');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/collect_item_cb',
+        expect.objectContaining({
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&ref_token=abc123&crumb=valid_crumb'
+        })
+      );
+    });
+
+    it('should omit the crumb when none is available', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await collectItem(item);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/collect_item_cb',
+        expect.objectContaining({
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381'
+        })
+      );
+    });
+
+    it('should return true when the API returns ok: true', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await expect(collectItem(item, 'valid_crumb')).resolves.toBe(true);
+    });
+
+    it('should throw with the reason Bandcamp gave when it rejects the change', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: true,
+            ok: false,
+            exception:
+              "exception: InsistError: Failed insist: old or no crumb specified for request to '/collect_item_cb', which requires nucrumb -- rejecting"
+          }),
+          { status: 200 }
+        )
+      );
+
+      await expect(collectItem(item, null)).rejects.toThrow(/old or no crumb specified/);
+    });
+
+    it('should surface error_message when that is what comes back', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ error: true, ok: false, error_message: 'must be logged in' }), { status: 200 })
+      );
+
+      await expect(collectItem(item, 'valid_crumb')).rejects.toThrow('must be logged in');
+    });
+
+    it('should still throw when the rejection carries no reason at all', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: false }), { status: 200 }));
+
+      await expect(collectItem(item, 'valid_crumb')).rejects.toThrow('Bandcamp rejected the wishlist change');
+    });
+
+    it('should retry with the server supplied crumb when invalid_crumb is returned', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ error: 'invalid_crumb', crumb: 'fresh_crumb' }), { status: 200 })
+        )
+        .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      const result = await collectItem(item, 'stale_crumb');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(fetchSpy).toHaveBeenNthCalledWith(
+        1,
+        '/collect_item_cb',
+        expect.objectContaining({
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&crumb=stale_crumb'
+        })
+      );
+      expect(fetchSpy).toHaveBeenNthCalledWith(
+        2,
+        '/collect_item_cb',
+        expect.objectContaining({
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&crumb=fresh_crumb'
+        })
+      );
+      expect(result).toBe(true);
+    });
+
+    it('should retry when invalid_crumb arrives as a 403', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ error: 'invalid_crumb', crumb: 'fresh_crumb' }), { status: 403 })
+        )
+        .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await expect(collectItem(item, 'stale_crumb')).resolves.toBe(true);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should not retry when the invalid_crumb error carries no replacement crumb', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ error: 'invalid_crumb' }), { status: 200 }));
+
+      await expect(collectItem(item, 'stale_crumb')).rejects.toThrow();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should use an absolute URL when baseUrl is provided', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await collectItem(item, 'crumb', 'https://bandcamp.com');
+
+      expect(fetchSpy).toHaveBeenCalledWith('https://bandcamp.com/collect_item_cb', expect.objectContaining({}));
+    });
+
+    it('should send item_type a for an album', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await collectItem({ ...item, item_type: 'a', item_id: 1609998585 }, 'crumb');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/collect_item_cb',
+        expect.objectContaining({
+          body: 'fan_id=896389&item_id=1609998585&item_type=a&band_id=857243381&crumb=crumb'
+        })
+      );
+    });
+  });
+
+  describe('uncollectItem', () => {
+    let fetchSpy: any;
+
+    const item = { fan_id: 896389, item_type: 't' as const, item_id: 123456, band_id: 857243381 };
+
+    beforeEach(() => {
+      fetchSpy = vi.spyOn(global, 'fetch');
+    });
+
+    it('should make a form encoded POST request to the uncollect_item_cb endpoint', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await uncollectItem(item, 'valid_crumb');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/uncollect_item_cb',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'content-type': 'application/x-www-form-urlencoded'
+          }),
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&crumb=valid_crumb',
+          mode: 'cors'
+        })
+      );
+    });
+
+    it('should never send a ref_token', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await uncollectItem({ ...item, ref_token: 'abc123' }, 'valid_crumb');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/uncollect_item_cb',
+        expect.objectContaining({
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=857243381&crumb=valid_crumb'
+        })
+      );
+    });
+
+    it('should retry with the server supplied crumb when invalid_crumb is returned', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ error: 'invalid_crumb', crumb: 'fresh_crumb' }), { status: 200 })
+        )
+        .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await expect(uncollectItem(item, 'stale_crumb')).resolves.toBe(true);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw with the reason Bandcamp gave when it rejects the change', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify({ error: true, ok: false, error_message: 'nope' }), { status: 200 })
+      );
+
+      await expect(uncollectItem(item, 'valid_crumb')).rejects.toThrow('nope');
     });
   });
 

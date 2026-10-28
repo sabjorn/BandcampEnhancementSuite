@@ -1,6 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 
+// The drawer loads the shared wishlist state alongside the album; stub it so these tests only
+// control the album requests they care about.
+vi.mock('../src/wishlist', () => ({
+  initWishlistState: vi.fn(async () => true),
+  isWishlistAvailable: vi.fn(() => false),
+  isWishlisted: vi.fn(() => false),
+  toggleWishlist: vi.fn()
+}));
+
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
     info = vi.fn();
@@ -16,7 +25,14 @@ vi.mock('../src/logger', () => ({
   }))
 }));
 
-import { initLabelView, fillFrame } from '../src/label_view';
+import {
+  initLabelView,
+  fillFrame,
+  renderDom,
+  addGridWishlistStars,
+  generatePreview,
+  addedGridItems
+} from '../src/label_view';
 
 const mockPort = {
   postMessage: vi.fn(),
@@ -476,5 +492,207 @@ describe('FindMusic.club links in the player drawer', () => {
         }
       ])
     );
+  });
+});
+
+describe('album wishlist star on the label page grid', () => {
+  let render: typeof renderDom;
+  let addStars: typeof addGridWishlistStars;
+  let init: typeof initLabelView;
+  let wishlist: typeof import('../src/wishlist');
+
+  const gridPage = `
+    <ol class="music-grid">
+      <li class="music-grid-item square" data-item-id="album-2931878489" data-band-id="857243381">
+        <a href="/album/same-reason">
+          <div class="art"><img src="https://f4.bcbits.com/img/a1_2.jpg" /></div>
+          <p class="title">Same Reason<br><span class="artist-override">Mitchellitchell</span></p>
+        </a>
+      </li>
+      <li class="music-grid-item square" data-item-id="album-123" data-band-id="857243381">
+        <a href="/album/other">
+          <div class="art"><img src="https://f4.bcbits.com/img/a2_2.jpg" /></div>
+          <p class="title">Other</p>
+        </a>
+      </li>
+    </ol>
+  `;
+
+  const stars = () => Array.from(document.querySelectorAll<HTMLElement>('.music-grid-item .bes-wishlist-button'));
+
+  beforeEach(async () => {
+    vi.resetModules();
+    wishlist = await import('../src/wishlist');
+    vi.mocked(wishlist.isWishlistAvailable).mockReturnValue(true);
+    vi.mocked(wishlist.isWishlisted).mockReturnValue(false);
+    ({ renderDom: render, addGridWishlistStars: addStars, initLabelView: init } = await import('../src/label_view'));
+    createDomNodes(gridPage);
+  });
+
+  afterEach(() => {
+    cleanupTestNodes();
+    vi.clearAllMocks();
+  });
+
+  it('should add a star for every album in the grid', () => {
+    addStars();
+
+    expect(stars().map(star => star.dataset.wishlistId)).toEqual(['2931878489', '123']);
+    stars().forEach(star => expect(star.dataset.wishlistType).toBe('a'));
+  });
+
+  // The collection summary needs a round trip through the service worker, so the grid is rendered
+  // first and decorated once the state lands.
+  it('should not depend on the grid render, which happens before the wishlist state arrives', () => {
+    vi.mocked(wishlist.isWishlistAvailable).mockReturnValue(false);
+    render(mockPort as any, { previewOpen: false });
+    expect(stars().length).toBe(0);
+
+    vi.mocked(wishlist.isWishlistAvailable).mockReturnValue(true);
+    addStars();
+
+    expect(stars().length).toBe(2);
+  });
+
+  it('should decorate the grid once init has the wishlist state', async () => {
+    await init(mockPort as any);
+
+    expect(stars().length).toBe(2);
+  });
+
+  it('should pick up albums added to the grid later', () => {
+    addStars();
+
+    const grid = document.querySelector('ol.music-grid') as HTMLElement;
+    const extra = document.createElement('li');
+    extra.className = 'music-grid-item square';
+    extra.dataset.itemId = 'album-999';
+    extra.dataset.bandId = '857243381';
+    extra.innerHTML = '<a href="/album/late"><div class="art"></div><p class="title">Late</p></a>';
+    grid.appendChild(extra);
+
+    addStars();
+
+    expect(stars().map(star => star.dataset.wishlistId)).toEqual(['2931878489', '123', '999']);
+  });
+
+  it('should draw a larger star than the tracklist rows use', () => {
+    addStars();
+
+    expect(stars()[0].querySelector('svg')?.getAttribute('width')).toBe('18');
+  });
+
+  it('should sit to the right of the album and artist text, in one row', () => {
+    addStars();
+
+    const row = document.querySelector('.music-grid-item .bes-grid-title-row') as HTMLElement;
+
+    expect(Array.from(row.children).map(child => child.className)).toEqual(['title', 'bes-wishlist-button']);
+  });
+
+  it('should keep the title text inside its link so the album is still clickable', () => {
+    addStars();
+
+    const link = document.querySelector('.music-grid-item a') as HTMLAnchorElement;
+
+    expect(link.querySelector('.bes-grid-title-row .title')?.textContent).toContain('Same Reason');
+    expect(link.querySelector('.artist-override')?.textContent).toContain('Mitchellitchell');
+  });
+
+  it('should skip a grid item with no band id, since the write needs one', () => {
+    document.querySelectorAll<HTMLElement>('.music-grid-item').forEach(item => delete item.dataset.bandId);
+
+    addStars();
+
+    expect(stars().length).toBe(0);
+  });
+
+  it('should reflect an album that is already wishlisted', () => {
+    vi.mocked(wishlist.isWishlisted).mockImplementation((_type, id) => id === 123);
+
+    addStars();
+
+    expect(stars().map(star => star.dataset.wishlistState)).toEqual(['out', 'in']);
+  });
+
+  it('should not add a star when the wishlist is unavailable', () => {
+    vi.mocked(wishlist.isWishlistAvailable).mockReturnValue(false);
+
+    addStars();
+
+    expect(stars().length).toBe(0);
+    expect(document.querySelector('.music-grid-item .title')?.textContent).toContain('Same Reason');
+  });
+
+  it('should not stack up stars when run again', () => {
+    addStars();
+    addStars();
+
+    expect(stars().length).toBe(2);
+  });
+});
+
+describe('preview controls staying within the album art width', () => {
+  it('should lay the preview button and history box out in one contained row', () => {
+    const preview = generatePreview('123', 'album');
+
+    const controls = preview.querySelector('.bes-preview-controls') as HTMLElement;
+
+    expect(controls).toBeTruthy();
+    expect(Array.from(controls.children).map(child => child.className)).toEqual([
+      'follow-unfollow open-iframe',
+      'follow-unfollow historybox'
+    ]);
+  });
+
+  // 90% + a 5px margin + a 28px box came to more than the art's width, so the pair spilled past it.
+  it('should leave the widths to the stylesheet rather than inline styles', () => {
+    const preview = generatePreview('123', 'album');
+
+    const button = preview.querySelector<HTMLElement>('.open-iframe') as HTMLElement;
+    const historybox = preview.querySelector<HTMLElement>('.historybox') as HTMLElement;
+
+    expect(button.getAttribute('style')).toBeNull();
+    expect(historybox.getAttribute('style')).toBeNull();
+  });
+
+  it('should keep the frame placeholder out of that row', () => {
+    const preview = generatePreview('123', 'album');
+
+    expect(preview.querySelector('.bes-preview-controls .preview-frame')).toBeNull();
+    expect(preview.querySelector('.preview-frame')?.id).toBe('album-123');
+  });
+});
+
+describe('reacting only to albums entering the grid', () => {
+  const mutation = (added: Node[]): MutationRecord => ({ addedNodes: added as unknown as NodeList }) as MutationRecord;
+
+  const gridItem = () => {
+    const item = document.createElement('li');
+    item.className = 'music-grid-item square';
+    return item;
+  };
+
+  it('should be true when a grid item is added', () => {
+    expect(addedGridItems([mutation([gridItem()])])).toBe(true);
+  });
+
+  it('should be false when a star redraws its own icon', () => {
+    expect(addedGridItems([mutation([document.createElementNS('http://www.w3.org/2000/svg', 'svg')])])).toBe(false);
+  });
+
+  it('should be false when the star row is inserted into an item', () => {
+    const row = document.createElement('div');
+    row.className = 'bes-grid-title-row';
+
+    expect(addedGridItems([mutation([row])])).toBe(false);
+  });
+
+  it('should be false for text nodes, which carry no matches method', () => {
+    expect(addedGridItems([mutation([document.createTextNode('Preview')])])).toBe(false);
+  });
+
+  it('should be true if any one mutation in the batch added a grid item', () => {
+    expect(addedGridItems([mutation([document.createElement('span')]), mutation([gridItem()])])).toBe(true);
   });
 });

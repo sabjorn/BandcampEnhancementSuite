@@ -3,6 +3,8 @@ import { createPlayerDrawer, loadAlbumIntoDrawer, getLoadedAlbumId } from './com
 import { updateDiscographyOrder } from './discography';
 import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicLinks';
 import { extractBandId } from './utilities';
+import { createWishlistButton } from './components/wishlistButton';
+import { initWishlistState } from './wishlist';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -113,6 +115,12 @@ export function attachPreviewListeners(
   });
 }
 
+export function addedGridItems(mutations: MutationRecord[]): boolean {
+  return mutations.some(mutation =>
+    Array.from(mutation.addedNodes).some(node => node instanceof HTMLElement && node.matches('li.music-grid-item'))
+  );
+}
+
 export async function initLabelView(port: chrome.runtime.Port, enableFetchCaching: boolean = false): Promise<void> {
   const previewState = { previewOpen: false, previewId: undefined };
 
@@ -125,14 +133,19 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   updateDiscographyOrder();
 
-  const observer = new MutationObserver(() => {
+  const discographyContainer = document.querySelector('ol.music-grid');
+  if (!discographyContainer) return;
+
+  const observer = new MutationObserver(mutations => {
+    if (!addedGridItems(mutations)) return;
+
     updateDiscographyOrder();
+    addGridWishlistStars();
   });
 
-  const discographyContainer = document.querySelector('ol.music-grid') || document.body;
   observer.observe(discographyContainer, { childList: true, subtree: true });
 
-  if (!document.querySelector('ol.music-grid')) return;
+  if (await initWishlistState()) addGridWishlistStars();
 
   try {
     const response = await chrome.runtime.sendMessage({
@@ -178,18 +191,57 @@ function updateFindMusicLinks(albumId?: string, albumType?: string): void {
   setFindMusicLinks(links);
 }
 
+function addGridWishlistStar(item: HTMLElement, albumId: string): void {
+  if (item.querySelector('.bes-grid-title-row')) return;
+
+  const title = item.querySelector<HTMLElement>('p.title');
+  const bandId = Number(item.dataset.bandId);
+  if (!title || !bandId) return;
+
+  const star = createWishlistButton({
+    itemType: 'a',
+    itemId: Number(albumId),
+    bandId,
+    log,
+    size: 18
+  });
+  if (!star) return;
+
+  const row = document.createElement('div');
+  row.className = 'bes-grid-title-row';
+
+  title.replaceWith(row);
+  row.appendChild(title);
+  row.appendChild(star);
+}
+
+export function addGridWishlistStars(): void {
+  document.querySelectorAll<HTMLElement>('li.music-grid-item[data-item-id]').forEach(item => {
+    const [idType, id] = (item.dataset.itemId ?? '').split('-');
+    if (idType === 'album' && id) addGridWishlistStar(item, id);
+  });
+
+  document.querySelectorAll<HTMLElement>('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').forEach(item => {
+    const id = item.dataset.tralbumid;
+    if (id) addGridWishlistStar(item, id);
+  });
+}
+
 export function generatePreview(id: string, idType: string): HTMLDivElement {
   const button = document.createElement('button');
   button.setAttribute('title', 'load preview player');
   button.setAttribute('type', 'button');
   button.setAttribute('class', 'follow-unfollow open-iframe');
-  button.setAttribute('style', 'width: 90%');
   button.append('Preview');
 
   const checkbox = document.createElement('button');
   checkbox.setAttribute('title', 'preview history (click to toggle)');
-  checkbox.setAttribute('style', 'margin: 0px 0px 0px 5px; width: 28px; height: 28px; position: absolute;');
   checkbox.setAttribute('class', 'follow-unfollow historybox');
+
+  const controls = document.createElement('div');
+  controls.setAttribute('class', 'bes-preview-controls');
+  controls.appendChild(button);
+  controls.appendChild(checkbox);
 
   const preview = document.createElement('div');
   preview.setAttribute('class', 'preview-frame');
@@ -198,8 +250,7 @@ export function generatePreview(id: string, idType: string): HTMLDivElement {
   const parent = document.createElement('div');
   parent.setAttribute('id', id);
   parent.setAttribute('class', 'preview');
-  parent.appendChild(button);
-  parent.appendChild(checkbox);
+  parent.appendChild(controls);
   parent.appendChild(preview);
 
   return parent;

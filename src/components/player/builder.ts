@@ -52,14 +52,10 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
   };
 }
 
-export function albumBandId(tralbumDetails: TralbumDetailsResponse): number | undefined {
-  return tralbumDetails.band?.band_id ?? tralbumDetails.tracks?.[0]?.band_id;
-}
-
 export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTMLElement | null {
   const { price, currency, id, title, type, is_purchasable } = tralbumDetails;
 
-  const bandId = albumBandId(tralbumDetails);
+  const bandId = tralbumDetails.band?.band_id ?? tralbumDetails.tracks?.[0]?.band_id;
   const albumStar =
     bandId === undefined
       ? null
@@ -72,7 +68,6 @@ export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTM
           size: 14
         });
 
-  // A sold out or pre-order album still deserves a star — that is when wishlisting matters most.
   const canBuy = is_purchasable && price !== undefined;
   if (!albumStar && !canBuy) return null;
 

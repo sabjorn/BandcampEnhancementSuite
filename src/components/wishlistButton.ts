@@ -12,7 +12,6 @@ const NOUNS: Record<WishlistItemType, string> = {
   a: 'album'
 };
 
-// Bandcamp's own wording for its wishlist star.
 function titleFor(state: WishlistButtonState, noun: string): string {
   if (state === 'loading') return 'Working…';
 
@@ -31,8 +30,6 @@ export function setWishlistButtonState(button: HTMLElement, state: WishlistButto
   if (state !== 'loading') button.innerHTML = starIcon(size, state === 'in');
 }
 
-// Lets a second view of the same item (a row star and the now-playing star) pick up a change made
-// through the other one. Mid-request buttons are left alone so we don't fight their own update.
 export function refreshWishlistButton(button: HTMLElement): void {
   if (button.dataset.wishlistState === 'loading') return;
 
@@ -45,8 +42,6 @@ export function refreshWishlistButton(button: HTMLElement): void {
 
 let syncListening = false;
 
-// An item can be on screen twice — a tracklist row and the now-playing header. A confirmed change
-// through either one refreshes the rest from the shared state.
 function listenForChangesOnce(): void {
   if (syncListening) return;
 
@@ -64,8 +59,6 @@ interface CreateWishlistButtonOptions {
   itemType: WishlistItemType;
   itemId: number;
   bandId: number;
-  // The item's own Bandcamp page, which is where a collect crumb can be found when the current
-  // page carries none.
   itemUrl: string;
   log: Logger;
   size?: number;
@@ -89,8 +82,6 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
   setWishlistButtonState(button, isWishlisted(itemType, itemId) ? 'in' : 'out');
 
   button.addEventListener('click', event => {
-    // On the label page grid the star sits inside the album's link, and in the drawer inside a
-    // row that starts playback — neither should fire when the star is clicked.
     event.preventDefault();
     event.stopPropagation();
 

@@ -2305,7 +2305,6 @@ a.bes-findmusic-link:hover {
   visibility: visible;
 }
 
-/* Wishlist star — the drawer rows, the drawer header and the native album page rows */
 button.bes-wishlist-button {
   background: transparent;
   border: none;
@@ -2358,8 +2357,6 @@ tr.track_row_view td.bes-wishlist-col {
   flex: 0 0 auto;
 }
 
-/* Album star on the label page grid. The row has to stay within the album art's width, so the
-   title is allowed to shrink and the star never is. */
 .music-grid-item .bes-grid-title-row {
   display: flex;
   align-items: center;
@@ -2376,8 +2373,6 @@ tr.track_row_view td.bes-wishlist-col {
   overflow-wrap: anywhere;
 }
 
-/* Preview row under the album art: the button takes the remaining space and the history box keeps
-   its size, so the pair can never be wider than the art above it. */
 .bes-preview-controls {
   display: flex;
   align-items: center;

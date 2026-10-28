@@ -82,8 +82,6 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
       initWishlistState()
     ]);
 
-    // Wishlisting is useful whether or not the fan owns the release, so the stars go on before the
-    // purchased check that skips the rest of the row decoration.
     addWishlistStars(tralbumDetails, log);
 
     const { is_purchased, part_of_purchased_album } = extractFanTralbumData();
@@ -129,7 +127,6 @@ function addWishlistStars(tralbumDetails: TralbumDetailsResponse, log: Logger): 
     });
     if (!star) return;
 
-    // Its own cell, so the one-click buy pass clearing the download column cannot take it with it.
     const cell = document.createElement('td');
     cell.className = 'bes-wishlist-col';
     cell.append(star);

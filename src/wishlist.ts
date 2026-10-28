@@ -6,7 +6,6 @@ const log = new Logger();
 
 export type WishlistItemType = 't' | 'a';
 
-// Bandcamp keys its collection lookup by type-then-id, e.g. `t2206380151`.
 const lookupKey = (itemType: WishlistItemType, itemId: number): string => `${itemType}${itemId}`;
 
 let fanId: number | null = null;
@@ -26,8 +25,6 @@ function readPageCrumb(path: CrumbPath): string | null {
   }
 }
 
-// A label or feed page has no wishlist button of its own, so it carries no collect crumb. The
-// item's own track or album page always does, and only the service worker can read it.
 async function readCrumb(path: CrumbPath, itemUrl: string): Promise<string | null> {
   const pageCrumb = readPageCrumb(path);
   if (pageCrumb) return pageCrumb;
@@ -52,9 +49,6 @@ function readReferrerToken(): string | null {
   }
 }
 
-// One collection_summary call per page, fetched by the service worker because the band subdomains
-// answer without a tralbum_lookup. It carries the wishlist and the owned collection together, so
-// every star on the page reads its state from memory.
 async function loadWishlistState(): Promise<boolean> {
   if (!isBandcampLoggedIn()) {
     log.info('Not logged in; wishlist is unavailable');
@@ -71,8 +65,6 @@ async function loadWishlistState(): Promise<boolean> {
       return false;
     }
 
-    // Without the lookup we cannot tell wishlisted from owned, and rendering every star empty
-    // would be worse than rendering none at all.
     if (!summary.tralbum_lookup) {
       log.error('Collection summary arrived without a tralbum_lookup; wishlist is unavailable');
       return false;
@@ -104,8 +96,6 @@ export function isWishlisted(itemType: WishlistItemType, itemId: number): boolea
   return wishlisted?.has(lookupKey(itemType, itemId)) ?? false;
 }
 
-// The cached value is only updated once Bandcamp has confirmed the change, so the icons can never
-// claim a state the server does not agree with.
 export async function toggleWishlist(
   itemType: WishlistItemType,
   itemId: number,
@@ -125,7 +115,6 @@ export async function toggleWishlist(
     ref_token: readReferrerToken()
   };
 
-  // Throws with Bandcamp's own reason if it refuses, which leaves the cache untouched.
   if (adding) await collectItem(item, await readCrumb('collect_item_cb', itemUrl));
   else await uncollectItem(item, await readCrumb('uncollect_item_cb', itemUrl));
 

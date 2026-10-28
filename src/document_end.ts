@@ -10,7 +10,6 @@ import { initFeed } from './pages/feed';
 import { createKeyboardSettingsSection } from './components/keyboardSettings';
 import { KeyboardSettings } from './types/keyboard';
 import { isBandcampLoggedIn } from './utilities';
-import { initWishlistState } from './wishlist';
 import { setTheme, startThemeEnforcement } from './theme';
 import { DARK_THEME, LIGHT_THEME } from './types/theme';
 
@@ -448,10 +447,6 @@ const requestConfig = (port: chrome.runtime.Port): Promise<ResolvedConfig> =>
   });
 
 const documentEnd = async (): Promise<void> => {
-  // Warm the shared wishlist state now so the first star to render does not wait on a round trip.
-  // It is memoized, and a no-op when nobody is logged in.
-  const wishlistReady = initWishlistState().catch(error => log.error(`Wishlist state failed: ${error}`));
-
   const checkIsDownloadPage: Element | null = document.querySelector('.download-item-container');
   if (checkIsDownloadPage) {
     initDownload();
@@ -534,7 +529,7 @@ const documentEnd = async (): Promise<void> => {
 
   initBESDrawer(config_port);
 
-  await Promise.all([themeReady, labelViewReady, playerReady, cartReady, wishlistReady]);
+  await Promise.all([themeReady, labelViewReady, playerReady, cartReady]);
 };
 
 documentEnd();

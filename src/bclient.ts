@@ -63,7 +63,6 @@ export interface TralbumDetailsResponse {
   price: number;
   is_purchasable: boolean;
   bandcamp_url?: string;
-  // present on the album-level response; the top level has no band_id of its own
   band?: { band_id: number };
   tracks?: TralbumTrack[];
 }
@@ -191,7 +190,6 @@ interface TrackItem {
   item_type: string;
   item_id: number;
   band_id: number;
-  // a date string for owned items; null/absent for wishlist-only items
   purchased: string | null;
 }
 
@@ -199,7 +197,6 @@ export interface CollectionSummary {
   fan_id: number;
   username: string;
   url: string;
-  // The band subdomains answer without this; only bandcamp.com returns it.
   tralbum_lookup?: Record<string, TrackItem>;
   follows: {
     following: Record<string, boolean>;
@@ -305,7 +302,6 @@ export interface WishlistItem {
 
 interface CollectItemResponse {
   ok?: boolean;
-  // `error` is the string 'invalid_crumb' on a stale crumb, but just `true` on a flat rejection
   error?: string | boolean;
   error_message?: string;
   exception?: string;
@@ -326,8 +322,6 @@ function wishlistBody(item: WishlistItem, crumb: string | null, includeRefToken:
   return params.toString();
 }
 
-// Bandcamp's own wishlist star posts to these endpoints; `crumb` is appended to the form body and
-// the server answers `{error: 'invalid_crumb', crumb}` — as a 200 or a 403 — when it has gone stale.
 async function postWishlistItem(
   path: 'collect_item_cb' | 'uncollect_item_cb',
   item: WishlistItem,
@@ -361,8 +355,6 @@ async function postWishlistItem(
   }
 
   if (data.ok !== true) {
-    // Bandcamp reports a missing or stale crumb as an InsistError in `exception` rather than the
-    // `invalid_crumb` shape above, so surface whatever reason it gave instead of a bare false.
     throw new Error(data.exception ?? data.error_message ?? 'Bandcamp rejected the wishlist change');
   }
 
@@ -561,9 +553,6 @@ export async function getTralbumDetailsFromPage(url: string): Promise<TralbumDet
   };
 }
 
-// Crumbs are rendered into each page's #js-crumbs-data, and only for the endpoints that page's own
-// UI calls. A track or album page always carries `collect_item_cb`, because its wishlist button
-// posts there — so that page is a reliable source when the current page has no such crumb.
 export async function getCrumbsFromPage(url: string): Promise<Record<string, string>> {
   const response = await fetch(url);
   if (!response.ok) {

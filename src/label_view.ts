@@ -127,8 +127,6 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   updateDiscographyOrder();
 
-  // Nothing below this concerns a page without a discography grid, so bail before setting up an
-  // observer. It used to fall back to watching all of document.body and then return anyway.
   const discographyContainer = document.querySelector('ol.music-grid');
   if (!discographyContainer) return;
 
@@ -139,8 +137,6 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   observer.observe(discographyContainer, { childList: true, subtree: true });
 
-  // The grid is already on screen; this only decorates it, so awaiting the round trip here costs
-  // nothing visible and leaves no promise running loose after init returns.
   if (await initWishlistState()) addGridWishlistStars();
 
   try {
@@ -187,8 +183,6 @@ function updateFindMusicLinks(albumId?: string, albumType?: string): void {
   setFindMusicLinks(links);
 }
 
-// The grid item's title block lives inside the album link, so the star goes in a flex row beside
-// it rather than replacing it — the title must stay clickable.
 export function addGridWishlistStar(item: HTMLElement, albumId: string): void {
   if (item.querySelector('.bes-grid-title-row')) return;
 
@@ -214,8 +208,6 @@ export function addGridWishlistStar(item: HTMLElement, albumId: string): void {
   row.appendChild(star);
 }
 
-// The collection summary takes a round trip through the service worker, so the grid is rendered
-// without stars and decorated once the state lands — and again when more albums appear.
 export function addGridWishlistStars(): void {
   document.querySelectorAll<HTMLElement>('li.music-grid-item[data-item-id]').forEach(item => {
     const [idType, id] = (item.dataset.itemId ?? '').split('-');
@@ -239,8 +231,6 @@ export function generatePreview(id: string, idType: string): HTMLDivElement {
   checkbox.setAttribute('title', 'preview history (click to toggle)');
   checkbox.setAttribute('class', 'follow-unfollow historybox');
 
-  // One row, sized by the stylesheet. These used to be a 90% wide button plus an absolutely
-  // positioned 28px box, which together overflowed the album art they sit under.
   const controls = document.createElement('div');
   controls.setAttribute('class', 'bes-preview-controls');
   controls.appendChild(button);

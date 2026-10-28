@@ -233,8 +233,6 @@ export async function loadAlbumIntoDrawer(
   fetchCaching = enableFetchCaching;
 
   try {
-    // The wishlist state is loaded once per page and memoized, so this only costs a request the
-    // first time an album is opened.
     const [tralbumDetails] = await Promise.all([
       getTralbumDetails(albumId, convertToApiType(albumType), null, createFetchFunction(enableFetchCaching)),
       initWishlistState()

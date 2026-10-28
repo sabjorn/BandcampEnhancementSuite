@@ -183,7 +183,7 @@ function updateFindMusicLinks(albumId?: string, albumType?: string): void {
   setFindMusicLinks(links);
 }
 
-export function addGridWishlistStar(item: HTMLElement, albumId: string): void {
+function addGridWishlistStar(item: HTMLElement, albumId: string): void {
   if (item.querySelector('.bes-grid-title-row')) return;
 
   const title = item.querySelector<HTMLElement>('p.title');

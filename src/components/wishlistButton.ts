@@ -1,5 +1,6 @@
 import Logger from '../logger';
 import { isWishlistAvailable, isWishlisted, toggleWishlist, WishlistItemType } from '../wishlist';
+import { extractBandId } from '../utilities';
 import { starIcon } from './player/icons';
 
 const DEFAULT_ICON_SIZE = 12;
@@ -12,18 +13,26 @@ const NOUNS: Record<WishlistItemType, string> = {
   a: 'album'
 };
 
-function titleFor(state: WishlistButtonState, noun: string): string {
+function titleFor(state: WishlistButtonState, noun: string, writable: boolean): string {
   if (state === 'loading') return 'Working…';
+  if (!writable) return `Wishlist this ${noun} from its own page — this page belongs to another artist`;
 
   return state === 'in' ? `Remove this ${noun} from your wishlist` : `Add this ${noun} to your wishlist`;
+}
+
+function pageOwnsBand(bandId: number): boolean {
+  const pageBandId = extractBandId();
+
+  return pageBandId !== null && pageBandId === bandId;
 }
 
 export function setWishlistButtonState(button: HTMLElement, state: WishlistButtonState): void {
   const noun = button.dataset.wishlistNoun ?? 'item';
   const size = Number(button.dataset.wishlistSize) || DEFAULT_ICON_SIZE;
+  const writable = button.dataset.wishlistWritable !== 'false';
 
   button.dataset.wishlistState = state;
-  button.title = titleFor(state, noun);
+  button.title = titleFor(state, noun, writable);
   button.setAttribute('aria-busy', state === 'loading' ? 'true' : 'false');
   button.setAttribute('aria-pressed', state === 'in' ? 'true' : 'false');
 
@@ -70,19 +79,25 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
 
   listenForChangesOnce();
 
+  const writable = pageOwnsBand(bandId);
+
   const button = document.createElement('button');
   button.className = 'bes-wishlist-button';
   button.type = 'button';
+  button.disabled = !writable;
   button.dataset.wishlistType = itemType;
   button.dataset.wishlistId = String(itemId);
   button.dataset.wishlistNoun = NOUNS[itemType];
   button.dataset.wishlistSize = String(size);
+  button.dataset.wishlistWritable = String(writable);
 
   setWishlistButtonState(button, isWishlisted(itemType, itemId) ? 'in' : 'out');
 
   button.addEventListener('click', event => {
     event.preventDefault();
     event.stopPropagation();
+
+    if (!writable) return;
 
     const previous = button.dataset.wishlistState as WishlistButtonState;
     if (previous === 'loading') return;

@@ -2342,8 +2342,17 @@ button.bes-wishlist-button[data-wishlist-state='in']:hover {
 }
 
 button.bes-wishlist-button[aria-busy='true'] {
-  cursor: progress;
   opacity: 0.5;
+}
+
+button.bes-wishlist-button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+button.bes-wishlist-button:disabled:hover {
+  color: var(--bes-text-muted);
+  transform: none;
 }
 
 tr.track_row_view td.bes-wishlist-col {

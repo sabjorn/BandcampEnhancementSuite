@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import Logger from '../src/logger';
 import { isWishlistAvailable, isWishlisted, toggleWishlist } from '../src/wishlist';
+import { extractBandId } from '../src/utilities';
 import { createWishlistButton, setWishlistButtonState, refreshWishlistButton } from '../src/components/wishlistButton';
 
 vi.mock('../src/logger', () => ({
@@ -11,6 +12,10 @@ vi.mock('../src/logger', () => ({
     debug = vi.fn();
     warn = vi.fn();
   }
+}));
+
+vi.mock('../src/utilities', () => ({
+  extractBandId: vi.fn()
 }));
 
 vi.mock('../src/wishlist', () => ({
@@ -35,6 +40,7 @@ describe('wishlistButton', () => {
     vi.mocked(isWishlistAvailable).mockReturnValue(true);
     vi.mocked(isWishlisted).mockReturnValue(false);
     vi.mocked(toggleWishlist).mockResolvedValue(true);
+    vi.mocked(extractBandId).mockReturnValue(857243381);
   });
 
   afterEach(() => {
@@ -99,6 +105,7 @@ describe('wishlistButton', () => {
 
   describe('clicking', () => {
     it('should toggle the item it was built for', async () => {
+      vi.mocked(extractBandId).mockReturnValue(42);
       const button = buildButton({ itemType: 'a', itemId: 1609998585, bandId: 42 })!;
 
       button.click();
@@ -213,6 +220,53 @@ describe('wishlistButton', () => {
 
       await vi.waitFor(() => expect(row.dataset.wishlistState).toBe('out'));
       expect(header.dataset.wishlistState).toBe('out');
+    });
+  });
+
+  // collect_item_cb resolves the band from the host it is posted to, and a page can only post to
+  // its own host, so a release belonging to another band cannot be wishlisted from here.
+  describe('an item the page cannot write', () => {
+    it('should disable the star when the item belongs to another band', () => {
+      vi.mocked(extractBandId).mockReturnValue(999);
+
+      const button = buildButton()!;
+
+      expect(button.disabled).toBe(true);
+      expect(button.title).toBe('Wishlist this track from its own page — this page belongs to another artist');
+    });
+
+    it('should disable the star when the page band cannot be read', () => {
+      vi.mocked(extractBandId).mockReturnValue(null);
+
+      expect(buildButton()!.disabled).toBe(true);
+    });
+
+    it('should leave the star enabled for the page band own release', () => {
+      vi.mocked(extractBandId).mockReturnValue(857243381);
+
+      const button = buildButton()!;
+
+      expect(button.disabled).toBe(false);
+      expect(button.title).toBe('Add this track to your wishlist');
+    });
+
+    it('should not fire a request when a disabled star is clicked', () => {
+      vi.mocked(extractBandId).mockReturnValue(999);
+
+      buildButton()!.click();
+
+      expect(toggleWishlist).not.toHaveBeenCalled();
+    });
+
+    it('should still show a disabled star filled when the item is already wishlisted', () => {
+      vi.mocked(extractBandId).mockReturnValue(999);
+      vi.mocked(isWishlisted).mockReturnValue(true);
+
+      const button = buildButton()!;
+
+      expect(button.dataset.wishlistState).toBe('in');
+      expect(button.querySelector('svg')?.getAttribute('fill')).toBe('currentColor');
+      expect(button.disabled).toBe(true);
     });
   });
 

@@ -122,7 +122,6 @@ function addWishlistStars(tralbumDetails: TralbumDetailsResponse, log: Logger): 
       itemType: 't',
       itemId: track.track_id,
       bandId: track.band_id,
-      itemUrl: track.track_url ?? tralbumDetails.bandcamp_url ?? '',
       log
     });
     if (!star) return;

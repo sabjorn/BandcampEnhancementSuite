@@ -511,15 +511,6 @@ export async function getHiddenItems(
   return data;
 }
 
-function decodeHtmlEntities(value: string): string {
-  return value
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&#39;/g, "'");
-}
-
 export async function getTralbumDetailsFromPage(url: string): Promise<TralbumDetailsResponse> {
   const response = await fetch(url);
   if (!response.ok) {
@@ -534,7 +525,14 @@ export async function getTralbumDetailsFromPage(url: string): Promise<TralbumDet
       throw new Error('Could not find tralbum data in page');
     }
 
-    return JSON.parse(decodeHtmlEntities(tralbumMatch[1]));
+    const decodedJson = tralbumMatch[1]
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&#39;/g, "'");
+
+    return JSON.parse(decodedJson);
   })();
 
   const currency = tralbumData.current.minimum_price_currency || 'USD';
@@ -551,22 +549,6 @@ export async function getTralbumDetailsFromPage(url: string): Promise<TralbumDet
     is_purchasable: true,
     bandcamp_url: url
   };
-}
-
-export async function getCrumbsFromPage(url: string): Promise<Record<string, string>> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch page: ${response.status}`);
-  }
-
-  const html = await response.text();
-
-  const crumbsMatch = html.match(/id="js-crumbs-data"[^>]*data-crumbs="([^"]*)"/);
-  if (!crumbsMatch) {
-    throw new Error('Could not find crumbs data in page');
-  }
-
-  return JSON.parse(decodeHtmlEntities(crumbsMatch[1]));
 }
 
 export const getHiddenItemsRateLimited = createRateLimitedFunction(getHiddenItems, API_RATE_LIMIT_DELAY_MS);

@@ -8,8 +8,7 @@ import {
   hideUnhide,
   getHiddenItems,
   collectItem,
-  uncollectItem,
-  getCrumbsFromPage
+  uncollectItem
 } from '../src/bclient';
 
 describe('bclient', () => {
@@ -681,50 +680,6 @@ describe('bclient', () => {
       );
 
       await expect(uncollectItem(item, 'valid_crumb')).rejects.toThrow('nope');
-    });
-  });
-
-  describe('getCrumbsFromPage', () => {
-    let fetchSpy: any;
-
-    const pageWith = (crumbsAttr: string) =>
-      new Response(`<html><body><div id="js-crumbs-data" data-crumbs="${crumbsAttr}"></div></body></html>`, {
-        status: 200
-      });
-
-    beforeEach(() => {
-      fetchSpy = vi.spyOn(global, 'fetch');
-    });
-
-    it('should pull the crumbs map out of the page html', async () => {
-      fetchSpy.mockResolvedValue(pageWith('{&quot;collect_item_cb&quot;:&quot;|collect_item_cb|123|abc=&quot;}'));
-
-      await expect(getCrumbsFromPage('https://label.bandcamp.com/track/one')).resolves.toEqual({
-        collect_item_cb: '|collect_item_cb|123|abc='
-      });
-      expect(fetchSpy).toHaveBeenCalledWith('https://label.bandcamp.com/track/one');
-    });
-
-    it('should return an empty map when the page carries no crumbs', async () => {
-      fetchSpy.mockResolvedValue(pageWith('{}'));
-
-      await expect(getCrumbsFromPage('https://label.bandcamp.com/track/one')).resolves.toEqual({});
-    });
-
-    it('should throw when the page has no crumbs element at all', async () => {
-      fetchSpy.mockResolvedValue(new Response('<html><body></body></html>', { status: 200 }));
-
-      await expect(getCrumbsFromPage('https://label.bandcamp.com/track/one')).rejects.toThrow(
-        'Could not find crumbs data in page'
-      );
-    });
-
-    it('should throw when the page cannot be fetched', async () => {
-      fetchSpy.mockResolvedValue(new Response('nope', { status: 404 }));
-
-      await expect(getCrumbsFromPage('https://label.bandcamp.com/track/one')).rejects.toThrow(
-        'Failed to fetch page: 404'
-      );
     });
   });
 

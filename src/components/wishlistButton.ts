@@ -59,13 +59,12 @@ interface CreateWishlistButtonOptions {
   itemType: WishlistItemType;
   itemId: number;
   bandId: number;
-  itemUrl: string;
   log: Logger;
   size?: number;
 }
 
 export function createWishlistButton(options: CreateWishlistButtonOptions): HTMLButtonElement | null {
-  const { itemType, itemId, bandId, itemUrl, log, size = DEFAULT_ICON_SIZE } = options;
+  const { itemType, itemId, bandId, log, size = DEFAULT_ICON_SIZE } = options;
 
   if (!isWishlistAvailable()) return null;
 
@@ -90,7 +89,7 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
 
     setWishlistButtonState(button, 'loading');
 
-    toggleWishlist(itemType, itemId, bandId, itemUrl)
+    toggleWishlist(itemType, itemId, bandId)
       .then(nowWishlisted => {
         setWishlistButtonState(button, nowWishlisted ? 'in' : 'out');
         button.dispatchEvent(new CustomEvent(CHANGE_EVENT, { bubbles: true }));

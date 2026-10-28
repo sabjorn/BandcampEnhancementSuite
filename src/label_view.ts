@@ -202,7 +202,6 @@ function addGridWishlistStar(item: HTMLElement, albumId: string): void {
     itemType: 'a',
     itemId: Number(albumId),
     bandId,
-    itemUrl: item.querySelector<HTMLAnchorElement>('a')?.href ?? '',
     log,
     size: 18
   });

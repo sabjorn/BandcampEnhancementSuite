@@ -592,8 +592,8 @@ describe('album wishlist star on the label page grid', () => {
     expect(link.querySelector('.artist-override')?.textContent).toContain('Mitchellitchell');
   });
 
-  it('should skip a grid item with no band id, since the write needs one', () => {
-    document.querySelectorAll<HTMLElement>('.music-grid-item').forEach(item => delete item.dataset.bandId);
+  it('should skip a grid item whose title block is missing', () => {
+    document.querySelectorAll('.music-grid-item p.title').forEach(title => title.remove());
 
     addStars();
 

@@ -118,13 +118,7 @@ function addWishlistStars(tralbumDetails: TralbumDetailsResponse, log: Logger): 
     const track = tralbumDetails.tracks?.[i];
     if (!track) return;
 
-    const star = createWishlistButton({
-      itemType: 't',
-      itemId: track.track_id,
-      bandId: track.band_id,
-      itemUrl: track.track_url ?? tralbumDetails.bandcamp_url ?? '',
-      log
-    });
+    const star = createWishlistButton({ itemType: 't', itemId: track.track_id, log });
     if (!star) return;
 
     const cell = document.createElement('td');

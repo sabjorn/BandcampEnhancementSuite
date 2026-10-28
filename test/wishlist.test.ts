@@ -39,8 +39,6 @@ const summary = (tralbum_lookup: Record<string, any>, fan_id: number | null = 89
   follows: { following: {} }
 });
 
-const ITEM_URL = 'https://label.bandcamp.com/track/one';
-
 const wishlistedTrack = { item_type: 'track', item_id: 123456, band_id: 857243381, purchased: null };
 const ownedAlbum = {
   item_type: 'album',
@@ -185,10 +183,10 @@ describe('wishlist state', () => {
     it('should collect an item that is not yet wishlisted', async () => {
       await initWishlistState();
 
-      await expect(toggleWishlist('t', 999, 857243381, ITEM_URL)).resolves.toBe(true);
+      await expect(toggleWishlist('t', 999)).resolves.toBe(true);
 
       expect(collectItem).toHaveBeenCalledWith(
-        { fan_id: 896389, item_type: 't', item_id: 999, band_id: 857243381, ref_token: null },
+        { fan_id: 896389, item_type: 't', item_id: 999, ref_token: null },
         'add_crumb'
       );
       expect(uncollectItem).not.toHaveBeenCalled();
@@ -197,10 +195,10 @@ describe('wishlist state', () => {
     it('should uncollect an item that is already wishlisted', async () => {
       await initWishlistState();
 
-      await expect(toggleWishlist('t', 123456, 857243381, ITEM_URL)).resolves.toBe(false);
+      await expect(toggleWishlist('t', 123456)).resolves.toBe(false);
 
       expect(uncollectItem).toHaveBeenCalledWith(
-        { fan_id: 896389, item_type: 't', item_id: 123456, band_id: 857243381, ref_token: null },
+        { fan_id: 896389, item_type: 't', item_id: 123456, ref_token: null },
         'remove_crumb'
       );
       expect(collectItem).not.toHaveBeenCalled();
@@ -210,45 +208,26 @@ describe('wishlist state', () => {
       setReferrerToken('ref-abc');
       await initWishlistState();
 
-      await toggleWishlist('t', 999, 857243381, ITEM_URL);
+      await toggleWishlist('t', 999);
 
       expect(collectItem).toHaveBeenCalledWith(expect.objectContaining({ ref_token: 'ref-abc' }), 'add_crumb');
     });
 
-    it('should fall back to a crumb from the service worker when the page carries none', async () => {
-      document.body.innerHTML = '';
-      sendMessage.mockImplementation(async (message: any) =>
-        message.contentScriptQuery === 'fetchWishlistCrumb' ? 'fetched_crumb' : summary({ t123456: wishlistedTrack })
-      );
-      await initWishlistState();
-
-      await toggleWishlist('t', 999, 857243381, ITEM_URL);
-
-      expect(sendMessage).toHaveBeenCalledWith({
-        contentScriptQuery: 'fetchWishlistCrumb',
-        itemUrl: ITEM_URL,
-        path: 'collect_item_cb'
-      });
-      expect(collectItem).toHaveBeenCalledWith(expect.anything(), 'fetched_crumb');
-    });
-
-    it('should not go to the service worker when the page already has the crumb', async () => {
+    it('should read the crumb from the page rather than going back to the service worker', async () => {
       await initWishlistState();
       sendMessage.mockClear();
 
-      await toggleWishlist('t', 999, 857243381, ITEM_URL);
+      await toggleWishlist('t', 999);
 
+      expect(collectItem).toHaveBeenCalledWith(expect.anything(), 'add_crumb');
       expect(sendMessage).not.toHaveBeenCalled();
     });
 
-    it('should send a null crumb when neither the page nor the service worker has one', async () => {
+    it('should send a null crumb when the page carries none', async () => {
       document.body.innerHTML = '';
-      sendMessage.mockImplementation(async (message: any) =>
-        message.contentScriptQuery === 'fetchWishlistCrumb' ? null : summary({ t123456: wishlistedTrack })
-      );
       await initWishlistState();
 
-      await toggleWishlist('t', 999, 857243381, ITEM_URL);
+      await toggleWishlist('t', 999);
 
       expect(collectItem).toHaveBeenCalledWith(expect.anything(), null);
     });
@@ -256,10 +235,10 @@ describe('wishlist state', () => {
     it('should only record the new state once Bandcamp has confirmed it', async () => {
       await initWishlistState();
 
-      await toggleWishlist('t', 999, 857243381, ITEM_URL);
+      await toggleWishlist('t', 999);
       expect(isWishlisted('t', 999)).toBe(true);
 
-      await toggleWishlist('t', 999, 857243381, ITEM_URL);
+      await toggleWishlist('t', 999);
       expect(isWishlisted('t', 999)).toBe(false);
     });
 
@@ -267,7 +246,7 @@ describe('wishlist state', () => {
       vi.mocked(collectItem).mockRejectedValue(new Error('old or no crumb specified'));
       await initWishlistState();
 
-      await expect(toggleWishlist('t', 999, 857243381, ITEM_URL)).rejects.toThrow('old or no crumb specified');
+      await expect(toggleWishlist('t', 999)).rejects.toThrow('old or no crumb specified');
       expect(isWishlisted('t', 999)).toBe(false);
     });
 
@@ -275,7 +254,7 @@ describe('wishlist state', () => {
       vi.mocked(uncollectItem).mockRejectedValue(new Error('network down'));
       await initWishlistState();
 
-      await expect(toggleWishlist('t', 123456, 857243381, ITEM_URL)).rejects.toThrow('network down');
+      await expect(toggleWishlist('t', 123456)).rejects.toThrow('network down');
       expect(isWishlisted('t', 123456)).toBe(true);
     });
 
@@ -283,7 +262,7 @@ describe('wishlist state', () => {
       sendMessage.mockRejectedValue(new Error('403'));
       await initWishlistState();
 
-      await expect(toggleWishlist('t', 999, 857243381, ITEM_URL)).rejects.toThrow('Wishlist is unavailable');
+      await expect(toggleWishlist('t', 999)).rejects.toThrow('Wishlist is unavailable');
       expect(collectItem).not.toHaveBeenCalled();
     });
   });

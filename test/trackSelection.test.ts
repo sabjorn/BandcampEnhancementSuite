@@ -10,7 +10,6 @@ import type { TralbumTrack } from '../src/bclient';
 describe('trackSelection', () => {
   const track = (title: string): TralbumTrack => ({
     track_id: Number(title),
-    band_id: 857243381,
     title,
     price: 1,
     currency: 'USD',
@@ -90,7 +89,6 @@ describe('trackSelection', () => {
 describe('reading the stream for a track', () => {
   const track = (streaming_url?: { 'mp3-128': string }): TralbumTrack => ({
     track_id: 1,
-    band_id: 857243381,
     title: 'Track',
     price: 1,
     currency: 'USD',

@@ -187,14 +187,11 @@ export function addGridWishlistStar(item: HTMLElement, albumId: string): void {
   if (item.querySelector('.bes-grid-title-row')) return;
 
   const title = item.querySelector<HTMLElement>('p.title');
-  const bandId = Number(item.dataset.bandId);
-  if (!title || !bandId) return;
+  if (!title) return;
 
   const star = createWishlistButton({
     itemType: 'a',
     itemId: Number(albumId),
-    bandId,
-    itemUrl: item.querySelector<HTMLAnchorElement>('a')?.href ?? '',
     log,
     size: 18
   });

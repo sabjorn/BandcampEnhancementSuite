@@ -34,12 +34,9 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       currency: 'USD',
       price: 10.0,
       is_purchasable: true,
-      band: { band_id: 857243381 },
-      bandcamp_url: 'https://label.bandcamp.com/album/test-album',
       tracks: [
         {
           track_id: 1001,
-          band_id: 857243381,
           title: 'Track 1',
           price: 1.0,
           currency: 'USD',
@@ -50,7 +47,6 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         },
         {
           track_id: 1002,
-          band_id: 857243381,
           title: 'Track 2',
           price: 0,
           currency: 'USD',
@@ -451,14 +447,6 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
 
       expect(container.querySelector<HTMLElement>('.bes-wishlist-button')?.dataset.wishlistState).toBe('in');
-    });
-
-    it('should fall back to a track band id when the album carries none', () => {
-      const withoutBand = { ...mockTralbumDetails, band: undefined };
-
-      const container = buildAlbumBuyButton(withoutBand) as HTMLElement;
-
-      expect(container.querySelector('.bes-wishlist-button')).toBeTruthy();
     });
 
     it('should still offer the star for an album that cannot be bought', () => {

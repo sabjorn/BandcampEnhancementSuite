@@ -58,14 +58,6 @@ export function albumBandId(tralbumDetails: TralbumDetailsResponse): number | un
 
 export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTMLElement | null {
   const { price, currency, id, title, type, is_purchasable } = tralbumDetails;
-  if (!is_purchasable || price === undefined) return null;
-
-  const container = document.createElement('div');
-  container.className = 'bes-album-buy';
-
-  const label = document.createElement('span');
-  label.className = 'bes-album-buy-label';
-  label.textContent = 'Buy Album';
 
   const bandId = albumBandId(tralbumDetails);
   const albumStar =
@@ -79,7 +71,20 @@ export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTM
           log,
           size: 14
         });
+
+  // A sold out or pre-order album still deserves a star — that is when wishlisting matters most.
+  const canBuy = is_purchasable && price !== undefined;
+  if (!albumStar && !canBuy) return null;
+
+  const container = document.createElement('div');
+  container.className = 'bes-album-buy';
+
   if (albumStar) container.appendChild(albumStar);
+  if (!canBuy) return container;
+
+  const label = document.createElement('span');
+  label.className = 'bes-album-buy-label';
+  label.textContent = 'Buy Album';
 
   container.appendChild(label);
   container.appendChild(

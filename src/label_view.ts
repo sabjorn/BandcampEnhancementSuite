@@ -127,19 +127,21 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   updateDiscographyOrder();
 
+  // Nothing below this concerns a page without a discography grid, so bail before setting up an
+  // observer. It used to fall back to watching all of document.body and then return anyway.
+  const discographyContainer = document.querySelector('ol.music-grid');
+  if (!discographyContainer) return;
+
   const observer = new MutationObserver(() => {
     updateDiscographyOrder();
     addGridWishlistStars();
   });
 
-  const discographyContainer = document.querySelector('ol.music-grid') || document.body;
   observer.observe(discographyContainer, { childList: true, subtree: true });
 
   // The grid is already on screen; this only decorates it, so awaiting the round trip here costs
   // nothing visible and leaves no promise running loose after init returns.
   if (await initWishlistState()) addGridWishlistStars();
-
-  if (!document.querySelector('ol.music-grid')) return;
 
   try {
     const response = await chrome.runtime.sendMessage({

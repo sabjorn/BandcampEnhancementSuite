@@ -461,6 +461,28 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       expect(container.querySelector('.bes-wishlist-button')).toBeTruthy();
     });
 
+    it('should still offer the star for an album that cannot be bought', () => {
+      const soldOut = { ...mockTralbumDetails, is_purchasable: false };
+
+      const container = buildAlbumBuyButton(soldOut) as HTMLElement;
+
+      expect(container.querySelector('.bes-wishlist-button')).toBeTruthy();
+    });
+
+    it('should drop the buy label and button when there is nothing to buy', () => {
+      const soldOut = { ...mockTralbumDetails, is_purchasable: false };
+
+      const container = buildAlbumBuyButton(soldOut) as HTMLElement;
+
+      expect(Array.from(container.children).map(child => child.className)).toEqual(['bes-wishlist-button']);
+    });
+
+    it('should render nothing when the album can neither be bought nor wishlisted', () => {
+      vi.mocked(isWishlistAvailable).mockReturnValue(false);
+
+      expect(buildAlbumBuyButton({ ...mockTralbumDetails, is_purchasable: false })).toBeNull();
+    });
+
     it('should leave the buy row alone when the wishlist is unavailable', () => {
       vi.mocked(isWishlistAvailable).mockReturnValue(false);
 

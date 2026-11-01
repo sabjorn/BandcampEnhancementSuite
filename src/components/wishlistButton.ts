@@ -1,5 +1,5 @@
 import Logger from '../logger';
-import { isWishlistAvailable, isWishlisted, toggleWishlist, WishlistItemType } from '../wishlist';
+import { isWishlistAvailable, isWishlisted, toggleWishlist, canChangeWishlisted, WishlistItemType } from '../wishlist';
 import { extractBandId } from '../utilities';
 import { wrapWithTooltip } from './tooltip';
 import { starIcon } from './player/icons';
@@ -85,9 +85,10 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
   button.dataset.wishlistNoun = NOUNS[itemType];
   button.dataset.wishlistSize = String(size);
 
-  setWishlistButtonState(button, isWishlisted(itemType, itemId) ? 'in' : 'out');
+  const wishlisted = isWishlisted(itemType, itemId);
+  setWishlistButtonState(button, wishlisted ? 'in' : 'out');
 
-  if (!pageOwnsBand(bandId)) {
+  if (!pageOwnsBand(bandId) || !canChangeWishlisted(wishlisted)) {
     button.disabled = true;
     return wrapWithTooltip(
       button,
@@ -107,6 +108,7 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
     toggleWishlist(itemType, itemId, bandId)
       .then(nowWishlisted => {
         setWishlistButtonState(button, nowWishlisted ? 'in' : 'out');
+        button.disabled = !canChangeWishlisted(nowWishlisted);
         button.dispatchEvent(new CustomEvent(CHANGE_EVENT, { bubbles: true }));
       })
       .catch(error => {

@@ -8,7 +8,8 @@ import { isWishlistAvailable, isWishlisted } from '../src/wishlist';
 vi.mock('../src/wishlist', () => ({
   isWishlistAvailable: vi.fn(() => true),
   isWishlisted: vi.fn(() => false),
-  toggleWishlist: vi.fn()
+  toggleWishlist: vi.fn(),
+  canChangeWishlisted: vi.fn(() => true)
 }));
 
 vi.mock('../src/logger', () => ({

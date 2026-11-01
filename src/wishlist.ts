@@ -1,5 +1,5 @@
 import Logger from './logger';
-import { collectItem, uncollectItem, CollectionSummary, WishlistItem } from './bclient';
+import { collectItem, CollectionSummary, WishlistItem } from './bclient';
 import { isBandcampLoggedIn } from './utilities';
 
 const log = new Logger();
@@ -23,6 +23,14 @@ function readCrumb(path: CrumbPath): string | null {
   } catch {
     return null;
   }
+}
+
+function writeCrumb(path: CrumbPath): string | null {
+  return readCrumb(path) ?? readCrumb(path === 'collect_item_cb' ? 'uncollect_item_cb' : 'collect_item_cb');
+}
+
+export function canChangeWishlisted(currentlyWishlisted: boolean): boolean {
+  return writeCrumb(currentlyWishlisted ? 'uncollect_item_cb' : 'collect_item_cb') !== null;
 }
 
 function readReferrerToken(): string | null {
@@ -83,6 +91,16 @@ export function isWishlisted(itemType: WishlistItemType, itemId: number): boolea
   return wishlisted?.has(lookupKey(itemType, itemId)) ?? false;
 }
 
+async function uncollect(item: WishlistItem): Promise<void> {
+  const written = await chrome.runtime.sendMessage({
+    contentScriptQuery: 'uncollectWishlistItem',
+    item,
+    crumb: writeCrumb('uncollect_item_cb')
+  });
+
+  if (!written?.ok) throw new Error(written?.error ?? 'Bandcamp rejected the wishlist change');
+}
+
 export async function toggleWishlist(itemType: WishlistItemType, itemId: number, bandId: number): Promise<boolean> {
   if (fanId === null || wishlisted === null) throw new Error('Wishlist is unavailable');
 
@@ -97,8 +115,8 @@ export async function toggleWishlist(itemType: WishlistItemType, itemId: number,
     ref_token: readReferrerToken()
   };
 
-  if (adding) await collectItem(item, readCrumb('collect_item_cb'));
-  else await uncollectItem(item, readCrumb('uncollect_item_cb'));
+  if (adding) await collectItem(item, writeCrumb('collect_item_cb'));
+  else await uncollect(item);
 
   if (adding) wishlisted.add(key);
   else wishlisted.delete(key);

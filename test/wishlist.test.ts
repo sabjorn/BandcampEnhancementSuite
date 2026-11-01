@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import { collectItem, uncollectItem } from '../src/bclient';
+import { collectItem } from '../src/bclient';
 import { isBandcampLoggedIn } from '../src/utilities';
 import {
   initWishlistState,
@@ -24,8 +24,7 @@ vi.mock('../src/utilities', () => ({
 }));
 
 vi.mock('../src/bclient', () => ({
-  collectItem: vi.fn(),
-  uncollectItem: vi.fn()
+  collectItem: vi.fn()
 }));
 
 // The summary is fetched by the service worker, because the band subdomains omit the lookup.
@@ -69,7 +68,6 @@ describe('wishlist state', () => {
     (globalThis as any).chrome = { runtime: { sendMessage } };
     sendMessage.mockResolvedValue(summary({ t123456: wishlistedTrack }));
     vi.mocked(collectItem).mockResolvedValue(true);
-    vi.mocked(uncollectItem).mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -178,6 +176,9 @@ describe('wishlist state', () => {
   describe('toggleWishlist', () => {
     beforeEach(() => {
       setCrumbs({ collect_item_cb: 'add_crumb', uncollect_item_cb: 'remove_crumb' });
+      sendMessage.mockImplementation(async (message: any) =>
+        message.contentScriptQuery === 'uncollectWishlistItem' ? { ok: true } : summary({ t123456: wishlistedTrack })
+      );
     });
 
     it('should collect an item that is not yet wishlisted', async () => {
@@ -189,7 +190,9 @@ describe('wishlist state', () => {
         { fan_id: 896389, item_type: 't', item_id: 999, band_id: 857243381, ref_token: null },
         'add_crumb'
       );
-      expect(uncollectItem).not.toHaveBeenCalled();
+      expect(sendMessage).not.toHaveBeenCalledWith(
+        expect.objectContaining({ contentScriptQuery: 'uncollectWishlistItem' })
+      );
     });
 
     it('should uncollect an item that is already wishlisted', async () => {
@@ -197,10 +200,13 @@ describe('wishlist state', () => {
 
       await expect(toggleWishlist('t', 123456, 857243381)).resolves.toBe(false);
 
-      expect(uncollectItem).toHaveBeenCalledWith(
-        { fan_id: 896389, item_type: 't', item_id: 123456, band_id: 857243381, ref_token: null },
-        'remove_crumb'
-      );
+      // uncollect_item_cb only accepts the base domain, which a page cannot reach, so the
+      // service worker makes that request.
+      expect(sendMessage).toHaveBeenCalledWith({
+        contentScriptQuery: 'uncollectWishlistItem',
+        item: { fan_id: 896389, item_type: 't', item_id: 123456, band_id: 857243381, ref_token: null },
+        crumb: 'remove_crumb'
+      });
       expect(collectItem).not.toHaveBeenCalled();
     });
 
@@ -251,8 +257,12 @@ describe('wishlist state', () => {
     });
 
     it('should leave the state untouched when the request itself fails', async () => {
-      vi.mocked(uncollectItem).mockRejectedValue(new Error('network down'));
       await initWishlistState();
+      sendMessage.mockImplementation(async (message: any) =>
+        message.contentScriptQuery === 'uncollectWishlistItem'
+          ? { ok: false, error: 'network down' }
+          : summary({ t123456: wishlistedTrack })
+      );
 
       await expect(toggleWishlist('t', 123456, 857243381)).rejects.toThrow('network down');
       expect(isWishlisted('t', 123456)).toBe(true);

@@ -140,7 +140,8 @@ vi.mock('../src/wishlist', () => ({
   initWishlistState: vi.fn(async () => true),
   isWishlistAvailable: vi.fn(() => false),
   isWishlisted: vi.fn(() => false),
-  toggleWishlist: vi.fn()
+  toggleWishlist: vi.fn(),
+  canChangeWishlisted: vi.fn(() => true)
 }));
 
 vi.mock('../src/audioFeatures', () => ({

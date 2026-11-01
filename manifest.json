@@ -16,7 +16,7 @@
     "default_title": "Bandcamp Enhancement Suite",
     "default_popup": "html/browser_action.html"
   },
-  "permissions": ["notifications", "scripting"],
+  "permissions": ["notifications", "scripting", "declarativeNetRequestWithHostAccess"],
   "host_permissions": ["https://*.bandcamp.com/*", "https://*.bcbits.com/*"],
   "optional_permissions": ["cookies"],
   "optional_host_permissions": ["https://*.findmusic.club/*", "http://trackr.nasty.local/*"],

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import Logger from '../src/logger';
-import { isWishlistAvailable, isWishlisted, toggleWishlist } from '../src/wishlist';
+import { isWishlistAvailable, isWishlisted, toggleWishlist, canChangeWishlisted } from '../src/wishlist';
 import { extractBandId } from '../src/utilities';
 import { createWishlistButton, setWishlistButtonState, refreshWishlistButton } from '../src/components/wishlistButton';
 
@@ -21,7 +21,8 @@ vi.mock('../src/utilities', () => ({
 vi.mock('../src/wishlist', () => ({
   isWishlistAvailable: vi.fn(),
   isWishlisted: vi.fn(),
-  toggleWishlist: vi.fn()
+  toggleWishlist: vi.fn(),
+  canChangeWishlisted: vi.fn()
 }));
 
 const buildButton = (overrides: Record<string, any> = {}) =>
@@ -41,6 +42,7 @@ describe('wishlistButton', () => {
     vi.mocked(isWishlisted).mockReturnValue(false);
     vi.mocked(toggleWishlist).mockResolvedValue(true);
     vi.mocked(extractBandId).mockReturnValue(857243381);
+    vi.mocked(canChangeWishlisted).mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -262,6 +264,32 @@ describe('wishlistButton', () => {
       vi.mocked(extractBandId).mockReturnValue(null);
 
       expect(starIn(buildButton()!).disabled).toBe(true);
+    });
+
+    // A label grid carries a collect crumb but no uncollect one, so it can add but not remove.
+    it('should disable a wishlisted star the page cannot remove', () => {
+      vi.mocked(isWishlisted).mockReturnValue(true);
+      vi.mocked(canChangeWishlisted).mockImplementation(currently => !currently);
+
+      expect(starIn(buildButton()!).disabled).toBe(true);
+    });
+
+    it('should leave an unwishlisted star live where the page can add', () => {
+      vi.mocked(canChangeWishlisted).mockImplementation(currently => !currently);
+
+      expect((buildButton() as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it('should disable itself once an added item can no longer be removed here', async () => {
+      vi.mocked(canChangeWishlisted).mockImplementation(currently => !currently);
+
+      const button = buildButton() as HTMLButtonElement;
+      expect(button.disabled).toBe(false);
+
+      button.click();
+
+      await vi.waitFor(() => expect(button.dataset.wishlistState).toBe('in'));
+      expect(button.disabled).toBe(true);
     });
 
     it('should leave the star enabled for the page band own release', () => {

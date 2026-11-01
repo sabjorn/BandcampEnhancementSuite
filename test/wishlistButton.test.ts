@@ -245,7 +245,9 @@ describe('wishlistButton', () => {
       wrapper.dispatchEvent(new MouseEvent('mouseenter'));
 
       const content = wrapper.querySelector<HTMLElement>('.bes-tooltip-text') as HTMLElement;
-      expect(content.textContent).toBe('Wishlist this track from its own page');
+      expect(content.textContent).toBe(
+        "Bandcamp only accepts this from the track's own page. Open it there to change your wishlist."
+      );
       expect(content.style.visibility).toBe('visible');
     });
 

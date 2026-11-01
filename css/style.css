@@ -2320,25 +2320,15 @@ button.bes-wishlist-button {
   vertical-align: middle;
   border-radius: 4px;
   color: var(--bes-text-muted);
-  transition:
-    color 0.15s ease,
-    transform 0.15s ease;
+  transition: color 0.15s ease;
 }
 
 button.bes-wishlist-button svg {
   display: block;
 }
 
-button.bes-wishlist-button:hover {
-  color: var(--bes-text-max);
-}
-
 button.bes-wishlist-button[data-wishlist-state='in'] {
   color: var(--bes-accent);
-}
-
-button.bes-wishlist-button[data-wishlist-state='in']:hover {
-  transform: scale(1.12);
 }
 
 button.bes-wishlist-button[aria-busy='true'] {
@@ -2363,11 +2353,6 @@ button.bes-wishlist-button:disabled::after {
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
-button.bes-wishlist-button:disabled:hover {
-  color: var(--bes-text-muted);
-  transform: none;
-}
-
 .bes-tooltip-wrapper {
   align-items: center;
 }
@@ -2390,6 +2375,11 @@ tr.track_row_view td.bes-wishlist-col {
   gap: 6px;
   box-sizing: border-box;
   max-width: 100%;
+  min-width: 0;
+}
+
+.music-grid-item .bes-grid-title-link {
+  flex: 1 1 auto;
   min-width: 0;
 }
 

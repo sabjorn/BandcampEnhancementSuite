@@ -588,16 +588,38 @@ describe('album wishlist star on the label page grid', () => {
 
     const row = document.querySelector('.music-grid-item .bes-grid-title-row') as HTMLElement;
 
-    expect(Array.from(row.children).map(child => child.className)).toEqual(['title', 'bes-wishlist-button']);
+    expect(Array.from(row.children).map(child => child.className)).toEqual([
+      'bes-grid-title-link',
+      'bes-wishlist-button'
+    ]);
   });
 
-  it('should keep the title text inside its link so the album is still clickable', () => {
+  it('should keep the title text in a link of its own so the album is still clickable', () => {
     addStars();
 
-    const link = document.querySelector('.music-grid-item a') as HTMLAnchorElement;
+    const titleLink = document.querySelector('.music-grid-item .bes-grid-title-link') as HTMLAnchorElement;
 
-    expect(link.querySelector('.bes-grid-title-row .title')?.textContent).toContain('Same Reason');
-    expect(link.querySelector('.artist-override')?.textContent).toContain('Mitchellitchell');
+    expect(titleLink.getAttribute('href')).toBe('/album/same-reason');
+    expect(titleLink.querySelector('.title')?.textContent).toContain('Same Reason');
+    expect(titleLink.querySelector('.artist-override')?.textContent).toContain('Mitchellitchell');
+  });
+
+  // Sharing the grid item's anchor meant hovering the star underlined the title.
+  it('should keep the star outside the link the title lives in', () => {
+    addStars();
+
+    const star = document.querySelector('.music-grid-item .bes-wishlist-button') as HTMLElement;
+
+    expect(star.closest('a')).toBeNull();
+  });
+
+  it('should leave the artwork link alone', () => {
+    addStars();
+
+    const artLink = document.querySelector('.music-grid-item > a') as HTMLAnchorElement;
+
+    expect(artLink.querySelector('.art')).toBeTruthy();
+    expect(artLink.querySelector('.title')).toBeNull();
   });
 
   it('should skip a grid item with no band id, since the write needs one', () => {

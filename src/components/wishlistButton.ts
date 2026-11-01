@@ -89,7 +89,10 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
 
   if (!pageOwnsBand(bandId)) {
     button.disabled = true;
-    return wrapWithTooltip(button, `Wishlist this ${NOUNS[itemType]} from its own page`);
+    return wrapWithTooltip(
+      button,
+      `Bandcamp only accepts this from the ${NOUNS[itemType]}'s own page. Open it there to change your wishlist.`
+    );
   }
 
   button.addEventListener('click', event => {

@@ -207,12 +207,21 @@ function addGridWishlistStar(item: HTMLElement, albumId: string): void {
   });
   if (!star) return;
 
+  const link = item.querySelector<HTMLAnchorElement>('a');
+  if (!link) return;
+
+  const titleLink = document.createElement('a');
+  titleLink.className = 'bes-grid-title-link';
+  titleLink.href = link.getAttribute('href') ?? '';
+
   const row = document.createElement('div');
   row.className = 'bes-grid-title-row';
 
-  title.replaceWith(row);
-  row.appendChild(title);
+  title.remove();
+  titleLink.appendChild(title);
+  row.appendChild(titleLink);
   row.appendChild(star);
+  link.after(row);
 }
 
 export function addGridWishlistStars(): void {

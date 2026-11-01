@@ -29,10 +29,6 @@ function writeCrumb(path: CrumbPath): string | null {
   return readCrumb(path) ?? readCrumb(path === 'collect_item_cb' ? 'uncollect_item_cb' : 'collect_item_cb');
 }
 
-export function canChangeWishlisted(currentlyWishlisted: boolean): boolean {
-  return writeCrumb(currentlyWishlisted ? 'uncollect_item_cb' : 'collect_item_cb') !== null;
-}
-
 function readReferrerToken(): string | null {
   const script = document.querySelector<HTMLElement>('script[data-referrer-token]');
   if (!script?.dataset.referrerToken) return null;

@@ -2346,13 +2346,30 @@ button.bes-wishlist-button[aria-busy='true'] {
 }
 
 button.bes-wishlist-button:disabled {
+  position: relative;
   cursor: default;
-  opacity: 0.35;
+  opacity: 0.45;
+}
+
+button.bes-wishlist-button:disabled::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 120%;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 button.bes-wishlist-button:disabled:hover {
   color: var(--bes-text-muted);
   transform: none;
+}
+
+.bes-tooltip-wrapper {
+  align-items: center;
 }
 
 tr.track_row_view td.bes-wishlist-col {

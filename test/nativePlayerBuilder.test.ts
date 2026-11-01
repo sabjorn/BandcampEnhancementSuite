@@ -24,7 +24,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
   let mockTralbumDetails: TralbumDetailsResponse;
 
   beforeEach(() => {
-    createDomNodes('<div></div>');
+    createDomNodes(`<script type="text/javascript" data-band='{"id":857243381}'></script><div></div>`);
 
     mockTralbumDetails = {
       id: 123,

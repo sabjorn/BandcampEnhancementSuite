@@ -502,6 +502,7 @@ describe('album wishlist star on the label page grid', () => {
   let wishlist: typeof import('../src/wishlist');
 
   const gridPage = `
+    <script type="text/javascript" data-band='{"id":857243381}'></script>
     <ol class="music-grid">
       <li class="music-grid-item square" data-item-id="album-2931878489" data-band-id="857243381">
         <a href="/album/same-reason">

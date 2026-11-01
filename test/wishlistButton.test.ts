@@ -226,25 +226,46 @@ describe('wishlistButton', () => {
   // collect_item_cb resolves the band from the host it is posted to, and a page can only post to
   // its own host, so a release belonging to another band cannot be wishlisted from here.
   describe('an item the page cannot write', () => {
+    const starIn = (node: HTMLElement) =>
+      node.querySelector<HTMLButtonElement>('.bes-wishlist-button') as HTMLButtonElement;
+
     it('should disable the star when the item belongs to another band', () => {
       vi.mocked(extractBandId).mockReturnValue(999);
 
+      expect(starIn(buildButton()!).disabled).toBe(true);
+    });
+
+    // A disabled button gets no pointer events, so a title attribute never shows. The tooltip has
+    // to hang off a wrapper instead.
+    it('should explain itself through a hoverable tooltip rather than a title', () => {
+      vi.mocked(extractBandId).mockReturnValue(999);
+
+      const wrapper = buildButton()!;
+      document.body.appendChild(wrapper);
+      wrapper.dispatchEvent(new MouseEvent('mouseenter'));
+
+      const content = wrapper.querySelector<HTMLElement>('.bes-tooltip-text') as HTMLElement;
+      expect(content.textContent).toBe('Wishlist this track from its own page');
+      expect(content.style.visibility).toBe('visible');
+    });
+
+    it('should leave an enabled star unwrapped, so the markup is unchanged', () => {
       const button = buildButton()!;
 
-      expect(button.disabled).toBe(true);
-      expect(button.title).toBe('Wishlist this track from its own page — this page belongs to another artist');
+      expect(button.classList.contains('bes-wishlist-button')).toBe(true);
+      expect(button.querySelector('.bes-tooltip-text')).toBeNull();
     });
 
     it('should disable the star when the page band cannot be read', () => {
       vi.mocked(extractBandId).mockReturnValue(null);
 
-      expect(buildButton()!.disabled).toBe(true);
+      expect(starIn(buildButton()!).disabled).toBe(true);
     });
 
     it('should leave the star enabled for the page band own release', () => {
       vi.mocked(extractBandId).mockReturnValue(857243381);
 
-      const button = buildButton()!;
+      const button = buildButton() as HTMLButtonElement;
 
       expect(button.disabled).toBe(false);
       expect(button.title).toBe('Add this track to your wishlist');
@@ -253,7 +274,7 @@ describe('wishlistButton', () => {
     it('should not fire a request when a disabled star is clicked', () => {
       vi.mocked(extractBandId).mockReturnValue(999);
 
-      buildButton()!.click();
+      starIn(buildButton()!).click();
 
       expect(toggleWishlist).not.toHaveBeenCalled();
     });
@@ -262,11 +283,11 @@ describe('wishlistButton', () => {
       vi.mocked(extractBandId).mockReturnValue(999);
       vi.mocked(isWishlisted).mockReturnValue(true);
 
-      const button = buildButton()!;
+      const star = starIn(buildButton()!);
 
-      expect(button.dataset.wishlistState).toBe('in');
-      expect(button.querySelector('svg')?.getAttribute('fill')).toBe('currentColor');
-      expect(button.disabled).toBe(true);
+      expect(star.dataset.wishlistState).toBe('in');
+      expect(star.querySelector('svg')?.getAttribute('fill')).toBe('currentColor');
+      expect(star.disabled).toBe(true);
     });
   });
 

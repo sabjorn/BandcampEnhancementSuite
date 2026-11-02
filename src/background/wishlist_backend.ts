@@ -40,24 +40,36 @@ function presentAsHost(host: string): Promise<void> {
         condition: {
           requestDomains: ['bandcamp.com'],
           urlFilter: 'collect_item_cb',
-          resourceTypes: ['xmlhttprequest', 'other']
+          resourceTypes: ['xmlhttprequest', 'other'],
+          tabIds: [chrome.tabs.TAB_ID_NONE]
         }
       }
     ]
   } as chrome.declarativeNetRequest.UpdateRuleOptions);
 }
 
-async function collect(item: WishlistItem, crumb: string | null): Promise<boolean> {
-  const host = await bandHost(item.band_id);
-  await presentAsHost(host);
-
-  return collectItem(item, crumb, host);
+function stopPresenting(): Promise<void> {
+  return chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: [WISHLIST_HEADER_RULE_ID] });
 }
 
-async function uncollect(item: WishlistItem, crumb: string | null): Promise<boolean> {
-  await presentAsHost(BASE_URL);
+async function postAsHost(host: string, post: () => Promise<boolean>): Promise<boolean> {
+  await presentAsHost(host);
 
-  return uncollectItem(item, crumb, BASE_URL);
+  try {
+    return await post();
+  } finally {
+    await stopPresenting().catch(error => log.error(`Could not remove the wishlist header rule: ${error}`));
+  }
+}
+
+async function collect(item: WishlistItem, crumb: string | null): Promise<boolean> {
+  const host = await bandHost(item.band_id);
+
+  return postAsHost(host, () => collectItem(item, crumb, host));
+}
+
+function uncollect(item: WishlistItem, crumb: string | null): Promise<boolean> {
+  return postAsHost(BASE_URL, () => uncollectItem(item, crumb, BASE_URL));
 }
 
 export function processRequest(

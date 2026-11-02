@@ -49,6 +49,7 @@ describe('wishlist backend', () => {
     resetBandHostCache();
     (globalThis as any).chrome = {
       runtime: { onMessage: { addListener: vi.fn() } },
+      tabs: { TAB_ID_NONE: -1 },
       declarativeNetRequest: { updateSessionRules: vi.fn().mockResolvedValue(undefined) }
     };
   });
@@ -193,7 +194,8 @@ describe('wishlist backend', () => {
           condition: {
             requestDomains: ['bandcamp.com'],
             urlFilter: 'collect_item_cb',
-            resourceTypes: ['xmlhttprequest', 'other']
+            resourceTypes: ['xmlhttprequest', 'other'],
+            tabIds: [-1]
           }
         }
       ]
@@ -234,6 +236,43 @@ describe('wishlist backend', () => {
 
       await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith({ ok: false, error: 'not allowed' }));
       expect(uncollectItem).not.toHaveBeenCalled();
+    });
+
+    // Session rules outlive the service worker, so one left installed would keep rewriting headers
+    // for the rest of the browser session with none of our code running.
+    it('should remove the rule once the write settles', async () => {
+      const sendResponse = vi.fn();
+
+      write('uncollect');
+
+      await vi.waitFor(() =>
+        expect(chrome.declarativeNetRequest.updateSessionRules).toHaveBeenLastCalledWith({
+          removeRuleIds: [WISHLIST_HEADER_RULE_ID]
+        })
+      );
+      expect(sendResponse).not.toHaveBeenCalled();
+    });
+
+    it('should remove the rule even when the write fails', async () => {
+      vi.mocked(uncollectItem).mockRejectedValue(new Error('nope'));
+
+      write('uncollect');
+
+      await vi.waitFor(() =>
+        expect(chrome.declarativeNetRequest.updateSessionRules).toHaveBeenLastCalledWith({
+          removeRuleIds: [WISHLIST_HEADER_RULE_ID]
+        })
+      );
+    });
+
+    // Bandcamp's own wishlist buttons must not have their headers rewritten.
+    it('should only match requests that belong to no tab', async () => {
+      write('uncollect');
+
+      await vi.waitFor(() => expect(chrome.declarativeNetRequest.updateSessionRules).toHaveBeenCalled());
+
+      const [{ addRules }] = vi.mocked(chrome.declarativeNetRequest.updateSessionRules).mock.calls[0] as any;
+      expect(addRules[0].condition.tabIds).toEqual([-1]);
     });
   });
 });

@@ -104,11 +104,11 @@ describe('wishlist backend', () => {
   });
 
   describe('writing a wishlist change', () => {
-    const item = { fan_id: 896389, item_type: 't' as const, item_id: 123456, band_id: 857243381 };
+    const item = { fan_id: 896389, item_type: 't' as const, item_id: 123456 };
 
     const ask = (sendResponse: any, action = 'collect') =>
       processRequest(
-        { contentScriptQuery: 'writeWishlistItem', action, item, crumb: 'page_crumb' },
+        { contentScriptQuery: 'writeWishlistItem', action, item, bandId: 857243381, crumb: 'page_crumb' },
         {} as any,
         sendResponse
       );
@@ -171,7 +171,8 @@ describe('wishlist backend', () => {
         {
           contentScriptQuery: 'writeWishlistItem',
           action,
-          item: { fan_id: 1, item_type: 't' as const, item_id: 2, band_id: 857243381 },
+          item: { fan_id: 1, item_type: 't' as const, item_id: 2 },
+          bandId: 857243381,
           crumb: 'page_crumb'
         },
         {} as any,
@@ -227,7 +228,8 @@ describe('wishlist backend', () => {
         {
           contentScriptQuery: 'writeWishlistItem',
           action: 'uncollect',
-          item: { fan_id: 1, item_type: 't' as const, item_id: 2, band_id: 857243381 },
+          item: { fan_id: 1, item_type: 't' as const, item_id: 2 },
+          bandId: 857243381,
           crumb: 'page_crumb'
         },
         {} as any,

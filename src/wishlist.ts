@@ -88,11 +88,12 @@ export function isWishlisted(itemType: WishlistItemType, itemId: number): boolea
   return wishlisted?.has(lookupKey(itemType, itemId)) ?? false;
 }
 
-async function write(action: 'collect' | 'uncollect', item: WishlistItem): Promise<void> {
+async function write(action: 'collect' | 'uncollect', item: WishlistItem, bandId: number): Promise<void> {
   const written = await chrome.runtime.sendMessage({
     contentScriptQuery: 'writeWishlistItem',
     action,
     item,
+    bandId,
     crumb: writeCrumb(action === 'collect' ? 'collect_item_cb' : 'uncollect_item_cb')
   });
 
@@ -111,14 +112,13 @@ export async function toggleWishlist(itemType: WishlistItemType, itemId: number,
     fan_id: fanId,
     item_type: itemType,
     item_id: itemId,
-    band_id: bandId,
     ref_token: readReferrerToken()
   };
 
   changing.add(key);
 
   try {
-    await write(adding ? 'collect' : 'uncollect', item);
+    await write(adding ? 'collect' : 'uncollect', item, bandId);
   } finally {
     changing.delete(key);
   }

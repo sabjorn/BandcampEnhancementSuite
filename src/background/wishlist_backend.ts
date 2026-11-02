@@ -71,8 +71,8 @@ async function postAsHost(host: string, post: () => Promise<boolean>): Promise<b
   }
 }
 
-async function collect(item: WishlistItem, crumb: string | null): Promise<boolean> {
-  const host = await bandHost(item.band_id);
+async function collect(item: WishlistItem, crumb: string | null, bandId: number): Promise<boolean> {
+  const host = await bandHost(bandId);
 
   return postAsHost(host, () => collectItem(item, crumb, host));
 }
@@ -99,7 +99,7 @@ export function processRequest(
   if (request.contentScriptQuery === 'writeWishlistItem') {
     const write = request.action === 'collect' ? collect : uncollect;
 
-    oneAtATime(() => write(request.item, request.crumb))
+    oneAtATime(() => write(request.item, request.crumb, request.bandId))
       .then(() => sendResponse({ ok: true }))
       .catch(error => {
         log.error(`Failed to ${request.action} wishlist item: ${error}`);

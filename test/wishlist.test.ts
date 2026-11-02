@@ -183,7 +183,8 @@ describe('wishlist state', () => {
       expect(sendMessage).toHaveBeenCalledWith({
         contentScriptQuery: 'writeWishlistItem',
         action: 'collect',
-        item: { fan_id: 896389, item_type: 't', item_id: 999, band_id: 857243381, ref_token: null },
+        item: { fan_id: 896389, item_type: 't', item_id: 999, ref_token: null },
+        bandId: 857243381,
         crumb: 'add_crumb'
       });
     });
@@ -196,7 +197,8 @@ describe('wishlist state', () => {
       expect(sendMessage).toHaveBeenCalledWith({
         contentScriptQuery: 'writeWishlistItem',
         action: 'uncollect',
-        item: { fan_id: 896389, item_type: 't', item_id: 123456, band_id: 857243381, ref_token: null },
+        item: { fan_id: 896389, item_type: 't', item_id: 123456, ref_token: null },
+        bandId: 857243381,
         crumb: 'remove_crumb'
       });
     });

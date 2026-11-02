@@ -323,7 +323,6 @@ export interface WishlistItem {
   fan_id: number;
   item_type: 't' | 'a';
   item_id: number;
-  band_id: number;
   ref_token?: string | null;
 }
 
@@ -340,7 +339,7 @@ function wishlistBody(item: WishlistItem, crumb: string | null, includeRefToken:
     fan_id: String(item.fan_id),
     item_id: String(item.item_id),
     item_type: item.item_type,
-    band_id: String(item.band_id)
+    band_id: '12345'
   });
 
   if (includeRefToken && item.ref_token) params.append('ref_token', item.ref_token);

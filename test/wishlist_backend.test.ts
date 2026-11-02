@@ -274,5 +274,47 @@ describe('wishlist backend', () => {
       const [{ addRules }] = vi.mocked(chrome.declarativeNetRequest.updateSessionRules).mock.calls[0] as any;
       expect(addRules[0].condition.tabIds).toEqual([-1]);
     });
+
+    // One shared rule carries the host for the request about to go out, so two writes in flight
+    // would otherwise send one request under the other's header.
+    it('should not let a second write change the headers under the first', async () => {
+      const order: string[] = [];
+      let releaseCollect: (value: boolean) => void = () => {};
+
+      vi.mocked(getBandDetails).mockResolvedValue({
+        id: 1,
+        name: 'Band',
+        bandcamp_url: 'https://band.bandcamp.com'
+      });
+      vi.mocked(chrome.declarativeNetRequest.updateSessionRules).mockImplementation(async (options: any) => {
+        order.push(options.addRules ? `rule:${options.addRules[0].action.requestHeaders[1].value}` : 'rule:off');
+      });
+      vi.mocked(collectItem).mockImplementation(async () => {
+        order.push('collect');
+        return new Promise<boolean>(resolve => (releaseCollect = resolve));
+      });
+      vi.mocked(uncollectItem).mockImplementation(async () => {
+        order.push('uncollect');
+        return true;
+      });
+
+      write('collect');
+      write('uncollect');
+
+      await vi.waitFor(() => expect(order).toContain('collect'));
+      expect(order).not.toContain('uncollect');
+
+      releaseCollect(true);
+
+      await vi.waitFor(() => expect(order).toContain('uncollect'));
+      expect(order).toEqual([
+        'rule:https://band.bandcamp.com/',
+        'collect',
+        'rule:off',
+        'rule:https://bandcamp.com/',
+        'uncollect',
+        'rule:off'
+      ]);
+    });
   });
 });

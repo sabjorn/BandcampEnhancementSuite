@@ -52,6 +52,15 @@ function stopPresenting(): Promise<void> {
   return chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: [WISHLIST_HEADER_RULE_ID] });
 }
 
+let pending: Promise<unknown> = Promise.resolve();
+
+function oneAtATime<T>(task: () => Promise<T>): Promise<T> {
+  const queued = pending.then(task);
+  pending = queued.catch(() => undefined);
+
+  return queued;
+}
+
 async function postAsHost(host: string, post: () => Promise<boolean>): Promise<boolean> {
   await presentAsHost(host);
 
@@ -90,7 +99,7 @@ export function processRequest(
   if (request.contentScriptQuery === 'writeWishlistItem') {
     const write = request.action === 'collect' ? collect : uncollect;
 
-    write(request.item, request.crumb)
+    oneAtATime(() => write(request.item, request.crumb))
       .then(() => sendResponse({ ok: true }))
       .catch(error => {
         log.error(`Failed to ${request.action} wishlist item: ${error}`);

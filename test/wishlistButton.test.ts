@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import Logger from '../src/logger';
-import { isWishlistAvailable, isWishlisted, toggleWishlist } from '../src/wishlist';
+import { isWishlistAvailable, isWishlisted, isOwned, toggleWishlist } from '../src/wishlist';
 import { createWishlistButton, setWishlistButtonState, refreshWishlistButton } from '../src/components/wishlistButton';
 
 vi.mock('../src/logger', () => ({
@@ -16,6 +16,7 @@ vi.mock('../src/logger', () => ({
 vi.mock('../src/wishlist', () => ({
   isWishlistAvailable: vi.fn(),
   isWishlisted: vi.fn(),
+  isOwned: vi.fn(),
   toggleWishlist: vi.fn()
 }));
 
@@ -35,6 +36,7 @@ describe('wishlistButton', () => {
     vi.mocked(isWishlistAvailable).mockReturnValue(true);
     vi.mocked(isWishlisted).mockReturnValue(false);
     vi.mocked(toggleWishlist).mockResolvedValue(true);
+    vi.mocked(isOwned).mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -285,6 +287,62 @@ describe('wishlistButton', () => {
       button.click();
 
       expect(toggleWishlist).toHaveBeenCalledWith('t', 123456, window.location.origin);
+    });
+  });
+
+  // Wishlisting something already in the collection is not an action Bandcamp offers, so an owned
+  // release shows what it is instead of a star.
+  describe('an owned release', () => {
+    beforeEach(() => {
+      vi.mocked(isOwned).mockReturnValue(true);
+    });
+
+    it('should show the owned indicator in place of the star', () => {
+      const indicator = buildButton()!;
+
+      expect(indicator.classList.contains('bes-owned-indicator')).toBe(true);
+      expect(indicator.querySelector('.bes-wishlist-button')).toBeNull();
+    });
+
+    it('should not be a control at all', () => {
+      const indicator = buildButton()!;
+
+      expect(indicator.tagName).toBe('SPAN');
+    });
+
+    it('should say what it is', () => {
+      expect(buildButton()!.title).toBe('You own this track');
+      expect(buildButton({ itemType: 'a' })!.title).toBe('You own this album');
+    });
+
+    it('should carry the owned icon at the requested size', () => {
+      const svg = buildButton({ size: 18 })!.querySelector('svg') as SVGElement;
+
+      expect(svg.getAttribute('width')).toBe('18');
+    });
+
+    it('should ask about the item it was given', () => {
+      buildButton({ itemType: 'a', itemId: 1609998585 });
+
+      expect(isOwned).toHaveBeenCalledWith('a', 1609998585);
+    });
+
+    it('should take precedence over a wishlisted state', () => {
+      vi.mocked(isWishlisted).mockReturnValue(true);
+
+      expect(buildButton()!.classList.contains('bes-owned-indicator')).toBe(true);
+    });
+
+    it('should never write', () => {
+      buildButton()!.click();
+
+      expect(toggleWishlist).not.toHaveBeenCalled();
+    });
+
+    it('should still render nothing when the wishlist is unavailable', () => {
+      vi.mocked(isWishlistAvailable).mockReturnValue(false);
+
+      expect(buildButton()).toBeNull();
     });
   });
 

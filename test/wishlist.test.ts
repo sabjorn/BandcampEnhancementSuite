@@ -5,6 +5,7 @@ import {
   initWishlistState,
   isWishlistAvailable,
   isWishlisted,
+  isOwned,
   toggleWishlist,
   resetWishlistState
 } from '../src/wishlist';
@@ -166,6 +167,48 @@ describe('wishlist state', () => {
 
     it('should be false before it has been initialised', () => {
       expect(isWishlisted('t', 123456)).toBe(false);
+    });
+  });
+
+  describe('isOwned', () => {
+    it('should be true for a lookup entry with a purchase date', async () => {
+      sendMessage.mockResolvedValue(summary({ a1609998585: ownedAlbum }));
+      await initWishlistState();
+
+      expect(isOwned('a', 1609998585)).toBe(true);
+    });
+
+    it('should be false for a wishlisted item, which is not owned', async () => {
+      await initWishlistState();
+
+      expect(isOwned('t', 123456)).toBe(false);
+    });
+
+    it('should be false for an item in neither', async () => {
+      await initWishlistState();
+
+      expect(isOwned('t', 999)).toBe(false);
+    });
+
+    it('should not confuse a track and an album sharing an id', async () => {
+      sendMessage.mockResolvedValue(summary({ a42: ownedAlbum }));
+      await initWishlistState();
+
+      expect(isOwned('a', 42)).toBe(true);
+      expect(isOwned('t', 42)).toBe(false);
+    });
+
+    it('should be false before it has been initialised', () => {
+      expect(isOwned('a', 1609998585)).toBe(false);
+    });
+
+    it('should be forgotten on reset', async () => {
+      sendMessage.mockResolvedValue(summary({ a1609998585: ownedAlbum }));
+      await initWishlistState();
+
+      resetWishlistState();
+
+      expect(isOwned('a', 1609998585)).toBe(false);
     });
   });
 

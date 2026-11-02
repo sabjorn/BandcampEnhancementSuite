@@ -140,6 +140,7 @@ vi.mock('../src/wishlist', () => ({
   initWishlistState: vi.fn(async () => true),
   isWishlistAvailable: vi.fn(() => false),
   isWishlisted: vi.fn(() => false),
+  isOwned: vi.fn(() => false),
   toggleWishlist: vi.fn()
 }));
 

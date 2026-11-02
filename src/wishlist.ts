@@ -10,6 +10,7 @@ const lookupKey = (itemType: WishlistItemType, itemId: number): string => `${ite
 
 let fanId: number | null = null;
 let wishlisted: Set<string> | null = null;
+let owned: Set<string> | null = null;
 let loading: Promise<boolean> | null = null;
 const changing = new Set<string>();
 
@@ -66,6 +67,7 @@ async function loadWishlistState(): Promise<boolean> {
 
     const lookup = Object.entries(summary.tralbum_lookup);
     wishlisted = new Set(lookup.filter(([, item]) => !item.purchased).map(([key]) => key));
+    owned = new Set(lookup.filter(([, item]) => item.purchased).map(([key]) => key));
 
     log.info(`Wishlist state loaded: ${wishlisted.size} wishlisted of ${lookup.length} collection entries`);
     return true;
@@ -86,6 +88,10 @@ export function isWishlistAvailable(): boolean {
 
 export function isWishlisted(itemType: WishlistItemType, itemId: number): boolean {
   return wishlisted?.has(lookupKey(itemType, itemId)) ?? false;
+}
+
+export function isOwned(itemType: WishlistItemType, itemId: number): boolean {
+  return owned?.has(lookupKey(itemType, itemId)) ?? false;
 }
 
 async function write(action: 'collect' | 'uncollect', item: WishlistItem, host: string): Promise<void> {
@@ -132,6 +138,7 @@ export async function toggleWishlist(itemType: WishlistItemType, itemId: number,
 export function resetWishlistState(): void {
   fanId = null;
   wishlisted = null;
+  owned = null;
   loading = null;
   changing.clear();
 }

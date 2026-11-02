@@ -2331,6 +2331,20 @@ button.bes-wishlist-button[data-wishlist-state='in'] {
   color: var(--bes-accent);
 }
 
+.bes-owned-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  color: var(--bes-success);
+}
+
+.bes-owned-indicator svg {
+  display: block;
+}
+
 button.bes-wishlist-button[aria-busy='true'] {
   cursor: default;
 }
@@ -2353,7 +2367,8 @@ tr.track_row_view td.bes-wishlist-col {
   vertical-align: middle;
 }
 
-.bes-album-buy button.bes-wishlist-button {
+.bes-album-buy button.bes-wishlist-button,
+.bes-album-buy .bes-owned-indicator {
   flex: 0 0 auto;
 }
 
@@ -2404,7 +2419,8 @@ tr.track_row_view td.bes-wishlist-col {
   max-width: 100%;
 }
 
-.music-grid-item .bes-grid-title-row button.bes-wishlist-button {
+.music-grid-item .bes-grid-title-row button.bes-wishlist-button,
+.music-grid-item .bes-grid-title-row .bes-owned-indicator {
   flex: 0 0 auto;
   width: 22px;
   height: 22px;

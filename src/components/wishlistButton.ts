@@ -1,6 +1,6 @@
 import Logger from '../logger';
-import { isWishlistAvailable, isWishlisted, toggleWishlist, WishlistItemType } from '../wishlist';
-import { starIcon } from './player/icons';
+import { isWishlistAvailable, isWishlisted, isOwned, toggleWishlist, WishlistItemType } from '../wishlist';
+import { starIcon, ownedIcon } from './player/icons';
 
 const DEFAULT_ICON_SIZE = 12;
 const MIN_SPINNER_MS = 250;
@@ -80,6 +80,15 @@ function hostOf(itemUrl: string): string | null {
   }
 }
 
+function ownedIndicator(itemType: WishlistItemType, size: number): HTMLElement {
+  const indicator = document.createElement('span');
+  indicator.className = 'bes-owned-indicator';
+  indicator.title = `You own this ${NOUNS[itemType]}`;
+  indicator.innerHTML = ownedIcon(size);
+
+  return indicator;
+}
+
 export function createWishlistButton(options: CreateWishlistButtonOptions): HTMLElement | null {
   const { itemType, itemId, itemUrl, log, size = DEFAULT_ICON_SIZE } = options;
 
@@ -87,6 +96,8 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
 
   const host = hostOf(itemUrl);
   if (!host || !Number.isFinite(itemId)) return null;
+
+  if (isOwned(itemType, itemId)) return ownedIndicator(itemType, size);
 
   listenForChangesOnce();
 

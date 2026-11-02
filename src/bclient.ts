@@ -373,12 +373,18 @@ async function postWishlistItem(
       mode: 'cors'
     });
 
-  let response = await makeRequest(crumb);
-  let data: CollectItemResponse = await response.json();
+  const readResponse = async (response: Response): Promise<CollectItemResponse> => {
+    if (!response.ok && response.status !== 403) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+  };
+
+  let data = await readResponse(await makeRequest(crumb));
 
   if (data.error === 'invalid_crumb' && data.crumb) {
-    response = await makeRequest(data.crumb);
-    data = await response.json();
+    data = await readResponse(await makeRequest(data.crumb));
   }
 
   if (data.ok !== true) {

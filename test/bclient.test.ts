@@ -525,6 +525,22 @@ describe('bclient', () => {
       await expect(collectItem(item, 'valid_crumb')).resolves.toBe(true);
     });
 
+    it('should name the status when the response is not json', async () => {
+      fetchSpy.mockResolvedValue(new Response('<html>bad gateway</html>', { status: 502, statusText: 'Bad Gateway' }));
+
+      await expect(collectItem(item, 'valid_crumb')).rejects.toThrow('HTTP 502');
+    });
+
+    it('should still read a json body on a 403, which is how a stale crumb arrives', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ error: 'invalid_crumb', crumb: 'fresh_crumb' }), { status: 403 })
+        )
+        .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await expect(collectItem(item, 'stale_crumb')).resolves.toBe(true);
+    });
+
     it('should throw with the reason Bandcamp gave when it rejects the change', async () => {
       fetchSpy.mockResolvedValue(
         new Response(

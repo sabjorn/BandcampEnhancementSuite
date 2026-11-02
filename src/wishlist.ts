@@ -11,6 +11,7 @@ const lookupKey = (itemType: WishlistItemType, itemId: number): string => `${ite
 let fanId: number | null = null;
 let wishlisted: Set<string> | null = null;
 let loading: Promise<boolean> | null = null;
+const changing = new Set<string>();
 
 type CrumbPath = 'collect_item_cb' | 'uncollect_item_cb';
 
@@ -102,6 +103,8 @@ export async function toggleWishlist(itemType: WishlistItemType, itemId: number,
   if (fanId === null || wishlisted === null) throw new Error('Wishlist is unavailable');
 
   const key = lookupKey(itemType, itemId);
+  if (changing.has(key)) throw new Error('This item is already changing');
+
   const adding = !wishlisted.has(key);
 
   const item: WishlistItem = {
@@ -112,7 +115,13 @@ export async function toggleWishlist(itemType: WishlistItemType, itemId: number,
     ref_token: readReferrerToken()
   };
 
-  await write(adding ? 'collect' : 'uncollect', item);
+  changing.add(key);
+
+  try {
+    await write(adding ? 'collect' : 'uncollect', item);
+  } finally {
+    changing.delete(key);
+  }
 
   if (adding) wishlisted.add(key);
   else wishlisted.delete(key);
@@ -124,4 +133,5 @@ export function resetWishlistState(): void {
   fanId = null;
   wishlisted = null;
   loading = null;
+  changing.clear();
 }

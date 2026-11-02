@@ -271,5 +271,66 @@ describe('wishlist state', () => {
 
       await expect(toggleWishlist('t', 999, 857243381)).rejects.toThrow('Wishlist is unavailable');
     });
+
+    // A grid star and the drawer's star can both exist for one album, and each only guards its own
+    // click, so the direction has to be settled per item rather than per button.
+    it('should not send a second write for an item already in flight', async () => {
+      await initWishlistState();
+
+      const settlers: Array<(value: unknown) => void> = [];
+      sendMessage.mockImplementation(async (message: any) =>
+        message.contentScriptQuery === 'writeWishlistItem'
+          ? new Promise(resolve => settlers.push(resolve))
+          : summary({ t123456: wishlistedTrack })
+      );
+
+      const first = toggleWishlist('t', 999, 857243381);
+      const second = toggleWishlist('t', 999, 857243381);
+
+      await expect(second).rejects.toThrow('already changing');
+      expect(settlers).toHaveLength(1);
+
+      settlers[0]({ ok: true });
+      await expect(first).resolves.toBe(true);
+    });
+
+    it('should allow a further change once the first has settled', async () => {
+      await initWishlistState();
+
+      await toggleWishlist('t', 999, 857243381);
+      await expect(toggleWishlist('t', 999, 857243381)).resolves.toBe(false);
+    });
+
+    it('should not block a different item', async () => {
+      await initWishlistState();
+
+      const settlers: Array<(value: unknown) => void> = [];
+      sendMessage.mockImplementation(async (message: any) =>
+        message.contentScriptQuery === 'writeWishlistItem'
+          ? new Promise(resolve => settlers.push(resolve))
+          : summary({ t123456: wishlistedTrack })
+      );
+
+      const first = toggleWishlist('t', 999, 857243381);
+      const other = toggleWishlist('t', 888, 857243381);
+
+      await vi.waitFor(() => expect(settlers).toHaveLength(2));
+      settlers.forEach(settle => settle({ ok: true }));
+
+      await expect(first).resolves.toBe(true);
+      await expect(other).resolves.toBe(true);
+    });
+
+    it('should release the item after a failure', async () => {
+      await initWishlistState();
+      sendMessage.mockImplementation(async (message: any) =>
+        message.contentScriptQuery === 'writeWishlistItem'
+          ? { ok: false, error: 'nope' }
+          : summary({ t123456: wishlistedTrack })
+      );
+
+      await expect(toggleWishlist('t', 999, 857243381)).rejects.toThrow('nope');
+      await expect(toggleWishlist('t', 999, 857243381)).rejects.toThrow('nope');
+    });
   });
 });

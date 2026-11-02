@@ -106,6 +106,54 @@ describe('wishlistButton', () => {
       await vi.waitFor(() => expect(toggleWishlist).toHaveBeenCalledWith('a', 1609998585, 42));
     });
 
+    it('should spin while the request is in flight, as the cart button does', async () => {
+      vi.mocked(toggleWishlist).mockReturnValue(new Promise(() => {}));
+
+      const button = buildButton()!;
+      button.click();
+
+      expect(button.querySelector('.bes-wishlist-spinner')).toBeTruthy();
+      expect(button.querySelector('svg')).toBeNull();
+    });
+
+    // Without a floor the spinner flashes for a fast response, which reads as a glitch.
+    it('should keep spinning for a moment even when the answer is immediate', async () => {
+      vi.useFakeTimers();
+
+      try {
+        const button = buildButton()!;
+        button.click();
+
+        await vi.advanceTimersByTimeAsync(100);
+        expect(button.dataset.wishlistState).toBe('loading');
+
+        await vi.advanceTimersByTimeAsync(200);
+        expect(button.dataset.wishlistState).toBe('in');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should put the star back once the change settles', async () => {
+      const button = buildButton()!;
+      button.click();
+
+      await vi.waitFor(() => expect(button.dataset.wishlistState).toBe('in'));
+      expect(button.querySelector('.bes-wishlist-spinner')).toBeNull();
+      expect(button.querySelector('svg')).toBeTruthy();
+    });
+
+    it('should put the star back when the change fails', async () => {
+      vi.mocked(toggleWishlist).mockRejectedValue(new Error('nope'));
+
+      const button = buildButton()!;
+      button.click();
+
+      await vi.waitFor(() => expect(button.dataset.wishlistState).toBe('out'));
+      expect(button.querySelector('.bes-wishlist-spinner')).toBeNull();
+      expect(button.querySelector('svg')).toBeTruthy();
+    });
+
     it('should go through a busy state while the request is in flight', async () => {
       let settle: (value: boolean) => void = () => {};
       vi.mocked(toggleWishlist).mockReturnValue(new Promise(resolve => (settle = resolve)));

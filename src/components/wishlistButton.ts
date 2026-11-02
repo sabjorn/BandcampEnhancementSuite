@@ -3,6 +3,7 @@ import { isWishlistAvailable, isWishlisted, toggleWishlist, WishlistItemType } f
 import { starIcon } from './player/icons';
 
 const DEFAULT_ICON_SIZE = 12;
+const MIN_SPINNER_MS = 250;
 const CHANGE_EVENT = 'bes-wishlist-change';
 
 export type WishlistButtonState = 'in' | 'out' | 'loading';
@@ -18,6 +19,12 @@ function titleFor(state: WishlistButtonState, noun: string): string {
   return state === 'in' ? `Remove this ${noun} from your wishlist` : `Add this ${noun} to your wishlist`;
 }
 
+function withMinDuration<T>(promise: Promise<T>, ms: number): Promise<T> {
+  const elapsed = new Promise<void>(resolve => setTimeout(resolve, ms));
+
+  return Promise.all([promise, elapsed]).then(([result]) => result);
+}
+
 export function setWishlistButtonState(button: HTMLElement, state: WishlistButtonState): void {
   const noun = button.dataset.wishlistNoun ?? 'item';
   const size = Number(button.dataset.wishlistSize) || DEFAULT_ICON_SIZE;
@@ -26,7 +33,8 @@ export function setWishlistButtonState(button: HTMLElement, state: WishlistButto
   button.setAttribute('aria-busy', state === 'loading' ? 'true' : 'false');
   button.setAttribute('aria-pressed', state === 'in' ? 'true' : 'false');
 
-  if (state !== 'loading') button.innerHTML = starIcon(size, state === 'in');
+  button.innerHTML =
+    state === 'loading' ? '<span class="bes-wishlist-spinner"></span>' : starIcon(size, state === 'in');
 }
 
 export function refreshWishlistButton(button: HTMLElement): void {
@@ -88,7 +96,7 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
 
     setWishlistButtonState(button, 'loading');
 
-    toggleWishlist(itemType, itemId, bandId)
+    withMinDuration(toggleWishlist(itemType, itemId, bandId), MIN_SPINNER_MS)
       .then(nowWishlisted => {
         setWishlistButtonState(button, nowWishlisted ? 'in' : 'out');
         button.dispatchEvent(new CustomEvent(CHANGE_EVENT, { bubbles: true }));

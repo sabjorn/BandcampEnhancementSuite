@@ -2332,7 +2332,18 @@ button.bes-wishlist-button[data-wishlist-state='in'] {
 }
 
 button.bes-wishlist-button[aria-busy='true'] {
-  opacity: 0.5;
+  cursor: default;
+}
+
+.bes-wishlist-spinner {
+  display: inline-block;
+  box-sizing: border-box;
+  height: 10px;
+  width: 10px;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: besCartSpin 0.6s linear infinite;
 }
 
 tr.track_row_view td.bes-wishlist-col {

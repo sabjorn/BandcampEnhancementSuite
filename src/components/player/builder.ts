@@ -60,7 +60,7 @@ export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTM
     bandId === undefined
       ? null
       : createWishlistButton({
-          itemType: 'a',
+          itemType: type === 't' ? 't' : 'a',
           itemId: id,
           bandId,
           log,

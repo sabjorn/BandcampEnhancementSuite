@@ -436,6 +436,27 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       ]);
     });
 
+    // A discography grid lists singles too, and the drawer loads them as type 't'.
+    it('should wishlist a loaded single as a track, not an album', () => {
+      const single = { ...mockTralbumDetails, type: 't' as const, id: 4216 };
+
+      const container = buildAlbumBuyButton(single) as HTMLElement;
+      const star = container.querySelector<HTMLElement>('.bes-wishlist-button') as HTMLElement;
+
+      expect(star.dataset.wishlistType).toBe('t');
+      expect(star.dataset.wishlistId).toBe('4216');
+      expect(star.dataset.wishlistNoun).toBe('track');
+    });
+
+    it('should read the loaded single own state rather than an album with the same id', () => {
+      vi.mocked(isWishlisted).mockReturnValue(false);
+      const single = { ...mockTralbumDetails, type: 't' as const, id: 4216 };
+
+      buildAlbumBuyButton(single);
+
+      expect(isWishlisted).toHaveBeenCalledWith('t', 4216);
+    });
+
     it('should wishlist the album rather than a track', () => {
       const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
       const star = container.querySelector<HTMLElement>('.bes-wishlist-button') as HTMLElement;

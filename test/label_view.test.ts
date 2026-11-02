@@ -622,8 +622,8 @@ describe('album wishlist star on the label page grid', () => {
     expect(artLink.querySelector('.title')).toBeNull();
   });
 
-  it('should skip a grid item with no band id, since the write needs one', () => {
-    document.querySelectorAll<HTMLElement>('.music-grid-item').forEach(item => delete item.dataset.bandId);
+  it('should skip a grid item with no link to take a host from', () => {
+    document.querySelectorAll('.music-grid-item a').forEach(link => link.remove());
 
     addStars();
 

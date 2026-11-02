@@ -65,15 +65,28 @@ function listenForChangesOnce(): void {
 interface CreateWishlistButtonOptions {
   itemType: WishlistItemType;
   itemId: number;
-  bandId: number;
+  itemUrl: string;
   log: Logger;
   size?: number;
 }
 
+function hostOf(itemUrl: string): string | null {
+  if (!itemUrl.trim()) return null;
+
+  try {
+    return new URL(itemUrl, window.location.href).origin;
+  } catch {
+    return null;
+  }
+}
+
 export function createWishlistButton(options: CreateWishlistButtonOptions): HTMLElement | null {
-  const { itemType, itemId, bandId, log, size = DEFAULT_ICON_SIZE } = options;
+  const { itemType, itemId, itemUrl, log, size = DEFAULT_ICON_SIZE } = options;
 
   if (!isWishlistAvailable()) return null;
+
+  const host = hostOf(itemUrl);
+  if (!host || !Number.isFinite(itemId)) return null;
 
   listenForChangesOnce();
 
@@ -96,7 +109,7 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
 
     setWishlistButtonState(button, 'loading');
 
-    withMinDuration(toggleWishlist(itemType, itemId, bandId), MIN_SPINNER_MS)
+    withMinDuration(toggleWishlist(itemType, itemId, host), MIN_SPINNER_MS)
       .then(nowWishlisted => {
         setWishlistButtonState(button, nowWishlisted ? 'in' : 'out');
         button.dispatchEvent(new CustomEvent(CHANGE_EVENT, { bubbles: true }));

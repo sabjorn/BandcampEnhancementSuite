@@ -88,19 +88,19 @@ export function isWishlisted(itemType: WishlistItemType, itemId: number): boolea
   return wishlisted?.has(lookupKey(itemType, itemId)) ?? false;
 }
 
-async function write(action: 'collect' | 'uncollect', item: WishlistItem, bandId: number): Promise<void> {
+async function write(action: 'collect' | 'uncollect', item: WishlistItem, host: string): Promise<void> {
   const written = await chrome.runtime.sendMessage({
     contentScriptQuery: 'writeWishlistItem',
     action,
     item,
-    bandId,
+    host,
     crumb: writeCrumb(action === 'collect' ? 'collect_item_cb' : 'uncollect_item_cb')
   });
 
   if (!written?.ok) throw new Error(written?.error ?? 'Bandcamp rejected the wishlist change');
 }
 
-export async function toggleWishlist(itemType: WishlistItemType, itemId: number, bandId: number): Promise<boolean> {
+export async function toggleWishlist(itemType: WishlistItemType, itemId: number, host: string): Promise<boolean> {
   if (fanId === null || wishlisted === null) throw new Error('Wishlist is unavailable');
 
   const key = lookupKey(itemType, itemId);
@@ -118,7 +118,7 @@ export async function toggleWishlist(itemType: WishlistItemType, itemId: number,
   changing.add(key);
 
   try {
-    await write(adding ? 'collect' : 'uncollect', item, bandId);
+    await write(adding ? 'collect' : 'uncollect', item, host);
   } finally {
     changing.delete(key);
   }

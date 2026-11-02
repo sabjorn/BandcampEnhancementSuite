@@ -1,27 +1,11 @@
 import Logger from '../logger';
-import { getCollectionSummary, collectItem, uncollectItem, getBandDetails, WishlistItem } from '../bclient';
+import { getCollectionSummary, collectItem, uncollectItem, WishlistItem } from '../bclient';
 
 const log = new Logger();
 
 const BASE_URL = 'https://bandcamp.com';
 
 export const WISHLIST_HEADER_RULE_ID = 1;
-
-const bandHosts = new Map<number, string>();
-
-export function resetBandHostCache(): void {
-  bandHosts.clear();
-}
-
-async function bandHost(bandId: number): Promise<string> {
-  const cached = bandHosts.get(bandId);
-  if (cached) return cached;
-
-  const { bandcamp_url } = await getBandDetails(bandId, BASE_URL);
-  bandHosts.set(bandId, bandcamp_url);
-
-  return bandcamp_url;
-}
 
 function presentAsHost(host: string): Promise<void> {
   return chrome.declarativeNetRequest.updateSessionRules({
@@ -71,9 +55,7 @@ async function postAsHost(host: string, post: () => Promise<boolean>): Promise<b
   }
 }
 
-async function collect(item: WishlistItem, crumb: string | null, bandId: number): Promise<boolean> {
-  const host = await bandHost(bandId);
-
+function collect(item: WishlistItem, crumb: string | null, host: string): Promise<boolean> {
   return postAsHost(host, () => collectItem(item, crumb, host));
 }
 
@@ -99,7 +81,7 @@ export function processRequest(
   if (request.contentScriptQuery === 'writeWishlistItem') {
     const write = request.action === 'collect' ? collect : uncollect;
 
-    oneAtATime(() => write(request.item, request.crumb, request.bandId))
+    oneAtATime(() => write(request.item, request.crumb, request.host))
       .then(() => sendResponse({ ok: true }))
       .catch(error => {
         log.error(`Failed to ${request.action} wishlist item: ${error}`);

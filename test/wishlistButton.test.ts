@@ -23,7 +23,7 @@ const buildButton = (overrides: Record<string, any> = {}) =>
   createWishlistButton({
     itemType: 't',
     itemId: 123456,
-    bandId: 857243381,
+    itemUrl: 'https://band.bandcamp.com/track/one',
     log: new Logger(),
     ...overrides
   });
@@ -99,11 +99,17 @@ describe('wishlistButton', () => {
 
   describe('clicking', () => {
     it('should toggle the item it was built for', async () => {
-      const button = buildButton({ itemType: 'a', itemId: 1609998585, bandId: 42 })!;
+      const button = buildButton({
+        itemType: 'a',
+        itemId: 1609998585,
+        itemUrl: 'https://other.bandcamp.com/album/one'
+      })!;
 
       button.click();
 
-      await vi.waitFor(() => expect(toggleWishlist).toHaveBeenCalledWith('a', 1609998585, 42));
+      await vi.waitFor(() =>
+        expect(toggleWishlist).toHaveBeenCalledWith('a', 1609998585, 'https://other.bandcamp.com')
+      );
     });
 
     it('should spin while the request is in flight, as the cart button does', async () => {
@@ -261,6 +267,24 @@ describe('wishlistButton', () => {
 
       await vi.waitFor(() => expect(row.dataset.wishlistState).toBe('out'));
       expect(header.dataset.wishlistState).toBe('out');
+    });
+  });
+
+  describe('an item with nothing to route by', () => {
+    it('should render nothing without a usable item url', () => {
+      expect(buildButton({ itemUrl: '' })).toBeNull();
+    });
+
+    it('should render nothing for an unparseable item id', () => {
+      expect(buildButton({ itemId: Number('abc') })).toBeNull();
+    });
+
+    it('should take the host from a relative url, which a label own release has', () => {
+      const button = buildButton({ itemUrl: '/album/same-reason' })!;
+
+      button.click();
+
+      expect(toggleWishlist).toHaveBeenCalledWith('t', 123456, window.location.origin);
     });
   });
 

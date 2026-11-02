@@ -83,7 +83,8 @@ describe('Player - wishlist stars on the album page track rows', () => {
       title: 'Track 1',
       price: 1,
       currency: 'USD',
-      is_purchasable: true
+      is_purchasable: true,
+      track_url: 'https://label.bandcamp.com/track/track-1'
     },
     {
       track_id: 1002,
@@ -91,7 +92,8 @@ describe('Player - wishlist stars on the album page track rows', () => {
       title: 'Track 2',
       price: 1,
       currency: 'USD',
-      is_purchasable: true
+      is_purchasable: true,
+      track_url: 'https://label.bandcamp.com/track/track-2'
     }
   ];
 
@@ -125,6 +127,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
       currency: 'USD',
       price: 10,
       is_purchasable: true,
+      bandcamp_url: 'https://label.bandcamp.com/album/vielen-dank',
       tracks
     } as any);
     vi.mocked(initWishlistState).mockResolvedValue(true);

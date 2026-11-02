@@ -1,12 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import { getCollectionSummary, collectItem, uncollectItem, getBandDetails } from '../src/bclient';
-import {
-  processRequest,
-  initWishlistBackend,
-  resetBandHostCache,
-  WISHLIST_HEADER_RULE_ID
-} from '../src/background/wishlist_backend';
+import { getCollectionSummary, collectItem, uncollectItem } from '../src/bclient';
+import { processRequest, initWishlistBackend, WISHLIST_HEADER_RULE_ID } from '../src/background/wishlist_backend';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -20,8 +15,7 @@ vi.mock('../src/logger', () => ({
 vi.mock('../src/bclient', () => ({
   getCollectionSummary: vi.fn(),
   collectItem: vi.fn(),
-  uncollectItem: vi.fn(),
-  getBandDetails: vi.fn()
+  uncollectItem: vi.fn()
 }));
 
 const summary = {
@@ -41,12 +35,6 @@ describe('wishlist backend', () => {
     vi.mocked(getCollectionSummary).mockResolvedValue(summary as any);
     vi.mocked(uncollectItem).mockResolvedValue(true);
     vi.mocked(collectItem).mockResolvedValue(true);
-    vi.mocked(getBandDetails).mockResolvedValue({
-      id: 857243381,
-      name: 'Half Past Vibe',
-      bandcamp_url: 'https://halfpastvibe.bandcamp.com'
-    });
-    resetBandHostCache();
     (globalThis as any).chrome = {
       runtime: { onMessage: { addListener: vi.fn() } },
       tabs: { TAB_ID_NONE: -1 },
@@ -108,19 +96,24 @@ describe('wishlist backend', () => {
 
     const ask = (sendResponse: any, action = 'collect') =>
       processRequest(
-        { contentScriptQuery: 'writeWishlistItem', action, item, bandId: 857243381, crumb: 'page_crumb' },
+        {
+          contentScriptQuery: 'writeWishlistItem',
+          action,
+          item,
+          host: 'https://halfpastvibe.bandcamp.com',
+          crumb: 'page_crumb'
+        },
         {} as any,
         sendResponse
       );
 
     // collect_item_cb resolves the band from the host it is posted to.
-    it('should collect against the owning band host', async () => {
+    it('should collect against the host it was given', async () => {
       const sendResponse = vi.fn();
 
       ask(sendResponse);
 
       await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith({ ok: true }));
-      expect(getBandDetails).toHaveBeenCalledWith(857243381, 'https://bandcamp.com');
       expect(collectItem).toHaveBeenCalledWith(item, 'page_crumb', 'https://halfpastvibe.bandcamp.com');
     });
 
@@ -132,19 +125,6 @@ describe('wishlist backend', () => {
 
       await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith({ ok: true }));
       expect(uncollectItem).toHaveBeenCalledWith(item, 'page_crumb', 'https://bandcamp.com');
-      expect(getBandDetails).not.toHaveBeenCalled();
-    });
-
-    it('should look a band host up only once', async () => {
-      const first = vi.fn();
-      const second = vi.fn();
-
-      ask(first);
-      await vi.waitFor(() => expect(first).toHaveBeenCalled());
-      ask(second);
-      await vi.waitFor(() => expect(second).toHaveBeenCalled());
-
-      expect(getBandDetails).toHaveBeenCalledTimes(1);
     });
 
     it('should keep the listener alive for the async reply', () => {
@@ -172,7 +152,7 @@ describe('wishlist backend', () => {
           contentScriptQuery: 'writeWishlistItem',
           action,
           item: { fan_id: 1, item_type: 't' as const, item_id: 2 },
-          bandId: 857243381,
+          host: 'https://band.bandcamp.com',
           crumb: 'page_crumb'
         },
         {} as any,
@@ -207,7 +187,7 @@ describe('wishlist backend', () => {
 
       await vi.waitFor(() =>
         expect(chrome.declarativeNetRequest.updateSessionRules).toHaveBeenCalledWith(
-          ruleFor('https://halfpastvibe.bandcamp.com')
+          ruleFor('https://band.bandcamp.com')
         )
       );
     });
@@ -229,7 +209,7 @@ describe('wishlist backend', () => {
           contentScriptQuery: 'writeWishlistItem',
           action: 'uncollect',
           item: { fan_id: 1, item_type: 't' as const, item_id: 2 },
-          bandId: 857243381,
+          host: 'https://band.bandcamp.com',
           crumb: 'page_crumb'
         },
         {} as any,
@@ -283,11 +263,6 @@ describe('wishlist backend', () => {
       const order: string[] = [];
       let releaseCollect: (value: boolean) => void = () => {};
 
-      vi.mocked(getBandDetails).mockResolvedValue({
-        id: 1,
-        name: 'Band',
-        bandcamp_url: 'https://band.bandcamp.com'
-      });
       vi.mocked(chrome.declarativeNetRequest.updateSessionRules).mockImplementation(async (options: any) => {
         order.push(options.addRules ? `rule:${options.addRules[0].action.requestHeaders[1].value}` : 'rule:off');
       });

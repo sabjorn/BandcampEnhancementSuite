@@ -33,6 +33,8 @@ const summary = (tralbum_lookup: Record<string, any>, fan_id: number | null = 89
   follows: { following: {} }
 });
 
+const HOST = 'https://band.bandcamp.com';
+
 const wishlistedTrack = { item_type: 'track', item_id: 123456, band_id: 857243381, purchased: null };
 const ownedAlbum = {
   item_type: 'album',
@@ -178,13 +180,13 @@ describe('wishlist state', () => {
     it('should collect an item that is not yet wishlisted', async () => {
       await initWishlistState();
 
-      await expect(toggleWishlist('t', 999, 857243381)).resolves.toBe(true);
+      await expect(toggleWishlist('t', 999, HOST)).resolves.toBe(true);
 
       expect(sendMessage).toHaveBeenCalledWith({
         contentScriptQuery: 'writeWishlistItem',
         action: 'collect',
         item: { fan_id: 896389, item_type: 't', item_id: 999, ref_token: null },
-        bandId: 857243381,
+        host: HOST,
         crumb: 'add_crumb'
       });
     });
@@ -192,13 +194,13 @@ describe('wishlist state', () => {
     it('should uncollect an item that is already wishlisted', async () => {
       await initWishlistState();
 
-      await expect(toggleWishlist('t', 123456, 857243381)).resolves.toBe(false);
+      await expect(toggleWishlist('t', 123456, HOST)).resolves.toBe(false);
 
       expect(sendMessage).toHaveBeenCalledWith({
         contentScriptQuery: 'writeWishlistItem',
         action: 'uncollect',
         item: { fan_id: 896389, item_type: 't', item_id: 123456, ref_token: null },
-        bandId: 857243381,
+        host: HOST,
         crumb: 'remove_crumb'
       });
     });
@@ -207,7 +209,7 @@ describe('wishlist state', () => {
       setReferrerToken('ref-abc');
       await initWishlistState();
 
-      await toggleWishlist('t', 999, 857243381);
+      await toggleWishlist('t', 999, HOST);
 
       expect(sendMessage).toHaveBeenCalledWith(
         expect.objectContaining({ item: expect.objectContaining({ ref_token: 'ref-abc' }) })
@@ -219,7 +221,7 @@ describe('wishlist state', () => {
       setCrumbs({ collect_item_cb: 'add_crumb' });
       await initWishlistState();
 
-      await toggleWishlist('t', 123456, 857243381);
+      await toggleWishlist('t', 123456, HOST);
 
       expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({ action: 'uncollect', crumb: 'add_crumb' }));
     });
@@ -228,7 +230,7 @@ describe('wishlist state', () => {
       document.body.innerHTML = '';
       await initWishlistState();
 
-      await toggleWishlist('t', 999, 857243381);
+      await toggleWishlist('t', 999, HOST);
 
       expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({ crumb: null }));
     });
@@ -236,10 +238,10 @@ describe('wishlist state', () => {
     it('should only record the new state once Bandcamp has confirmed it', async () => {
       await initWishlistState();
 
-      await toggleWishlist('t', 999, 857243381);
+      await toggleWishlist('t', 999, HOST);
       expect(isWishlisted('t', 999)).toBe(true);
 
-      await toggleWishlist('t', 999, 857243381);
+      await toggleWishlist('t', 999, HOST);
       expect(isWishlisted('t', 999)).toBe(false);
     });
 
@@ -251,7 +253,7 @@ describe('wishlist state', () => {
           : summary({ t123456: wishlistedTrack })
       );
 
-      await expect(toggleWishlist('t', 999, 857243381)).rejects.toThrow('old or no crumb specified');
+      await expect(toggleWishlist('t', 999, HOST)).rejects.toThrow('old or no crumb specified');
       expect(isWishlisted('t', 999)).toBe(false);
     });
 
@@ -263,7 +265,7 @@ describe('wishlist state', () => {
           : summary({ t123456: wishlistedTrack })
       );
 
-      await expect(toggleWishlist('t', 123456, 857243381)).rejects.toThrow('network down');
+      await expect(toggleWishlist('t', 123456, HOST)).rejects.toThrow('network down');
       expect(isWishlisted('t', 123456)).toBe(true);
     });
 
@@ -271,7 +273,7 @@ describe('wishlist state', () => {
       sendMessage.mockRejectedValue(new Error('403'));
       await initWishlistState();
 
-      await expect(toggleWishlist('t', 999, 857243381)).rejects.toThrow('Wishlist is unavailable');
+      await expect(toggleWishlist('t', 999, HOST)).rejects.toThrow('Wishlist is unavailable');
     });
 
     // A grid star and the drawer's star can both exist for one album, and each only guards its own
@@ -286,8 +288,8 @@ describe('wishlist state', () => {
           : summary({ t123456: wishlistedTrack })
       );
 
-      const first = toggleWishlist('t', 999, 857243381);
-      const second = toggleWishlist('t', 999, 857243381);
+      const first = toggleWishlist('t', 999, HOST);
+      const second = toggleWishlist('t', 999, HOST);
 
       await expect(second).rejects.toThrow('already changing');
       expect(settlers).toHaveLength(1);
@@ -299,8 +301,8 @@ describe('wishlist state', () => {
     it('should allow a further change once the first has settled', async () => {
       await initWishlistState();
 
-      await toggleWishlist('t', 999, 857243381);
-      await expect(toggleWishlist('t', 999, 857243381)).resolves.toBe(false);
+      await toggleWishlist('t', 999, HOST);
+      await expect(toggleWishlist('t', 999, HOST)).resolves.toBe(false);
     });
 
     it('should not block a different item', async () => {
@@ -313,8 +315,8 @@ describe('wishlist state', () => {
           : summary({ t123456: wishlistedTrack })
       );
 
-      const first = toggleWishlist('t', 999, 857243381);
-      const other = toggleWishlist('t', 888, 857243381);
+      const first = toggleWishlist('t', 999, HOST);
+      const other = toggleWishlist('t', 888, HOST);
 
       await vi.waitFor(() => expect(settlers).toHaveLength(2));
       settlers.forEach(settle => settle({ ok: true }));
@@ -331,8 +333,8 @@ describe('wishlist state', () => {
           : summary({ t123456: wishlistedTrack })
       );
 
-      await expect(toggleWishlist('t', 999, 857243381)).rejects.toThrow('nope');
-      await expect(toggleWishlist('t', 999, 857243381)).rejects.toThrow('nope');
+      await expect(toggleWishlist('t', 999, HOST)).rejects.toThrow('nope');
+      await expect(toggleWishlist('t', 999, HOST)).rejects.toThrow('nope');
     });
   });
 });

@@ -55,17 +55,13 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
 export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTMLElement | null {
   const { price, currency, id, title, type, is_purchasable } = tralbumDetails;
 
-  const bandId = tralbumDetails.band?.band_id ?? tralbumDetails.tracks?.[0]?.band_id;
-  const albumStar =
-    bandId === undefined
-      ? null
-      : createWishlistButton({
-          itemType: type === 't' ? 't' : 'a',
-          itemId: id,
-          bandId,
-          log,
-          size: 14
-        });
+  const albumStar = createWishlistButton({
+    itemType: type === 't' ? 't' : 'a',
+    itemId: id,
+    itemUrl: tralbumDetails.bandcamp_url ?? '',
+    log,
+    size: 14
+  });
 
   const canBuy = is_purchasable && price !== undefined;
   if (!albumStar && !canBuy) return null;
@@ -95,7 +91,7 @@ export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTM
   return container;
 }
 
-function buildTrackStateCell(track: TralbumTrack): HTMLElement {
+function buildTrackStateCell(track: TralbumTrack, albumUrl: string): HTMLElement {
   const stateCol = document.createElement('td');
   stateCol.className = 'bes-track-state-col';
 
@@ -115,7 +111,7 @@ function buildTrackStateCell(track: TralbumTrack): HTMLElement {
   const wishlistButton = createWishlistButton({
     itemType: 't',
     itemId: track.track_id,
-    bandId: track.band_id,
+    itemUrl: track.track_url ?? albumUrl,
     log
   });
   if (wishlistButton) stateCol.appendChild(wishlistButton);
@@ -170,7 +166,7 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
       durationCol.appendChild(timeSpan);
     }
 
-    const stateCol = buildTrackStateCell(track);
+    const stateCol = buildTrackStateCell(track, tralbumDetails.bandcamp_url ?? '');
 
     const linkCol = document.createElement('td');
     linkCol.className = 'bes-track-link-col';

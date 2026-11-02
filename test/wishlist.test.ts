@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import { collectItem } from '../src/bclient';
 import { isBandcampLoggedIn } from '../src/utilities';
 import {
   initWishlistState,
@@ -21,10 +20,6 @@ vi.mock('../src/logger', () => ({
 
 vi.mock('../src/utilities', () => ({
   isBandcampLoggedIn: vi.fn(() => true)
-}));
-
-vi.mock('../src/bclient', () => ({
-  collectItem: vi.fn()
 }));
 
 // The summary is fetched by the service worker, because the band subdomains omit the lookup.
@@ -67,7 +62,6 @@ describe('wishlist state', () => {
     vi.mocked(isBandcampLoggedIn).mockReturnValue(true);
     (globalThis as any).chrome = { runtime: { sendMessage } };
     sendMessage.mockResolvedValue(summary({ t123456: wishlistedTrack }));
-    vi.mocked(collectItem).mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -177,7 +171,7 @@ describe('wishlist state', () => {
     beforeEach(() => {
       setCrumbs({ collect_item_cb: 'add_crumb', uncollect_item_cb: 'remove_crumb' });
       sendMessage.mockImplementation(async (message: any) =>
-        message.contentScriptQuery === 'uncollectWishlistItem' ? { ok: true } : summary({ t123456: wishlistedTrack })
+        message.contentScriptQuery === 'writeWishlistItem' ? { ok: true } : summary({ t123456: wishlistedTrack })
       );
     });
 
@@ -186,13 +180,12 @@ describe('wishlist state', () => {
 
       await expect(toggleWishlist('t', 999, 857243381)).resolves.toBe(true);
 
-      expect(collectItem).toHaveBeenCalledWith(
-        { fan_id: 896389, item_type: 't', item_id: 999, band_id: 857243381, ref_token: null },
-        'add_crumb'
-      );
-      expect(sendMessage).not.toHaveBeenCalledWith(
-        expect.objectContaining({ contentScriptQuery: 'uncollectWishlistItem' })
-      );
+      expect(sendMessage).toHaveBeenCalledWith({
+        contentScriptQuery: 'writeWishlistItem',
+        action: 'collect',
+        item: { fan_id: 896389, item_type: 't', item_id: 999, band_id: 857243381, ref_token: null },
+        crumb: 'add_crumb'
+      });
     });
 
     it('should uncollect an item that is already wishlisted', async () => {
@@ -200,14 +193,12 @@ describe('wishlist state', () => {
 
       await expect(toggleWishlist('t', 123456, 857243381)).resolves.toBe(false);
 
-      // uncollect_item_cb only accepts the base domain, which a page cannot reach, so the
-      // service worker makes that request.
       expect(sendMessage).toHaveBeenCalledWith({
-        contentScriptQuery: 'uncollectWishlistItem',
+        contentScriptQuery: 'writeWishlistItem',
+        action: 'uncollect',
         item: { fan_id: 896389, item_type: 't', item_id: 123456, band_id: 857243381, ref_token: null },
         crumb: 'remove_crumb'
       });
-      expect(collectItem).not.toHaveBeenCalled();
     });
 
     it('should pass along the page referrer token when there is one', async () => {
@@ -216,17 +207,19 @@ describe('wishlist state', () => {
 
       await toggleWishlist('t', 999, 857243381);
 
-      expect(collectItem).toHaveBeenCalledWith(expect.objectContaining({ ref_token: 'ref-abc' }), 'add_crumb');
+      expect(sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ item: expect.objectContaining({ ref_token: 'ref-abc' }) })
+      );
     });
 
-    it('should take the crumb from the page and look nowhere else', async () => {
+    it('should fall back to the other crumb when the page lacks the one for this path', async () => {
+      document.body.innerHTML = '';
+      setCrumbs({ collect_item_cb: 'add_crumb' });
       await initWishlistState();
-      sendMessage.mockClear();
 
-      await toggleWishlist('t', 999, 857243381);
+      await toggleWishlist('t', 123456, 857243381);
 
-      expect(collectItem).toHaveBeenCalledWith(expect.anything(), 'add_crumb');
-      expect(sendMessage).not.toHaveBeenCalled();
+      expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({ action: 'uncollect', crumb: 'add_crumb' }));
     });
 
     it('should send a null crumb when the page carries none', async () => {
@@ -235,7 +228,7 @@ describe('wishlist state', () => {
 
       await toggleWishlist('t', 999, 857243381);
 
-      expect(collectItem).toHaveBeenCalledWith(expect.anything(), null);
+      expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({ crumb: null }));
     });
 
     it('should only record the new state once Bandcamp has confirmed it', async () => {
@@ -249,8 +242,12 @@ describe('wishlist state', () => {
     });
 
     it('should pass on the reason and leave the state untouched when Bandcamp rejects the change', async () => {
-      vi.mocked(collectItem).mockRejectedValue(new Error('old or no crumb specified'));
       await initWishlistState();
+      sendMessage.mockImplementation(async (message: any) =>
+        message.contentScriptQuery === 'writeWishlistItem'
+          ? { ok: false, error: 'old or no crumb specified' }
+          : summary({ t123456: wishlistedTrack })
+      );
 
       await expect(toggleWishlist('t', 999, 857243381)).rejects.toThrow('old or no crumb specified');
       expect(isWishlisted('t', 999)).toBe(false);
@@ -259,7 +256,7 @@ describe('wishlist state', () => {
     it('should leave the state untouched when the request itself fails', async () => {
       await initWishlistState();
       sendMessage.mockImplementation(async (message: any) =>
-        message.contentScriptQuery === 'uncollectWishlistItem'
+        message.contentScriptQuery === 'writeWishlistItem'
           ? { ok: false, error: 'network down' }
           : summary({ t123456: wishlistedTrack })
       );
@@ -273,7 +270,6 @@ describe('wishlist state', () => {
       await initWishlistState();
 
       await expect(toggleWishlist('t', 999, 857243381)).rejects.toThrow('Wishlist is unavailable');
-      expect(collectItem).not.toHaveBeenCalled();
     });
   });
 });

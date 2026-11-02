@@ -1,7 +1,5 @@
 import Logger from '../logger';
 import { isWishlistAvailable, isWishlisted, toggleWishlist, WishlistItemType } from '../wishlist';
-import { extractBandId } from '../utilities';
-import { wrapWithTooltip } from './tooltip';
 import { starIcon } from './player/icons';
 
 const DEFAULT_ICON_SIZE = 12;
@@ -18,12 +16,6 @@ function titleFor(state: WishlistButtonState, noun: string): string {
   if (state === 'loading') return 'Working…';
 
   return state === 'in' ? `Remove this ${noun} from your wishlist` : `Add this ${noun} to your wishlist`;
-}
-
-function pageOwnsBand(bandId: number): boolean {
-  const pageBandId = extractBandId();
-
-  return pageBandId !== null && pageBandId === bandId;
 }
 
 export function setWishlistButtonState(button: HTMLElement, state: WishlistButtonState): void {
@@ -86,14 +78,6 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
   button.dataset.wishlistSize = String(size);
 
   setWishlistButtonState(button, isWishlisted(itemType, itemId) ? 'in' : 'out');
-
-  if (!pageOwnsBand(bandId)) {
-    button.disabled = true;
-    return wrapWithTooltip(
-      button,
-      `Bandcamp only accepts this from the ${NOUNS[itemType]}'s own page. Open it there to change your wishlist.`
-    );
-  }
 
   button.addEventListener('click', event => {
     event.preventDefault();

@@ -292,6 +292,33 @@ export async function hideUnhide(
   return data.ok === true;
 }
 
+export interface BandDetailsResponse {
+  id: number;
+  name: string;
+  bandcamp_url: string;
+}
+
+export async function getBandDetails(band_id: number, baseUrl: string | null = null): Promise<BandDetailsResponse> {
+  const url = baseUrl ? `${baseUrl}/api/mobile/25/band_details` : `/api/mobile/25/band_details`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      'user-agent': 'Bandcamp/218977 CFNetwork/1399 Darwin/22.1.0',
+      'sec-fetch-mode': 'cors'
+    },
+    body: JSON.stringify({ band_id })
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
 export interface WishlistItem {
   fan_id: number;
   item_type: 't' | 'a';

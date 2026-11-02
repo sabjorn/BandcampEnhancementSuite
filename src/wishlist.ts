@@ -1,5 +1,5 @@
 import Logger from './logger';
-import { collectItem, CollectionSummary, WishlistItem } from './bclient';
+import { CollectionSummary, WishlistItem } from './bclient';
 import { isBandcampLoggedIn } from './utilities';
 
 const log = new Logger();
@@ -87,11 +87,12 @@ export function isWishlisted(itemType: WishlistItemType, itemId: number): boolea
   return wishlisted?.has(lookupKey(itemType, itemId)) ?? false;
 }
 
-async function uncollect(item: WishlistItem): Promise<void> {
+async function write(action: 'collect' | 'uncollect', item: WishlistItem): Promise<void> {
   const written = await chrome.runtime.sendMessage({
-    contentScriptQuery: 'uncollectWishlistItem',
+    contentScriptQuery: 'writeWishlistItem',
+    action,
     item,
-    crumb: writeCrumb('uncollect_item_cb')
+    crumb: writeCrumb(action === 'collect' ? 'collect_item_cb' : 'uncollect_item_cb')
   });
 
   if (!written?.ok) throw new Error(written?.error ?? 'Bandcamp rejected the wishlist change');
@@ -111,8 +112,7 @@ export async function toggleWishlist(itemType: WishlistItemType, itemId: number,
     ref_token: readReferrerToken()
   };
 
-  if (adding) await collectItem(item, writeCrumb('collect_item_cb'));
-  else await uncollect(item);
+  await write(adding ? 'collect' : 'uncollect', item);
 
   if (adding) wishlisted.add(key);
   else wishlisted.delete(key);

@@ -1,5 +1,5 @@
 import Logger from '../logger';
-import { getCollectionSummary, uncollectItem } from '../bclient';
+import { getCollectionSummary, collectItem, uncollectItem, getBandDetails, WishlistItem } from '../bclient';
 
 const log = new Logger();
 
@@ -7,7 +7,23 @@ const BASE_URL = 'https://bandcamp.com';
 
 export const WISHLIST_HEADER_RULE_ID = 1;
 
-function presentAsBaseDomain(): Promise<void> {
+const bandHosts = new Map<number, string>();
+
+export function resetBandHostCache(): void {
+  bandHosts.clear();
+}
+
+async function bandHost(bandId: number): Promise<string> {
+  const cached = bandHosts.get(bandId);
+  if (cached) return cached;
+
+  const { bandcamp_url } = await getBandDetails(bandId, BASE_URL);
+  bandHosts.set(bandId, bandcamp_url);
+
+  return bandcamp_url;
+}
+
+function presentAsHost(host: string): Promise<void> {
   return chrome.declarativeNetRequest.updateSessionRules({
     removeRuleIds: [WISHLIST_HEADER_RULE_ID],
     addRules: [
@@ -18,17 +34,30 @@ function presentAsBaseDomain(): Promise<void> {
           type: 'modifyHeaders',
           requestHeaders: [
             { header: 'origin', operation: 'remove' },
-            { header: 'referer', operation: 'set', value: `${BASE_URL}/` }
+            { header: 'referer', operation: 'set', value: `${host}/` }
           ]
         },
         condition: {
           requestDomains: ['bandcamp.com'],
-          urlFilter: 'uncollect_item_cb',
+          urlFilter: 'collect_item_cb',
           resourceTypes: ['xmlhttprequest', 'other']
         }
       }
     ]
   } as chrome.declarativeNetRequest.UpdateRuleOptions);
+}
+
+async function collect(item: WishlistItem, crumb: string | null): Promise<boolean> {
+  const host = await bandHost(item.band_id);
+  await presentAsHost(host);
+
+  return collectItem(item, crumb, host);
+}
+
+async function uncollect(item: WishlistItem, crumb: string | null): Promise<boolean> {
+  await presentAsHost(BASE_URL);
+
+  return uncollectItem(item, crumb, BASE_URL);
 }
 
 export function processRequest(
@@ -46,11 +75,13 @@ export function processRequest(
     return true;
   }
 
-  if (request.contentScriptQuery === 'uncollectWishlistItem') {
-    uncollectItem(request.item, request.crumb, BASE_URL)
+  if (request.contentScriptQuery === 'writeWishlistItem') {
+    const write = request.action === 'collect' ? collect : uncollect;
+
+    write(request.item, request.crumb)
       .then(() => sendResponse({ ok: true }))
       .catch(error => {
-        log.error(`Failed to uncollect wishlist item: ${error}`);
+        log.error(`Failed to ${request.action} wishlist item: ${error}`);
         sendResponse({ ok: false, error: error.message });
       });
     return true;
@@ -62,6 +93,4 @@ export function processRequest(
 export async function initWishlistBackend(): Promise<void> {
   log.info('starting wishlist backend.');
   chrome.runtime.onMessage.addListener(processRequest);
-
-  await presentAsBaseDomain().catch(error => log.error(`Could not install the wishlist header rule: ${error}`));
 }

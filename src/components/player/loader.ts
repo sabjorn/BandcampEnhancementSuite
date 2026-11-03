@@ -11,7 +11,7 @@ import { element, replaceChildren } from '../dom';
 import { inDrawer, allInDrawer, setText, setStyle } from './query';
 import { streamUrlOf, findPlayableTrackAfter, findPlayableTrackBefore } from './trackSelection';
 import { applyTrackState, markRowPlayed } from './trackState';
-import { initWishlistState } from '../../wishlist';
+import { initCollectionState } from '../../collection';
 import { buildAlbumNav, updateAlbumNav } from './albumNav';
 import {
   selectAlbum,
@@ -235,7 +235,7 @@ export async function loadAlbumIntoDrawer(
   try {
     const [tralbumDetails] = await Promise.all([
       getTralbumDetails(albumId, convertToApiType(albumType), null, createFetchFunction(enableFetchCaching)),
-      initWishlistState()
+      initCollectionState()
     ]);
 
     if (requestedAlbumId !== albumId) {

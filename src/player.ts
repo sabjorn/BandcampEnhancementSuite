@@ -3,7 +3,7 @@ import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, create
 import { CURRENCY_MINIMUMS, getTralbumDetails, TralbumDetailsResponse } from './bclient';
 import { createAddToCartButton } from './components/cartButton';
 import { createWishlistButton } from './components/wishlistButton';
-import { initWishlistState, isOwned } from './wishlist';
+import { initCollectionState, isOwned } from './collection';
 import { PlayerCommands, registerPlayerShortcuts } from './keyboardShortcuts';
 
 let nativeShortcutsRegistered = false;
@@ -79,7 +79,7 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
     const fetchFn = createFetchFunction(enableFetchCaching);
     const [tralbumDetails] = await Promise.all([
       getTralbumDetails(tralbumId, tralbumType, null, fetchFn),
-      initWishlistState()
+      initCollectionState()
     ]);
 
     addWishlistStars(tralbumDetails, log);

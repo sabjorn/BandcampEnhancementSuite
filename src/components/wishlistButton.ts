@@ -1,5 +1,5 @@
 import Logger from '../logger';
-import { isWishlistAvailable, isWishlisted, isOwned, toggleWishlist, WishlistItemType } from '../wishlist';
+import { isCollectionAvailable, isWishlisted, isOwned, toggleWishlist, WishlistItemType } from '../collection';
 import { starIcon, ownedIcon } from './player/icons';
 
 const DEFAULT_ICON_SIZE = 12;
@@ -92,7 +92,7 @@ function ownedIndicator(itemType: WishlistItemType, size: number): HTMLElement {
 export function createWishlistButton(options: CreateWishlistButtonOptions): HTMLElement | null {
   const { itemType, itemId, itemUrl, log, size = DEFAULT_ICON_SIZE } = options;
 
-  if (!isWishlistAvailable()) return null;
+  if (!isCollectionAvailable()) return null;
 
   const host = hostOf(itemUrl);
   if (!host || !Number.isFinite(itemId)) return null;

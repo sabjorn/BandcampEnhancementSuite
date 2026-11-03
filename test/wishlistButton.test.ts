@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import Logger from '../src/logger';
-import { isWishlistAvailable, isWishlisted, isOwned, toggleWishlist } from '../src/wishlist';
+import { isCollectionAvailable, isWishlisted, isOwned, toggleWishlist } from '../src/collection';
 import { createWishlistButton, setWishlistButtonState, refreshWishlistButton } from '../src/components/wishlistButton';
 
 vi.mock('../src/logger', () => ({
@@ -13,8 +13,8 @@ vi.mock('../src/logger', () => ({
   }
 }));
 
-vi.mock('../src/wishlist', () => ({
-  isWishlistAvailable: vi.fn(),
+vi.mock('../src/collection', () => ({
+  isCollectionAvailable: vi.fn(),
   isWishlisted: vi.fn(),
   isOwned: vi.fn(),
   toggleWishlist: vi.fn()
@@ -33,7 +33,7 @@ describe('wishlistButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = '';
-    vi.mocked(isWishlistAvailable).mockReturnValue(true);
+    vi.mocked(isCollectionAvailable).mockReturnValue(true);
     vi.mocked(isWishlisted).mockReturnValue(false);
     vi.mocked(toggleWishlist).mockResolvedValue(true);
     vi.mocked(isOwned).mockReturnValue(false);
@@ -45,7 +45,7 @@ describe('wishlistButton', () => {
 
   describe('createWishlistButton', () => {
     it('should render nothing when the wishlist is unavailable, so logged out pages stay clean', () => {
-      vi.mocked(isWishlistAvailable).mockReturnValue(false);
+      vi.mocked(isCollectionAvailable).mockReturnValue(false);
 
       expect(buildButton()).toBeNull();
     });
@@ -340,7 +340,7 @@ describe('wishlistButton', () => {
     });
 
     it('should still render nothing when the wishlist is unavailable', () => {
-      vi.mocked(isWishlistAvailable).mockReturnValue(false);
+      vi.mocked(isCollectionAvailable).mockReturnValue(false);
 
       expect(buildButton()).toBeNull();
     });

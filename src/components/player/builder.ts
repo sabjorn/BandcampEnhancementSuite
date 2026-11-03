@@ -2,7 +2,7 @@ import Logger from '../../logger';
 import { TralbumDetailsResponse, TralbumTrack, CURRENCY_MINIMUMS } from '../../bclient';
 import { createAddToCartButton } from '../cartButton';
 import { createWishlistButton } from '../wishlistButton';
-import { isOwned } from '../../wishlist';
+import { isOwned } from '../../collection';
 import { prevIcon, nextIcon, playIcon, pauseIcon, volumeIcon, heartIcon, playedIcon } from './icons';
 import playerCenterMarkup from '../../../html/drawer_player_center.html';
 

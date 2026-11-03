@@ -3,9 +3,9 @@ import { createDomNodes, cleanupTestNodes } from './utils';
 
 // The drawer loads the shared wishlist state alongside the album; stub it so these tests only
 // control the album requests they care about.
-vi.mock('../src/wishlist', () => ({
-  initWishlistState: vi.fn(async () => true),
-  isWishlistAvailable: vi.fn(() => false),
+vi.mock('../src/collection', () => ({
+  initCollectionState: vi.fn(async () => true),
+  isCollectionAvailable: vi.fn(() => false),
   isWishlisted: vi.fn(() => false),
   isOwned: vi.fn(() => false),
   toggleWishlist: vi.fn()
@@ -500,7 +500,7 @@ describe('album wishlist star on the label page grid', () => {
   let render: typeof renderDom;
   let addStars: typeof addGridWishlistStars;
   let init: typeof initLabelView;
-  let wishlist: typeof import('../src/wishlist');
+  let wishlist: typeof import('../src/collection');
 
   const gridPage = `
     <script type="text/javascript" data-band='{"id":857243381}'></script>
@@ -524,8 +524,8 @@ describe('album wishlist star on the label page grid', () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    wishlist = await import('../src/wishlist');
-    vi.mocked(wishlist.isWishlistAvailable).mockReturnValue(true);
+    wishlist = await import('../src/collection');
+    vi.mocked(wishlist.isCollectionAvailable).mockReturnValue(true);
     vi.mocked(wishlist.isWishlisted).mockReturnValue(false);
     ({ renderDom: render, addGridWishlistStars: addStars, initLabelView: init } = await import('../src/label_view'));
     createDomNodes(gridPage);
@@ -546,11 +546,11 @@ describe('album wishlist star on the label page grid', () => {
   // The collection summary needs a round trip through the service worker, so the grid is rendered
   // first and decorated once the state lands.
   it('should not depend on the grid render, which happens before the wishlist state arrives', () => {
-    vi.mocked(wishlist.isWishlistAvailable).mockReturnValue(false);
+    vi.mocked(wishlist.isCollectionAvailable).mockReturnValue(false);
     render(mockPort as any, { previewOpen: false });
     expect(stars().length).toBe(0);
 
-    vi.mocked(wishlist.isWishlistAvailable).mockReturnValue(true);
+    vi.mocked(wishlist.isCollectionAvailable).mockReturnValue(true);
     addStars();
 
     expect(stars().length).toBe(2);
@@ -640,7 +640,7 @@ describe('album wishlist star on the label page grid', () => {
   });
 
   it('should not add a star when the wishlist is unavailable', () => {
-    vi.mocked(wishlist.isWishlistAvailable).mockReturnValue(false);
+    vi.mocked(wishlist.isCollectionAvailable).mockReturnValue(false);
 
     addStars();
 

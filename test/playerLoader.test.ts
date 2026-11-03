@@ -136,9 +136,9 @@ vi.mock('../src/utilities', () => ({
   createFetchFunction: vi.fn(() => fetch)
 }));
 
-vi.mock('../src/wishlist', () => ({
-  initWishlistState: vi.fn(async () => true),
-  isWishlistAvailable: vi.fn(() => false),
+vi.mock('../src/collection', () => ({
+  initCollectionState: vi.fn(async () => true),
+  isCollectionAvailable: vi.fn(() => false),
   isWishlisted: vi.fn(() => false),
   isOwned: vi.fn(() => false),
   toggleWishlist: vi.fn()

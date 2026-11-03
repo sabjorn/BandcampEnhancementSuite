@@ -3,10 +3,10 @@ import { createDomNodes, cleanupTestNodes } from './utils';
 import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from '../src/components/player/builder';
 import { prevIcon, nextIcon, playIcon, pauseIcon } from '../src/components/player/icons';
 import { TralbumDetailsResponse } from '../src/bclient';
-import { isWishlistAvailable, isWishlisted, isOwned } from '../src/wishlist';
+import { isCollectionAvailable, isWishlisted, isOwned } from '../src/collection';
 
-vi.mock('../src/wishlist', () => ({
-  isWishlistAvailable: vi.fn(() => true),
+vi.mock('../src/collection', () => ({
+  isCollectionAvailable: vi.fn(() => true),
   isWishlisted: vi.fn(() => false),
   isOwned: vi.fn(() => false),
   toggleWishlist: vi.fn()
@@ -337,7 +337,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
   // The album's own indicator already says the fan owns everything in it.
   describe('tracks of an owned album', () => {
     beforeEach(() => {
-      vi.mocked(isWishlistAvailable).mockReturnValue(true);
+      vi.mocked(isCollectionAvailable).mockReturnValue(true);
       vi.mocked(isWishlisted).mockReturnValue(false);
       vi.mocked(isOwned).mockImplementation(type => type === 'a');
     });
@@ -381,7 +381,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('an owned track in the state cell', () => {
     beforeEach(() => {
-      vi.mocked(isWishlistAvailable).mockReturnValue(true);
+      vi.mocked(isCollectionAvailable).mockReturnValue(true);
       vi.mocked(isOwned).mockImplementation((_type, id) => id === 1001);
     });
 
@@ -409,7 +409,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('wishlist star in the track state cell', () => {
     beforeEach(() => {
-      vi.mocked(isWishlistAvailable).mockReturnValue(true);
+      vi.mocked(isCollectionAvailable).mockReturnValue(true);
       vi.mocked(isWishlisted).mockReturnValue(false);
       vi.mocked(isOwned).mockReturnValue(false);
     });
@@ -443,7 +443,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should leave the rows without a star when the wishlist is unavailable', () => {
-      vi.mocked(isWishlistAvailable).mockReturnValue(false);
+      vi.mocked(isCollectionAvailable).mockReturnValue(false);
 
       const trackTable = buildTrackTable(mockTralbumDetails);
 
@@ -497,7 +497,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('album wishlist star', () => {
     beforeEach(() => {
-      vi.mocked(isWishlistAvailable).mockReturnValue(true);
+      vi.mocked(isCollectionAvailable).mockReturnValue(true);
       vi.mocked(isWishlisted).mockReturnValue(false);
       vi.mocked(isOwned).mockReturnValue(false);
     });
@@ -575,7 +575,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should render nothing when the album can neither be bought nor wishlisted', () => {
-      vi.mocked(isWishlistAvailable).mockReturnValue(false);
+      vi.mocked(isCollectionAvailable).mockReturnValue(false);
 
       expect(buildAlbumBuyButton({ ...mockTralbumDetails, is_purchasable: false })).toBeNull();
     });
@@ -591,7 +591,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should leave the buy row alone when the wishlist is unavailable', () => {
-      vi.mocked(isWishlistAvailable).mockReturnValue(false);
+      vi.mocked(isCollectionAvailable).mockReturnValue(false);
 
       const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
 

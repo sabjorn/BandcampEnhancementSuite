@@ -17,15 +17,15 @@ vi.mock('../src/logger', () => ({
 }));
 
 import { getTralbumDetails } from '../src/bclient';
-import { initWishlistState, isWishlistAvailable, isWishlisted, isOwned } from '../src/wishlist';
+import { initCollectionState, isCollectionAvailable, isWishlisted, isOwned } from '../src/collection';
 vi.mock('../src/bclient', async importOriginal => ({
   ...(await importOriginal<typeof import('../src/bclient')>()),
   getTralbumDetails: vi.fn()
 }));
 
-vi.mock('../src/wishlist', () => ({
-  initWishlistState: vi.fn(async () => true),
-  isWishlistAvailable: vi.fn(() => false),
+vi.mock('../src/collection', () => ({
+  initCollectionState: vi.fn(async () => true),
+  isCollectionAvailable: vi.fn(() => false),
   isWishlisted: vi.fn(() => false),
   isOwned: vi.fn(() => false),
   toggleWishlist: vi.fn()
@@ -131,8 +131,8 @@ describe('Player - wishlist stars on the album page track rows', () => {
       bandcamp_url: 'https://label.bandcamp.com/album/vielen-dank',
       tracks
     } as any);
-    vi.mocked(initWishlistState).mockResolvedValue(true);
-    vi.mocked(isWishlistAvailable).mockReturnValue(true);
+    vi.mocked(initCollectionState).mockResolvedValue(true);
+    vi.mocked(isCollectionAvailable).mockReturnValue(true);
     vi.mocked(isWishlisted).mockReturnValue(false);
     vi.mocked(isOwned).mockReturnValue(false);
   });
@@ -147,7 +147,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
 
     await initPlayer();
 
-    expect(initWishlistState).toHaveBeenCalled();
+    expect(initCollectionState).toHaveBeenCalled();
   });
 
   it('should put a star in each track row, wired to that track', async () => {
@@ -203,7 +203,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
   });
 
   it('should leave the rows bare when the wishlist is unavailable', async () => {
-    vi.mocked(isWishlistAvailable).mockReturnValue(false);
+    vi.mocked(isCollectionAvailable).mockReturnValue(false);
     renderPage();
 
     await initPlayer();

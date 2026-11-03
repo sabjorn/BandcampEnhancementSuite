@@ -4,7 +4,7 @@ import { updateDiscographyOrder } from './discography';
 import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicLinks';
 import { extractBandId } from './utilities';
 import { createWishlistButton } from './components/wishlistButton';
-import { initWishlistState } from './wishlist';
+import { initCollectionState } from './collection';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -145,7 +145,7 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
 
   observer.observe(discographyContainer, { childList: true, subtree: true });
 
-  if (await initWishlistState()) addGridWishlistStars();
+  if (await initCollectionState()) addGridWishlistStars();
 
   try {
     const response = await chrome.runtime.sendMessage({

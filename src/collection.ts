@@ -77,12 +77,12 @@ async function loadWishlistState(): Promise<boolean> {
   }
 }
 
-export function initWishlistState(): Promise<boolean> {
+export function initCollectionState(): Promise<boolean> {
   loading = loading ?? loadWishlistState();
   return loading;
 }
 
-export function isWishlistAvailable(): boolean {
+export function isCollectionAvailable(): boolean {
   return fanId !== null && wishlisted !== null;
 }
 
@@ -135,7 +135,7 @@ export async function toggleWishlist(itemType: WishlistItemType, itemId: number,
   return adding;
 }
 
-export function resetWishlistState(): void {
+export function resetCollectionState(): void {
   fanId = null;
   wishlisted = null;
   owned = null;

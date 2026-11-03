@@ -460,6 +460,19 @@ describe('PlayerDrawer - Drawer State & Interactions', () => {
       const headerActions = rightColumn.querySelector('.bes-player-drawer-header-actions');
       expect(headerActions).toBeTruthy();
     });
+
+    it('should keep the header actions to just minimize and close', () => {
+      const { drawer } = createPlayerDrawer();
+      document.body.appendChild(drawer);
+
+      const headerActions = drawer.querySelector('.bes-player-drawer-header-actions') as HTMLElement;
+
+      expect(Array.from(headerActions.children).map(child => child.className)).toEqual([
+        'bes-player-drawer-minimize',
+        'bes-player-drawer-close'
+      ]);
+      expect(headerActions.querySelector('.bes-wishlist-button')).toBeNull();
+    });
   });
 
   describe('layout structure', () => {

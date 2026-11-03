@@ -15,6 +15,7 @@ vi.mock('../src/logger', () => ({
 vi.mock('../src/bclient', () => {
   const track = (n: number) => ({
     track_id: n,
+    band_id: 857243381,
     title: `Track ${n}`,
     price: 1,
     currency: 'USD',
@@ -133,6 +134,13 @@ vi.mock('../src/components/player/builder', () => {
 
 vi.mock('../src/utilities', () => ({
   createFetchFunction: vi.fn(() => fetch)
+}));
+
+vi.mock('../src/wishlist', () => ({
+  initWishlistState: vi.fn(async () => true),
+  isWishlistAvailable: vi.fn(() => false),
+  isWishlisted: vi.fn(() => false),
+  toggleWishlist: vi.fn()
 }));
 
 vi.mock('../src/audioFeatures', () => ({
@@ -883,6 +891,11 @@ describe('PlayerLoader - Track row click targets', () => {
           <td class="bes-track-num-col"><div class="bes-track-num">1.</div></td>
           <td class="bes-track-title-col"><span class="bes-track-title">Track 1</span></td>
           <td class="bes-track-duration-col"><span class="bes-track-duration">3:00</span></td>
+          <td class="bes-track-state-col">
+            <span class="bes-track-liked"></span>
+            <span class="bes-track-played"></span>
+            <button class="bes-wishlist-button" data-wishlist-state="out"><svg></svg></button>
+          </td>
           <td class="bes-track-link-col"><a class="bes-track-link" href="/track/1">arrow</a></td>
           <td class="bes-track-buy-col">
             <div class="one-click-button-container">
@@ -925,6 +938,18 @@ describe('PlayerLoader - Track row click targets', () => {
 
   it('should NOT play when clicking the track link icon', () => {
     expect(isPlaybackClick(document.querySelector('.bes-track-link'))).toBe(false);
+  });
+
+  it('should NOT play when clicking the wishlist star', () => {
+    expect(isPlaybackClick(document.querySelector('.bes-wishlist-button'))).toBe(false);
+  });
+
+  it('should NOT play when clicking the star icon inside the wishlist button', () => {
+    expect(isPlaybackClick(document.querySelector('.bes-wishlist-button svg'))).toBe(false);
+  });
+
+  it('should still treat a click on the liked indicator as a playback click', () => {
+    expect(isPlaybackClick(document.querySelector('.bes-track-liked'))).toBe(true);
   });
 });
 

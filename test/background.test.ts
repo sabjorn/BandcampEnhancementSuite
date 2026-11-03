@@ -37,7 +37,7 @@ describe('background service worker', () => {
     await import('../src/background');
 
     expect(chrome.runtime.onConnect.addListener).toHaveBeenCalledTimes(5);
-    expect(chrome.runtime.onMessage.addListener).toHaveBeenCalledTimes(5);
+    expect(chrome.runtime.onMessage.addListener).toHaveBeenCalledTimes(6);
   });
 
   it('does not resolve a config read until the store has been seeded', async () => {

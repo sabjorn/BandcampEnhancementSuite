@@ -11,6 +11,7 @@ import { element, replaceChildren } from '../dom';
 import { inDrawer, allInDrawer, setText, setStyle } from './query';
 import { streamUrlOf, findPlayableTrackAfter, findPlayableTrackBefore } from './trackSelection';
 import { applyTrackState, markRowPlayed } from './trackState';
+import { initWishlistState } from '../../wishlist';
 import { buildAlbumNav, updateAlbumNav } from './albumNav';
 import {
   selectAlbum,
@@ -232,12 +233,10 @@ export async function loadAlbumIntoDrawer(
   fetchCaching = enableFetchCaching;
 
   try {
-    const tralbumDetails = await getTralbumDetails(
-      albumId,
-      convertToApiType(albumType),
-      null,
-      createFetchFunction(enableFetchCaching)
-    );
+    const [tralbumDetails] = await Promise.all([
+      getTralbumDetails(albumId, convertToApiType(albumType), null, createFetchFunction(enableFetchCaching)),
+      initWishlistState()
+    ]);
 
     if (requestedAlbumId !== albumId) {
       log.debug(`Album ${albumId} arrived after the drawer moved on`);
@@ -515,7 +514,7 @@ function resetProgressBar(): void {
 
 export function isPlaybackClick(target: HTMLElement | null): boolean {
   if (!target) return false;
-  return !target.closest('.bes-track-link, .bes-track-buy-col');
+  return !target.closest('.bes-track-link, .bes-track-buy-col, .bes-wishlist-button');
 }
 
 function playTrackFromList(index: number): void {

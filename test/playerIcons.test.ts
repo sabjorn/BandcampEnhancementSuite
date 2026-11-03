@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { prevIcon, nextIcon, playIcon, pauseIcon, starIcon } from '../src/components/player/icons';
+import { prevIcon, nextIcon, playIcon, pauseIcon, starIcon, ownedIcon } from '../src/components/player/icons';
 
 const parse = (markup: string): SVGElement => {
   const holder = document.createElement('div');
@@ -75,6 +75,31 @@ describe('playerIcons', () => {
 
     it('should hide the star from assistive technology', () => {
       expect(parse(starIcon(12, true)).getAttribute('aria-hidden')).toBe('true');
+    });
+  });
+
+  describe('ownedIcon', () => {
+    it('should render at the requested size and share the common viewBox', () => {
+      const svg = parse(ownedIcon(12));
+
+      expect(svg.getAttribute('width')).toBe('12');
+      expect(svg.getAttribute('height')).toBe('12');
+      expect(svg.getAttribute('viewBox')).toBe('0 0 24 24');
+    });
+
+    it('should take its colour from the surrounding context', () => {
+      expect(ownedIcon(12)).toContain('currentColor');
+    });
+
+    it('should not be the star in either form', () => {
+      const owned = parse(ownedIcon(12)).innerHTML;
+
+      expect(owned).not.toBe(parse(starIcon(12, true)).innerHTML);
+      expect(owned).not.toBe(parse(starIcon(12, false)).innerHTML);
+    });
+
+    it('should hide itself from assistive technology', () => {
+      expect(parse(ownedIcon(12)).getAttribute('aria-hidden')).toBe('true');
     });
   });
 });

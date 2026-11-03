@@ -1,6 +1,6 @@
 import Logger from '../logger';
-import { isWishlistAvailable, isWishlisted, toggleWishlist, WishlistItemType } from '../wishlist';
-import { starIcon } from './player/icons';
+import { Collection, WishlistItemType } from '../collection';
+import { starIcon, ownedIcon } from './player/icons';
 
 const DEFAULT_ICON_SIZE = 12;
 const MIN_SPINNER_MS = 250;
@@ -37,15 +37,8 @@ export function setWishlistButtonState(button: HTMLElement, state: WishlistButto
     state === 'loading' ? '<span class="bes-wishlist-spinner"></span>' : starIcon(size, state === 'in');
 }
 
-export function refreshWishlistButton(button: HTMLElement): void {
-  if (button.dataset.wishlistState === 'loading') return;
-
-  const itemType = button.dataset.wishlistType as WishlistItemType | undefined;
-  const itemId = Number(button.dataset.wishlistId);
-  if (!itemType || !itemId) return;
-
-  setWishlistButtonState(button, isWishlisted(itemType, itemId) ? 'in' : 'out');
-}
+const sameItem = (one: HTMLElement, other: HTMLElement): boolean =>
+  one.dataset.wishlistType === other.dataset.wishlistType && one.dataset.wishlistId === other.dataset.wishlistId;
 
 let syncListening = false;
 
@@ -54,15 +47,17 @@ function listenForChangesOnce(): void {
 
   document.addEventListener(CHANGE_EVENT, event => {
     const source = event.target as HTMLElement;
+    const confirmed = source.dataset.wishlistState as WishlistButtonState;
 
     document.querySelectorAll<HTMLElement>('.bes-wishlist-button').forEach(button => {
-      if (button !== source) refreshWishlistButton(button);
+      if (button !== source && sameItem(button, source)) setWishlistButtonState(button, confirmed);
     });
   });
   syncListening = true;
 }
 
 interface CreateWishlistButtonOptions {
+  collection: Collection;
   itemType: WishlistItemType;
   itemId: number;
   itemUrl: string;
@@ -80,13 +75,24 @@ function hostOf(itemUrl: string): string | null {
   }
 }
 
-export function createWishlistButton(options: CreateWishlistButtonOptions): HTMLElement | null {
-  const { itemType, itemId, itemUrl, log, size = DEFAULT_ICON_SIZE } = options;
+function ownedIndicator(itemType: WishlistItemType, size: number): HTMLElement {
+  const indicator = document.createElement('span');
+  indicator.className = 'bes-owned-indicator';
+  indicator.title = `You own this ${NOUNS[itemType]}`;
+  indicator.innerHTML = ownedIcon(size);
 
-  if (!isWishlistAvailable()) return null;
+  return indicator;
+}
+
+export function createWishlistButton(options: CreateWishlistButtonOptions): HTMLElement | null {
+  const { collection, itemType, itemId, itemUrl, log, size = DEFAULT_ICON_SIZE } = options;
+
+  if (!collection.isAvailable()) return null;
 
   const host = hostOf(itemUrl);
   if (!host || !Number.isFinite(itemId)) return null;
+
+  if (collection.isOwned(itemType, itemId)) return ownedIndicator(itemType, size);
 
   listenForChangesOnce();
 
@@ -98,7 +104,7 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
   button.dataset.wishlistNoun = NOUNS[itemType];
   button.dataset.wishlistSize = String(size);
 
-  setWishlistButtonState(button, isWishlisted(itemType, itemId) ? 'in' : 'out');
+  setWishlistButtonState(button, collection.isWishlisted(itemType, itemId) ? 'in' : 'out');
 
   button.addEventListener('click', event => {
     event.preventDefault();
@@ -109,7 +115,7 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
 
     setWishlistButtonState(button, 'loading');
 
-    withMinDuration(toggleWishlist(itemType, itemId, host), MIN_SPINNER_MS)
+    withMinDuration(collection.toggleWishlisted(itemType, itemId, host), MIN_SPINNER_MS)
       .then(nowWishlisted => {
         setWishlistButtonState(button, nowWishlisted ? 'in' : 'out');
         button.dispatchEvent(new CustomEvent(CHANGE_EVENT, { bubbles: true }));

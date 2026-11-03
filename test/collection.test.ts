@@ -1,13 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { isBandcampLoggedIn } from '../src/utilities';
-import {
-  initWishlistState,
-  isWishlistAvailable,
-  isWishlisted,
-  toggleWishlist,
-  resetWishlistState
-} from '../src/wishlist';
+import { initCollectionState, resetCollectionState } from '../src/collection';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -56,10 +50,10 @@ function setReferrerToken(value: unknown): void {
   document.body.appendChild(script);
 }
 
-describe('wishlist state', () => {
+describe('collection state', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetWishlistState();
+    resetCollectionState();
     document.body.innerHTML = '';
     vi.mocked(isBandcampLoggedIn).mockReturnValue(true);
     (globalThis as any).chrome = { runtime: { sendMessage } };
@@ -70,10 +64,10 @@ describe('wishlist state', () => {
     vi.restoreAllMocks();
   });
 
-  describe('initWishlistState', () => {
+  describe('initCollectionState', () => {
     it('should fetch the collection summary only once however often it is called', async () => {
-      await Promise.all([initWishlistState(), initWishlistState()]);
-      await initWishlistState();
+      await Promise.all([initCollectionState(), initCollectionState()]);
+      await initCollectionState();
 
       expect(sendMessage).toHaveBeenCalledTimes(1);
       expect(sendMessage).toHaveBeenCalledWith({ contentScriptQuery: 'fetchCollectionSummary' });
@@ -82,90 +76,113 @@ describe('wishlist state', () => {
     it('should not re-request after a failed load, so opening the player again is free', async () => {
       sendMessage.mockRejectedValue(new Error('503'));
 
-      await initWishlistState();
-      await initWishlistState();
-      await initWishlistState();
+      await initCollectionState();
+      await initCollectionState();
+      await initCollectionState();
 
       expect(sendMessage).toHaveBeenCalledTimes(1);
     });
 
     it('should report availability when a fan_id comes back', async () => {
-      await expect(initWishlistState()).resolves.toBe(true);
-      expect(isWishlistAvailable()).toBe(true);
+      expect((await initCollectionState()).isAvailable()).toBe(true);
     });
 
     it('should be unavailable when the request fails', async () => {
       sendMessage.mockRejectedValue(new Error('403'));
 
-      await expect(initWishlistState()).resolves.toBe(false);
-      expect(isWishlistAvailable()).toBe(false);
+      expect((await initCollectionState()).isAvailable()).toBe(false);
     });
 
     it('should be unavailable when the service worker has nothing to give', async () => {
       sendMessage.mockResolvedValue(null);
 
-      await expect(initWishlistState()).resolves.toBe(false);
-      expect(isWishlistAvailable()).toBe(false);
+      expect((await initCollectionState()).isAvailable()).toBe(false);
     });
 
     it('should be unavailable when the summary arrives without a lookup, rather than showing every star empty', async () => {
       sendMessage.mockResolvedValue({ ...summary({}), tralbum_lookup: undefined });
 
-      await expect(initWishlistState()).resolves.toBe(false);
-      expect(isWishlistAvailable()).toBe(false);
+      expect((await initCollectionState()).isAvailable()).toBe(false);
     });
 
     it('should be unavailable when there is no fan_id', async () => {
       sendMessage.mockResolvedValue(summary({}, null));
 
-      await expect(initWishlistState()).resolves.toBe(false);
-      expect(isWishlistAvailable()).toBe(false);
-    });
-
-    it('should be unavailable before it has been initialised', () => {
-      expect(isWishlistAvailable()).toBe(false);
+      expect((await initCollectionState()).isAvailable()).toBe(false);
     });
 
     it('should not ask Bandcamp anything when nobody is logged in', async () => {
       vi.mocked(isBandcampLoggedIn).mockReturnValue(false);
 
-      await expect(initWishlistState()).resolves.toBe(false);
-
+      expect((await initCollectionState()).isAvailable()).toBe(false);
       expect(sendMessage).not.toHaveBeenCalled();
-      expect(isWishlistAvailable()).toBe(false);
     });
   });
 
   describe('isWishlisted', () => {
     it('should be true for a lookup entry with no purchase date', async () => {
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      expect(isWishlisted('t', 123456)).toBe(true);
+      expect(collection.isWishlisted('t', 123456)).toBe(true);
     });
 
     it('should be false for an owned item, which is in the collection rather than the wishlist', async () => {
       sendMessage.mockResolvedValue(summary({ a1609998585: ownedAlbum }));
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      expect(isWishlisted('a', 1609998585)).toBe(false);
+      expect(collection.isWishlisted('a', 1609998585)).toBe(false);
     });
 
     it('should be false for an item that is in neither', async () => {
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      expect(isWishlisted('t', 999)).toBe(false);
+      expect(collection.isWishlisted('t', 999)).toBe(false);
     });
 
     it('should not confuse a track and an album sharing an id', async () => {
       sendMessage.mockResolvedValue(summary({ t42: wishlistedTrack }));
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      expect(isWishlisted('t', 42)).toBe(true);
-      expect(isWishlisted('a', 42)).toBe(false);
+      expect(collection.isWishlisted('t', 42)).toBe(true);
+      expect(collection.isWishlisted('a', 42)).toBe(false);
+    });
+  });
+
+  describe('isOwned', () => {
+    it('should be true for a lookup entry with a purchase date', async () => {
+      sendMessage.mockResolvedValue(summary({ a1609998585: ownedAlbum }));
+      const collection = await initCollectionState();
+
+      expect(collection.isOwned('a', 1609998585)).toBe(true);
     });
 
-    it('should be false before it has been initialised', () => {
-      expect(isWishlisted('t', 123456)).toBe(false);
+    it('should be false for a wishlisted item, which is not owned', async () => {
+      const collection = await initCollectionState();
+
+      expect(collection.isOwned('t', 123456)).toBe(false);
+    });
+
+    it('should be false for an item in neither', async () => {
+      const collection = await initCollectionState();
+
+      expect(collection.isOwned('t', 999)).toBe(false);
+    });
+
+    it('should not confuse a track and an album sharing an id', async () => {
+      sendMessage.mockResolvedValue(summary({ a42: ownedAlbum }));
+      const collection = await initCollectionState();
+
+      expect(collection.isOwned('a', 42)).toBe(true);
+      expect(collection.isOwned('t', 42)).toBe(false);
+    });
+
+    it('should be forgotten on reset', async () => {
+      sendMessage.mockResolvedValue(summary({ a1609998585: ownedAlbum }));
+      const collection = await initCollectionState();
+
+      resetCollectionState();
+
+      expect(collection.isOwned('a', 1609998585)).toBe(false);
     });
   });
 
@@ -178,9 +195,9 @@ describe('wishlist state', () => {
     });
 
     it('should collect an item that is not yet wishlisted', async () => {
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      await expect(toggleWishlist('t', 999, HOST)).resolves.toBe(true);
+      await expect(collection.toggleWishlisted('t', 999, HOST)).resolves.toBe(true);
 
       expect(sendMessage).toHaveBeenCalledWith({
         contentScriptQuery: 'writeWishlistItem',
@@ -192,9 +209,9 @@ describe('wishlist state', () => {
     });
 
     it('should uncollect an item that is already wishlisted', async () => {
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      await expect(toggleWishlist('t', 123456, HOST)).resolves.toBe(false);
+      await expect(collection.toggleWishlisted('t', 123456, HOST)).resolves.toBe(false);
 
       expect(sendMessage).toHaveBeenCalledWith({
         contentScriptQuery: 'writeWishlistItem',
@@ -207,9 +224,9 @@ describe('wishlist state', () => {
 
     it('should pass along the page referrer token when there is one', async () => {
       setReferrerToken('ref-abc');
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      await toggleWishlist('t', 999, HOST);
+      await collection.toggleWishlisted('t', 999, HOST);
 
       expect(sendMessage).toHaveBeenCalledWith(
         expect.objectContaining({ item: expect.objectContaining({ ref_token: 'ref-abc' }) })
@@ -219,67 +236,67 @@ describe('wishlist state', () => {
     it('should fall back to the other crumb when the page lacks the one for this path', async () => {
       document.body.innerHTML = '';
       setCrumbs({ collect_item_cb: 'add_crumb' });
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      await toggleWishlist('t', 123456, HOST);
+      await collection.toggleWishlisted('t', 123456, HOST);
 
       expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({ action: 'uncollect', crumb: 'add_crumb' }));
     });
 
     it('should send a null crumb when the page carries none', async () => {
       document.body.innerHTML = '';
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      await toggleWishlist('t', 999, HOST);
+      await collection.toggleWishlisted('t', 999, HOST);
 
       expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({ crumb: null }));
     });
 
     it('should only record the new state once Bandcamp has confirmed it', async () => {
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      await toggleWishlist('t', 999, HOST);
-      expect(isWishlisted('t', 999)).toBe(true);
+      await collection.toggleWishlisted('t', 999, HOST);
+      expect(collection.isWishlisted('t', 999)).toBe(true);
 
-      await toggleWishlist('t', 999, HOST);
-      expect(isWishlisted('t', 999)).toBe(false);
+      await collection.toggleWishlisted('t', 999, HOST);
+      expect(collection.isWishlisted('t', 999)).toBe(false);
     });
 
     it('should pass on the reason and leave the state untouched when Bandcamp rejects the change', async () => {
-      await initWishlistState();
+      const collection = await initCollectionState();
       sendMessage.mockImplementation(async (message: any) =>
         message.contentScriptQuery === 'writeWishlistItem'
           ? { ok: false, error: 'old or no crumb specified' }
           : summary({ t123456: wishlistedTrack })
       );
 
-      await expect(toggleWishlist('t', 999, HOST)).rejects.toThrow('old or no crumb specified');
-      expect(isWishlisted('t', 999)).toBe(false);
+      await expect(collection.toggleWishlisted('t', 999, HOST)).rejects.toThrow('old or no crumb specified');
+      expect(collection.isWishlisted('t', 999)).toBe(false);
     });
 
     it('should leave the state untouched when the request itself fails', async () => {
-      await initWishlistState();
+      const collection = await initCollectionState();
       sendMessage.mockImplementation(async (message: any) =>
         message.contentScriptQuery === 'writeWishlistItem'
           ? { ok: false, error: 'network down' }
           : summary({ t123456: wishlistedTrack })
       );
 
-      await expect(toggleWishlist('t', 123456, HOST)).rejects.toThrow('network down');
-      expect(isWishlisted('t', 123456)).toBe(true);
+      await expect(collection.toggleWishlisted('t', 123456, HOST)).rejects.toThrow('network down');
+      expect(collection.isWishlisted('t', 123456)).toBe(true);
     });
 
     it('should throw when the wishlist is unavailable', async () => {
       sendMessage.mockRejectedValue(new Error('403'));
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      await expect(toggleWishlist('t', 999, HOST)).rejects.toThrow('Wishlist is unavailable');
+      await expect(collection.toggleWishlisted('t', 999, HOST)).rejects.toThrow('Wishlist is unavailable');
     });
 
     // A grid star and the drawer's star can both exist for one album, and each only guards its own
     // click, so the direction has to be settled per item rather than per button.
     it('should not send a second write for an item already in flight', async () => {
-      await initWishlistState();
+      const collection = await initCollectionState();
 
       const settlers: Array<(value: unknown) => void> = [];
       sendMessage.mockImplementation(async (message: any) =>
@@ -288,8 +305,8 @@ describe('wishlist state', () => {
           : summary({ t123456: wishlistedTrack })
       );
 
-      const first = toggleWishlist('t', 999, HOST);
-      const second = toggleWishlist('t', 999, HOST);
+      const first = collection.toggleWishlisted('t', 999, HOST);
+      const second = collection.toggleWishlisted('t', 999, HOST);
 
       await expect(second).rejects.toThrow('already changing');
       expect(settlers).toHaveLength(1);
@@ -299,14 +316,14 @@ describe('wishlist state', () => {
     });
 
     it('should allow a further change once the first has settled', async () => {
-      await initWishlistState();
+      const collection = await initCollectionState();
 
-      await toggleWishlist('t', 999, HOST);
-      await expect(toggleWishlist('t', 999, HOST)).resolves.toBe(false);
+      await collection.toggleWishlisted('t', 999, HOST);
+      await expect(collection.toggleWishlisted('t', 999, HOST)).resolves.toBe(false);
     });
 
     it('should not block a different item', async () => {
-      await initWishlistState();
+      const collection = await initCollectionState();
 
       const settlers: Array<(value: unknown) => void> = [];
       sendMessage.mockImplementation(async (message: any) =>
@@ -315,8 +332,8 @@ describe('wishlist state', () => {
           : summary({ t123456: wishlistedTrack })
       );
 
-      const first = toggleWishlist('t', 999, HOST);
-      const other = toggleWishlist('t', 888, HOST);
+      const first = collection.toggleWishlisted('t', 999, HOST);
+      const other = collection.toggleWishlisted('t', 888, HOST);
 
       await vi.waitFor(() => expect(settlers).toHaveLength(2));
       settlers.forEach(settle => settle({ ok: true }));
@@ -326,15 +343,15 @@ describe('wishlist state', () => {
     });
 
     it('should release the item after a failure', async () => {
-      await initWishlistState();
+      const collection = await initCollectionState();
       sendMessage.mockImplementation(async (message: any) =>
         message.contentScriptQuery === 'writeWishlistItem'
           ? { ok: false, error: 'nope' }
           : summary({ t123456: wishlistedTrack })
       );
 
-      await expect(toggleWishlist('t', 999, HOST)).rejects.toThrow('nope');
-      await expect(toggleWishlist('t', 999, HOST)).rejects.toThrow('nope');
+      await expect(collection.toggleWishlisted('t', 999, HOST)).rejects.toThrow('nope');
+      await expect(collection.toggleWishlisted('t', 999, HOST)).rejects.toThrow('nope');
     });
   });
 });

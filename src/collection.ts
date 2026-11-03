@@ -10,6 +10,7 @@ const lookupKey = (itemType: WishlistItemType, itemId: number): string => `${ite
 
 let fanId: number | null = null;
 let wishlisted: Set<string> | null = null;
+let owned: Set<string> | null = null;
 let loading: Promise<boolean> | null = null;
 const changing = new Set<string>();
 
@@ -66,6 +67,7 @@ async function loadWishlistState(): Promise<boolean> {
 
     const lookup = Object.entries(summary.tralbum_lookup);
     wishlisted = new Set(lookup.filter(([, item]) => !item.purchased).map(([key]) => key));
+    owned = new Set(lookup.filter(([, item]) => item.purchased).map(([key]) => key));
 
     log.info(`Wishlist state loaded: ${wishlisted.size} wishlisted of ${lookup.length} collection entries`);
     return true;
@@ -75,17 +77,25 @@ async function loadWishlistState(): Promise<boolean> {
   }
 }
 
-export function initWishlistState(): Promise<boolean> {
+export interface Collection {
+  isAvailable(): boolean;
+  isWishlisted(itemType: WishlistItemType, itemId: number): boolean;
+  isOwned(itemType: WishlistItemType, itemId: number): boolean;
+  toggleWishlisted(itemType: WishlistItemType, itemId: number, host: string): Promise<boolean>;
+}
+
+const collection: Collection = {
+  isAvailable: () => fanId !== null && wishlisted !== null,
+  isWishlisted: (itemType, itemId) => wishlisted?.has(lookupKey(itemType, itemId)) ?? false,
+  isOwned: (itemType, itemId) => owned?.has(lookupKey(itemType, itemId)) ?? false,
+  toggleWishlisted: (itemType, itemId, host) => toggleWishlisted(itemType, itemId, host)
+};
+
+export async function initCollectionState(): Promise<Collection> {
   loading = loading ?? loadWishlistState();
-  return loading;
-}
+  await loading;
 
-export function isWishlistAvailable(): boolean {
-  return fanId !== null && wishlisted !== null;
-}
-
-export function isWishlisted(itemType: WishlistItemType, itemId: number): boolean {
-  return wishlisted?.has(lookupKey(itemType, itemId)) ?? false;
+  return collection;
 }
 
 async function write(action: 'collect' | 'uncollect', item: WishlistItem, host: string): Promise<void> {
@@ -100,7 +110,7 @@ async function write(action: 'collect' | 'uncollect', item: WishlistItem, host: 
   if (!written?.ok) throw new Error(written?.error ?? 'Bandcamp rejected the wishlist change');
 }
 
-export async function toggleWishlist(itemType: WishlistItemType, itemId: number, host: string): Promise<boolean> {
+async function toggleWishlisted(itemType: WishlistItemType, itemId: number, host: string): Promise<boolean> {
   if (fanId === null || wishlisted === null) throw new Error('Wishlist is unavailable');
 
   const key = lookupKey(itemType, itemId);
@@ -129,9 +139,10 @@ export async function toggleWishlist(itemType: WishlistItemType, itemId: number,
   return adding;
 }
 
-export function resetWishlistState(): void {
+export function resetCollectionState(): void {
   fanId = null;
   wishlisted = null;
+  owned = null;
   loading = null;
   changing.clear();
 }

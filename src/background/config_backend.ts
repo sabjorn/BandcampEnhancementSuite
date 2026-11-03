@@ -1,6 +1,11 @@
 import Logger from '../logger';
 import { getDB } from '../utilities';
-import { KeyboardSettings, DEFAULT_KEYBOARD_SETTINGS, validateKeyboardSettings } from '../types/keyboard';
+import {
+  KeyboardSettings,
+  DEFAULT_KEYBOARD_SETTINGS,
+  validateKeyboardSettings,
+  backfillKeyboardControls
+} from '../types/keyboard';
 import { DEFAULT_THEME_NAME, LIGHT_THEME, DARK_THEME } from '../types/theme';
 
 const DARK_THEME_SCRIPT_ID = 'bes-theme-dark';
@@ -232,6 +237,7 @@ export async function broadcastConfig(db: any, log: Logger, port?: chrome.runtim
 export async function setupDB(db: any, log: Logger): Promise<void> {
   const dbConfig = await db.get('config', 'config');
   const mergedConfig = mergeData(defaultConfig, dbConfig);
+  mergedConfig.keyboardSettings = backfillKeyboardControls(mergedConfig.keyboardSettings ?? DEFAULT_KEYBOARD_SETTINGS);
   await db.put('config', mergedConfig, 'config');
 
   await syncDarkThemeRegistration(mergedConfig.themeName, log);

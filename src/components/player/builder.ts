@@ -2,6 +2,7 @@ import Logger from '../../logger';
 import { TralbumDetailsResponse, TralbumTrack, CURRENCY_MINIMUMS } from '../../bclient';
 import { createAddToCartButton } from '../cartButton';
 import { createWishlistButton } from '../wishlistButton';
+import { isOwned } from '../../wishlist';
 import { prevIcon, nextIcon, playIcon, pauseIcon, volumeIcon, heartIcon, playedIcon } from './icons';
 import playerCenterMarkup from '../../../html/drawer_player_center.html';
 
@@ -106,7 +107,7 @@ function buildTrackStateCell(track: TralbumTrack, albumUrl: string): HTMLElement
   playedIndicator.innerHTML = playedIcon(12);
 
   stateCol.appendChild(likedIndicator);
-  stateCol.appendChild(playedIndicator);
+  if (!isOwned('t', track.track_id)) stateCol.appendChild(playedIndicator);
 
   const wishlistButton = createWishlistButton({
     itemType: 't',

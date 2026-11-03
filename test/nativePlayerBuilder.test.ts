@@ -3,7 +3,7 @@ import { createDomNodes, cleanupTestNodes } from './utils';
 import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from '../src/components/player/builder';
 import { prevIcon, nextIcon, playIcon, pauseIcon } from '../src/components/player/icons';
 import { TralbumDetailsResponse } from '../src/bclient';
-import { isWishlistAvailable, isWishlisted } from '../src/wishlist';
+import { isWishlistAvailable, isWishlisted, isOwned } from '../src/wishlist';
 
 vi.mock('../src/wishlist', () => ({
   isWishlistAvailable: vi.fn(() => true),
@@ -334,10 +334,39 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
+  describe('an owned track in the state cell', () => {
+    beforeEach(() => {
+      vi.mocked(isWishlistAvailable).mockReturnValue(true);
+      vi.mocked(isOwned).mockImplementation((_type, id) => id === 1001);
+    });
+
+    it('should replace the played indicator as well as the star', () => {
+      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+
+      expect(rows[0].querySelector('.bes-owned-indicator')).toBeTruthy();
+      expect(rows[0].querySelector('.bes-track-played')).toBeNull();
+      expect(rows[0].querySelector('.bes-wishlist-button')).toBeNull();
+    });
+
+    it('should leave the played indicator on a track that is not owned', () => {
+      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+
+      expect(rows[1].querySelector('.bes-track-played')).toBeTruthy();
+      expect(rows[1].querySelector('.bes-owned-indicator')).toBeNull();
+    });
+
+    it('should keep the FindMusic heart, which says something different', () => {
+      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+
+      expect(rows[0].querySelector('.bes-track-liked')).toBeTruthy();
+    });
+  });
+
   describe('wishlist star in the track state cell', () => {
     beforeEach(() => {
       vi.mocked(isWishlistAvailable).mockReturnValue(true);
       vi.mocked(isWishlisted).mockReturnValue(false);
+      vi.mocked(isOwned).mockReturnValue(false);
     });
 
     it('should put a star in every row alongside the liked and played indicators', () => {
@@ -425,6 +454,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     beforeEach(() => {
       vi.mocked(isWishlistAvailable).mockReturnValue(true);
       vi.mocked(isWishlisted).mockReturnValue(false);
+      vi.mocked(isOwned).mockReturnValue(false);
     });
 
     it('should sit to the left of the Buy Album label', () => {

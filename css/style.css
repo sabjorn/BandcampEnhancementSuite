@@ -1841,6 +1841,11 @@ body.bes-drawer-expanded #pgBd {
   white-space: nowrap;
 }
 
+.bes-player-drawer .bes-track-state-col .bes-owned-indicator {
+  width: 16px;
+  height: 16px;
+}
+
 .bes-player-drawer .bes-track-liked,
 .bes-player-drawer .bes-track-played {
   display: none;

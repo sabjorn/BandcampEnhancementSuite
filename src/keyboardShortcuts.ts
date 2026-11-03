@@ -9,6 +9,8 @@ export interface PlayerCommands {
   nextTrack: () => void;
   seekBy: (seconds: number) => void;
   adjustVolumeBy: (delta: number) => void;
+  prevAlbum?: () => void;
+  nextAlbum?: () => void;
 }
 
 interface KeyHandlers {
@@ -28,12 +30,14 @@ let listening = false;
 function commandForEachAction(
   commands: PlayerCommands,
   settings: KeyboardSettings
-): Record<KeyboardAction, () => void> {
+): Record<KeyboardAction, (() => void) | undefined> {
   return {
     [KeyboardAction.PLAY_PAUSE]: commands.playPause,
     [KeyboardAction.PLAY_PAUSE_ALT]: commands.playPause,
     [KeyboardAction.PREV_TRACK]: commands.prevTrack,
     [KeyboardAction.NEXT_TRACK]: commands.nextTrack,
+    [KeyboardAction.PREV_ALBUM]: commands.prevAlbum,
+    [KeyboardAction.NEXT_ALBUM]: commands.nextAlbum,
     [KeyboardAction.SEEK_FORWARD]: () => commands.seekBy(settings.seekStepSize),
     [KeyboardAction.SEEK_BACKWARD]: () => commands.seekBy(-settings.seekStepSize),
     [KeyboardAction.SEEK_FORWARD_LARGE]: () => commands.seekBy(settings.largeSeekStepSize),
@@ -47,9 +51,9 @@ export function buildKeyHandlers(settings: KeyboardSettings, commands: PlayerCom
   const byAction = commandForEachAction(commands, settings);
 
   return settings.controls
-    .filter(control => control.enabled)
+    .filter(control => control.enabled && byAction[control.action])
     .reduce<KeyHandlers>((handlers, control) => {
-      handlers[keyBindingToString(control.binding)] = byAction[control.action];
+      handlers[keyBindingToString(control.binding)] = byAction[control.action]!;
       return handlers;
     }, {});
 }

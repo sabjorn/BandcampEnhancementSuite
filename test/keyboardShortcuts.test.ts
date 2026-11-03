@@ -38,7 +38,9 @@ describe('keyboardShortcuts', () => {
       prevTrack: vi.fn(),
       nextTrack: vi.fn(),
       seekBy: vi.fn(),
-      adjustVolumeBy: vi.fn()
+      adjustVolumeBy: vi.fn(),
+      prevAlbum: vi.fn(),
+      nextAlbum: vi.fn()
     };
   });
 
@@ -58,6 +60,15 @@ describe('keyboardShortcuts', () => {
       settings.controls[0].enabled = false;
 
       expect(shortcuts.buildKeyHandlers(settings, commands)['p']).toBeUndefined();
+    });
+
+    it('should leave album controls unbound for a player that cannot change album', () => {
+      const trackOnly: PlayerCommands = { ...commands, prevAlbum: undefined, nextAlbum: undefined };
+
+      const handlers = shortcuts.buildKeyHandlers(DEFAULT_KEYBOARD_SETTINGS, trackOnly);
+
+      expect(handlers['[']).toBeUndefined();
+      expect(handlers[']']).toBeUndefined();
     });
 
     it('should describe a modified binding the same way a keypress is described', () => {
@@ -85,6 +96,14 @@ describe('keyboardShortcuts', () => {
 
       expect(commands.nextTrack).toHaveBeenCalled();
       expect(commands.prevTrack).toHaveBeenCalled();
+    });
+
+    it('should step albums', () => {
+      press(']');
+      press('[');
+
+      expect(commands.nextAlbum).toHaveBeenCalled();
+      expect(commands.prevAlbum).toHaveBeenCalled();
     });
 
     it('should seek by the configured step', () => {
@@ -205,7 +224,9 @@ describe('keyboardShortcuts', () => {
         prevTrack: vi.fn(),
         nextTrack: vi.fn(),
         seekBy: vi.fn(),
-        adjustVolumeBy: vi.fn()
+        adjustVolumeBy: vi.fn(),
+        prevAlbum: vi.fn(),
+        nextAlbum: vi.fn()
       };
       shortcuts.registerPlayerShortcuts(commands, () => false);
       shortcuts.registerPlayerShortcuts(second);
@@ -233,7 +254,9 @@ describe('keyboardShortcuts', () => {
         prevTrack: vi.fn(),
         nextTrack: vi.fn(),
         seekBy: vi.fn(),
-        adjustVolumeBy: vi.fn()
+        adjustVolumeBy: vi.fn(),
+        prevAlbum: vi.fn(),
+        nextAlbum: vi.fn()
       };
       let drawerOpen = false;
 

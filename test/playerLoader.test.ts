@@ -785,6 +785,22 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
     });
   });
 
+  describe('album navigation', () => {
+    it('should move to the next album on ]', async () => {
+      press(']');
+
+      await vi.waitFor(() => expect(player.getLoadedAlbumId()).toBe('456'));
+    });
+
+    it('should move to the previous album on [', async () => {
+      await player.loadAlbumIntoDrawer('456', 'album', false);
+
+      press('[');
+
+      await vi.waitFor(() => expect(player.getLoadedAlbumId()).toBe('123'));
+    });
+  });
+
   describe('seeking', () => {
     it('should seek forward by the step size on ArrowRight', () => {
       press('ArrowRight');

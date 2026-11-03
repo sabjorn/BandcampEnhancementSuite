@@ -279,7 +279,7 @@ export function createKeyboardSettingsSection(
     controlsByCategory.get(category)!.push(control);
   });
 
-  const categoryOrder = [ActionCategory.PLAYBACK, ActionCategory.SEEKING, ActionCategory.VOLUME];
+  const categoryOrder = [ActionCategory.PLAYBACK, ActionCategory.ALBUM, ActionCategory.SEEKING, ActionCategory.VOLUME];
 
   categoryOrder.forEach(category => {
     const controls = controlsByCategory.get(category);

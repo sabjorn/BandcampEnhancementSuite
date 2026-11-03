@@ -144,7 +144,9 @@ const drawerCommands: PlayerCommands = {
   prevTrack,
   nextTrack,
   seekBy,
-  adjustVolumeBy
+  adjustVolumeBy,
+  prevAlbum: goToPreviousAlbum,
+  nextAlbum: goToNextAlbum
 };
 
 function drawerIsOpen(): boolean {
@@ -293,10 +295,7 @@ function hasLaterAlbum(): boolean {
 function albumToolbar(buyButton: HTMLElement | null): HTMLElement | null {
   if (!showAlbumControls()) return buyButton;
 
-  const nav = buildAlbumNav(
-    () => void skipAlbum(loadPreviousAlbum),
-    () => void skipAlbum(loadNextAlbum)
-  );
+  const nav = buildAlbumNav(goToPreviousAlbum, goToNextAlbum);
   updateAlbumNav(nav, { hasPrevious: hasPreviousAlbum(), hasNext: hasLaterAlbum(), loading: albumNavLoading });
 
   return element('div', { className: 'bes-album-toolbar', children: [nav, buyButton] });
@@ -308,6 +307,14 @@ function refreshAlbumNav(): void {
     hasNext: hasLaterAlbum(),
     loading: albumNavLoading
   });
+}
+
+function goToPreviousAlbum(): void {
+  void skipAlbum(loadPreviousAlbum);
+}
+
+function goToNextAlbum(): void {
+  void skipAlbum(loadNextAlbum);
 }
 
 async function skipAlbum(load: () => Promise<boolean>): Promise<void> {

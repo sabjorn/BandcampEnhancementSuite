@@ -77,21 +77,25 @@ async function loadWishlistState(): Promise<boolean> {
   }
 }
 
-export function initCollectionState(): Promise<boolean> {
+export interface Collection {
+  isAvailable(): boolean;
+  isWishlisted(itemType: WishlistItemType, itemId: number): boolean;
+  isOwned(itemType: WishlistItemType, itemId: number): boolean;
+  toggleWishlisted(itemType: WishlistItemType, itemId: number, host: string): Promise<boolean>;
+}
+
+const collection: Collection = {
+  isAvailable: () => fanId !== null && wishlisted !== null,
+  isWishlisted: (itemType, itemId) => wishlisted?.has(lookupKey(itemType, itemId)) ?? false,
+  isOwned: (itemType, itemId) => owned?.has(lookupKey(itemType, itemId)) ?? false,
+  toggleWishlisted: (itemType, itemId, host) => toggleWishlisted(itemType, itemId, host)
+};
+
+export async function initCollectionState(): Promise<Collection> {
   loading = loading ?? loadWishlistState();
-  return loading;
-}
+  await loading;
 
-export function isCollectionAvailable(): boolean {
-  return fanId !== null && wishlisted !== null;
-}
-
-export function isWishlisted(itemType: WishlistItemType, itemId: number): boolean {
-  return wishlisted?.has(lookupKey(itemType, itemId)) ?? false;
-}
-
-export function isOwned(itemType: WishlistItemType, itemId: number): boolean {
-  return owned?.has(lookupKey(itemType, itemId)) ?? false;
+  return collection;
 }
 
 async function write(action: 'collect' | 'uncollect', item: WishlistItem, host: string): Promise<void> {
@@ -106,7 +110,7 @@ async function write(action: 'collect' | 'uncollect', item: WishlistItem, host: 
   if (!written?.ok) throw new Error(written?.error ?? 'Bandcamp rejected the wishlist change');
 }
 
-export async function toggleWishlist(itemType: WishlistItemType, itemId: number, host: string): Promise<boolean> {
+async function toggleWishlisted(itemType: WishlistItemType, itemId: number, host: string): Promise<boolean> {
   if (fanId === null || wishlisted === null) throw new Error('Wishlist is unavailable');
 
   const key = lookupKey(itemType, itemId);

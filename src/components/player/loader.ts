@@ -233,7 +233,7 @@ export async function loadAlbumIntoDrawer(
   fetchCaching = enableFetchCaching;
 
   try {
-    const [tralbumDetails] = await Promise.all([
+    const [tralbumDetails, collection] = await Promise.all([
       getTralbumDetails(albumId, convertToApiType(albumType), null, createFetchFunction(enableFetchCaching)),
       initCollectionState()
     ]);
@@ -257,11 +257,11 @@ export async function loadAlbumIntoDrawer(
     if (drawerPlayerCreated) {
       replaceChildren(
         elements.tracklistContainer,
-        albumToolbar(buildAlbumBuyButton(tralbumDetails)),
-        buildTrackTable(tralbumDetails)
+        albumToolbar(buildAlbumBuyButton(tralbumDetails, collection)),
+        buildTrackTable(tralbumDetails, collection)
       );
     } else {
-      const parts = buildDrawerPlayer(tralbumDetails);
+      const parts = buildDrawerPlayer(tralbumDetails, collection);
 
       mountDrawerPlayer(elements, parts);
       replaceChildren(elements.tracklistContainer, albumToolbar(parts.albumBuyButton), parts.tracklistElement);

@@ -3,7 +3,7 @@ import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, create
 import { CURRENCY_MINIMUMS, getTralbumDetails, TralbumDetailsResponse } from './bclient';
 import { createAddToCartButton } from './components/cartButton';
 import { createWishlistButton } from './components/wishlistButton';
-import { initCollectionState, isOwned } from './collection';
+import { initCollectionState, Collection } from './collection';
 import { PlayerCommands, registerPlayerShortcuts } from './keyboardShortcuts';
 
 let nativeShortcutsRegistered = false;
@@ -77,20 +77,20 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
 
   try {
     const fetchFn = createFetchFunction(enableFetchCaching);
-    const [tralbumDetails] = await Promise.all([
+    const [tralbumDetails, collection] = await Promise.all([
       getTralbumDetails(tralbumId, tralbumType, null, fetchFn),
       initCollectionState()
     ]);
 
-    addWishlistStars(tralbumDetails, log);
+    addWishlistStars(tralbumDetails, log, collection);
 
     const { is_purchased, part_of_purchased_album } = extractFanTralbumData();
     if (is_purchased || part_of_purchased_album) return;
 
-    addOneClickBuyButtons(tralbumDetails, log);
+    addOneClickBuyButtons(tralbumDetails, log, collection);
 
     const { price, currency, id: albumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
-    if (!is_purchasable || isOwned(type === 't' ? 't' : 'a', albumId)) return;
+    if (!is_purchasable || collection.isOwned(type === 't' ? 't' : 'a', albumId)) return;
 
     const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
     if (!minimumPrice) return;
@@ -113,12 +113,13 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
   }
 }
 
-function addWishlistStars(tralbumDetails: TralbumDetailsResponse, log: Logger): void {
+function addWishlistStars(tralbumDetails: TralbumDetailsResponse, log: Logger, collection: Collection): void {
   document.querySelectorAll('tr.track_row_view').forEach((row, i) => {
     const track = tralbumDetails.tracks?.[i];
     if (!track) return;
 
     const star = createWishlistButton({
+      collection,
       itemType: 't',
       itemId: track.track_id,
       itemUrl: track.track_url ?? tralbumDetails.bandcamp_url ?? '',
@@ -136,14 +137,14 @@ function addWishlistStars(tralbumDetails: TralbumDetailsResponse, log: Logger): 
   });
 }
 
-function addOneClickBuyButtons(tralbumDetails: TralbumDetailsResponse, log: Logger): void {
+function addOneClickBuyButtons(tralbumDetails: TralbumDetailsResponse, log: Logger, collection: Collection): void {
   document.querySelectorAll('tr.track_row_view').forEach((row, i) => {
     if (tralbumDetails.tracks[i] === undefined) return;
 
     const { price, currency, track_id: trackId, title: itemTitle, is_purchasable } = tralbumDetails.tracks[i];
     const type = 't';
 
-    if (!is_purchasable || isOwned('t', trackId)) return;
+    if (!is_purchasable || collection.isOwned('t', trackId)) return;
 
     const infoCol = row.querySelector('.info-col');
     if (infoCol) infoCol.remove();

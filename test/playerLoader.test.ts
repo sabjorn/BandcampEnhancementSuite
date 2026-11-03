@@ -136,12 +136,15 @@ vi.mock('../src/utilities', () => ({
   createFetchFunction: vi.fn(() => fetch)
 }));
 
+const collectionStub = {
+  isAvailable: () => true,
+  isWishlisted: () => false,
+  isOwned: () => false,
+  toggleWishlisted: async () => true
+};
+
 vi.mock('../src/collection', () => ({
-  initCollectionState: vi.fn(async () => true),
-  isCollectionAvailable: vi.fn(() => false),
-  isWishlisted: vi.fn(() => false),
-  isOwned: vi.fn(() => false),
-  toggleWishlist: vi.fn()
+  initCollectionState: vi.fn(async () => collectionStub)
 }));
 
 vi.mock('../src/audioFeatures', () => ({

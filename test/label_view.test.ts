@@ -1,14 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createDomNodes, cleanupTestNodes } from './utils';
+import { createDomNodes, cleanupTestNodes, stubCollection } from './utils';
 
 // The drawer loads the shared wishlist state alongside the album; stub it so these tests only
 // control the album requests they care about.
+const collectionStub = {
+  isAvailable: () => true,
+  isWishlisted: () => false,
+  isOwned: () => false,
+  toggleWishlisted: async () => true
+};
+
 vi.mock('../src/collection', () => ({
-  initCollectionState: vi.fn(async () => true),
-  isCollectionAvailable: vi.fn(() => false),
-  isWishlisted: vi.fn(() => false),
-  isOwned: vi.fn(() => false),
-  toggleWishlist: vi.fn()
+  initCollectionState: vi.fn(async () => collectionStub)
 }));
 
 vi.mock('../src/logger', () => ({
@@ -500,7 +503,7 @@ describe('album wishlist star on the label page grid', () => {
   let render: typeof renderDom;
   let addStars: typeof addGridWishlistStars;
   let init: typeof initLabelView;
-  let wishlist: typeof import('../src/collection');
+  let collection: ReturnType<typeof stubCollection>;
 
   const gridPage = `
     <script type="text/javascript" data-band='{"id":857243381}'></script>
@@ -524,9 +527,7 @@ describe('album wishlist star on the label page grid', () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    wishlist = await import('../src/collection');
-    vi.mocked(wishlist.isCollectionAvailable).mockReturnValue(true);
-    vi.mocked(wishlist.isWishlisted).mockReturnValue(false);
+    collection = stubCollection();
     ({ renderDom: render, addGridWishlistStars: addStars, initLabelView: init } = await import('../src/label_view'));
     createDomNodes(gridPage);
   });
@@ -537,7 +538,7 @@ describe('album wishlist star on the label page grid', () => {
   });
 
   it('should add a star for every album in the grid', () => {
-    addStars();
+    addStars(collection);
 
     expect(stars().map(star => star.dataset.wishlistId)).toEqual(['2931878489', '123']);
     stars().forEach(star => expect(star.dataset.wishlistType).toBe('a'));
@@ -545,13 +546,11 @@ describe('album wishlist star on the label page grid', () => {
 
   // The collection summary needs a round trip through the service worker, so the grid is rendered
   // first and decorated once the state lands.
-  it('should not depend on the grid render, which happens before the wishlist state arrives', () => {
-    vi.mocked(wishlist.isCollectionAvailable).mockReturnValue(false);
+  it('should not depend on the grid render, which happens before the collection state arrives', () => {
     render(mockPort as any, { previewOpen: false });
     expect(stars().length).toBe(0);
 
-    vi.mocked(wishlist.isCollectionAvailable).mockReturnValue(true);
-    addStars();
+    addStars(collection);
 
     expect(stars().length).toBe(2);
   });
@@ -563,7 +562,7 @@ describe('album wishlist star on the label page grid', () => {
   });
 
   it('should pick up albums added to the grid later', () => {
-    addStars();
+    addStars(collection);
 
     const grid = document.querySelector('ol.music-grid') as HTMLElement;
     const extra = document.createElement('li');
@@ -573,19 +572,19 @@ describe('album wishlist star on the label page grid', () => {
     extra.innerHTML = '<a href="/album/late"><div class="art"></div><p class="title">Late</p></a>';
     grid.appendChild(extra);
 
-    addStars();
+    addStars(collection);
 
     expect(stars().map(star => star.dataset.wishlistId)).toEqual(['2931878489', '123', '999']);
   });
 
   it('should draw a larger star than the tracklist rows use', () => {
-    addStars();
+    addStars(collection);
 
     expect(stars()[0].querySelector('svg')?.getAttribute('width')).toBe('18');
   });
 
   it('should sit to the right of the album and artist text, in one row', () => {
-    addStars();
+    addStars(collection);
 
     const row = document.querySelector('.music-grid-item .bes-grid-title-row') as HTMLElement;
 
@@ -596,7 +595,7 @@ describe('album wishlist star on the label page grid', () => {
   });
 
   it('should keep the title text in a link of its own so the album is still clickable', () => {
-    addStars();
+    addStars(collection);
 
     const titleLink = document.querySelector('.music-grid-item .bes-grid-title-link') as HTMLAnchorElement;
 
@@ -607,7 +606,7 @@ describe('album wishlist star on the label page grid', () => {
 
   // Sharing the grid item's anchor meant hovering the star underlined the title.
   it('should keep the star outside the link the title lives in', () => {
-    addStars();
+    addStars(collection);
 
     const star = document.querySelector('.music-grid-item .bes-wishlist-button') as HTMLElement;
 
@@ -615,7 +614,7 @@ describe('album wishlist star on the label page grid', () => {
   });
 
   it('should leave the artwork link alone', () => {
-    addStars();
+    addStars(collection);
 
     const artLink = document.querySelector('.music-grid-item > a') as HTMLAnchorElement;
 
@@ -626,31 +625,31 @@ describe('album wishlist star on the label page grid', () => {
   it('should skip a grid item with no link to take a host from', () => {
     document.querySelectorAll('.music-grid-item a').forEach(link => link.remove());
 
-    addStars();
+    addStars(collection);
 
     expect(stars().length).toBe(0);
   });
 
   it('should reflect an album that is already wishlisted', () => {
-    vi.mocked(wishlist.isWishlisted).mockImplementation((_type, id) => id === 123);
+    collection.isWishlisted.mockImplementation((_type, id) => id === 123);
 
-    addStars();
+    addStars(collection);
 
     expect(stars().map(star => star.dataset.wishlistState)).toEqual(['out', 'in']);
   });
 
   it('should not add a star when the wishlist is unavailable', () => {
-    vi.mocked(wishlist.isCollectionAvailable).mockReturnValue(false);
+    collection.isAvailable.mockReturnValue(false);
 
-    addStars();
+    addStars(collection);
 
     expect(stars().length).toBe(0);
     expect(document.querySelector('.music-grid-item .title')?.textContent).toContain('Same Reason');
   });
 
   it('should not stack up stars when run again', () => {
-    addStars();
-    addStars();
+    addStars(collection);
+    addStars(collection);
 
     expect(stars().length).toBe(2);
   });

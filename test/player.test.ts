@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createDomNodes, cleanupTestNodes } from './utils';
+import { createDomNodes, cleanupTestNodes, stubCollection } from './utils';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -17,18 +17,16 @@ vi.mock('../src/logger', () => ({
 }));
 
 import { getTralbumDetails } from '../src/bclient';
-import { initCollectionState, isCollectionAvailable, isWishlisted, isOwned } from '../src/collection';
+
 vi.mock('../src/bclient', async importOriginal => ({
   ...(await importOriginal<typeof import('../src/bclient')>()),
   getTralbumDetails: vi.fn()
 }));
 
+const collectionStub = stubCollection();
+
 vi.mock('../src/collection', () => ({
-  initCollectionState: vi.fn(async () => true),
-  isCollectionAvailable: vi.fn(() => false),
-  isWishlisted: vi.fn(() => false),
-  isOwned: vi.fn(() => false),
-  toggleWishlist: vi.fn()
+  initCollectionState: vi.fn(async () => collectionStub)
 }));
 
 import { createVolumeSlider, volumeSliderCallback, initPlayer } from '../src/player';
@@ -131,10 +129,10 @@ describe('Player - wishlist stars on the album page track rows', () => {
       bandcamp_url: 'https://label.bandcamp.com/album/vielen-dank',
       tracks
     } as any);
-    vi.mocked(initCollectionState).mockResolvedValue(true);
-    vi.mocked(isCollectionAvailable).mockReturnValue(true);
-    vi.mocked(isWishlisted).mockReturnValue(false);
-    vi.mocked(isOwned).mockReturnValue(false);
+
+    collectionStub.isAvailable.mockReturnValue(true);
+    collectionStub.isWishlisted.mockReturnValue(false);
+    collectionStub.isOwned.mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -142,12 +140,12 @@ describe('Player - wishlist stars on the album page track rows', () => {
     vi.restoreAllMocks();
   });
 
-  it('should load the wishlist state before decorating the rows', async () => {
+  it('should read the collection before decorating the rows', async () => {
     renderPage();
 
     await initPlayer();
 
-    expect(initCollectionState).toHaveBeenCalled();
+    expect(collectionStub.isWishlisted).toHaveBeenCalled();
   });
 
   it('should put a star in each track row, wired to that track', async () => {
@@ -160,7 +158,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
   });
 
   it('should show the star filled for a track that is already wishlisted', async () => {
-    vi.mocked(isWishlisted).mockImplementation((_type, id) => id === 1002);
+    collectionStub.isWishlisted.mockImplementation((_type, id) => id === 1002);
     renderPage();
 
     await initPlayer();
@@ -185,7 +183,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
   });
 
   it('should not offer a one click buy for an owned track', async () => {
-    vi.mocked(isOwned).mockReturnValue(true);
+    collectionStub.isOwned.mockReturnValue(true);
     renderPage();
 
     await initPlayer();
@@ -194,7 +192,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
   });
 
   it('should not offer a one click buy for an owned album', async () => {
-    vi.mocked(isOwned).mockImplementation(type => type === 'a');
+    collectionStub.isOwned.mockImplementation(type => type === 'a');
     renderPage();
 
     await initPlayer();
@@ -203,7 +201,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
   });
 
   it('should leave the rows bare when the wishlist is unavailable', async () => {
-    vi.mocked(isCollectionAvailable).mockReturnValue(false);
+    collectionStub.isAvailable.mockReturnValue(false);
     renderPage();
 
     await initPlayer();

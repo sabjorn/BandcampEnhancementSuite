@@ -1,17 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createDomNodes, cleanupTestNodes } from './utils';
+import { createDomNodes, cleanupTestNodes, stubCollection } from './utils';
 import { buildDrawerPlayer, buildTrackTable, buildAlbumBuyButton } from '../src/components/player/builder';
 import { prevIcon, nextIcon, playIcon, pauseIcon } from '../src/components/player/icons';
 import { TralbumDetailsResponse } from '../src/bclient';
-import { isCollectionAvailable, isWishlisted, isOwned } from '../src/collection';
-
-vi.mock('../src/collection', () => ({
-  isCollectionAvailable: vi.fn(() => true),
-  isWishlisted: vi.fn(() => false),
-  isOwned: vi.fn(() => false),
-  toggleWishlist: vi.fn()
-}));
-
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
     info = vi.fn();
@@ -23,8 +14,10 @@ vi.mock('../src/logger', () => ({
 
 describe('NativePlayerBuilder - DOM Structure Creation', () => {
   let mockTralbumDetails: TralbumDetailsResponse;
+  let collection: ReturnType<typeof stubCollection>;
 
   beforeEach(() => {
+    collection = stubCollection();
     createDomNodes(`<script type="text/javascript" data-band='{"id":857243381}'></script><div></div>`);
 
     mockTralbumDetails = {
@@ -70,7 +63,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('transport controls', () => {
     it('should create transport element with prev/play/next buttons', () => {
-      const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { transportElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const prevButton = transportElement.querySelector('.bes-transport-prev');
       expect(prevButton).toBeTruthy();
@@ -83,7 +76,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should create play button with play and pause icons', () => {
-      const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { transportElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const playButton = transportElement.querySelector('.bes-transport-play') as HTMLElement;
       const playIconEl = playButton.querySelector('.bes-play-icon');
@@ -96,7 +89,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('track info display', () => {
     it('should create track info elements', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const albumLabel = centerElement.querySelector('.bes-album-label');
       expect(albumLabel).toBeTruthy();
@@ -109,7 +102,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should have empty text content initially', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const albumLabel = centerElement.querySelector('.bes-album-label') as HTMLElement;
       const trackTitle = centerElement.querySelector('.bes-now-playing-title') as HTMLElement;
@@ -124,7 +117,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('bpm badge', () => {
     it('should create BPM badge with number and label', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const bpmBadge = centerElement.querySelector('.bes-bpm-badge');
       expect(bpmBadge).toBeTruthy();
@@ -139,7 +132,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('progress view toggle', () => {
     it('should create waveform canvas element', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const canvas = centerElement.querySelector('canvas.bes-waveform') as HTMLCanvasElement;
       expect(canvas).toBeTruthy();
@@ -148,7 +141,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should create slider container with progress bar', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const sliderContainer = centerElement.querySelector('.bes-slider-container');
       expect(sliderContainer).toBeTruthy();
@@ -161,7 +154,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should create toggle buttons for waveform and slider modes', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const toggleSlider = centerElement.querySelector('.bes-toggle-slider') as HTMLButtonElement;
       const toggleWaveform = centerElement.querySelector('.bes-toggle-waveform') as HTMLButtonElement;
@@ -171,7 +164,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should provide both progress views for the player to switch between', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       expect(centerElement.querySelector('.bes-waveform-container')).toBeTruthy();
       expect(centerElement.querySelector('.bes-slider-container')).toBeTruthy();
@@ -182,7 +175,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('volume slider', () => {
     it('should create volume container with vertical slider', () => {
-      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const volumeContainer = volumeElement.querySelector('.bes-volume');
       expect(volumeContainer).toBeTruthy();
@@ -195,7 +188,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should create volume percentage display', () => {
-      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const volumePercent = volumeElement.querySelector('.bes-volume-percent') as HTMLElement;
       expect(volumePercent).toBeTruthy();
@@ -205,7 +198,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('mute toggle', () => {
     it('should create mute button with icon', () => {
-      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const muteButton = volumeElement.querySelector('.bes-volume-mute') as HTMLButtonElement;
       expect(muteButton).toBeTruthy();
@@ -218,7 +211,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('time display', () => {
     it('should create time display elements', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const timeElapsed = centerElement.querySelector('.bes-time-elapsed') as HTMLElement;
       const timeTotal = centerElement.querySelector('.bes-time-total') as HTMLElement;
@@ -234,14 +227,14 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('tracklist', () => {
     it('should build track table with correct number of rows', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const rows = trackTable.querySelectorAll('.bes-track-row');
       expect(rows.length).toBe(2);
     });
 
     it('should display track numbers and titles', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const firstRow = trackTable.querySelector('.bes-track-row:first-child') as HTMLElement;
       const trackNumber = firstRow.querySelector('.bes-track-num') as HTMLElement;
@@ -252,7 +245,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should display track duration', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const firstRow = trackTable.querySelector('.bes-track-row:first-child') as HTMLElement;
       const time = firstRow.querySelector('.bes-track-duration') as HTMLElement;
@@ -261,7 +254,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should include buy button for purchasable tracks', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const firstRow = trackTable.querySelector('.bes-track-row:first-child') as HTMLElement;
       const buyButton = firstRow.querySelector('.bes-track-buy-col');
@@ -270,7 +263,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should have empty download column for non-purchasable tracks', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const secondRow = trackTable.querySelectorAll('.bes-track-row')[1] as HTMLElement;
       const buyCol = secondRow.querySelector('.bes-track-buy-col') as HTMLElement;
@@ -281,7 +274,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should give every row the same column structure', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const rows = trackTable.querySelectorAll('.bes-track-row');
       rows.forEach(row => {
@@ -295,7 +288,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should include track link icon when track_url exists', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const firstRow = trackTable.querySelector('.bes-track-row:first-child') as HTMLElement;
       const trackLink = firstRow.querySelector('.bes-track-link') as HTMLAnchorElement;
@@ -306,7 +299,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should tag each row with its track id so FindMusic.club state can be matched', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const rows = Array.from(trackTable.querySelectorAll<HTMLElement>('.bes-track-row'));
 
@@ -314,7 +307,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should include liked and played indicators on every row', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const rows = trackTable.querySelectorAll('.bes-track-row');
       rows.forEach(row => {
@@ -324,7 +317,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should leave rows unmarked until FindMusic.club state arrives', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const rows = trackTable.querySelectorAll('.bes-track-row');
       rows.forEach(row => {
@@ -337,25 +330,25 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
   // The album's own indicator already says the fan owns everything in it.
   describe('tracks of an owned album', () => {
     beforeEach(() => {
-      vi.mocked(isCollectionAvailable).mockReturnValue(true);
-      vi.mocked(isWishlisted).mockReturnValue(false);
-      vi.mocked(isOwned).mockImplementation(type => type === 'a');
+      collection.isAvailable.mockReturnValue(true);
+      collection.isWishlisted.mockReturnValue(false);
+      collection.isOwned.mockImplementation(type => type === 'a');
     });
 
     it('should not be wishlistable', () => {
-      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+      const rows = buildTrackTable(mockTralbumDetails, collection).querySelectorAll('.bes-track-row');
 
       rows.forEach(row => expect(row.querySelector('.bes-wishlist-button')).toBeNull());
     });
 
     it('should carry no owned indicator of their own', () => {
-      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+      const rows = buildTrackTable(mockTralbumDetails, collection).querySelectorAll('.bes-track-row');
 
       rows.forEach(row => expect(row.querySelector('.bes-owned-indicator')).toBeNull());
     });
 
     it('should keep their played and liked markers', () => {
-      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+      const rows = buildTrackTable(mockTralbumDetails, collection).querySelectorAll('.bes-track-row');
 
       rows.forEach(row => {
         expect(row.querySelector('.bes-track-played')).toBeTruthy();
@@ -364,7 +357,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should not be buyable either', () => {
-      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+      const rows = buildTrackTable(mockTralbumDetails, collection).querySelectorAll('.bes-track-row');
 
       rows.forEach(row => {
         expect(row.querySelector('.one-click-button-container')).toBeNull();
@@ -373,7 +366,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should still keep the state column so the rows line up', () => {
-      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+      const rows = buildTrackTable(mockTralbumDetails, collection).querySelectorAll('.bes-track-row');
 
       rows.forEach(row => expect(row.querySelector('.bes-track-state-col')).toBeTruthy());
     });
@@ -381,12 +374,12 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('an owned track in the state cell', () => {
     beforeEach(() => {
-      vi.mocked(isCollectionAvailable).mockReturnValue(true);
-      vi.mocked(isOwned).mockImplementation((_type, id) => id === 1001);
+      collection.isAvailable.mockReturnValue(true);
+      collection.isOwned.mockImplementation((_type, id) => id === 1001);
     });
 
     it('should replace the played indicator as well as the star', () => {
-      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+      const rows = buildTrackTable(mockTralbumDetails, collection).querySelectorAll('.bes-track-row');
 
       expect(rows[0].querySelector('.bes-owned-indicator')).toBeTruthy();
       expect(rows[0].querySelector('.bes-track-played')).toBeNull();
@@ -394,14 +387,14 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should leave the played indicator on a track that is not owned', () => {
-      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+      const rows = buildTrackTable(mockTralbumDetails, collection).querySelectorAll('.bes-track-row');
 
       expect(rows[1].querySelector('.bes-track-played')).toBeTruthy();
       expect(rows[1].querySelector('.bes-owned-indicator')).toBeNull();
     });
 
     it('should keep the FindMusic heart, which says something different', () => {
-      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+      const rows = buildTrackTable(mockTralbumDetails, collection).querySelectorAll('.bes-track-row');
 
       expect(rows[0].querySelector('.bes-track-liked')).toBeTruthy();
     });
@@ -409,13 +402,13 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('wishlist star in the track state cell', () => {
     beforeEach(() => {
-      vi.mocked(isCollectionAvailable).mockReturnValue(true);
-      vi.mocked(isWishlisted).mockReturnValue(false);
-      vi.mocked(isOwned).mockReturnValue(false);
+      collection.isAvailable.mockReturnValue(true);
+      collection.isWishlisted.mockReturnValue(false);
+      collection.isOwned.mockReturnValue(false);
     });
 
     it('should put a star in every row alongside the liked and played indicators', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const rows = trackTable.querySelectorAll('.bes-track-row');
       expect(rows.length).toBe(2);
@@ -425,7 +418,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should wire each star to its own track and band', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const stars = Array.from(trackTable.querySelectorAll<HTMLElement>('.bes-wishlist-button'));
 
@@ -434,18 +427,18 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should show the star filled for a track that is already wishlisted', () => {
-      vi.mocked(isWishlisted).mockImplementation((_type, id) => id === 1002);
+      collection.isWishlisted.mockImplementation((_type, id) => id === 1002);
 
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const stars = Array.from(trackTable.querySelectorAll<HTMLElement>('.bes-wishlist-button'));
       expect(stars.map(star => star.dataset.wishlistState)).toEqual(['out', 'in']);
     });
 
     it('should leave the rows without a star when the wishlist is unavailable', () => {
-      vi.mocked(isCollectionAvailable).mockReturnValue(false);
+      collection.isAvailable.mockReturnValue(false);
 
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       expect(trackTable.querySelector('.bes-wishlist-button')).toBeNull();
       expect(trackTable.querySelectorAll('.bes-track-state-col').length).toBe(2);
@@ -454,14 +447,14 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('progress bar stylesheet hooks', () => {
     it('should expose progress bar parts by class', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       expect(centerElement.querySelector('.bes-progbar-fill')).toBeTruthy();
       expect(centerElement.querySelector('.bes-progbar-thumb')).toBeTruthy();
     });
 
     it('should expose slider container by class', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       expect(centerElement.querySelector('.bes-slider-container')).toBeTruthy();
     });
@@ -477,7 +470,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     };
 
     it('should draw prev and next from the shared icons', () => {
-      const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { transportElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       const prev = transportElement.querySelector('.bes-transport-prev path')?.getAttribute('d');
       const next = transportElement.querySelector('.bes-transport-next path')?.getAttribute('d');
@@ -487,7 +480,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should carry both play and pause icons for class based toggling', () => {
-      const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { transportElement } = buildDrawerPlayer(mockTralbumDetails, collection);
       const play = transportElement.querySelector('.bes-transport-play') as HTMLElement;
 
       expect(play.querySelector('.bes-play-icon path')?.getAttribute('d')).toBe(pathsOf(playIcon(16))[0]);
@@ -497,13 +490,13 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('album wishlist star', () => {
     beforeEach(() => {
-      vi.mocked(isCollectionAvailable).mockReturnValue(true);
-      vi.mocked(isWishlisted).mockReturnValue(false);
-      vi.mocked(isOwned).mockReturnValue(false);
+      collection.isAvailable.mockReturnValue(true);
+      collection.isWishlisted.mockReturnValue(false);
+      collection.isOwned.mockReturnValue(false);
     });
 
     it('should sit to the left of the Buy Album label', () => {
-      const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
+      const container = buildAlbumBuyButton(mockTralbumDetails, collection) as HTMLElement;
 
       expect(Array.from(container.children).map(child => child.className)).toEqual([
         'bes-wishlist-button',
@@ -516,7 +509,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should wishlist a loaded single as a track, not an album', () => {
       const single = { ...mockTralbumDetails, type: 't' as const, id: 4216 };
 
-      const container = buildAlbumBuyButton(single) as HTMLElement;
+      const container = buildAlbumBuyButton(single, collection) as HTMLElement;
       const star = container.querySelector<HTMLElement>('.bes-wishlist-button') as HTMLElement;
 
       expect(star.dataset.wishlistType).toBe('t');
@@ -525,16 +518,16 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should read the loaded single own state rather than an album with the same id', () => {
-      vi.mocked(isWishlisted).mockReturnValue(false);
+      collection.isWishlisted.mockReturnValue(false);
       const single = { ...mockTralbumDetails, type: 't' as const, id: 4216 };
 
-      buildAlbumBuyButton(single);
+      buildAlbumBuyButton(single, collection);
 
-      expect(isWishlisted).toHaveBeenCalledWith('t', 4216);
+      expect(collection.isWishlisted).toHaveBeenCalledWith('t', 4216);
     });
 
     it('should wishlist the album rather than a track', () => {
-      const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
+      const container = buildAlbumBuyButton(mockTralbumDetails, collection) as HTMLElement;
       const star = container.querySelector<HTMLElement>('.bes-wishlist-button') as HTMLElement;
 
       expect(star.dataset.wishlistType).toBe('a');
@@ -543,9 +536,9 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should show filled for an album that is already wishlisted', () => {
-      vi.mocked(isWishlisted).mockImplementation((type, id) => type === 'a' && id === 123);
+      collection.isWishlisted.mockImplementation((type, id) => type === 'a' && id === 123);
 
-      const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
+      const container = buildAlbumBuyButton(mockTralbumDetails, collection) as HTMLElement;
 
       expect(container.querySelector<HTMLElement>('.bes-wishlist-button')?.dataset.wishlistState).toBe('in');
     });
@@ -553,7 +546,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should fall back to a track band id when the album carries none', () => {
       const withoutBand = { ...mockTralbumDetails, band: undefined };
 
-      const container = buildAlbumBuyButton(withoutBand) as HTMLElement;
+      const container = buildAlbumBuyButton(withoutBand, collection) as HTMLElement;
 
       expect(container.querySelector('.bes-wishlist-button')).toBeTruthy();
     });
@@ -561,7 +554,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should still offer the star for an album that cannot be bought', () => {
       const soldOut = { ...mockTralbumDetails, is_purchasable: false };
 
-      const container = buildAlbumBuyButton(soldOut) as HTMLElement;
+      const container = buildAlbumBuyButton(soldOut, collection) as HTMLElement;
 
       expect(container.querySelector('.bes-wishlist-button')).toBeTruthy();
     });
@@ -569,21 +562,21 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     it('should drop the buy label and button when there is nothing to buy', () => {
       const soldOut = { ...mockTralbumDetails, is_purchasable: false };
 
-      const container = buildAlbumBuyButton(soldOut) as HTMLElement;
+      const container = buildAlbumBuyButton(soldOut, collection) as HTMLElement;
 
       expect(Array.from(container.children).map(child => child.className)).toEqual(['bes-wishlist-button']);
     });
 
     it('should render nothing when the album can neither be bought nor wishlisted', () => {
-      vi.mocked(isCollectionAvailable).mockReturnValue(false);
+      collection.isAvailable.mockReturnValue(false);
 
-      expect(buildAlbumBuyButton({ ...mockTralbumDetails, is_purchasable: false })).toBeNull();
+      expect(buildAlbumBuyButton({ ...mockTralbumDetails, is_purchasable: false }, collection)).toBeNull();
     });
 
     it('should drop the buy button for an owned album', () => {
-      vi.mocked(isOwned).mockReturnValue(true);
+      collection.isOwned.mockReturnValue(true);
 
-      const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
+      const container = buildAlbumBuyButton(mockTralbumDetails, collection) as HTMLElement;
 
       expect(container.querySelector('.one-click-button-container')).toBeNull();
       expect(container.querySelector('.bes-album-buy-label')).toBeNull();
@@ -591,9 +584,9 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should leave the buy row alone when the wishlist is unavailable', () => {
-      vi.mocked(isCollectionAvailable).mockReturnValue(false);
+      collection.isAvailable.mockReturnValue(false);
 
-      const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
+      const container = buildAlbumBuyButton(mockTralbumDetails, collection) as HTMLElement;
 
       expect(container.querySelector('.bes-wishlist-button')).toBeNull();
       expect(container.querySelector('.bes-album-buy-label')).toBeTruthy();
@@ -602,7 +595,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
 
   describe('transport stylesheet hooks', () => {
     it('should expose transport buttons by class', () => {
-      const { transportElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { transportElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       expect(transportElement.querySelector('.bes-transport-prev')).toBeTruthy();
       expect(transportElement.querySelector('.bes-transport-play')).toBeTruthy();
@@ -610,7 +603,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should expose player controls by class', () => {
-      const { centerElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { centerElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       expect(centerElement.querySelector('.bes-track-info')).toBeTruthy();
       expect(centerElement.querySelector('.bes-player-controls')).toBeTruthy();
@@ -618,7 +611,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should expose volume controls by class', () => {
-      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails);
+      const { volumeElement } = buildDrawerPlayer(mockTralbumDetails, collection);
 
       expect(volumeElement.classList.contains('bes-drawer-volume-column')).toBe(true);
       expect(volumeElement.querySelector('.bes-volume-mute')).toBeTruthy();
@@ -636,7 +629,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         price: 10.0
       } as TralbumDetailsResponse;
 
-      const { albumBuyButton } = buildDrawerPlayer(purchasableTralbum);
+      const { albumBuyButton } = buildDrawerPlayer(purchasableTralbum, collection);
 
       expect(albumBuyButton).toBeTruthy();
       expect(albumBuyButton?.querySelector('.one-click-button')).toBeTruthy();
@@ -649,9 +642,10 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         price: 0
       } as TralbumDetailsResponse;
 
-      const { albumBuyButton } = buildDrawerPlayer(nonPurchasableTralbum);
+      const { albumBuyButton } = buildDrawerPlayer(nonPurchasableTralbum, collection);
 
-      expect(albumBuyButton).toBeNull();
+      expect(albumBuyButton?.querySelector('.one-click-button')).toBeNull();
+      expect(albumBuyButton?.querySelector('.bes-wishlist-button')).toBeTruthy();
     });
 
     it('should use correct price and currency for album buy button', () => {
@@ -662,7 +656,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         currency: 'EUR'
       } as TralbumDetailsResponse;
 
-      const { albumBuyButton } = buildDrawerPlayer(purchasableTralbum);
+      const { albumBuyButton } = buildDrawerPlayer(purchasableTralbum, collection);
 
       const input = albumBuyButton?.querySelector('input') as HTMLInputElement;
       expect(input).toBeTruthy();
@@ -681,7 +675,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         price: 10.0
       } as TralbumDetailsResponse;
 
-      const { albumBuyButton } = buildDrawerPlayer(purchasableTralbum);
+      const { albumBuyButton } = buildDrawerPlayer(purchasableTralbum, collection);
 
       // Album buy button should exist and be ready for cart operations
       // The actual cart integration is tested in cartButton.test.ts
@@ -696,7 +690,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
         price: 10.0
       } as TralbumDetailsResponse;
 
-      const { albumBuyButton, tracklistElement } = buildDrawerPlayer(purchasableTralbum);
+      const { albumBuyButton, tracklistElement } = buildDrawerPlayer(purchasableTralbum, collection);
 
       // Both should be present
       expect(albumBuyButton).toBeTruthy();
@@ -756,7 +750,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should add bes-track-unplayable class to unplayable track rows', () => {
-      const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
+      const trackTable = buildTrackTable(tralbumWithUnplayableTracks, collection);
 
       const rows = trackTable.querySelectorAll('.bes-track-row');
       expect(rows.length).toBe(3);
@@ -772,7 +766,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should not add bes-track-unplayable class to playable track rows', () => {
-      const trackTable = buildTrackTable(mockTralbumDetails);
+      const trackTable = buildTrackTable(mockTralbumDetails, collection);
 
       const rows = trackTable.querySelectorAll('.bes-track-row');
       rows.forEach(row => {
@@ -781,7 +775,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should keep track number and title in the row for unplayable tracks', () => {
-      const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
+      const trackTable = buildTrackTable(tralbumWithUnplayableTracks, collection);
 
       const secondRow = trackTable.querySelectorAll('.bes-track-row')[1] as HTMLElement;
 
@@ -790,7 +784,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should keep buy button visible for unplayable tracks', () => {
-      const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
+      const trackTable = buildTrackTable(tralbumWithUnplayableTracks, collection);
 
       const secondRow = trackTable.querySelectorAll('.bes-track-row')[1] as HTMLElement;
       const buyButton = secondRow.querySelector('.bes-track-buy-col');
@@ -801,7 +795,7 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
 
     it('should not mark playable tracks as unplayable', () => {
-      const trackTable = buildTrackTable(tralbumWithUnplayableTracks);
+      const trackTable = buildTrackTable(tralbumWithUnplayableTracks, collection);
 
       const firstRow = trackTable.querySelectorAll('.bes-track-row')[0] as HTMLElement;
 

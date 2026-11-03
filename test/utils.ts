@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+
 export const createPagedata = (): void => {
   const pagedata = document.createElement('div');
   pagedata.setAttribute('id', 'pagedata');
@@ -30,3 +32,13 @@ export function mockApiResponse(body: Record<string, any> = {}): Response {
     headers: { 'Content-type': 'application/json' }
   });
 }
+
+type ItemType = 't' | 'a';
+
+export const stubCollection = (overrides: Record<string, any> = {}) => ({
+  isAvailable: vi.fn((): boolean => true),
+  isWishlisted: vi.fn((_itemType: ItemType, _itemId: number): boolean => false),
+  isOwned: vi.fn((_itemType: ItemType, _itemId: number): boolean => false),
+  toggleWishlisted: vi.fn(async (_itemType: ItemType, _itemId: number, _host: string): Promise<boolean> => true),
+  ...overrides
+});

@@ -92,7 +92,7 @@ export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTM
   return container;
 }
 
-function buildTrackStateCell(track: TralbumTrack, albumUrl: string): HTMLElement {
+function buildTrackStateCell(track: TralbumTrack, albumUrl: string, albumOwned: boolean): HTMLElement {
   const stateCol = document.createElement('td');
   stateCol.className = 'bes-track-state-col';
 
@@ -109,6 +109,8 @@ function buildTrackStateCell(track: TralbumTrack, albumUrl: string): HTMLElement
   stateCol.appendChild(likedIndicator);
   if (!isOwned('t', track.track_id)) stateCol.appendChild(playedIndicator);
 
+  if (albumOwned) return stateCol;
+
   const wishlistButton = createWishlistButton({
     itemType: 't',
     itemId: track.track_id,
@@ -123,6 +125,8 @@ function buildTrackStateCell(track: TralbumTrack, albumUrl: string): HTMLElement
 export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLElement {
   const table = document.createElement('table');
   table.className = 'bes-tracklist-table';
+
+  const albumOwned = isOwned(tralbumDetails.type === 't' ? 't' : 'a', tralbumDetails.id);
 
   if (!tralbumDetails.tracks || tralbumDetails.tracks.length === 0) {
     return table;
@@ -167,7 +171,7 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
       durationCol.appendChild(timeSpan);
     }
 
-    const stateCol = buildTrackStateCell(track, tralbumDetails.bandcamp_url ?? '');
+    const stateCol = buildTrackStateCell(track, tralbumDetails.bandcamp_url ?? '', albumOwned);
 
     const linkCol = document.createElement('td');
     linkCol.className = 'bes-track-link-col';

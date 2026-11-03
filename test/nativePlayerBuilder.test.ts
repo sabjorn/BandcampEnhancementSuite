@@ -334,6 +334,42 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
     });
   });
 
+  // The album's own indicator already says the fan owns everything in it.
+  describe('tracks of an owned album', () => {
+    beforeEach(() => {
+      vi.mocked(isWishlistAvailable).mockReturnValue(true);
+      vi.mocked(isWishlisted).mockReturnValue(false);
+      vi.mocked(isOwned).mockImplementation(type => type === 'a');
+    });
+
+    it('should not be wishlistable', () => {
+      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+
+      rows.forEach(row => expect(row.querySelector('.bes-wishlist-button')).toBeNull());
+    });
+
+    it('should carry no owned indicator of their own', () => {
+      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+
+      rows.forEach(row => expect(row.querySelector('.bes-owned-indicator')).toBeNull());
+    });
+
+    it('should keep their played and liked markers', () => {
+      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+
+      rows.forEach(row => {
+        expect(row.querySelector('.bes-track-played')).toBeTruthy();
+        expect(row.querySelector('.bes-track-liked')).toBeTruthy();
+      });
+    });
+
+    it('should still keep the state column so the rows line up', () => {
+      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+
+      rows.forEach(row => expect(row.querySelector('.bes-track-state-col')).toBeTruthy());
+    });
+  });
+
   describe('an owned track in the state cell', () => {
     beforeEach(() => {
       vi.mocked(isWishlistAvailable).mockReturnValue(true);

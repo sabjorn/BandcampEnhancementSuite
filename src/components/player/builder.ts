@@ -64,7 +64,7 @@ export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTM
     size: 14
   });
 
-  const canBuy = is_purchasable && price !== undefined;
+  const canBuy = is_purchasable && price !== undefined && !isOwned(type === 't' ? 't' : 'a', id);
   if (!albumStar && !canBuy) return null;
 
   const container = document.createElement('div');
@@ -190,7 +190,7 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
     const buyCol = document.createElement('td');
     buyCol.className = 'bes-track-buy-col';
 
-    if (track.is_purchasable && track.track_id) {
+    if (track.is_purchasable && track.track_id && !albumOwned && !isOwned('t', track.track_id)) {
       const { price, currency, track_id: trackId, title: trackTitle } = track;
       const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency] || 0.5;
 

@@ -17,7 +17,7 @@ vi.mock('../src/logger', () => ({
 }));
 
 import { getTralbumDetails } from '../src/bclient';
-import { initWishlistState, isWishlistAvailable, isWishlisted } from '../src/wishlist';
+import { initWishlistState, isWishlistAvailable, isWishlisted, isOwned } from '../src/wishlist';
 vi.mock('../src/bclient', async importOriginal => ({
   ...(await importOriginal<typeof import('../src/bclient')>()),
   getTralbumDetails: vi.fn()
@@ -134,6 +134,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
     vi.mocked(initWishlistState).mockResolvedValue(true);
     vi.mocked(isWishlistAvailable).mockReturnValue(true);
     vi.mocked(isWishlisted).mockReturnValue(false);
+    vi.mocked(isOwned).mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -181,6 +182,24 @@ describe('Player - wishlist stars on the album page track rows', () => {
     await initPlayer();
 
     expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(0);
+  });
+
+  it('should not offer a one click buy for an owned track', async () => {
+    vi.mocked(isOwned).mockReturnValue(true);
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(0);
+  });
+
+  it('should not offer a one click buy for an owned album', async () => {
+    vi.mocked(isOwned).mockImplementation(type => type === 'a');
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelector('ul.tralbumCommands .one-click-button')).toBeNull();
   });
 
   it('should leave the rows bare when the wishlist is unavailable', async () => {

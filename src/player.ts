@@ -3,7 +3,7 @@ import { mousedownCallback, extractBandFollowInfo, extractFanTralbumData, create
 import { CURRENCY_MINIMUMS, getTralbumDetails, TralbumDetailsResponse } from './bclient';
 import { createAddToCartButton } from './components/cartButton';
 import { createWishlistButton } from './components/wishlistButton';
-import { initWishlistState } from './wishlist';
+import { initWishlistState, isOwned } from './wishlist';
 import { PlayerCommands, registerPlayerShortcuts } from './keyboardShortcuts';
 
 let nativeShortcutsRegistered = false;
@@ -90,7 +90,7 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
     addOneClickBuyButtons(tralbumDetails, log);
 
     const { price, currency, id: albumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
-    if (!is_purchasable) return;
+    if (!is_purchasable || isOwned(type === 't' ? 't' : 'a', albumId)) return;
 
     const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
     if (!minimumPrice) return;
@@ -143,7 +143,7 @@ function addOneClickBuyButtons(tralbumDetails: TralbumDetailsResponse, log: Logg
     const { price, currency, track_id: trackId, title: itemTitle, is_purchasable } = tralbumDetails.tracks[i];
     const type = 't';
 
-    if (!is_purchasable) return;
+    if (!is_purchasable || isOwned('t', trackId)) return;
 
     const infoCol = row.querySelector('.info-col');
     if (infoCol) infoCol.remove();

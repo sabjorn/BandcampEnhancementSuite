@@ -363,6 +363,15 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       });
     });
 
+    it('should not be buyable either', () => {
+      const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
+
+      rows.forEach(row => {
+        expect(row.querySelector('.one-click-button-container')).toBeNull();
+        expect(row.querySelector('.bes-track-buy-col')).toBeTruthy();
+      });
+    });
+
     it('should still keep the state column so the rows line up', () => {
       const rows = buildTrackTable(mockTralbumDetails).querySelectorAll('.bes-track-row');
 
@@ -569,6 +578,16 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       vi.mocked(isWishlistAvailable).mockReturnValue(false);
 
       expect(buildAlbumBuyButton({ ...mockTralbumDetails, is_purchasable: false })).toBeNull();
+    });
+
+    it('should drop the buy button for an owned album', () => {
+      vi.mocked(isOwned).mockReturnValue(true);
+
+      const container = buildAlbumBuyButton(mockTralbumDetails) as HTMLElement;
+
+      expect(container.querySelector('.one-click-button-container')).toBeNull();
+      expect(container.querySelector('.bes-album-buy-label')).toBeNull();
+      expect(container.querySelector('.bes-owned-indicator')).toBeTruthy();
     });
 
     it('should leave the buy row alone when the wishlist is unavailable', () => {

@@ -6,7 +6,8 @@ import {
   DEFAULT_KEYBOARD_SETTINGS,
   keyBindingToString,
   keyBindingsEqual,
-  validateKeyboardSettings
+  validateKeyboardSettings,
+  backfillKeyboardControls
 } from '../src/types/keyboard';
 
 describe('Keyboard Settings', () => {
@@ -184,6 +185,63 @@ describe('Keyboard Settings', () => {
     it('should not have duplicate key bindings', () => {
       const errors = validateKeyboardSettings(DEFAULT_KEYBOARD_SETTINGS);
       expect(errors).toEqual([]);
+    });
+  });
+
+  describe('backfillKeyboardControls', () => {
+    const storedWithout = (...missing: KeyboardAction[]): KeyboardSettings => ({
+      ...DEFAULT_KEYBOARD_SETTINGS,
+      controls: DEFAULT_KEYBOARD_SETTINGS.controls
+        .filter(control => !missing.includes(control.action))
+        .map(control => ({ ...control, binding: { ...control.binding } }))
+    });
+
+    const controlFor = (settings: KeyboardSettings, action: KeyboardAction) =>
+      settings.controls.find(control => control.action === action);
+
+    it('should add an action the stored settings have never seen', () => {
+      const stored = storedWithout(KeyboardAction.NEXT_ALBUM);
+
+      const merged = backfillKeyboardControls(stored);
+
+      expect(controlFor(merged, KeyboardAction.NEXT_ALBUM)).toEqual({
+        action: KeyboardAction.NEXT_ALBUM,
+        binding: { key: ']' },
+        enabled: true
+      });
+    });
+
+    it('should keep the stored binding for an action it already has', () => {
+      const stored = storedWithout(KeyboardAction.NEXT_ALBUM);
+      controlFor(stored, KeyboardAction.PLAY_PAUSE)!.binding = { key: 'k' };
+
+      const merged = backfillKeyboardControls(stored);
+
+      expect(controlFor(merged, KeyboardAction.PLAY_PAUSE)?.binding).toEqual({ key: 'k' });
+    });
+
+    it('should add an action disabled when its default key is already in use', () => {
+      const stored = storedWithout(KeyboardAction.NEXT_ALBUM);
+      controlFor(stored, KeyboardAction.PLAY_PAUSE)!.binding = { key: ']' };
+
+      const merged = backfillKeyboardControls(stored);
+
+      expect(controlFor(merged, KeyboardAction.NEXT_ALBUM)?.enabled).toBe(false);
+      expect(validateKeyboardSettings(merged)).toEqual([]);
+    });
+
+    it('should leave settings that cover every action untouched', () => {
+      const stored = storedWithout();
+
+      expect(backfillKeyboardControls(stored)).toBe(stored);
+    });
+
+    it('should not let a backfilled binding be rebound onto the defaults', () => {
+      const merged = backfillKeyboardControls(storedWithout(KeyboardAction.NEXT_ALBUM));
+
+      controlFor(merged, KeyboardAction.NEXT_ALBUM)!.binding.key = 'n';
+
+      expect(controlFor(DEFAULT_KEYBOARD_SETTINGS, KeyboardAction.NEXT_ALBUM)?.binding.key).toBe(']');
     });
   });
 });

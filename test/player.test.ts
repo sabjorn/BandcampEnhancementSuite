@@ -182,6 +182,30 @@ describe('Player - wishlist stars on the album page track rows', () => {
     expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(0);
   });
 
+  // tralbum_lookup carries the album entry, not one per track, so an owned album's tracks only
+  // look owned through the album.
+  it('should not offer a star on the tracks of an owned album', async () => {
+    collectionStub.isOwned.mockImplementation(type => type === 'a');
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelectorAll('.track_row_view .bes-wishlist-button').length).toBe(0);
+    expect(document.querySelectorAll('.track_row_view .bes-owned-indicator').length).toBe(0);
+  });
+
+  it('should keep the rows aligned when only one track is owned', async () => {
+    collectionStub.isOwned.mockImplementation((type, id) => type === 't' && id === 1001);
+    renderPage();
+
+    await initPlayer();
+
+    const rows = Array.from(document.querySelectorAll('.track_row_view'));
+    const shapes = rows.map(row => Array.from(row.children).map(cell => cell.className));
+
+    expect(shapes[0]).toEqual(shapes[1]);
+  });
+
   it('should not offer a one click buy for an owned track', async () => {
     collectionStub.isOwned.mockReturnValue(true);
     renderPage();

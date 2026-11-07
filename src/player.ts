@@ -82,12 +82,14 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
       initCollectionState()
     ]);
 
-    addWishlistStars(tralbumDetails, log, collection);
+    const albumOwned = collection.isOwned(tralbumDetails.type === 't' ? 't' : 'a', tralbumDetails.id);
+
+    if (!albumOwned) addWishlistStars(tralbumDetails, log, collection);
 
     const { is_purchased, part_of_purchased_album } = extractFanTralbumData();
     if (is_purchased || part_of_purchased_album) return;
 
-    addOneClickBuyButtons(tralbumDetails, log, collection);
+    if (!albumOwned) addOneClickBuyButtons(tralbumDetails, log, collection);
 
     const { price, currency, id: albumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
     if (!is_purchasable || collection.isOwned(type === 't' ? 't' : 'a', albumId)) return;
@@ -144,10 +146,10 @@ function addOneClickBuyButtons(tralbumDetails: TralbumDetailsResponse, log: Logg
     const { price, currency, track_id: trackId, title: itemTitle, is_purchasable } = tralbumDetails.tracks[i];
     const type = 't';
 
-    if (!is_purchasable || collection.isOwned('t', trackId)) return;
-
     const infoCol = row.querySelector('.info-col');
     if (infoCol) infoCol.remove();
+
+    if (!is_purchasable || collection.isOwned('t', trackId)) return;
 
     const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
     if (!minimumPrice) return;

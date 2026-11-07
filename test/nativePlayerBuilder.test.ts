@@ -356,6 +356,17 @@ describe('NativePlayerBuilder - DOM Structure Creation', () => {
       });
     });
 
+    it('should keep the played marker on a track that is owned in its own right', () => {
+      collection.isOwned.mockReturnValue(true);
+
+      const rows = buildTrackTable(mockTralbumDetails, collection).querySelectorAll('.bes-track-row');
+
+      rows.forEach(row => {
+        expect(row.querySelector('.bes-track-played')).toBeTruthy();
+        expect(row.querySelector('.bes-owned-indicator')).toBeNull();
+      });
+    });
+
     it('should not be buyable either', () => {
       const rows = buildTrackTable(mockTralbumDetails, collection).querySelectorAll('.bes-track-row');
 

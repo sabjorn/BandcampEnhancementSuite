@@ -118,8 +118,10 @@ function buildTrackStateCell(
   playedIndicator.setAttribute('title', 'Played');
   playedIndicator.innerHTML = playedIcon(12);
 
+  const trackOwned = !albumOwned && collection.isOwned('t', track.track_id);
+
   stateCol.appendChild(likedIndicator);
-  if (!collection.isOwned('t', track.track_id)) stateCol.appendChild(playedIndicator);
+  if (!trackOwned) stateCol.appendChild(playedIndicator);
 
   if (albumOwned) return stateCol;
 

@@ -135,6 +135,25 @@ describe('wishlistButton', () => {
       }
     });
 
+    it('should hold the spinner just as long when the change fails', async () => {
+      vi.useFakeTimers();
+
+      try {
+        collection.toggleWishlisted.mockRejectedValue(new Error('nope'));
+
+        const button = buildButton()!;
+        button.click();
+
+        await vi.advanceTimersByTimeAsync(100);
+        expect(button.dataset.wishlistState).toBe('loading');
+
+        await vi.advanceTimersByTimeAsync(200);
+        expect(button.dataset.wishlistState).toBe('out');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('should put the star back once the change settles', async () => {
       const button = buildButton()!;
       button.click();
@@ -249,6 +268,21 @@ describe('wishlistButton', () => {
 
       await vi.waitFor(() => expect(track.dataset.wishlistState).toBe('in'));
       expect(other.dataset.wishlistState).toBe('out');
+    });
+
+    it('should leave a button that is mid-change alone', async () => {
+      const row = buildButton()!;
+      const header = buildButton()!;
+      document.body.append(row, header);
+
+      collection.toggleWishlisted.mockReturnValueOnce(new Promise(() => {}));
+      header.click();
+
+      collection.toggleWishlisted.mockResolvedValue(true);
+      row.click();
+
+      await vi.waitFor(() => expect(row.dataset.wishlistState).toBe('in'));
+      expect(header.dataset.wishlistState).toBe('loading');
     });
 
     it('should not resync after a failed change', async () => {

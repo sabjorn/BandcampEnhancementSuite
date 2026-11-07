@@ -21,8 +21,14 @@ function titleFor(state: WishlistButtonState, noun: string): string {
 
 function withMinDuration<T>(promise: Promise<T>, ms: number): Promise<T> {
   const elapsed = new Promise<void>(resolve => setTimeout(resolve, ms));
+  const settled = promise.then(
+    result => () => result,
+    error => () => {
+      throw error;
+    }
+  );
 
-  return Promise.all([promise, elapsed]).then(([result]) => result);
+  return Promise.all([settled, elapsed]).then(([outcome]) => outcome());
 }
 
 export function setWishlistButtonState(button: HTMLElement, state: WishlistButtonState): void {
@@ -50,7 +56,8 @@ function listenForChangesOnce(): void {
     const confirmed = source.dataset.wishlistState as WishlistButtonState;
 
     document.querySelectorAll<HTMLElement>('.bes-wishlist-button').forEach(button => {
-      if (button !== source && sameItem(button, source)) setWishlistButtonState(button, confirmed);
+      if (button === source || button.dataset.wishlistState === 'loading') return;
+      if (sameItem(button, source)) setWishlistButtonState(button, confirmed);
     });
   });
   syncListening = true;

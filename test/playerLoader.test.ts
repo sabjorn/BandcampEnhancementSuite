@@ -899,6 +899,7 @@ describe('PlayerLoader - Track row click targets', () => {
             <span class="bes-track-liked"></span>
             <span class="bes-track-played"></span>
             <button class="bes-wishlist-button" data-wishlist-state="out"><svg></svg></button>
+            <span class="bes-owned-indicator"><svg class="owned-glyph"></svg></span>
           </td>
           <td class="bes-track-link-col"><a class="bes-track-link" href="/track/1">arrow</a></td>
           <td class="bes-track-buy-col">
@@ -950,6 +951,14 @@ describe('PlayerLoader - Track row click targets', () => {
 
   it('should NOT play when clicking the star icon inside the wishlist button', () => {
     expect(isPlaybackClick(document.querySelector('.bes-wishlist-button svg'))).toBe(false);
+  });
+
+  it('should NOT play when clicking the owned indicator', () => {
+    expect(isPlaybackClick(document.querySelector('.bes-owned-indicator'))).toBe(false);
+  });
+
+  it('should NOT play when clicking the icon inside the owned indicator', () => {
+    expect(isPlaybackClick(document.querySelector('.owned-glyph'))).toBe(false);
   });
 
   it('should still treat a click on the liked indicator as a playback click', () => {

@@ -514,7 +514,7 @@ function resetProgressBar(): void {
 
 export function isPlaybackClick(target: HTMLElement | null): boolean {
   if (!target) return false;
-  return !target.closest('.bes-track-link, .bes-track-buy-col, .bes-wishlist-button');
+  return !target.closest('.bes-track-link, .bes-track-buy-col, .bes-wishlist-button, .bes-owned-indicator');
 }
 
 function playTrackFromList(index: number): void {

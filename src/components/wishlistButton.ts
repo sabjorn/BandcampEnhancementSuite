@@ -2,7 +2,13 @@ import Logger from '../logger';
 import { Collection, CollectionItemType } from '../collection';
 import { starIcon, ownedIcon } from './player/icons';
 
-const DEFAULT_ICON_SIZE = 12;
+export const WISHLIST_ICON_SIZES = {
+  trackRow: 12,
+  albumBuy: 14,
+  grid: 18
+} as const;
+
+const DEFAULT_ICON_SIZE = WISHLIST_ICON_SIZES.trackRow;
 const MIN_SPINNER_MS = 250;
 const CHANGE_EVENT = 'bes-wishlist-change';
 

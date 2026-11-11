@@ -3,7 +3,7 @@ import { createPlayerDrawer, loadAlbumIntoDrawer, getLoadedAlbumId } from './com
 import { updateDiscographyOrder } from './discography';
 import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicLinks';
 import { extractBandId } from './utilities';
-import { createWishlistButton } from './components/wishlistButton';
+import { createWishlistButton, WISHLIST_ICON_SIZES } from './components/wishlistButton';
 import { initCollectionState, Collection } from './collection';
 
 export function setHistory(id: string, state: boolean): void {
@@ -206,7 +206,7 @@ function addGridWishlistStar(item: HTMLElement, albumId: string, collection: Col
     itemId: Number(albumId),
     itemUrl: href,
     log,
-    size: 18
+    size: WISHLIST_ICON_SIZES.grid
   });
   if (!star) return;
 

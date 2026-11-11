@@ -1,7 +1,7 @@
 import Logger from '../../logger';
 import { TralbumDetailsResponse, TralbumTrack, CURRENCY_MINIMUMS } from '../../bclient';
 import { createAddToCartButton } from '../cartButton';
-import { createWishlistButton } from '../wishlistButton';
+import { createWishlistButton, WISHLIST_ICON_SIZES } from '../wishlistButton';
 import { Collection } from '../../collection';
 import { prevIcon, nextIcon, playIcon, pauseIcon, volumeIcon, heartIcon, playedIcon } from './icons';
 import playerCenterMarkup from '../../../html/drawer_player_center.html';
@@ -68,7 +68,7 @@ export function buildAlbumBuyButton(
     itemId: id,
     itemUrl: tralbumDetails.bandcamp_url ?? '',
     log,
-    size: 14
+    size: WISHLIST_ICON_SIZES.albumBuy
   });
 
   const canBuy = is_purchasable && price !== undefined && !collection.isOwned(type === 't' ? 't' : 'a', id);

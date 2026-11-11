@@ -23,6 +23,7 @@ export function createKeyBindingEditor(currentBinding: KeyBinding, callbacks: Ke
   display.className = 'bes-key-binding-display';
   display.textContent = keyBindingToString(currentBinding);
   display.title = 'Click to change key binding';
+  display.dataset.besCaptureKeys = 'true';
 
   let isRecording = false;
   const abortController = new AbortController();

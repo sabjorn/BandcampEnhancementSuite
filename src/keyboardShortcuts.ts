@@ -62,12 +62,22 @@ function isBareModifier(event: KeyboardEvent): boolean {
   return event.key === 'Meta' && !event.altKey && !event.ctrlKey && !event.shiftKey;
 }
 
+const KEY_CAPTURE_SELECTOR =
+  'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [data-bes-capture-keys]';
+
+function isShortcutTarget(target: EventTarget | null): boolean {
+  if (target === document.body) return true;
+  if (!(target instanceof HTMLElement)) return false;
+
+  return Boolean(target.closest('.bes-player-drawer')) && !target.closest(KEY_CAPTURE_SELECTOR);
+}
+
 function activeRegistration(): Registration | undefined {
   return [...registrations].reverse().find(registration => registration.isActive());
 }
 
 export function handleShortcutKeydown(event: KeyboardEvent): void {
-  if (event.target !== document.body || isBareModifier(event)) return;
+  if (!isShortcutTarget(event.target) || isBareModifier(event)) return;
 
   const registration = activeRegistration();
   if (!registration) return;

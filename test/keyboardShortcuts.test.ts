@@ -176,6 +176,38 @@ describe('keyboardShortcuts', () => {
 
       expect(commands.playPause).not.toHaveBeenCalled();
     });
+
+    const pressInDrawer = (markup: string) => {
+      document.body.innerHTML = `<div class="bes-player-drawer open">${markup}</div>`;
+
+      const event = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
+      Object.defineProperty(event, 'target', { value: document.body.querySelector('[data-focused]') });
+      document.dispatchEvent(event);
+
+      return event;
+    };
+
+    it('should act on keys while a drawer control holds focus', () => {
+      const event = pressInDrawer('<button class="bes-transport-play" data-focused></button>');
+
+      expect(commands.playPause).toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('should ignore keys while a drawer input holds focus', () => {
+      pressInDrawer('<input class="bes-keyboard-step-input" type="number" data-focused />');
+
+      expect(commands.playPause).not.toHaveBeenCalled();
+    });
+
+    it('should ignore keys while a key binding is being recorded', () => {
+      const event = pressInDrawer(
+        '<button class="bes-key-binding-display" data-bes-capture-keys="true" data-focused></button>'
+      );
+
+      expect(commands.playPause).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+    });
   });
 
   describe('settings configured before a player exists', () => {

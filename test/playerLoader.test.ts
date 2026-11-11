@@ -459,6 +459,14 @@ describe('PlayerLoader - Main Player Logic', () => {
   });
 
   describe('Skipping a fully unplayable remainder', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     const startPlaying = () => {
       const audio = document.querySelector('audio') as HTMLAudioElement;
       audio.play = vi.fn().mockResolvedValue(undefined);
@@ -477,7 +485,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       startPlaying();
       const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await vi.advanceTimersByTimeAsync(400);
 
       expect(player.getCurrentAlbumData()?.id).toBe(789);
     });
@@ -489,7 +497,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       const audio = startPlaying();
       const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await vi.advanceTimersByTimeAsync(400);
 
       expect(audio.play).toHaveBeenCalled();
     });
@@ -501,7 +509,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       startPlaying();
       const nextButton = document.querySelector('.bes-player-drawer .bes-transport-next') as HTMLButtonElement;
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await vi.advanceTimersByTimeAsync(400);
 
       expect(player.getCurrentAlbumData()?.id).toBe(789);
 
@@ -516,7 +524,7 @@ describe('PlayerLoader - Main Player Logic', () => {
 
       const audio = startPlaying();
       audio.dispatchEvent(new Event('ended'));
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await vi.advanceTimersByTimeAsync(400);
 
       expect(player.getCurrentAlbumData()?.id).toBe(789);
       expect(audio.play).toHaveBeenCalled();
@@ -530,7 +538,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       audio.dispatchEvent(new Event('ended'));
       audio.dispatchEvent(new Event('ended'));
       audio.dispatchEvent(new Event('ended'));
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await vi.advanceTimersByTimeAsync(400);
 
       expect(player.getCurrentAlbumData()?.id).toBe(789);
     });
@@ -544,7 +552,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       nextButton.click();
       nextButton.click();
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await vi.advanceTimersByTimeAsync(400);
 
       expect(player.getCurrentAlbumData()?.id).toBe(789);
     });
@@ -554,6 +562,10 @@ describe('PlayerLoader - Main Player Logic', () => {
     let nextButton: HTMLButtonElement;
     let prevButton: HTMLButtonElement;
     let audio: HTMLAudioElement;
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
 
     beforeEach(async () => {
       createDomNodes(`
@@ -589,6 +601,8 @@ describe('PlayerLoader - Main Player Logic', () => {
       Object.defineProperty(audio, 'paused', { value: false, writable: true, configurable: true });
       audio.play = vi.fn().mockResolvedValue(undefined);
       audio.pause = vi.fn();
+
+      vi.useFakeTimers();
     });
 
     it('should advance from first track to second track when next clicked', async () => {
@@ -596,7 +610,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       expect(player.getCurrentTrackIndex()).toBe(0);
 
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.advanceTimersByTimeAsync(10);
 
       expect(player.getCurrentTrackIndex()).toBe(1);
     });
@@ -604,14 +618,14 @@ describe('PlayerLoader - Main Player Logic', () => {
     it('should advance from second-to-last track to last track (not next album)', async () => {
       // First click next to get to track 1 (second track, second-to-last of 3)
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.advanceTimersByTimeAsync(10);
       expect(player.getCurrentTrackIndex()).toBe(1);
 
       const initialAlbumId = player.getCurrentAlbumData()?.id;
 
       // Click next again - should go to track 2 (last track), NOT next album
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.advanceTimersByTimeAsync(10);
 
       // Should advance to last track (index 2), NOT next album
       expect(player.getCurrentAlbumData()?.id).toBe(initialAlbumId);
@@ -621,15 +635,15 @@ describe('PlayerLoader - Main Player Logic', () => {
     it('should load next album when next button clicked on last track', async () => {
       // Navigate to last track (click next twice: 0->1->2)
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.advanceTimersByTimeAsync(10);
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.advanceTimersByTimeAsync(10);
       expect(player.getCurrentTrackIndex()).toBe(2); // Last track
 
       const initialAlbumId = player.getCurrentAlbumData()?.id;
 
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 350)); // Wait for album load + setTimeout
+      await vi.advanceTimersByTimeAsync(350);
 
       // Should load next album (456) and play first track
       expect(player.getCurrentAlbumData()?.id).not.toBe(initialAlbumId);
@@ -642,7 +656,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       Object.defineProperty(audio, 'paused', { value: false, writable: true, configurable: true });
 
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.advanceTimersByTimeAsync(10);
 
       // Should have called play() to continue playing new track
       expect(audio.play).toHaveBeenCalled();
@@ -653,7 +667,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       Object.defineProperty(audio, 'paused', { value: true, writable: true, configurable: true });
 
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.advanceTimersByTimeAsync(10);
 
       // Should NOT call play()
       expect(audio.play).not.toHaveBeenCalled();
@@ -662,11 +676,11 @@ describe('PlayerLoader - Main Player Logic', () => {
     it('should go back from second track to first track when prev clicked', async () => {
       // Navigate to second track
       nextButton.click();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.advanceTimersByTimeAsync(10);
       expect(player.getCurrentTrackIndex()).toBe(1);
 
       prevButton.click();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await vi.advanceTimersByTimeAsync(10);
 
       expect(player.getCurrentTrackIndex()).toBe(0);
     });
@@ -678,7 +692,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       expect(player.getCurrentAlbumData()?.id).toBe(456);
 
       prevButton.click();
-      await new Promise(resolve => setTimeout(resolve, 350)); // Wait for album load + setTimeout
+      await vi.advanceTimersByTimeAsync(350);
 
       // Should load previous album (123) and play last track
       expect(player.getCurrentAlbumData()?.id).toBe(123);

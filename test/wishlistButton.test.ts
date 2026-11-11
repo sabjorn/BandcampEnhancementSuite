@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import Logger from '../src/logger';
 import { stubCollection } from './utils';
-import { createWishlistButton, setWishlistButtonState } from '../src/components/wishlistButton';
+import { createWishlistButton, setWishlistButtonState, MIN_SPINNER_MS } from '../src/components/wishlistButton';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -28,11 +28,13 @@ const buildButton = (overrides: Record<string, any> = {}) =>
 describe('wishlistButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
     document.body.innerHTML = '';
     collection = stubCollection();
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -102,9 +104,8 @@ describe('wishlistButton', () => {
 
       button.click();
 
-      await vi.waitFor(() =>
-        expect(collection.toggleWishlisted).toHaveBeenCalledWith('a', 1609998585, 'https://other.bandcamp.com')
-      );
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(collection.toggleWishlisted).toHaveBeenCalledWith('a', 1609998585, 'https://other.bandcamp.com');
     });
 
     it('should spin while the request is in flight, as the cart button does', async () => {
@@ -119,46 +120,35 @@ describe('wishlistButton', () => {
 
     // Without a floor the spinner flashes for a fast response, which reads as a glitch.
     it('should keep spinning for a moment even when the answer is immediate', async () => {
-      vi.useFakeTimers();
+      const button = buildButton()!;
+      button.click();
 
-      try {
-        const button = buildButton()!;
-        button.click();
+      await vi.advanceTimersByTimeAsync(100);
+      expect(button.dataset.wishlistState).toBe('loading');
 
-        await vi.advanceTimersByTimeAsync(100);
-        expect(button.dataset.wishlistState).toBe('loading');
-
-        await vi.advanceTimersByTimeAsync(200);
-        expect(button.dataset.wishlistState).toBe('in');
-      } finally {
-        vi.useRealTimers();
-      }
+      await vi.advanceTimersByTimeAsync(200);
+      expect(button.dataset.wishlistState).toBe('in');
     });
 
     it('should hold the spinner just as long when the change fails', async () => {
-      vi.useFakeTimers();
+      collection.toggleWishlisted.mockRejectedValue(new Error('nope'));
 
-      try {
-        collection.toggleWishlisted.mockRejectedValue(new Error('nope'));
+      const button = buildButton()!;
+      button.click();
 
-        const button = buildButton()!;
-        button.click();
+      await vi.advanceTimersByTimeAsync(100);
+      expect(button.dataset.wishlistState).toBe('loading');
 
-        await vi.advanceTimersByTimeAsync(100);
-        expect(button.dataset.wishlistState).toBe('loading');
-
-        await vi.advanceTimersByTimeAsync(200);
-        expect(button.dataset.wishlistState).toBe('out');
-      } finally {
-        vi.useRealTimers();
-      }
+      await vi.advanceTimersByTimeAsync(200);
+      expect(button.dataset.wishlistState).toBe('out');
     });
 
     it('should put the star back once the change settles', async () => {
       const button = buildButton()!;
       button.click();
 
-      await vi.waitFor(() => expect(button.dataset.wishlistState).toBe('in'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(button.dataset.wishlistState).toBe('in');
       expect(button.querySelector('.bes-wishlist-spinner')).toBeNull();
       expect(button.querySelector('svg')).toBeTruthy();
     });
@@ -169,7 +159,8 @@ describe('wishlistButton', () => {
       const button = buildButton()!;
       button.click();
 
-      await vi.waitFor(() => expect(button.dataset.wishlistState).toBe('out'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(button.dataset.wishlistState).toBe('out');
       expect(button.querySelector('.bes-wishlist-spinner')).toBeNull();
       expect(button.querySelector('svg')).toBeTruthy();
     });
@@ -185,7 +176,8 @@ describe('wishlistButton', () => {
       expect(button.getAttribute('aria-busy')).toBe('true');
 
       settle(true);
-      await vi.waitFor(() => expect(button.dataset.wishlistState).toBe('in'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(button.dataset.wishlistState).toBe('in');
       expect(button.getAttribute('aria-busy')).toBe('false');
     });
 
@@ -195,7 +187,8 @@ describe('wishlistButton', () => {
       const button = buildButton()!;
       button.click();
 
-      await vi.waitFor(() => expect(button.dataset.wishlistState).toBe('out'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(button.dataset.wishlistState).toBe('out');
       expect(button.getAttribute('aria-pressed')).toBe('false');
     });
 
@@ -203,7 +196,8 @@ describe('wishlistButton', () => {
       const button = buildButton()!;
       button.click();
 
-      await vi.waitFor(() => expect(button.querySelector('svg')?.getAttribute('fill')).toBe('currentColor'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(button.querySelector('svg')?.getAttribute('fill')).toBe('currentColor');
     });
 
     it('should restore the previous state and log when the change fails', async () => {
@@ -214,7 +208,8 @@ describe('wishlistButton', () => {
       const button = buildButton({ log })!;
       button.click();
 
-      await vi.waitFor(() => expect(log.error).toHaveBeenCalled());
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(log.error).toHaveBeenCalled();
       expect(button.dataset.wishlistState).toBe('in');
     });
 
@@ -254,7 +249,8 @@ describe('wishlistButton', () => {
       collection.isWishlisted.mockReturnValue(true);
       row.click();
 
-      await vi.waitFor(() => expect(header.dataset.wishlistState).toBe('in'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(header.dataset.wishlistState).toBe('in');
       expect(header.querySelector('svg')?.getAttribute('width')).toBe('16');
     });
 
@@ -266,7 +262,8 @@ describe('wishlistButton', () => {
       collection.isWishlisted.mockImplementation((_type, id) => id === 123456);
       track.click();
 
-      await vi.waitFor(() => expect(track.dataset.wishlistState).toBe('in'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(track.dataset.wishlistState).toBe('in');
       expect(other.dataset.wishlistState).toBe('out');
     });
 
@@ -281,7 +278,8 @@ describe('wishlistButton', () => {
       collection.toggleWishlisted.mockResolvedValue(true);
       row.click();
 
-      await vi.waitFor(() => expect(row.dataset.wishlistState).toBe('in'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(row.dataset.wishlistState).toBe('in');
       expect(header.dataset.wishlistState).toBe('loading');
     });
 
@@ -294,7 +292,8 @@ describe('wishlistButton', () => {
       collection.isWishlisted.mockReturnValue(true);
       row.click();
 
-      await vi.waitFor(() => expect(row.dataset.wishlistState).toBe('out'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(row.dataset.wishlistState).toBe('out');
       expect(header.dataset.wishlistState).toBe('out');
     });
   });

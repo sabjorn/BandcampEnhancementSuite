@@ -20,7 +20,8 @@ import {
   getCartLineItemId,
   createCartIcons,
   setCartButtonState,
-  createAddToCartButton
+  createAddToCartButton,
+  MIN_SPINNER_MS
 } from '../src/components/cartButton';
 import { addAlbumToCart, removeAlbumFromCart } from '../src/bclient';
 import Logger from '../src/logger';
@@ -45,9 +46,11 @@ const buildButton = (overrides: Record<string, any> = {}) =>
 describe('cartButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -154,7 +157,8 @@ describe('cartButton', () => {
 
       button.click();
 
-      await vi.waitFor(() => expect(button.dataset.cartState).toBe('in-cart'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(button.dataset.cartState).toBe('in-cart');
       expect(addAlbumToCart).toHaveBeenCalledWith('123', 1, 'a');
     });
 
@@ -172,7 +176,8 @@ describe('cartButton', () => {
       const button = container.querySelector('.one-click-button') as HTMLButtonElement;
 
       button.click();
-      await vi.waitFor(() => expect(button.dataset.cartState).toBe('in-cart'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(button.dataset.cartState).toBe('in-cart');
 
       const row = document.getElementById('sidecart_item_123');
       expect(row).toBeTruthy();
@@ -180,7 +185,8 @@ describe('cartButton', () => {
       expect(del.style.pointerEvents).not.toBe('none');
 
       del.click();
-      await vi.waitFor(() => expect(button.dataset.cartState).toBe('add'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(button.dataset.cartState).toBe('add');
       expect(removeAlbumFromCart).toHaveBeenCalledWith(999);
       expect(document.getElementById('sidecart_item_123')).toBeNull();
     });
@@ -195,10 +201,12 @@ describe('cartButton', () => {
       const button = container.querySelector('.one-click-button') as HTMLButtonElement;
 
       button.click();
-      await vi.waitFor(() => expect(button.dataset.cartState).toBe('in-cart'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(button.dataset.cartState).toBe('in-cart');
 
       button.click();
-      await vi.waitFor(() => expect(button.dataset.cartState).toBe('add'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(button.dataset.cartState).toBe('add');
       expect(removeAlbumFromCart).toHaveBeenCalledWith(388964184);
     });
 
@@ -211,7 +219,8 @@ describe('cartButton', () => {
 
       button.click();
 
-      await vi.waitFor(() => expect(button.dataset.cartState).toBe('add'));
+      await vi.advanceTimersByTimeAsync(MIN_SPINNER_MS);
+      expect(button.dataset.cartState).toBe('add');
       expect(removeAlbumFromCart).toHaveBeenCalledWith(555);
     });
   });

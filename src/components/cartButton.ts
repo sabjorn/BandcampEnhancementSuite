@@ -6,7 +6,7 @@ import { addAlbumToCart, removeAlbumFromCart } from '../bclient';
 
 type CartButtonState = 'add' | 'loading' | 'in-cart';
 
-const MIN_SPINNER_MS = 250;
+export const MIN_SPINNER_MS = 250;
 
 interface CartItem {
   id: string | number;

@@ -9,7 +9,7 @@ export const WISHLIST_ICON_SIZES = {
 } as const;
 
 const DEFAULT_ICON_SIZE = WISHLIST_ICON_SIZES.trackRow;
-const MIN_SPINNER_MS = 250;
+export const MIN_SPINNER_MS = 250;
 const CHANGE_EVENT = 'bes-wishlist-change';
 
 export type WishlistButtonState = 'in' | 'out' | 'loading';

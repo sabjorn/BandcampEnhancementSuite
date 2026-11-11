@@ -792,6 +792,18 @@ describe('PlayerLoader - Keyboard Shortcuts', () => {
       await vi.waitFor(() => expect(player.getLoadedAlbumId()).toBe('456'));
     });
 
+    it('should ignore a repeat press while an album is still loading', async () => {
+      const { getTralbumDetails } = await import('../src/bclient');
+      vi.mocked(getTralbumDetails).mockClear();
+
+      press(']');
+      press(']');
+
+      await vi.waitFor(() => expect(player.getLoadedAlbumId()).toBe('456'));
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(getTralbumDetails).toHaveBeenCalledTimes(1);
+    });
+
     it('should move to the previous album on [', async () => {
       await player.loadAlbumIntoDrawer('456', 'album', false);
 

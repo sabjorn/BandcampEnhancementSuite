@@ -296,6 +296,7 @@ export interface WishlistItem {
   fan_id: number;
   item_type: 't' | 'a';
   item_id: number;
+  band_id?: number;
   ref_token?: string | null;
 }
 
@@ -311,10 +312,10 @@ function wishlistBody(item: WishlistItem, crumb: string | null, includeRefToken:
   const params = new URLSearchParams({
     fan_id: String(item.fan_id),
     item_id: String(item.item_id),
-    item_type: item.item_type,
-    band_id: '12345'
+    item_type: item.item_type
   });
 
+  if (item.band_id) params.append('band_id', String(item.band_id));
   if (includeRefToken && item.ref_token) params.append('ref_token', item.ref_token);
   if (crumb) params.append('crumb', crumb);
 

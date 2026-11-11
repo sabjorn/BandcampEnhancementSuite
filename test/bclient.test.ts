@@ -487,7 +487,7 @@ describe('bclient', () => {
             'content-type': 'application/x-www-form-urlencoded',
             'x-requested-with': 'XMLHttpRequest'
           }),
-          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=12345&crumb=valid_crumb',
+          body: 'fan_id=896389&item_id=123456&item_type=t&crumb=valid_crumb',
           mode: 'cors'
         })
       );
@@ -501,7 +501,7 @@ describe('bclient', () => {
       expect(fetchSpy).toHaveBeenCalledWith(
         '/collect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=12345&ref_token=abc123&crumb=valid_crumb'
+          body: 'fan_id=896389&item_id=123456&item_type=t&ref_token=abc123&crumb=valid_crumb'
         })
       );
     });
@@ -514,7 +514,22 @@ describe('bclient', () => {
       expect(fetchSpy).toHaveBeenCalledWith(
         '/collect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=12345'
+          body: 'fan_id=896389&item_id=123456&item_type=t'
+        })
+      );
+    });
+
+    // uncollect_item_cb finds the collection row by band_id, and silently removes nothing when it
+    // does not match, so the real one has to travel with the item.
+    it('should send the band_id when the item carries one', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await uncollectItem({ ...item, band_id: 3927545343 }, 'valid_crumb');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/uncollect_item_cb',
+        expect.objectContaining({
+          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=3927545343&crumb=valid_crumb'
         })
       );
     });
@@ -585,14 +600,14 @@ describe('bclient', () => {
         1,
         '/collect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=12345&crumb=stale_crumb'
+          body: 'fan_id=896389&item_id=123456&item_type=t&crumb=stale_crumb'
         })
       );
       expect(fetchSpy).toHaveBeenNthCalledWith(
         2,
         '/collect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=12345&crumb=fresh_crumb'
+          body: 'fan_id=896389&item_id=123456&item_type=t&crumb=fresh_crumb'
         })
       );
       expect(result).toBe(true);
@@ -633,7 +648,7 @@ describe('bclient', () => {
       expect(fetchSpy).toHaveBeenCalledWith(
         '/collect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=1609998585&item_type=a&band_id=12345&crumb=crumb'
+          body: 'fan_id=896389&item_id=1609998585&item_type=a&crumb=crumb'
         })
       );
     });
@@ -660,7 +675,7 @@ describe('bclient', () => {
           headers: expect.objectContaining({
             'content-type': 'application/x-www-form-urlencoded'
           }),
-          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=12345&crumb=valid_crumb',
+          body: 'fan_id=896389&item_id=123456&item_type=t&crumb=valid_crumb',
           mode: 'cors'
         })
       );
@@ -674,7 +689,7 @@ describe('bclient', () => {
       expect(fetchSpy).toHaveBeenCalledWith(
         '/uncollect_item_cb',
         expect.objectContaining({
-          body: 'fan_id=896389&item_id=123456&item_type=t&band_id=12345&crumb=valid_crumb'
+          body: 'fan_id=896389&item_id=123456&item_type=t&crumb=valid_crumb'
         })
       );
     });

@@ -29,6 +29,8 @@ const summary = (tralbum_lookup: Record<string, any>, fan_id: number | null = 89
 
 const HOST = 'https://band.bandcamp.com';
 
+const BAND_ID = 857243381;
+
 const wishlistedTrack = { item_type: 'track', item_id: 123456, band_id: 857243381, purchased: null };
 const ownedAlbum = {
   item_type: 'album',
@@ -216,10 +218,40 @@ describe('collection state', () => {
       expect(sendMessage).toHaveBeenCalledWith({
         contentScriptQuery: 'writeWishlistItem',
         action: 'uncollect',
-        item: { fan_id: 896389, item_type: 't', item_id: 123456, ref_token: null },
+        item: { fan_id: 896389, item_type: 't', item_id: 123456, band_id: BAND_ID, ref_token: null },
         host: HOST,
         crumb: 'remove_crumb'
       });
+    });
+
+    // An item being removed is in the collection summary, so its band_id is already known. Without
+    // it uncollect_item_cb answers ok and removes nothing.
+    it('should carry the band_id the summary gave for an item it is removing', async () => {
+      const collection = await initCollectionState();
+
+      await collection.toggleWishlisted('t', 123456, HOST);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'uncollect',
+          item: expect.objectContaining({ band_id: BAND_ID })
+        })
+      );
+    });
+
+    // Something not in the collection yet has no entry to read a band_id from, and collect_item_cb
+    // does not need one.
+    it('should leave the band_id out when adding an item it has never seen', async () => {
+      const collection = await initCollectionState();
+
+      await collection.toggleWishlisted('t', 999, HOST);
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'collect',
+          item: expect.not.objectContaining({ band_id: expect.anything() })
+        })
+      );
     });
 
     it('should pass along the page referrer token when there is one', async () => {

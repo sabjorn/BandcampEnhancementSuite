@@ -11,6 +11,7 @@ const lookupKey = (itemType: CollectionItemType, itemId: number): string => `${i
 let fanId: number | null = null;
 let wishlisted: Set<string> | null = null;
 let owned: Set<string> | null = null;
+let bandIds: Map<string, number> | null = null;
 let loading: Promise<boolean> | null = null;
 const changing = new Set<string>();
 
@@ -68,6 +69,7 @@ async function loadCollection(): Promise<boolean> {
     const lookup = Object.entries(summary.tralbum_lookup);
     wishlisted = new Set(lookup.filter(([, item]) => !item.purchased).map(([key]) => key));
     owned = new Set(lookup.filter(([, item]) => item.purchased).map(([key]) => key));
+    bandIds = new Map(lookup.map(([key, item]) => [key, item.band_id]));
 
     log.info(`Collection loaded: ${wishlisted.size} wishlisted of ${lookup.length} entries`);
     return true;
@@ -118,10 +120,13 @@ async function toggleWishlisted(itemType: CollectionItemType, itemId: number, ho
 
   const adding = !wishlisted.has(key);
 
+  const bandId = bandIds?.get(key);
+
   const item: WishlistItem = {
     fan_id: fanId,
     item_type: itemType,
     item_id: itemId,
+    ...(bandId ? { band_id: bandId } : {}),
     ref_token: readReferrerToken()
   };
 
@@ -143,6 +148,7 @@ export function resetCollectionState(): void {
   fanId = null;
   wishlisted = null;
   owned = null;
+  bandIds = null;
   loading = null;
   changing.clear();
 }

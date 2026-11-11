@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import Logger from '../src/logger';
 import { stubCollection } from './utils';
-import { createWishlistButton, setWishlistButtonState, MIN_SPINNER_MS } from '../src/components/wishlistButton';
+import { createWishlistButton, setWishlistButtonState } from '../src/components/wishlistButton';
+import { MIN_SPINNER_MS } from '../src/components/minDuration';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {

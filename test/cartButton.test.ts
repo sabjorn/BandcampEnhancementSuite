@@ -20,9 +20,9 @@ import {
   getCartLineItemId,
   createCartIcons,
   setCartButtonState,
-  createAddToCartButton,
-  MIN_SPINNER_MS
+  createAddToCartButton
 } from '../src/components/cartButton';
+import { MIN_SPINNER_MS } from '../src/components/minDuration';
 import { addAlbumToCart, removeAlbumFromCart } from '../src/bclient';
 import Logger from '../src/logger';
 
@@ -148,6 +148,23 @@ describe('cartButton', () => {
       button.click();
 
       expect(button.dataset.cartState).toBe('loading');
+    });
+
+    // Without a floor the spinner flashes for a fast failure, which reads as a glitch.
+    it('holds the spinner for the same floor when the add fails', async () => {
+      (addAlbumToCart as any).mockRejectedValueOnce(new Error('nope'));
+
+      const container = buildButton();
+      document.body.appendChild(container);
+      const button = container.querySelector('.one-click-button') as HTMLButtonElement;
+
+      button.click();
+
+      await vi.advanceTimersByTimeAsync(100);
+      expect(button.dataset.cartState).toBe('loading');
+
+      await vi.advanceTimersByTimeAsync(200);
+      expect(button.dataset.cartState).toBe('add');
     });
 
     it('adds to cart and flips to the in-cart state on a successful click', async () => {

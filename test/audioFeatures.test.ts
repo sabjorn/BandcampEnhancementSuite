@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createDomNodes, cleanupTestNodes } from './utils';
+import { createDomNodes, cleanupTestNodes, eventually } from './utils';
 import {
   createCanvas,
   createCanvasDisplayToggle,
@@ -208,7 +208,7 @@ describe('AudioFeatures - waveform and bpm generation', () => {
         urlFormatter: () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
       });
 
-      await vi.waitFor(() => expect(mockContext.fillRect).toHaveBeenCalled());
+      await eventually(() => expect(mockContext.fillRect).toHaveBeenCalled());
     });
 
     it('should use 100 datapoints for waveform (RMS analysis)', async () => {
@@ -221,7 +221,7 @@ describe('AudioFeatures - waveform and bpm generation', () => {
         urlFormatter: () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
       });
 
-      await vi.waitFor(() => expect(mockContext.fillRect).toHaveBeenCalledTimes(100));
+      await eventually(() => expect(mockContext.fillRect).toHaveBeenCalledTimes(100));
     });
   });
 
@@ -278,7 +278,7 @@ describe('AudioFeatures - waveform and bpm generation', () => {
         urlFormatter: () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
       });
 
-      await vi.waitFor(() => expect(bpmCallback).toHaveBeenCalledWith(128));
+      await eventually(() => expect(bpmCallback).toHaveBeenCalledWith(128));
     });
 
     it('should handle BPM detection errors gracefully', async () => {
@@ -356,7 +356,7 @@ describe('AudioFeatures - waveform and bpm generation', () => {
 
       await analyse(1004);
 
-      await vi.waitFor(() => expect(messagesFor('postTrackMetadata').length).toBe(1));
+      await eventually(() => expect(messagesFor('postTrackMetadata').length).toBe(1));
       const [message] = messagesFor('postTrackMetadata')[0];
       expect(message).toMatchObject({ trackId: 1004, bpm: 120 });
       expect(message.waveform).toHaveLength(100);
@@ -368,7 +368,7 @@ describe('AudioFeatures - waveform and bpm generation', () => {
       await analyse(0);
 
       expect(messagesFor('fetchTrackMetadata')).toEqual([]);
-      await vi.waitFor(() => expect(messagesFor('postTrackMetadata')).toEqual([]));
+      await eventually(() => expect(messagesFor('postTrackMetadata')).toEqual([]));
     });
   });
 
@@ -384,7 +384,7 @@ describe('AudioFeatures - waveform and bpm generation', () => {
         urlFormatter: () => ({ stream: { type: 'direct-path' as const, path: 'test-audio.mp3' } })
       });
 
-      await vi.waitFor(() => expect(mockContext.fillStyle).toBe(waveformColour));
+      await eventually(() => expect(mockContext.fillStyle).toBe(waveformColour));
     });
 
     it('should use purple (#5b53e8) for progress overlay', () => {

@@ -49,6 +49,7 @@ Object.assign(global, {
 
 import { processRequest, initFindMusicBackend } from '../src/background/findmusic_backend';
 import { exchangeBandcampToken } from '../src/clients/findmusic';
+import { eventually } from './utils';
 
 describe('FindMusic Backend', () => {
   const mockExchangeBandcampToken = vi.mocked(exchangeBandcampToken);
@@ -81,14 +82,14 @@ describe('FindMusic Backend', () => {
 
       expect(result).toBe(true);
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(mockPermissionsContains).toHaveBeenCalledWith({
           permissions: ['cookies'],
           origins: [FINDMUSIC_ORIGIN_PATTERN]
         });
       });
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(sendResponse).toHaveBeenCalledWith({ granted: true });
       });
     });
@@ -104,11 +105,11 @@ describe('FindMusic Backend', () => {
 
       expect(result).toBe(true);
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(mockCookiesGet).toHaveBeenCalledWith({ url: 'https://bandcamp.com/', name: 'identity' });
       });
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(sendResponse).toHaveBeenCalledWith({ loggedIn: true });
       });
     });
@@ -122,7 +123,7 @@ describe('FindMusic Backend', () => {
 
       processRequest(request, sender, sendResponse);
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(sendResponse).toHaveBeenCalledWith({ loggedIn: false });
       });
     });
@@ -188,11 +189,11 @@ describe('FindMusic Backend', () => {
 
       await processRequest(request, sender, sendResponse);
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(mockWindowsGetCurrent).toHaveBeenCalled();
       });
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(mockWindowsCreate).toHaveBeenCalledWith({
           url: 'html/findmusic_permission.html',
           type: 'popup',
@@ -219,17 +220,17 @@ describe('FindMusic Backend', () => {
 
       await processRequest(request, sender, sendResponse);
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(mockExchangeBandcampToken).toHaveBeenCalled();
       });
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(mockTabsCreate).toHaveBeenCalledWith({
           url: `https://findmusic.club/login?bes_token=${encodeURIComponent(mockToken)}`
         });
       });
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(sendResponse).toHaveBeenCalledWith({ success: true });
       });
     });
@@ -245,11 +246,11 @@ describe('FindMusic Backend', () => {
 
       await processRequest(request, sender, sendResponse);
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(mockExchangeBandcampToken).toHaveBeenCalled();
       });
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(sendResponse).toHaveBeenCalledWith({
           success: false,
           error: errorMessage
@@ -271,11 +272,11 @@ describe('FindMusic Backend', () => {
 
       expect(result).toBe(true);
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(mockExchangeBandcampToken).toHaveBeenCalled();
       });
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(sendResponse).toHaveBeenCalledWith({ success: true, token: mockToken });
       });
     });
@@ -290,11 +291,11 @@ describe('FindMusic Backend', () => {
 
       processRequest(request, sender, sendResponse);
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(mockExchangeBandcampToken).toHaveBeenCalled();
       });
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(sendResponse).toHaveBeenCalledWith({
           success: false,
           error: errorMessage

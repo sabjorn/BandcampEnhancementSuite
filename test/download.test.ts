@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createDomNodes, cleanupTestNodes } from './utils';
+import { createDomNodes, cleanupTestNodes, eventually } from './utils';
 
 vi.mock('../src/logger', () => {
   const mockLogMethods = {
@@ -895,7 +895,7 @@ describe('DownloadHelper', () => {
 
       await initDownload();
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith({
           contentScriptQuery: 'checkFindMusicPermissions'
         });
@@ -910,7 +910,7 @@ describe('DownloadHelper', () => {
 
       await initDownload();
 
-      await vi.waitFor(() => {
+      await eventually(() => {
         expect(global.chrome.runtime.sendMessage).toHaveBeenCalledWith({
           contentScriptQuery: 'checkFindMusicPermissions'
         });

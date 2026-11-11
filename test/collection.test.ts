@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { isBandcampLoggedIn } from '../src/utilities';
 import { initCollectionState, resetCollectionState } from '../src/collection';
+import { eventually } from './utils';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -335,7 +336,7 @@ describe('collection state', () => {
       const first = collection.toggleWishlisted('t', 999, HOST);
       const other = collection.toggleWishlisted('t', 888, HOST);
 
-      await vi.waitFor(() => expect(settlers).toHaveLength(2));
+      await eventually(() => expect(settlers).toHaveLength(2));
       settlers.forEach(settle => settle({ ok: true }));
 
       await expect(first).resolves.toBe(true);

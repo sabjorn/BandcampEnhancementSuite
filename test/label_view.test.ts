@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createDomNodes, cleanupTestNodes, stubCollection } from './utils';
+import { createDomNodes, cleanupTestNodes, stubCollection, eventually } from './utils';
 
 // The drawer loads the shared wishlist state alongside the album; stub it so these tests only
 // control the album requests they care about.
@@ -231,7 +231,7 @@ describe('FindMusic.club links in the player drawer', () => {
     }));
 
   const expectNoLinks = async () => {
-    await vi.waitFor(() =>
+    await eventually(() =>
       expect(document.querySelector('.bes-player-drawer-tracklist')?.children.length).toBeTruthy()
     );
     expect(links()).toEqual([]);
@@ -277,7 +277,7 @@ describe('FindMusic.club links in the player drawer', () => {
 
     clickPreviewFor('123');
 
-    await vi.waitFor(() =>
+    await eventually(() =>
       expect(links()).toEqual([
         {
           kind: 'label',
@@ -294,7 +294,7 @@ describe('FindMusic.club links in the player drawer', () => {
 
     clickPreviewFor('456');
 
-    await vi.waitFor(() =>
+    await eventually(() =>
       expect(links()).toEqual([
         {
           kind: 'label',
@@ -315,7 +315,7 @@ describe('FindMusic.club links in the player drawer', () => {
     await init(mockPort as any);
 
     clickPreviewFor('456');
-    await vi.waitFor(() => expect(links()).toHaveLength(2));
+    await eventually(() => expect(links()).toHaveLength(2));
 
     const artistLink = document.querySelector('a.bes-findmusic-link-artist') as HTMLElement;
     expect(artistLink.getAttribute('title')).toBeNull();
@@ -343,10 +343,10 @@ describe('FindMusic.club links in the player drawer', () => {
     await init(mockPort as any);
 
     clickPreviewFor('456');
-    await vi.waitFor(() => expect(links()).toHaveLength(2));
+    await eventually(() => expect(links()).toHaveLength(2));
 
     clickPreviewFor('123');
-    await vi.waitFor(() => expect(links()).toHaveLength(1));
+    await eventually(() => expect(links()).toHaveLength(1));
 
     expect(document.querySelectorAll('.bes-findmusic-tooltip')).toHaveLength(1);
   });
@@ -357,7 +357,7 @@ describe('FindMusic.club links in the player drawer', () => {
 
     clickPreviewFor('123');
 
-    await vi.waitFor(() => expect(links()).toHaveLength(1));
+    await eventually(() => expect(links()).toHaveLength(1));
 
     const buyRow = document.querySelector('.bes-player-drawer .bes-album-buy') as HTMLElement;
     expect(buyRow.firstElementChild?.className).toBe('bes-findmusic-links');
@@ -371,7 +371,7 @@ describe('FindMusic.club links in the player drawer', () => {
 
     clickPreviewFor('123');
 
-    await vi.waitFor(() => expect(links()).toHaveLength(1));
+    await eventually(() => expect(links()).toHaveLength(1));
 
     const tracklist = document.querySelector('.bes-player-drawer-tracklist') as HTMLElement;
     expect(tracklist.firstElementChild?.classList.contains('bes-findmusic-links-standalone')).toBe(true);
@@ -382,10 +382,10 @@ describe('FindMusic.club links in the player drawer', () => {
     await init(mockPort as any);
 
     clickPreviewFor('456');
-    await vi.waitFor(() => expect(links()).toHaveLength(2));
+    await eventually(() => expect(links()).toHaveLength(2));
 
     clickPreviewFor('123');
-    await vi.waitFor(() => expect(links().map(link => link.kind)).toEqual(['label']));
+    await eventually(() => expect(links().map(link => link.kind)).toEqual(['label']));
   });
 
   it('should ignore a slow load that resolves after a newer preview', async () => {
@@ -406,7 +406,7 @@ describe('FindMusic.club links in the player drawer', () => {
 
     // the first (guest artist) request resolves last
     resolvers[1]();
-    await vi.waitFor(() => expect(links()).toHaveLength(1));
+    await eventually(() => expect(links()).toHaveLength(1));
     resolvers[0]();
     await new Promise(resolve => setTimeout(resolve, 50));
 
@@ -418,7 +418,7 @@ describe('FindMusic.club links in the player drawer', () => {
     await init(mockPort as any);
 
     clickPreviewFor('456');
-    await vi.waitFor(() => expect(links()).toHaveLength(2));
+    await eventually(() => expect(links()).toHaveLength(2));
 
     globalThis.fetch = vi
       .fn()
@@ -427,7 +427,7 @@ describe('FindMusic.club links in the player drawer', () => {
       ) as any;
     clickPreviewFor('123');
 
-    await vi.waitFor(() => expect(links().map(link => link.kind)).toEqual(['label']));
+    await eventually(() => expect(links().map(link => link.kind)).toEqual(['label']));
   });
 
   it('should not add links when FindMusic.club permissions are not granted', async () => {
@@ -466,7 +466,7 @@ describe('FindMusic.club links in the player drawer', () => {
 
     (document.querySelector('li[data-tralbumid="789"] button.open-iframe') as HTMLElement).click();
 
-    await vi.waitFor(() =>
+    await eventually(() =>
       expect(links().map(link => [link.kind, link.href])).toEqual([
         ['label', 'https://findmusic.club/artist/857243381'],
         ['artist', 'https://findmusic.club/artist/112233']
@@ -487,7 +487,7 @@ describe('FindMusic.club links in the player drawer', () => {
 
     clickPreviewFor('123');
 
-    await vi.waitFor(() =>
+    await eventually(() =>
       expect(links()).toEqual([
         {
           kind: 'artist',

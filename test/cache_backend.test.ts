@@ -35,6 +35,7 @@ vi.mock('../src/utilities', async () => {
 
 import { processRequest, initCacheBackend } from '../src/background/cache_backend';
 import { getFindMusicToken } from '../src/clients/findmusic';
+import { eventually } from './utils';
 
 describe('Cache Backend', () => {
   let mockSendResponse: any;
@@ -93,7 +94,7 @@ describe('Cache Backend', () => {
 
       expect(result).toBe(true);
 
-      await vi.waitFor(() => expect(mockSendResponse).toHaveBeenCalled());
+      await eventually(() => expect(mockSendResponse).toHaveBeenCalled());
 
       expect(mockDB.get).toHaveBeenCalled();
       expect(getFindMusicToken).not.toHaveBeenCalled();
@@ -120,7 +121,7 @@ describe('Cache Backend', () => {
 
       expect(result).toBe(true);
 
-      await vi.waitFor(() => expect(mockSendResponse).toHaveBeenCalled());
+      await eventually(() => expect(mockSendResponse).toHaveBeenCalled());
 
       expect(mockDB.get).toHaveBeenCalled(); // Check if cached
       expect(getFindMusicToken).toHaveBeenCalled();
@@ -156,7 +157,7 @@ describe('Cache Backend', () => {
 
       processRequest(request, {} as any, mockSendResponse);
 
-      await vi.waitFor(() => expect(mockSendResponse).toHaveBeenCalled());
+      await eventually(() => expect(mockSendResponse).toHaveBeenCalled());
 
       expect(getFindMusicToken).toHaveBeenCalled();
       expect(mockFetch).not.toHaveBeenCalled();
@@ -180,7 +181,7 @@ describe('Cache Backend', () => {
 
       processRequest(request, {} as any, mockSendResponse);
 
-      await vi.waitFor(() => expect(mockSendResponse).toHaveBeenCalled());
+      await eventually(() => expect(mockSendResponse).toHaveBeenCalled());
 
       expect(mockFetch).toHaveBeenCalled();
       expect(mockSendResponse).toHaveBeenCalledWith(

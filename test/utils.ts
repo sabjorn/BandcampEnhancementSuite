@@ -1,5 +1,10 @@
 import { vi } from 'vitest';
 
+// vi.waitFor polls every 50ms by default, which is most of what a wait on a settling promise
+// chain costs. These waits are not about timing, so poll as fast as the loop allows.
+export const eventually = <T>(check: () => T | Promise<T>, timeout = 1000): Promise<T> =>
+  vi.waitFor(check, { interval: 1, timeout });
+
 export const createPagedata = (): void => {
   const pagedata = document.createElement('div');
   pagedata.setAttribute('id', 'pagedata');

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createDomNodes, cleanupTestNodes } from './utils';
+import { createDomNodes, cleanupTestNodes, eventually } from './utils';
 import { isPlaybackClick } from '../src/components/player/loader';
 
 vi.mock('../src/logger', () => ({
@@ -340,7 +340,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       expect(next.disabled).toBe(true);
       next.click();
 
-      await vi.waitFor(() => expect(player.getLoadedAlbumId()).toBe('456'));
+      await eventually(() => expect(player.getLoadedAlbumId()).toBe('456'));
       await new Promise(resolve => setTimeout(resolve, 0));
       expect(getTralbumDetails).toHaveBeenCalledTimes(1);
     });
@@ -400,8 +400,8 @@ describe('PlayerLoader - Main Player Logic', () => {
       await player.loadAlbumIntoDrawer('123', 'album', false);
 
       document.querySelector<HTMLButtonElement>('.bes-album-nav-next')!.click();
-      await vi.waitFor(() => expect(player.getLoadedAlbumId()).toBe('456'));
-      await vi.waitFor(() => expect(reveal).toHaveBeenCalledWith(expect.objectContaining({ id: '456' })));
+      await eventually(() => expect(player.getLoadedAlbumId()).toBe('456'));
+      await eventually(() => expect(reveal).toHaveBeenCalledWith(expect.objectContaining({ id: '456' })));
     });
 
     it('should load more of the feed when stepping past the last loaded album', async () => {
@@ -429,7 +429,7 @@ describe('PlayerLoader - Main Player Logic', () => {
       const play = vi.spyOn(audio, 'play').mockResolvedValue();
 
       document.querySelector<HTMLButtonElement>('.bes-album-nav-next')!.click();
-      await vi.waitFor(() => expect(play).toHaveBeenCalled());
+      await eventually(() => expect(play).toHaveBeenCalled());
     });
   });
 

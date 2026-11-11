@@ -23,11 +23,15 @@ vi.mock('../src/bclient', async importOriginal => ({
   getTralbumDetails: vi.fn()
 }));
 
-const collectionStub = stubCollection();
+let collectionStub = stubCollection();
 
 vi.mock('../src/collection', () => ({
   initCollectionState: vi.fn(async () => collectionStub)
 }));
+
+beforeEach(() => {
+  collectionStub = stubCollection();
+});
 
 import { createVolumeSlider, volumeSliderCallback, initPlayer } from '../src/player';
 
@@ -129,10 +133,6 @@ describe('Player - wishlist stars on the album page track rows', () => {
       bandcamp_url: 'https://label.bandcamp.com/album/vielen-dank',
       tracks
     } as any);
-
-    collectionStub.isAvailable.mockReturnValue(true);
-    collectionStub.isWishlisted.mockReturnValue(false);
-    collectionStub.isOwned.mockReturnValue(false);
   });
 
   afterEach(() => {

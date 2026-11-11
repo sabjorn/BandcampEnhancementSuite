@@ -53,6 +53,11 @@ function previewTargetFrom(event: Event): PreviewTarget | null {
   return { id, idType };
 }
 
+function releaseFocusForShortcuts(): void {
+  const focused = document.activeElement;
+  if (focused instanceof HTMLElement) focused.blur();
+}
+
 function drawer(): ReturnType<typeof createPlayerDrawer> {
   if (!drawerController) {
     drawerController = createPlayerDrawer();
@@ -70,6 +75,8 @@ export function fillFrame(
 ): void {
   const target = previewTargetFrom(event);
   if (!target) return;
+
+  releaseFocusForShortcuts();
 
   const player = drawer();
   const { isOpen, isMinimized } = player.getState();

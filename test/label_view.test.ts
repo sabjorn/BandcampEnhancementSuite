@@ -160,6 +160,17 @@ describe('fillFrame - clicking preview for the album already in the drawer', () 
     audio.remove();
   });
 
+  it('should drop focus from the preview button so the shortcuts reach the player', () => {
+    const previewState = { previewOpen: false, previewId: undefined as string | undefined };
+    const button = document.querySelector('[id="123"] button.open-iframe') as HTMLElement;
+    button.focus();
+    expect(document.activeElement).toBe(button);
+
+    clickPreviewFor('123', previewState);
+
+    expect(document.activeElement).toBe(document.body);
+  });
+
   it('should restore a minimized drawer when a different album is previewed', () => {
     const previewState = { previewOpen: false, previewId: undefined as string | undefined };
 

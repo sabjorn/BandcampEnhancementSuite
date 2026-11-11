@@ -1,13 +1,17 @@
 import Logger from '../../logger';
 import { TralbumDetailsResponse, TralbumTrack, CURRENCY_MINIMUMS } from '../../bclient';
 import { createAddToCartButton } from '../cartButton';
-import { createWishlistButton } from '../wishlistButton';
+import { createWishlistButton, WISHLIST_ICON_SIZES } from '../wishlistButton';
+import { Collection } from '../../collection';
 import { prevIcon, nextIcon, playIcon, pauseIcon, volumeIcon, heartIcon, playedIcon } from './icons';
 import playerCenterMarkup from '../../../html/drawer_player_center.html';
 
 const log = new Logger();
 
-export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
+export function buildDrawerPlayer(
+  tralbumDetails: TralbumDetailsResponse,
+  collection: Collection
+): {
   transportElement: HTMLElement;
   centerElement: HTMLElement;
   volumeElement: HTMLElement;
@@ -39,7 +43,7 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
     <span class="bes-volume-percent">100%</span>
   `;
 
-  const trackTable = buildTrackTable(tralbumDetails);
+  const trackTable = buildTrackTable(tralbumDetails, collection);
 
   log.info('Drawer player built successfully');
 
@@ -48,22 +52,26 @@ export function buildDrawerPlayer(tralbumDetails: TralbumDetailsResponse): {
     centerElement: center,
     volumeElement: volumeCol,
     tracklistElement: trackTable,
-    albumBuyButton: buildAlbumBuyButton(tralbumDetails)
+    albumBuyButton: buildAlbumBuyButton(tralbumDetails, collection)
   };
 }
 
-export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTMLElement | null {
+export function buildAlbumBuyButton(
+  tralbumDetails: TralbumDetailsResponse,
+  collection: Collection
+): HTMLElement | null {
   const { price, currency, id, title, type, is_purchasable } = tralbumDetails;
 
   const albumStar = createWishlistButton({
+    collection,
     itemType: type === 't' ? 't' : 'a',
     itemId: id,
     itemUrl: tralbumDetails.bandcamp_url ?? '',
     log,
-    size: 14
+    size: WISHLIST_ICON_SIZES.albumBuy
   });
 
-  const canBuy = is_purchasable && price !== undefined;
+  const canBuy = is_purchasable && price !== undefined && !collection.isOwned(type === 't' ? 't' : 'a', id);
   if (!albumStar && !canBuy) return null;
 
   const container = document.createElement('div');
@@ -91,7 +99,12 @@ export function buildAlbumBuyButton(tralbumDetails: TralbumDetailsResponse): HTM
   return container;
 }
 
-function buildTrackStateCell(track: TralbumTrack, albumUrl: string): HTMLElement {
+function buildTrackStateCell(
+  track: TralbumTrack,
+  albumUrl: string,
+  albumOwned: boolean,
+  collection: Collection
+): HTMLElement {
   const stateCol = document.createElement('td');
   stateCol.className = 'bes-track-state-col';
 
@@ -105,10 +118,15 @@ function buildTrackStateCell(track: TralbumTrack, albumUrl: string): HTMLElement
   playedIndicator.setAttribute('title', 'Played');
   playedIndicator.innerHTML = playedIcon(12);
 
+  const trackOwned = !albumOwned && collection.isOwned('t', track.track_id);
+
   stateCol.appendChild(likedIndicator);
-  stateCol.appendChild(playedIndicator);
+  if (!trackOwned) stateCol.appendChild(playedIndicator);
+
+  if (albumOwned) return stateCol;
 
   const wishlistButton = createWishlistButton({
+    collection,
     itemType: 't',
     itemId: track.track_id,
     itemUrl: track.track_url ?? albumUrl,
@@ -119,9 +137,11 @@ function buildTrackStateCell(track: TralbumTrack, albumUrl: string): HTMLElement
   return stateCol;
 }
 
-export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLElement {
+export function buildTrackTable(tralbumDetails: TralbumDetailsResponse, collection: Collection): HTMLElement {
   const table = document.createElement('table');
   table.className = 'bes-tracklist-table';
+
+  const albumOwned = collection.isOwned(tralbumDetails.type === 't' ? 't' : 'a', tralbumDetails.id);
 
   if (!tralbumDetails.tracks || tralbumDetails.tracks.length === 0) {
     return table;
@@ -166,7 +186,7 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
       durationCol.appendChild(timeSpan);
     }
 
-    const stateCol = buildTrackStateCell(track, tralbumDetails.bandcamp_url ?? '');
+    const stateCol = buildTrackStateCell(track, tralbumDetails.bandcamp_url ?? '', albumOwned, collection);
 
     const linkCol = document.createElement('td');
     linkCol.className = 'bes-track-link-col';
@@ -185,7 +205,7 @@ export function buildTrackTable(tralbumDetails: TralbumDetailsResponse): HTMLEle
     const buyCol = document.createElement('td');
     buyCol.className = 'bes-track-buy-col';
 
-    if (track.is_purchasable && track.track_id) {
+    if (track.is_purchasable && track.track_id && !albumOwned && !collection.isOwned('t', track.track_id)) {
       const { price, currency, track_id: trackId, title: trackTitle } = track;
       const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency] || 0.5;
 

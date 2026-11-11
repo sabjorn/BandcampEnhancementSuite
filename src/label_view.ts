@@ -3,8 +3,8 @@ import { createPlayerDrawer, loadAlbumIntoDrawer, getLoadedAlbumId } from './com
 import { updateDiscographyOrder } from './discography';
 import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicLinks';
 import { extractBandId } from './utilities';
-import { createWishlistButton } from './components/wishlistButton';
-import { initWishlistState } from './wishlist';
+import { createWishlistButton, WISHLIST_ICON_SIZES } from './components/wishlistButton';
+import { initCollectionState, Collection } from './collection';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -136,16 +136,18 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
   const discographyContainer = document.querySelector('ol.music-grid');
   if (!discographyContainer) return;
 
+  const collection = await initCollectionState();
+
   const observer = new MutationObserver(mutations => {
     if (!addedGridItems(mutations)) return;
 
     updateDiscographyOrder();
-    addGridWishlistStars();
+    addGridWishlistStars(collection);
   });
 
   observer.observe(discographyContainer, { childList: true, subtree: true });
 
-  if (await initWishlistState()) addGridWishlistStars();
+  if (collection.isAvailable()) addGridWishlistStars(collection);
 
   try {
     const response = await chrome.runtime.sendMessage({
@@ -191,7 +193,7 @@ function updateFindMusicLinks(albumId?: string, albumType?: string): void {
   setFindMusicLinks(links);
 }
 
-function addGridWishlistStar(item: HTMLElement, albumId: string): void {
+function addGridWishlistStar(item: HTMLElement, albumId: string, collection: Collection): void {
   if (item.querySelector('.bes-grid-title-row')) return;
 
   const title = item.querySelector<HTMLElement>('p.title');
@@ -199,11 +201,12 @@ function addGridWishlistStar(item: HTMLElement, albumId: string): void {
   if (!title || !href) return;
 
   const star = createWishlistButton({
+    collection,
     itemType: 'a',
     itemId: Number(albumId),
     itemUrl: href,
     log,
-    size: 18
+    size: WISHLIST_ICON_SIZES.grid
   });
   if (!star) return;
 
@@ -224,15 +227,15 @@ function addGridWishlistStar(item: HTMLElement, albumId: string): void {
   link.after(row);
 }
 
-export function addGridWishlistStars(): void {
+export function addGridWishlistStars(collection: Collection): void {
   document.querySelectorAll<HTMLElement>('li.music-grid-item[data-item-id]').forEach(item => {
     const [idType, id] = (item.dataset.itemId ?? '').split('-');
-    if (idType === 'album' && id) addGridWishlistStar(item, id);
+    if (idType === 'album' && id) addGridWishlistStar(item, id, collection);
   });
 
   document.querySelectorAll<HTMLElement>('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').forEach(item => {
     const id = item.dataset.tralbumid;
-    if (id) addGridWishlistStar(item, id);
+    if (id) addGridWishlistStar(item, id, collection);
   });
 }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createDomNodes, cleanupTestNodes } from './utils';
+import { createDomNodes, cleanupTestNodes, stubCollection } from './utils';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -17,18 +17,21 @@ vi.mock('../src/logger', () => ({
 }));
 
 import { getTralbumDetails } from '../src/bclient';
-import { initWishlistState, isWishlistAvailable, isWishlisted } from '../src/wishlist';
+
 vi.mock('../src/bclient', async importOriginal => ({
   ...(await importOriginal<typeof import('../src/bclient')>()),
   getTralbumDetails: vi.fn()
 }));
 
-vi.mock('../src/wishlist', () => ({
-  initWishlistState: vi.fn(async () => true),
-  isWishlistAvailable: vi.fn(() => false),
-  isWishlisted: vi.fn(() => false),
-  toggleWishlist: vi.fn()
+let collectionStub = stubCollection();
+
+vi.mock('../src/collection', () => ({
+  initCollectionState: vi.fn(async () => collectionStub)
 }));
+
+beforeEach(() => {
+  collectionStub = stubCollection();
+});
 
 import { createVolumeSlider, volumeSliderCallback, initPlayer } from '../src/player';
 
@@ -130,9 +133,6 @@ describe('Player - wishlist stars on the album page track rows', () => {
       bandcamp_url: 'https://label.bandcamp.com/album/vielen-dank',
       tracks
     } as any);
-    vi.mocked(initWishlistState).mockResolvedValue(true);
-    vi.mocked(isWishlistAvailable).mockReturnValue(true);
-    vi.mocked(isWishlisted).mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -140,12 +140,12 @@ describe('Player - wishlist stars on the album page track rows', () => {
     vi.restoreAllMocks();
   });
 
-  it('should load the wishlist state before decorating the rows', async () => {
+  it('should read the collection before decorating the rows', async () => {
     renderPage();
 
     await initPlayer();
 
-    expect(initWishlistState).toHaveBeenCalled();
+    expect(collectionStub.isWishlisted).toHaveBeenCalled();
   });
 
   it('should put a star in each track row, wired to that track', async () => {
@@ -158,7 +158,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
   });
 
   it('should show the star filled for a track that is already wishlisted', async () => {
-    vi.mocked(isWishlisted).mockImplementation((_type, id) => id === 1002);
+    collectionStub.isWishlisted.mockImplementation((_type, id) => id === 1002);
     renderPage();
 
     await initPlayer();
@@ -182,8 +182,50 @@ describe('Player - wishlist stars on the album page track rows', () => {
     expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(0);
   });
 
+  // tralbum_lookup carries the album entry, not one per track, so an owned album's tracks only
+  // look owned through the album.
+  it('should not offer a star on the tracks of an owned album', async () => {
+    collectionStub.isOwned.mockImplementation(type => type === 'a');
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelectorAll('.track_row_view .bes-wishlist-button').length).toBe(0);
+    expect(document.querySelectorAll('.track_row_view .bes-owned-indicator').length).toBe(0);
+  });
+
+  it('should keep the rows aligned when only one track is owned', async () => {
+    collectionStub.isOwned.mockImplementation((type, id) => type === 't' && id === 1001);
+    renderPage();
+
+    await initPlayer();
+
+    const rows = Array.from(document.querySelectorAll('.track_row_view'));
+    const shapes = rows.map(row => Array.from(row.children).map(cell => cell.className));
+
+    expect(shapes[0]).toEqual(shapes[1]);
+  });
+
+  it('should not offer a one click buy for an owned track', async () => {
+    collectionStub.isOwned.mockReturnValue(true);
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(0);
+  });
+
+  it('should not offer a one click buy for an owned album', async () => {
+    collectionStub.isOwned.mockImplementation(type => type === 'a');
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelector('ul.tralbumCommands .one-click-button')).toBeNull();
+  });
+
   it('should leave the rows bare when the wishlist is unavailable', async () => {
-    vi.mocked(isWishlistAvailable).mockReturnValue(false);
+    collectionStub.isAvailable.mockReturnValue(false);
     renderPage();
 
     await initPlayer();

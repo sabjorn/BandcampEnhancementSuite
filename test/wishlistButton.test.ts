@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import Logger from '../src/logger';
-import { isWishlistAvailable, isWishlisted, toggleWishlist } from '../src/wishlist';
-import { createWishlistButton, setWishlistButtonState, refreshWishlistButton } from '../src/components/wishlistButton';
+import { stubCollection } from './utils';
+import { createWishlistButton, setWishlistButtonState } from '../src/components/wishlistButton';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -13,14 +13,11 @@ vi.mock('../src/logger', () => ({
   }
 }));
 
-vi.mock('../src/wishlist', () => ({
-  isWishlistAvailable: vi.fn(),
-  isWishlisted: vi.fn(),
-  toggleWishlist: vi.fn()
-}));
+let collection: ReturnType<typeof stubCollection>;
 
 const buildButton = (overrides: Record<string, any> = {}) =>
   createWishlistButton({
+    collection,
     itemType: 't',
     itemId: 123456,
     itemUrl: 'https://band.bandcamp.com/track/one',
@@ -32,9 +29,7 @@ describe('wishlistButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = '';
-    vi.mocked(isWishlistAvailable).mockReturnValue(true);
-    vi.mocked(isWishlisted).mockReturnValue(false);
-    vi.mocked(toggleWishlist).mockResolvedValue(true);
+    collection = stubCollection();
   });
 
   afterEach(() => {
@@ -43,7 +38,7 @@ describe('wishlistButton', () => {
 
   describe('createWishlistButton', () => {
     it('should render nothing when the wishlist is unavailable, so logged out pages stay clean', () => {
-      vi.mocked(isWishlistAvailable).mockReturnValue(false);
+      collection.isAvailable.mockReturnValue(false);
 
       expect(buildButton()).toBeNull();
     });
@@ -58,7 +53,7 @@ describe('wishlistButton', () => {
     });
 
     it('should start in the in state for an item that is already wishlisted', () => {
-      vi.mocked(isWishlisted).mockReturnValue(true);
+      collection.isWishlisted.mockReturnValue(true);
 
       const button = buildButton()!;
 
@@ -69,12 +64,12 @@ describe('wishlistButton', () => {
     it('should read its initial state for the item it was given', () => {
       buildButton({ itemType: 'a', itemId: 1609998585 });
 
-      expect(isWishlisted).toHaveBeenCalledWith('a', 1609998585);
+      expect(collection.isWishlisted).toHaveBeenCalledWith('a', 1609998585);
     });
 
     it('should hold a filled star when wishlisted and an outlined one when not', () => {
       const outlined = buildButton()!;
-      vi.mocked(isWishlisted).mockReturnValue(true);
+      collection.isWishlisted.mockReturnValue(true);
       const filled = buildButton()!;
 
       expect(outlined.querySelector('svg')?.getAttribute('fill')).toBe('none');
@@ -91,7 +86,7 @@ describe('wishlistButton', () => {
       expect(buildButton()!.title).toBe('Add this track to your wishlist');
       expect(buildButton({ itemType: 'a' })!.title).toBe('Add this album to your wishlist');
 
-      vi.mocked(isWishlisted).mockReturnValue(true);
+      collection.isWishlisted.mockReturnValue(true);
       expect(buildButton()!.title).toBe('Remove this track from your wishlist');
       expect(buildButton({ itemType: 'a' })!.title).toBe('Remove this album from your wishlist');
     });
@@ -108,12 +103,12 @@ describe('wishlistButton', () => {
       button.click();
 
       await vi.waitFor(() =>
-        expect(toggleWishlist).toHaveBeenCalledWith('a', 1609998585, 'https://other.bandcamp.com')
+        expect(collection.toggleWishlisted).toHaveBeenCalledWith('a', 1609998585, 'https://other.bandcamp.com')
       );
     });
 
     it('should spin while the request is in flight, as the cart button does', async () => {
-      vi.mocked(toggleWishlist).mockReturnValue(new Promise(() => {}));
+      collection.toggleWishlisted.mockReturnValue(new Promise(() => {}));
 
       const button = buildButton()!;
       button.click();
@@ -140,6 +135,25 @@ describe('wishlistButton', () => {
       }
     });
 
+    it('should hold the spinner just as long when the change fails', async () => {
+      vi.useFakeTimers();
+
+      try {
+        collection.toggleWishlisted.mockRejectedValue(new Error('nope'));
+
+        const button = buildButton()!;
+        button.click();
+
+        await vi.advanceTimersByTimeAsync(100);
+        expect(button.dataset.wishlistState).toBe('loading');
+
+        await vi.advanceTimersByTimeAsync(200);
+        expect(button.dataset.wishlistState).toBe('out');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('should put the star back once the change settles', async () => {
       const button = buildButton()!;
       button.click();
@@ -150,7 +164,7 @@ describe('wishlistButton', () => {
     });
 
     it('should put the star back when the change fails', async () => {
-      vi.mocked(toggleWishlist).mockRejectedValue(new Error('nope'));
+      collection.toggleWishlisted.mockRejectedValue(new Error('nope'));
 
       const button = buildButton()!;
       button.click();
@@ -162,7 +176,7 @@ describe('wishlistButton', () => {
 
     it('should go through a busy state while the request is in flight', async () => {
       let settle: (value: boolean) => void = () => {};
-      vi.mocked(toggleWishlist).mockReturnValue(new Promise(resolve => (settle = resolve)));
+      collection.toggleWishlisted.mockReturnValue(new Promise(resolve => (settle = resolve)));
 
       const button = buildButton()!;
       button.click();
@@ -176,7 +190,7 @@ describe('wishlistButton', () => {
     });
 
     it('should render the state Bandcamp confirmed, not the one we assumed', async () => {
-      vi.mocked(toggleWishlist).mockResolvedValue(false);
+      collection.toggleWishlisted.mockResolvedValue(false);
 
       const button = buildButton()!;
       button.click();
@@ -194,8 +208,8 @@ describe('wishlistButton', () => {
 
     it('should restore the previous state and log when the change fails', async () => {
       const log = new Logger();
-      vi.mocked(isWishlisted).mockReturnValue(true);
-      vi.mocked(toggleWishlist).mockRejectedValue(new Error('Bandcamp rejected the wishlist change'));
+      collection.isWishlisted.mockReturnValue(true);
+      collection.toggleWishlisted.mockRejectedValue(new Error('Bandcamp rejected the wishlist change'));
 
       const button = buildButton({ log })!;
       button.click();
@@ -220,14 +234,14 @@ describe('wishlistButton', () => {
     });
 
     it('should ignore further clicks while a change is in flight', async () => {
-      vi.mocked(toggleWishlist).mockReturnValue(new Promise(() => {}));
+      collection.toggleWishlisted.mockReturnValue(new Promise(() => {}));
 
       const button = buildButton()!;
       button.click();
       button.click();
       button.click();
 
-      expect(toggleWishlist).toHaveBeenCalledTimes(1);
+      expect(collection.toggleWishlisted).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -237,7 +251,7 @@ describe('wishlistButton', () => {
       const header = buildButton({ size: 16 })!;
       document.body.append(row, header);
 
-      vi.mocked(isWishlisted).mockReturnValue(true);
+      collection.isWishlisted.mockReturnValue(true);
       row.click();
 
       await vi.waitFor(() => expect(header.dataset.wishlistState).toBe('in'));
@@ -249,11 +263,26 @@ describe('wishlistButton', () => {
       const other = buildButton({ itemId: 999 })!;
       document.body.append(track, other);
 
-      vi.mocked(isWishlisted).mockImplementation((_type, id) => id === 123456);
+      collection.isWishlisted.mockImplementation((_type, id) => id === 123456);
       track.click();
 
       await vi.waitFor(() => expect(track.dataset.wishlistState).toBe('in'));
       expect(other.dataset.wishlistState).toBe('out');
+    });
+
+    it('should leave a button that is mid-change alone', async () => {
+      const row = buildButton()!;
+      const header = buildButton()!;
+      document.body.append(row, header);
+
+      collection.toggleWishlisted.mockReturnValueOnce(new Promise(() => {}));
+      header.click();
+
+      collection.toggleWishlisted.mockResolvedValue(true);
+      row.click();
+
+      await vi.waitFor(() => expect(row.dataset.wishlistState).toBe('in'));
+      expect(header.dataset.wishlistState).toBe('loading');
     });
 
     it('should not resync after a failed change', async () => {
@@ -261,8 +290,8 @@ describe('wishlistButton', () => {
       const header = buildButton()!;
       document.body.append(row, header);
 
-      vi.mocked(toggleWishlist).mockRejectedValue(new Error('nope'));
-      vi.mocked(isWishlisted).mockReturnValue(true);
+      collection.toggleWishlisted.mockRejectedValue(new Error('nope'));
+      collection.isWishlisted.mockReturnValue(true);
       row.click();
 
       await vi.waitFor(() => expect(row.dataset.wishlistState).toBe('out'));
@@ -284,7 +313,63 @@ describe('wishlistButton', () => {
 
       button.click();
 
-      expect(toggleWishlist).toHaveBeenCalledWith('t', 123456, window.location.origin);
+      expect(collection.toggleWishlisted).toHaveBeenCalledWith('t', 123456, window.location.origin);
+    });
+  });
+
+  // Wishlisting something already in the collection is not an action Bandcamp offers, so an owned
+  // release shows what it is instead of a star.
+  describe('an owned release', () => {
+    beforeEach(() => {
+      collection.isOwned.mockReturnValue(true);
+    });
+
+    it('should show the owned indicator in place of the star', () => {
+      const indicator = buildButton()!;
+
+      expect(indicator.classList.contains('bes-owned-indicator')).toBe(true);
+      expect(indicator.querySelector('.bes-wishlist-button')).toBeNull();
+    });
+
+    it('should not be a control at all', () => {
+      const indicator = buildButton()!;
+
+      expect(indicator.tagName).toBe('SPAN');
+    });
+
+    it('should say what it is', () => {
+      expect(buildButton()!.title).toBe('You own this track');
+      expect(buildButton({ itemType: 'a' })!.title).toBe('You own this album');
+    });
+
+    it('should carry the owned icon at the requested size', () => {
+      const svg = buildButton({ size: 18 })!.querySelector('svg') as SVGElement;
+
+      expect(svg.getAttribute('width')).toBe('18');
+    });
+
+    it('should ask about the item it was given', () => {
+      buildButton({ itemType: 'a', itemId: 1609998585 });
+
+      expect(collection.isOwned).toHaveBeenCalledWith('a', 1609998585);
+    });
+
+    it('should take precedence over a wishlisted state', () => {
+      collection.isWishlisted.mockReturnValue(true);
+
+      expect(buildButton()!.classList.contains('bes-owned-indicator')).toBe(true);
+    });
+
+    it('should never write', () => {
+      buildButton()!.click();
+
+      expect(collection.toggleWishlisted).not.toHaveBeenCalled();
+    });
+
+    it('should still render nothing when the wishlist is unavailable', () => {
+      collection.isAvailable.mockReturnValue(false);
+
+      expect(buildButton()).toBeNull();
     });
   });
 
@@ -300,29 +385,6 @@ describe('wishlistButton', () => {
       setWishlistButtonState(button, 'loading');
       expect(button.getAttribute('aria-busy')).toBe('true');
       expect(button.title).toBe('Working…');
-    });
-  });
-
-  describe('refreshWishlistButton', () => {
-    it('should re-read the shared state, so a change elsewhere on the page shows up here', () => {
-      const button = buildButton()!;
-      expect(button.dataset.wishlistState).toBe('out');
-
-      vi.mocked(isWishlisted).mockReturnValue(true);
-      refreshWishlistButton(button);
-
-      expect(button.dataset.wishlistState).toBe('in');
-    });
-
-    it('should leave a button alone while it is mid-request', () => {
-      vi.mocked(toggleWishlist).mockReturnValue(new Promise(() => {}));
-      const button = buildButton()!;
-      button.click();
-
-      vi.mocked(isWishlisted).mockReturnValue(true);
-      refreshWishlistButton(button);
-
-      expect(button.dataset.wishlistState).toBe('loading');
     });
   });
 });

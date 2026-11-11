@@ -4,12 +4,13 @@ import { isBandcampLoggedIn } from './utilities';
 
 const log = new Logger();
 
-export type WishlistItemType = 't' | 'a';
+export type CollectionItemType = 't' | 'a';
 
-const lookupKey = (itemType: WishlistItemType, itemId: number): string => `${itemType}${itemId}`;
+const lookupKey = (itemType: CollectionItemType, itemId: number): string => `${itemType}${itemId}`;
 
 let fanId: number | null = null;
 let wishlisted: Set<string> | null = null;
+let owned: Set<string> | null = null;
 let loading: Promise<boolean> | null = null;
 const changing = new Set<string>();
 
@@ -41,9 +42,9 @@ function readReferrerToken(): string | null {
   }
 }
 
-async function loadWishlistState(): Promise<boolean> {
+async function loadCollection(): Promise<boolean> {
   if (!isBandcampLoggedIn()) {
-    log.info('Not logged in; wishlist is unavailable');
+    log.info('Not logged in; collection is unavailable');
     return false;
   }
 
@@ -53,12 +54,12 @@ async function loadWishlistState(): Promise<boolean> {
     });
 
     if (!summary?.fan_id) {
-      log.info('No fan_id in the collection summary; wishlist is unavailable');
+      log.info('No fan_id in the collection summary; collection is unavailable');
       return false;
     }
 
     if (!summary.tralbum_lookup) {
-      log.error('Collection summary arrived without a tralbum_lookup; wishlist is unavailable');
+      log.error('Collection summary arrived without a tralbum_lookup; collection is unavailable');
       return false;
     }
 
@@ -66,8 +67,9 @@ async function loadWishlistState(): Promise<boolean> {
 
     const lookup = Object.entries(summary.tralbum_lookup);
     wishlisted = new Set(lookup.filter(([, item]) => !item.purchased).map(([key]) => key));
+    owned = new Set(lookup.filter(([, item]) => item.purchased).map(([key]) => key));
 
-    log.info(`Wishlist state loaded: ${wishlisted.size} wishlisted of ${lookup.length} collection entries`);
+    log.info(`Collection loaded: ${wishlisted.size} wishlisted of ${lookup.length} entries`);
     return true;
   } catch (error) {
     log.error(error);
@@ -75,17 +77,25 @@ async function loadWishlistState(): Promise<boolean> {
   }
 }
 
-export function initWishlistState(): Promise<boolean> {
-  loading = loading ?? loadWishlistState();
-  return loading;
+export interface Collection {
+  isAvailable(): boolean;
+  isWishlisted(itemType: CollectionItemType, itemId: number): boolean;
+  isOwned(itemType: CollectionItemType, itemId: number): boolean;
+  toggleWishlisted(itemType: CollectionItemType, itemId: number, host: string): Promise<boolean>;
 }
 
-export function isWishlistAvailable(): boolean {
-  return fanId !== null && wishlisted !== null;
-}
+const collection: Collection = {
+  isAvailable: () => fanId !== null && wishlisted !== null && owned !== null,
+  isWishlisted: (itemType, itemId) => wishlisted?.has(lookupKey(itemType, itemId)) ?? false,
+  isOwned: (itemType, itemId) => owned?.has(lookupKey(itemType, itemId)) ?? false,
+  toggleWishlisted: (itemType, itemId, host) => toggleWishlisted(itemType, itemId, host)
+};
 
-export function isWishlisted(itemType: WishlistItemType, itemId: number): boolean {
-  return wishlisted?.has(lookupKey(itemType, itemId)) ?? false;
+export async function initCollectionState(): Promise<Collection> {
+  loading = loading ?? loadCollection();
+  await loading;
+
+  return collection;
 }
 
 async function write(action: 'collect' | 'uncollect', item: WishlistItem, host: string): Promise<void> {
@@ -100,8 +110,8 @@ async function write(action: 'collect' | 'uncollect', item: WishlistItem, host: 
   if (!written?.ok) throw new Error(written?.error ?? 'Bandcamp rejected the wishlist change');
 }
 
-export async function toggleWishlist(itemType: WishlistItemType, itemId: number, host: string): Promise<boolean> {
-  if (fanId === null || wishlisted === null) throw new Error('Wishlist is unavailable');
+async function toggleWishlisted(itemType: CollectionItemType, itemId: number, host: string): Promise<boolean> {
+  if (fanId === null || wishlisted === null) throw new Error('Collection is unavailable');
 
   const key = lookupKey(itemType, itemId);
   if (changing.has(key)) throw new Error('This item is already changing');
@@ -129,9 +139,10 @@ export async function toggleWishlist(itemType: WishlistItemType, itemId: number,
   return adding;
 }
 
-export function resetWishlistState(): void {
+export function resetCollectionState(): void {
   fanId = null;
   wishlisted = null;
+  owned = null;
   loading = null;
   changing.clear();
 }

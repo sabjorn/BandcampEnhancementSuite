@@ -129,6 +129,13 @@ describe('Keyboard Settings Components', () => {
       expect(editor.className).toContain('bes-key-binding-editor-container');
     });
 
+    it('should claim keypresses so recording does not trigger a shortcut', () => {
+      const editor = createKeyBindingEditor({ key: 'p' }, { onBindingChange: vi.fn() });
+
+      const display = editor.querySelector('.bes-key-binding-display') as HTMLElement;
+      expect(display.dataset.besCaptureKeys).toBe('true');
+    });
+
     it('should display current binding', () => {
       const onBindingChange = vi.fn();
       const binding = { key: 'p' };

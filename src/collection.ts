@@ -85,7 +85,7 @@ export interface Collection {
 }
 
 const collection: Collection = {
-  isAvailable: () => fanId !== null && wishlisted !== null,
+  isAvailable: () => fanId !== null && wishlisted !== null && owned !== null,
   isWishlisted: (itemType, itemId) => wishlisted?.has(lookupKey(itemType, itemId)) ?? false,
   isOwned: (itemType, itemId) => owned?.has(lookupKey(itemType, itemId)) ?? false,
   toggleWishlisted: (itemType, itemId, host) => toggleWishlisted(itemType, itemId, host)

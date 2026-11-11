@@ -1,5 +1,5 @@
 import Logger from '../logger';
-import { Collection, WishlistItemType } from '../collection';
+import { Collection, CollectionItemType } from '../collection';
 import { starIcon, ownedIcon } from './player/icons';
 
 const DEFAULT_ICON_SIZE = 12;
@@ -8,7 +8,7 @@ const CHANGE_EVENT = 'bes-wishlist-change';
 
 export type WishlistButtonState = 'in' | 'out' | 'loading';
 
-const NOUNS: Record<WishlistItemType, string> = {
+const NOUNS: Record<CollectionItemType, string> = {
   t: 'track',
   a: 'album'
 };
@@ -65,7 +65,7 @@ function listenForChangesOnce(): void {
 
 interface CreateWishlistButtonOptions {
   collection: Collection;
-  itemType: WishlistItemType;
+  itemType: CollectionItemType;
   itemId: number;
   itemUrl: string;
   log: Logger;
@@ -82,7 +82,7 @@ function hostOf(itemUrl: string): string | null {
   }
 }
 
-function ownedIndicator(itemType: WishlistItemType, size: number): HTMLElement {
+function ownedIndicator(itemType: CollectionItemType, size: number): HTMLElement {
   const indicator = document.createElement('span');
   indicator.className = 'bes-owned-indicator';
   indicator.title = `You own this ${NOUNS[itemType]}`;

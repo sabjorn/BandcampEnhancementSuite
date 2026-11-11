@@ -290,7 +290,7 @@ describe('collection state', () => {
       sendMessage.mockRejectedValue(new Error('403'));
       const collection = await initCollectionState();
 
-      await expect(collection.toggleWishlisted('t', 999, HOST)).rejects.toThrow('Wishlist is unavailable');
+      await expect(collection.toggleWishlisted('t', 999, HOST)).rejects.toThrow('Collection is unavailable');
     });
 
     // A grid star and the drawer's star can both exist for one album, and each only guards its own

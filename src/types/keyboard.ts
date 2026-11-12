@@ -11,6 +11,8 @@ export enum KeyboardAction {
   PLAY_PAUSE_ALT = 'PLAY_PAUSE_ALT',
   PREV_TRACK = 'PREV_TRACK',
   NEXT_TRACK = 'NEXT_TRACK',
+  PREV_ALBUM = 'PREV_ALBUM',
+  NEXT_ALBUM = 'NEXT_ALBUM',
   SEEK_FORWARD = 'SEEK_FORWARD',
   SEEK_BACKWARD = 'SEEK_BACKWARD',
   SEEK_FORWARD_LARGE = 'SEEK_FORWARD_LARGE',
@@ -24,6 +26,8 @@ export const ACTION_DESCRIPTIONS: Record<KeyboardAction, string> = {
   [KeyboardAction.PLAY_PAUSE_ALT]: 'Play/Pause (Alternative)',
   [KeyboardAction.PREV_TRACK]: 'Previous Track',
   [KeyboardAction.NEXT_TRACK]: 'Next Track',
+  [KeyboardAction.PREV_ALBUM]: 'Previous Album',
+  [KeyboardAction.NEXT_ALBUM]: 'Next Album',
   [KeyboardAction.SEEK_FORWARD]: 'Seek Forward',
   [KeyboardAction.SEEK_BACKWARD]: 'Seek Backward',
   [KeyboardAction.SEEK_FORWARD_LARGE]: 'Seek Forward (Large)',
@@ -34,6 +38,7 @@ export const ACTION_DESCRIPTIONS: Record<KeyboardAction, string> = {
 
 export enum ActionCategory {
   PLAYBACK = 'Playback',
+  ALBUM = 'Album',
   SEEKING = 'Seeking',
   VOLUME = 'Volume'
 }
@@ -43,6 +48,8 @@ export const ACTION_CATEGORIES: Record<KeyboardAction, ActionCategory> = {
   [KeyboardAction.PLAY_PAUSE_ALT]: ActionCategory.PLAYBACK,
   [KeyboardAction.PREV_TRACK]: ActionCategory.PLAYBACK,
   [KeyboardAction.NEXT_TRACK]: ActionCategory.PLAYBACK,
+  [KeyboardAction.PREV_ALBUM]: ActionCategory.ALBUM,
+  [KeyboardAction.NEXT_ALBUM]: ActionCategory.ALBUM,
   [KeyboardAction.SEEK_FORWARD]: ActionCategory.SEEKING,
   [KeyboardAction.SEEK_BACKWARD]: ActionCategory.SEEKING,
   [KeyboardAction.SEEK_FORWARD_LARGE]: ActionCategory.SEEKING,
@@ -84,6 +91,16 @@ export const DEFAULT_KEYBOARD_SETTINGS: KeyboardSettings = {
     {
       action: KeyboardAction.NEXT_TRACK,
       binding: { key: 'ArrowDown' },
+      enabled: true
+    },
+    {
+      action: KeyboardAction.PREV_ALBUM,
+      binding: { key: '[' },
+      enabled: true
+    },
+    {
+      action: KeyboardAction.NEXT_ALBUM,
+      binding: { key: ']' },
       enabled: true
     },
     {
@@ -144,6 +161,23 @@ export function keyBindingsEqual(a: KeyBinding, b: KeyBinding): boolean {
     (a.ctrl ?? false) === (b.ctrl ?? false) &&
     (a.meta ?? false) === (b.meta ?? false)
   );
+}
+
+export function backfillKeyboardControls(settings: KeyboardSettings): KeyboardSettings {
+  const configured = new Set(settings.controls.map(control => control.action));
+  const missing = DEFAULT_KEYBOARD_SETTINGS.controls.filter(control => !configured.has(control.action));
+
+  if (missing.length === 0) return settings;
+
+  const takenBindings = settings.controls.filter(control => control.enabled).map(control => control.binding);
+
+  const added = missing.map(control => ({
+    action: control.action,
+    binding: { ...control.binding },
+    enabled: control.enabled && !takenBindings.some(binding => keyBindingsEqual(binding, control.binding))
+  }));
+
+  return { ...settings, controls: [...settings.controls, ...added] };
 }
 
 export function validateKeyboardSettings(settings: KeyboardSettings): string[] {

@@ -35,6 +35,10 @@ On album and track pages the following keyboard controls are supported:
 | Up Arrow            | Play Previous Track           |
 | Shift + Up Arrow    | Increase Audio Volume by 0.05 |
 | Shift + Down Arrow  | Decrease Audio Volume by 0.05 |
+| "]"                 | Play Next Album               |
+| "["                 | Play Previous Album           |
+
+The album bindings apply in the player drawer, where next/previous album navigation is available.
 
 ### Advanced Mouse Playbar
 

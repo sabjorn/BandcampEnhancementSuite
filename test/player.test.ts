@@ -169,32 +169,44 @@ describe('Player - wishlist stars on the album page track rows', () => {
     expect(stars().map(star => star.dataset.wishlistState)).toEqual(['out', 'in']);
   });
 
-  it('should still show stars on a release the fan already owns', async () => {
+  it('should mark every track owned on a release the page reports as purchased', async () => {
     renderPage({ fan_tralbum_data: { is_purchased: true, part_of_purchased_album: false } });
 
     await initPlayer();
 
-    expect(stars().length).toBe(2);
+    expect(document.querySelectorAll('.track_row_view .bes-owned-indicator').length).toBe(2);
+    expect(stars().length).toBe(0);
   });
 
-  it('should not add one-click buy buttons to a release the fan already owns', async () => {
+  it('should mark every track owned when the page reports part of a purchased album', async () => {
+    renderPage({ fan_tralbum_data: { is_purchased: false, part_of_purchased_album: true } });
+
+    await initPlayer();
+
+    expect(document.querySelectorAll('.track_row_view .bes-owned-indicator').length).toBe(2);
+  });
+
+  it('should clear every buy affordance on a release the page reports as purchased', async () => {
     renderPage({ fan_tralbum_data: { is_purchased: true, part_of_purchased_album: false } });
 
     await initPlayer();
 
     expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(0);
+    expect(document.querySelectorAll('.track_row_view .buyTrack').length).toBe(0);
+    expect(document.querySelector('ul.tralbumCommands li.buyItem.digital')).toBeNull();
+    expect(document.querySelector('ul.tralbumCommands .one-click-button')).toBeNull();
   });
 
-  // tralbum_lookup carries the album entry, not one per track, so an owned album's tracks only
-  // look owned through the album.
-  it('should not offer a star on the tracks of an owned album', async () => {
+  // tralbum_lookup carries the album entry, not one per track, so an owned album's tracks are
+  // owned through the album rather than on their own.
+  it('should mark the tracks of an owned album owned rather than offering a star', async () => {
     collectionStub.isOwned.mockImplementation(type => type === 'a');
     renderPage();
 
     await initPlayer();
 
     expect(document.querySelectorAll('.track_row_view .bes-wishlist-button').length).toBe(0);
-    expect(document.querySelectorAll('.track_row_view .bes-owned-indicator').length).toBe(0);
+    expect(document.querySelectorAll('.track_row_view .bes-owned-indicator').length).toBe(2);
   });
 
   it("should strip Bandcamp's own buy track links from an owned album's rows", async () => {

@@ -76,7 +76,7 @@ function hostOf(itemUrl: string): string | null {
   }
 }
 
-function ownedIndicator(itemType: CollectionItemType, size: number): HTMLElement {
+export function createOwnedIndicator(itemType: CollectionItemType, size: number = DEFAULT_ICON_SIZE): HTMLElement {
   const indicator = document.createElement('span');
   indicator.className = 'bes-owned-indicator';
   indicator.title = `You own this ${NOUNS[itemType]}`;
@@ -93,7 +93,7 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
   const host = hostOf(itemUrl);
   if (!host || !Number.isFinite(itemId)) return null;
 
-  if (collection.isOwned(itemType, itemId)) return ownedIndicator(itemType, size);
+  if (collection.isOwned(itemType, itemId)) return createOwnedIndicator(itemType, size);
 
   listenForChangesOnce();
 

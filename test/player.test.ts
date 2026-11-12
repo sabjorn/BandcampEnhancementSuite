@@ -108,11 +108,11 @@ describe('Player - wishlist stars on the album page track rows', () => {
       <table id="track_table">
         <tr class="track_row_view">
           <td class="info-col"></td>
-          <td class="download-col"><a class="buyTrack">buy track</a></td>
+          <td class="download-col"><div class="dl_link"><a href="/track/x?action=download">buy track</a></div></td>
         </tr>
         <tr class="track_row_view">
           <td class="info-col"></td>
-          <td class="download-col"><a class="buyTrack">buy track</a></td>
+          <td class="download-col"><div class="dl_link"><a href="/track/x?action=download">buy track</a></div></td>
         </tr>
       </table>
       <ul class="tralbumCommands">
@@ -122,6 +122,11 @@ describe('Player - wishlist stars on the album page track rows', () => {
     `);
 
   const stars = () => Array.from(document.querySelectorAll<HTMLElement>('.track_row_view .bes-wishlist-button'));
+
+  const markNativeOwned = () =>
+    document
+      .querySelector('ul.tralbumCommands li.buyItem.digital h3.hd')
+      ?.insertAdjacentHTML('afterbegin', '<span class="buyItemPackageTitle you-own-this">Digital Album</span>');
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -188,13 +193,22 @@ describe('Player - wishlist stars on the album page track rows', () => {
 
   it('should clear every buy affordance on a release the page reports as purchased', async () => {
     renderPage({ fan_tralbum_data: { is_purchased: true, part_of_purchased_album: false } });
+    markNativeOwned();
 
     await initPlayer();
 
     expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(0);
-    expect(document.querySelectorAll('.track_row_view .buyTrack').length).toBe(0);
-    expect(document.querySelector('ul.tralbumCommands li.buyItem.digital')).toBeNull();
+    expect(document.querySelectorAll('.track_row_view .dl_link').length).toBe(0);
     expect(document.querySelector('ul.tralbumCommands .one-click-button')).toBeNull();
+  });
+
+  it("should keep Bandcamp's own owned marker instead of removing the buy item it lives in", async () => {
+    renderPage({ fan_tralbum_data: { is_purchased: true, part_of_purchased_album: false } });
+    markNativeOwned();
+
+    await initPlayer();
+
+    expect(document.querySelector('ul.tralbumCommands li.buyItem.digital .you-own-this')).toBeTruthy();
   });
 
   // tralbum_lookup carries the album entry, not one per track, so an owned album's tracks are
@@ -215,7 +229,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
 
     await initPlayer();
 
-    expect(document.querySelectorAll('.track_row_view .buyTrack').length).toBe(0);
+    expect(document.querySelectorAll('.track_row_view .dl_link').length).toBe(0);
     expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(0);
   });
 
@@ -225,7 +239,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
 
     await initPlayer();
 
-    expect(document.querySelectorAll('.track_row_view .buyTrack').length).toBe(0);
+    expect(document.querySelectorAll('.track_row_view .dl_link').length).toBe(0);
     expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(1);
   });
 

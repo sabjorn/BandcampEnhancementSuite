@@ -94,7 +94,7 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
     const { price, currency, id: albumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
 
     if (albumOwned) {
-      document.querySelector('ul.tralbumCommands li.buyItem.digital')?.remove();
+      removeNativeDigitalBuyItem();
       return;
     }
 
@@ -119,6 +119,13 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
   } catch (error) {
     log.error(error);
   }
+}
+
+function removeNativeDigitalBuyItem(): void {
+  const digitalBuyItem = document.querySelector('ul.tralbumCommands li.buyItem.digital');
+  if (!digitalBuyItem || digitalBuyItem.querySelector('.you-own-this')) return;
+
+  digitalBuyItem.remove();
 }
 
 function addTrackIndicators(

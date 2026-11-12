@@ -293,6 +293,29 @@ describe('PlayerLoader - Main Player Logic', () => {
     });
   });
 
+  describe('Preview history', () => {
+    const portStub = () =>
+      ({ postMessage: vi.fn(), onMessage: { addListener: vi.fn() } }) as unknown as chrome.runtime.Port;
+
+    it('should mark the album loaded into the drawer as previewed', async () => {
+      const port = portStub();
+
+      await player.loadAlbumIntoDrawer('123', 'album', false, port);
+
+      expect(port.postMessage).toHaveBeenCalledWith({ setTrue: '123' });
+    });
+
+    it('should mark albums reached by navigation, which carry no port of their own', async () => {
+      const port = portStub();
+      discography.updateDiscographyOrder();
+      await player.loadAlbumIntoDrawer('123', 'album', false, port);
+
+      await player.loadNextAlbum(false);
+
+      expect(port.postMessage).toHaveBeenCalledWith({ setTrue: '456' });
+    });
+  });
+
   describe('Album art extracted from discography grid', () => {
     it('should extract album art URL from grid item', async () => {
       discography.updateDiscographyOrder();

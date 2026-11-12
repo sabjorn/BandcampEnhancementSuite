@@ -5,6 +5,7 @@ import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicL
 import { extractBandId } from './utilities';
 import { createWishlistButton, WISHLIST_ICON_SIZES } from './components/wishlistButton';
 import { initCollectionState, Collection } from './collection';
+import { setPreviewed } from './previewHistory';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -19,18 +20,15 @@ export function setHistory(id: string, state: boolean): void {
   }
 }
 
-export function setPreviewed(id: string, port: chrome.runtime.Port): void {
-  port.postMessage({ setTrue: id });
+function previewIdFrom(event: Event): string | undefined {
+  return (event.target as HTMLElement).closest('.preview')?.id || undefined;
 }
 
 export function boxClicked(event: Event, port: chrome.runtime.Port): void {
-  const id = (event.target as HTMLElement).parentElement?.getAttribute('id');
-  port.postMessage({ toggle: id });
-}
+  const id = previewIdFrom(event);
+  if (!id) return;
 
-export function previewClicked(event: Event, port: chrome.runtime.Port): void {
-  const id = (event.target as HTMLElement).parentElement?.getAttribute('id');
-  setPreviewed(id, port);
+  port.postMessage({ toggle: id });
 }
 
 const log = new Logger();
@@ -91,8 +89,6 @@ export function fillFrame(
   previewState.previewOpen = true;
   player.openDrawer();
 
-  if (port) setPreviewed(target.id, port);
-
   currentPreview = target;
 
   const renderLinksForCurrentPreview = () => updateFindMusicLinks(currentPreview?.id, currentPreview?.idType);
@@ -149,6 +145,7 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
     if (!addedGridItems(mutations)) return;
 
     updateDiscographyOrder();
+    renderPreviews(port, previewState, enableFetchCaching);
     addGridWishlistStars(collection);
   });
 
@@ -275,14 +272,14 @@ export function generatePreview(id: string, idType: string): HTMLDivElement {
   return parent;
 }
 
-export function renderDom(
+export function renderPreviews(
   port: chrome.runtime.Port,
   previewState: { previewOpen: boolean; previewId?: string },
   enableFetchCaching: boolean = false
 ): void {
-  document.querySelectorAll('li.music-grid-item[data-item-id]').forEach(item => {
-    const idAndType = (item as HTMLElement).dataset.itemId;
-    if (!idAndType) return;
+  document.querySelectorAll<HTMLElement>('li.music-grid-item[data-item-id]').forEach(item => {
+    const idAndType = item.dataset.itemId;
+    if (!idAndType || item.querySelector('.preview')) return;
 
     const id = idAndType.split('-')[1];
     const idType = idAndType.split('-')[0];
@@ -292,14 +289,34 @@ export function renderDom(
     port.postMessage({ query: id });
   });
 
-  document.querySelectorAll('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').forEach(item => {
-    const id = (item as HTMLElement).dataset.tralbumid;
-    if (!id) return;
+  document.querySelectorAll<HTMLElement>('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').forEach(item => {
+    const id = item.dataset.tralbumid;
+    if (!id || item.querySelector('.preview')) return;
+
     const preview = generatePreview(id, 'album');
     item.appendChild(preview);
 
     port.postMessage({ query: id });
   });
+
+  attachPreviewListeners(document, port, previewState, enableFetchCaching);
+
+  document.querySelectorAll<HTMLElement>('.historybox').forEach(item => {
+    if (item.dataset.besBound === 'true') return;
+
+    item.dataset.besBound = 'true';
+    item.addEventListener('click', event => {
+      boxClicked(event, port);
+    });
+  });
+}
+
+export function renderDom(
+  port: chrome.runtime.Port,
+  previewState: { previewOpen: boolean; previewId?: string },
+  enableFetchCaching: boolean = false
+): void {
+  renderPreviews(port, previewState, enableFetchCaching);
 
   const pagedata = document.querySelector('#pagedata');
   if (!pagedata) return;
@@ -309,12 +326,4 @@ export function renderDom(
   if (id) {
     setPreviewed(id, port);
   }
-
-  attachPreviewListeners(document, port, previewState, enableFetchCaching);
-
-  document.querySelectorAll('.historybox').forEach(item => {
-    item.addEventListener('click', event => {
-      boxClicked(event, port);
-    });
-  });
 }

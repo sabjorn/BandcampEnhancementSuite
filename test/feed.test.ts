@@ -197,7 +197,7 @@ describe('Feed', () => {
       expect(document.querySelector('.preview-frame iframe')).toBeNull();
     });
 
-    it('records the item as previewed', () => {
+    it('hands the loader the port it records the preview over', () => {
       renderFeedPreviews(mockPort as any, createPreviewState());
 
       const button = document.querySelector(
@@ -205,7 +205,7 @@ describe('Feed', () => {
       ) as HTMLButtonElement;
       button.click();
 
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ setTrue: '12345' });
+      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith('12345', 'album', expect.anything(), mockPort);
     });
 
     it('places the preview next to the details of a main feed story rather than at the bottom', () => {
@@ -258,7 +258,10 @@ describe('Feed', () => {
 
     beforeEach(() => {
       createDomNodes(
-        `<div id="stories"><ol class="story-list">${story('1')}${story('2', 't')}${story('1')}${story('3', 'x')}</ol></div>`
+        `<div id="stories"><ol class="story-list">${story('1')}${story('2', 't')}${story('1')}${story(
+          '3',
+          'x'
+        )}</ol></div>`
       );
     });
 

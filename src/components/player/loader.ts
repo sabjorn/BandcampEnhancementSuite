@@ -12,6 +12,7 @@ import { inDrawer, allInDrawer, setText, setStyle } from './query';
 import { streamUrlOf, findPlayableTrackAfter, findPlayableTrackBefore } from './trackSelection';
 import { applyTrackState, markRowPlayed } from './trackState';
 import { initCollectionState } from '../../collection';
+import { setPreviewed } from '../../previewHistory';
 import { buildAlbumNav, updateAlbumNav } from './albumNav';
 import {
   selectAlbum,
@@ -36,6 +37,7 @@ let drawerShortcutsRegistered = false;
 let drawerPlayerCreated = false;
 let previousVolume = 1.0;
 let configPort: chrome.runtime.Port | null = null;
+let previewHistoryPort: chrome.runtime.Port | null = null;
 let waveformEnabled = true;
 let requestedAlbumId: string | null = null;
 let fetchCaching = false;
@@ -233,6 +235,7 @@ export async function loadAlbumIntoDrawer(
   log.info(`Loading album ${albumId} (${albumType}) into drawer`);
   requestedAlbumId = albumId;
   fetchCaching = enableFetchCaching;
+  if (port) previewHistoryPort = port;
 
   try {
     const [tralbumDetails, collection] = await Promise.all([
@@ -247,6 +250,7 @@ export async function loadAlbumIntoDrawer(
 
     currentAlbumData = tralbumDetails;
     selectAlbum(albumId);
+    if (previewHistoryPort) setPreviewed(albumId, previewHistoryPort);
 
     const elements = getPlayerDrawerElements();
     if (!elements.playerContainer || !elements.tracklistContainer) {

@@ -354,13 +354,14 @@ async function postWishlistItem(
     return response.json();
   };
 
-  let accepted = crumb;
-  let data = await readResponse(await makeRequest(accepted));
+  const attempt = async (crumbValue: string | null) => ({
+    crumb: crumbValue,
+    data: await readResponse(await makeRequest(crumbValue))
+  });
 
-  if (data.error === 'invalid_crumb' && data.crumb) {
-    accepted = data.crumb;
-    data = await readResponse(await makeRequest(accepted));
-  }
+  const first = await attempt(crumb);
+  const { crumb: accepted, data } =
+    first.data.error === 'invalid_crumb' && first.data.crumb ? await attempt(first.data.crumb) : first;
 
   if (data.ok !== true) {
     throw new Error(data.exception ?? data.error_message ?? 'Bandcamp rejected the wishlist change');

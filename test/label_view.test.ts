@@ -33,6 +33,7 @@ import {
   initLabelView,
   fillFrame,
   renderDom,
+  renderPreviews,
   addGridWishlistStars,
   generatePreview,
   addedGridItems
@@ -695,6 +696,57 @@ describe('preview controls staying within the album art width', () => {
 
     expect(preview.querySelector('.bes-preview-controls .preview-frame')).toBeNull();
     expect(preview.querySelector('.preview-frame')?.id).toBe('album-123');
+  });
+});
+
+describe('previews for grid items the page adds later', () => {
+  const previewState = () => ({ previewOpen: false, previewId: undefined as string | undefined });
+
+  const appendGridItem = (itemId: string): HTMLElement => {
+    const item = document.createElement('li');
+    item.className = 'music-grid-item';
+    item.dataset.itemId = itemId;
+    document.querySelector('ol.music-grid')?.appendChild(item);
+
+    return item;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    createDomNodes(`
+      <ol class="music-grid">
+        <li class="music-grid-item" data-item-id="album-111"></li>
+      </ol>
+    `);
+  });
+
+  afterEach(() => {
+    cleanupTestNodes();
+  });
+
+  it('should render controls for an item appended after the first pass', () => {
+    const state = previewState();
+    renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+
+    const item = appendGridItem('album-222');
+    renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+
+    expect(item.querySelector('.open-iframe')).toBeTruthy();
+    expect(item.querySelector('.historybox')).toBeTruthy();
+    expect(mockPort.postMessage).toHaveBeenCalledWith({ query: '222' });
+  });
+
+  it('should leave the items it already rendered alone', () => {
+    const state = previewState();
+    renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+
+    appendGridItem('album-222');
+    mockPort.postMessage.mockClear();
+    renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+
+    const first = document.querySelector('[data-item-id="album-111"]') as HTMLElement;
+    expect(first.querySelectorAll('.preview').length).toBe(1);
+    expect(mockPort.postMessage).not.toHaveBeenCalledWith({ query: '111' });
   });
 });
 

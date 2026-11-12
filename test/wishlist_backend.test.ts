@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { getCollectionSummary, collectItem, uncollectItem } from '../src/bclient';
 import { processRequest, initWishlistBackend, WISHLIST_HEADER_RULE_ID } from '../src/background/wishlist_backend';
+import { eventually } from './utils';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -66,7 +67,7 @@ describe('wishlist backend', () => {
 
     processRequest({ contentScriptQuery: 'fetchCollectionSummary' }, {} as any, sendResponse);
 
-    await vi.waitFor(() => expect(sendResponse).toHaveBeenCalled());
+    await eventually(() => expect(sendResponse).toHaveBeenCalled());
     expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com');
   });
 
@@ -79,7 +80,7 @@ describe('wishlist backend', () => {
 
     processRequest({ contentScriptQuery: 'fetchCollectionSummary' }, {} as any, sendResponse);
 
-    await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith(summary));
+    await eventually(() => expect(sendResponse).toHaveBeenCalledWith(summary));
   });
 
   it('should answer with null when the request fails rather than hanging the caller', async () => {
@@ -88,7 +89,7 @@ describe('wishlist backend', () => {
 
     processRequest({ contentScriptQuery: 'fetchCollectionSummary' }, {} as any, sendResponse);
 
-    await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith(null));
+    await eventually(() => expect(sendResponse).toHaveBeenCalledWith(null));
   });
 
   describe('writing a wishlist change', () => {
@@ -113,7 +114,7 @@ describe('wishlist backend', () => {
 
       ask(sendResponse);
 
-      await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith({ ok: true }));
+      await eventually(() => expect(sendResponse).toHaveBeenCalledWith({ ok: true }));
       expect(collectItem).toHaveBeenCalledWith(item, 'page_crumb', 'https://halfpastvibe.bandcamp.com');
     });
 
@@ -123,7 +124,7 @@ describe('wishlist backend', () => {
 
       ask(sendResponse, 'uncollect');
 
-      await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith({ ok: true }));
+      await eventually(() => expect(sendResponse).toHaveBeenCalledWith({ ok: true }));
       expect(uncollectItem).toHaveBeenCalledWith(item, 'page_crumb', 'https://bandcamp.com');
     });
 
@@ -137,7 +138,7 @@ describe('wishlist backend', () => {
 
       ask(sendResponse);
 
-      await vi.waitFor(() =>
+      await eventually(() =>
         expect(sendResponse).toHaveBeenCalledWith({ ok: false, error: 'old or no crumb specified' })
       );
     });
@@ -185,7 +186,7 @@ describe('wishlist backend', () => {
     it('should name the band host when collecting', async () => {
       write('collect');
 
-      await vi.waitFor(() =>
+      await eventually(() =>
         expect(chrome.declarativeNetRequest.updateSessionRules).toHaveBeenCalledWith(
           ruleFor('https://band.bandcamp.com')
         )
@@ -195,7 +196,7 @@ describe('wishlist backend', () => {
     it('should name the base domain when uncollecting', async () => {
       write('uncollect');
 
-      await vi.waitFor(() =>
+      await eventually(() =>
         expect(chrome.declarativeNetRequest.updateSessionRules).toHaveBeenCalledWith(ruleFor('https://bandcamp.com'))
       );
     });
@@ -216,7 +217,7 @@ describe('wishlist backend', () => {
         sendResponse
       );
 
-      await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledWith({ ok: false, error: 'not allowed' }));
+      await eventually(() => expect(sendResponse).toHaveBeenCalledWith({ ok: false, error: 'not allowed' }));
       expect(uncollectItem).not.toHaveBeenCalled();
     });
 
@@ -227,7 +228,7 @@ describe('wishlist backend', () => {
 
       write('uncollect');
 
-      await vi.waitFor(() =>
+      await eventually(() =>
         expect(chrome.declarativeNetRequest.updateSessionRules).toHaveBeenLastCalledWith({
           removeRuleIds: [WISHLIST_HEADER_RULE_ID]
         })
@@ -240,7 +241,7 @@ describe('wishlist backend', () => {
 
       write('uncollect');
 
-      await vi.waitFor(() =>
+      await eventually(() =>
         expect(chrome.declarativeNetRequest.updateSessionRules).toHaveBeenLastCalledWith({
           removeRuleIds: [WISHLIST_HEADER_RULE_ID]
         })
@@ -251,7 +252,7 @@ describe('wishlist backend', () => {
     it('should only match requests that belong to no tab', async () => {
       write('uncollect');
 
-      await vi.waitFor(() => expect(chrome.declarativeNetRequest.updateSessionRules).toHaveBeenCalled());
+      await eventually(() => expect(chrome.declarativeNetRequest.updateSessionRules).toHaveBeenCalled());
 
       const [{ addRules }] = vi.mocked(chrome.declarativeNetRequest.updateSessionRules).mock.calls[0] as any;
       expect(addRules[0].condition.tabIds).toEqual([-1]);
@@ -278,12 +279,12 @@ describe('wishlist backend', () => {
       write('collect');
       write('uncollect');
 
-      await vi.waitFor(() => expect(order).toContain('collect'));
+      await eventually(() => expect(order).toContain('collect'));
       expect(order).not.toContain('uncollect');
 
       releaseCollect(true);
 
-      await vi.waitFor(() => expect(order).toContain('uncollect'));
+      await eventually(() => expect(order).toContain('uncollect'));
       expect(order).toEqual([
         'rule:https://band.bandcamp.com/',
         'collect',

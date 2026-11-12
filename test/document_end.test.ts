@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createDomNodes, cleanupTestNodes } from './utils';
+import { createDomNodes, cleanupTestNodes, eventually } from './utils';
 
 const mockRuntimeSendMessage = vi.fn();
 const mockRuntimeConnect = vi.fn(() => ({
@@ -165,13 +165,13 @@ describe('BES Drawer', () => {
     expect(overlay).toBeTruthy();
 
     button.click();
-    await vi.waitFor(() => {
+    await eventually(() => {
       expect(drawer!.classList.contains('open')).toBe(true);
       expect(overlay!.classList.contains('open')).toBe(true);
     });
 
     button.click();
-    await vi.waitFor(() => {
+    await eventually(() => {
       expect(drawer!.classList.contains('open')).toBe(false);
       expect(overlay!.classList.contains('open')).toBe(false);
     });
@@ -187,7 +187,7 @@ describe('BES Drawer', () => {
     expect(closeButton).toBeTruthy();
 
     button.click();
-    await vi.waitFor(() => {
+    await eventually(() => {
       expect(drawer!.classList.contains('open')).toBe(true);
     });
 
@@ -205,7 +205,7 @@ describe('BES Drawer', () => {
     expect(overlay).toBeTruthy();
 
     button.click();
-    await vi.waitFor(() => {
+    await eventually(() => {
       expect(drawer!.classList.contains('open')).toBe(true);
     });
 
@@ -250,7 +250,7 @@ describe('BES Drawer', () => {
     expect(findMusicButton).toBeTruthy();
 
     openButton.click();
-    await vi.waitFor(() => {
+    await eventually(() => {
       expect(drawer!.classList.contains('open')).toBe(true);
     });
 
@@ -273,7 +273,7 @@ describe('BES Drawer', () => {
   it('should enable the FindMusic button when signed in to Bandcamp', async () => {
     const findMusicButton = document.querySelector('.bes-drawer-button') as HTMLButtonElement;
 
-    await vi.waitFor(() => {
+    await eventually(() => {
       expect(findMusicButton.disabled).toBe(false);
     });
     expect(findMusicButton.parentElement?.classList.contains('disabled')).toBe(false);

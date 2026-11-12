@@ -3,10 +3,9 @@ import { createInputButtonPair } from './buttons';
 import { createShoppingCartItem } from './shoppingCart';
 import { createPlusSvgIcon, createCheckSvgIcon, createXSvgIcon } from './svgIcons';
 import { addAlbumToCart, removeAlbumFromCart } from '../bclient';
+import { withMinDuration } from './minDuration';
 
 type CartButtonState = 'add' | 'loading' | 'in-cart';
-
-const MIN_SPINNER_MS = 250;
 
 interface CartItem {
   id: string | number;
@@ -113,11 +112,6 @@ export function playCartAnimation(button: HTMLElement, animationClass: string): 
   button.addEventListener('animationend', () => button.classList.remove(animationClass), { once: true });
 }
 
-function withMinDuration<T>(promise: Promise<T>, ms: number): Promise<T> {
-  const elapsed = new Promise<void>(resolve => setTimeout(resolve, ms));
-  return Promise.all([promise, elapsed]).then(([result]) => result);
-}
-
 async function assertCartResponseOk(response: Response): Promise<any> {
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
@@ -176,7 +170,7 @@ export function createAddToCartButton(options: CreateAddToCartButtonOptions): HT
 
     setCartButtonState(button, 'loading');
 
-    withMinDuration(addAlbumToCart(tralbumId, numericValue, type), MIN_SPINNER_MS)
+    withMinDuration(addAlbumToCart(tralbumId, numericValue, type))
       .then(assertCartResponseOk)
       .then(body => {
         if (body && body.id !== undefined && body.id !== null) {
@@ -212,7 +206,7 @@ export function createAddToCartButton(options: CreateAddToCartButtonOptions): HT
 
     setCartButtonState(button, 'loading');
 
-    withMinDuration(removeAlbumFromCart(id), MIN_SPINNER_MS)
+    withMinDuration(removeAlbumFromCart(id))
       .then(assertCartResponseOk)
       .then(() => {
         lineItemId = null;

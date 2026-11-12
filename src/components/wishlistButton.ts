@@ -1,6 +1,7 @@
 import Logger from '../logger';
 import { Collection, CollectionItemType } from '../collection';
 import { starIcon, ownedIcon } from './player/icons';
+import { withMinDuration } from './minDuration';
 
 export const WISHLIST_ICON_SIZES = {
   trackRow: 12,
@@ -9,7 +10,6 @@ export const WISHLIST_ICON_SIZES = {
 } as const;
 
 const DEFAULT_ICON_SIZE = WISHLIST_ICON_SIZES.trackRow;
-const MIN_SPINNER_MS = 250;
 const CHANGE_EVENT = 'bes-wishlist-change';
 
 export type WishlistButtonState = 'in' | 'out' | 'loading';
@@ -23,18 +23,6 @@ function titleFor(state: WishlistButtonState, noun: string): string {
   if (state === 'loading') return 'Working…';
 
   return state === 'in' ? `Remove this ${noun} from your wishlist` : `Add this ${noun} to your wishlist`;
-}
-
-function withMinDuration<T>(promise: Promise<T>, ms: number): Promise<T> {
-  const elapsed = new Promise<void>(resolve => setTimeout(resolve, ms));
-  const settled = promise.then(
-    result => () => result,
-    error => () => {
-      throw error;
-    }
-  );
-
-  return Promise.all([settled, elapsed]).then(([outcome]) => outcome());
 }
 
 export function setWishlistButtonState(button: HTMLElement, state: WishlistButtonState): void {
@@ -128,7 +116,7 @@ export function createWishlistButton(options: CreateWishlistButtonOptions): HTML
 
     setWishlistButtonState(button, 'loading');
 
-    withMinDuration(collection.toggleWishlisted(itemType, itemId, host), MIN_SPINNER_MS)
+    withMinDuration(collection.toggleWishlisted(itemType, itemId, host))
       .then(nowWishlisted => {
         setWishlistButtonState(button, nowWishlisted ? 'in' : 'out');
         button.dispatchEvent(new CustomEvent(CHANGE_EVENT, { bubbles: true }));

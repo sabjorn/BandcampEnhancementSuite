@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { eventually } from './utils';
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -48,7 +49,7 @@ describe('FindMusic Auto-login', () => {
 
     await import('../src/findmusic_autologin');
 
-    await vi.waitFor(() => {
+    await eventually(() => {
       const button = document.getElementById('bes-findmusic-login-button');
       expect(button).toBeTruthy();
     });
@@ -97,7 +98,7 @@ describe('FindMusic Auto-login', () => {
 
     await import('../src/findmusic_autologin');
 
-    await vi.waitFor(() => {
+    await eventually(() => {
       const button = document.getElementById('bes-findmusic-login-button');
       expect(button).toBeTruthy();
     });
@@ -105,13 +106,13 @@ describe('FindMusic Auto-login', () => {
     const button = document.getElementById('bes-findmusic-login-button');
     button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await vi.waitFor(() => {
+    await eventually(() => {
       expect(mockSendMessage).toHaveBeenCalledWith({
         contentScriptQuery: 'checkFindMusicPermissions'
       });
     });
 
-    await vi.waitFor(() => {
+    await eventually(() => {
       expect(window.location.href).toContain('login?bes_token=test-token');
     });
   });
@@ -178,7 +179,7 @@ describe('FindMusic Auto-login', () => {
 
     await import('../src/findmusic_autologin');
 
-    await vi.waitFor(() => {
+    await eventually(() => {
       expect(document.getElementById('bes-findmusic-login-button')).toBeTruthy();
     });
 

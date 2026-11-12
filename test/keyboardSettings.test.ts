@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes } from './utils';
 import { createKeyboardSettingsSection, createKeyBindingEditor } from '../src/components/keyboardSettings';
-import { DEFAULT_KEYBOARD_SETTINGS } from '../src/types/keyboard';
+import { DEFAULT_KEYBOARD_SETTINGS, ACTION_CATEGORIES, ACTION_DESCRIPTIONS } from '../src/types/keyboard';
 
 describe('Keyboard Settings Components', () => {
   beforeEach(() => {
@@ -68,6 +68,28 @@ describe('Keyboard Settings Components', () => {
       expect(categories.length).toBeGreaterThan(0);
     });
 
+    it('should render a row for every default control', () => {
+      const section = createKeyboardSettingsSection(DEFAULT_KEYBOARD_SETTINGS, vi.fn());
+
+      const described = [...section.querySelectorAll('.bes-keyboard-control-description')].map(row => row.textContent);
+      const expected = DEFAULT_KEYBOARD_SETTINGS.controls.map(control => ACTION_DESCRIPTIONS[control.action]);
+
+      expect(described).toEqual(expect.arrayContaining(expected));
+    });
+
+    it('should render a section for every category a control belongs to', () => {
+      const section = createKeyboardSettingsSection(DEFAULT_KEYBOARD_SETTINGS, vi.fn());
+
+      const headers = [
+        ...section.querySelectorAll('.bes-keyboard-category-section .bes-keyboard-category-header')
+      ].map(header => header.textContent);
+      const expected = [
+        ...new Set(DEFAULT_KEYBOARD_SETTINGS.controls.map(control => ACTION_CATEGORIES[control.action]))
+      ];
+
+      expect(headers).toEqual(expect.arrayContaining(expected));
+    });
+
     it('should create step size inputs', () => {
       const onUpdate = vi.fn();
       const section = createKeyboardSettingsSection(DEFAULT_KEYBOARD_SETTINGS, onUpdate);
@@ -105,6 +127,13 @@ describe('Keyboard Settings Components', () => {
 
       expect(editor).toBeDefined();
       expect(editor.className).toContain('bes-key-binding-editor-container');
+    });
+
+    it('should claim keypresses so recording does not trigger a shortcut', () => {
+      const editor = createKeyBindingEditor({ key: 'p' }, { onBindingChange: vi.fn() });
+
+      const display = editor.querySelector('.bes-key-binding-display') as HTMLElement;
+      expect(display.dataset.besCaptureKeys).toBe('true');
     });
 
     it('should display current binding', () => {

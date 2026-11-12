@@ -23,6 +23,7 @@ export function createKeyBindingEditor(currentBinding: KeyBinding, callbacks: Ke
   display.className = 'bes-key-binding-display';
   display.textContent = keyBindingToString(currentBinding);
   display.title = 'Click to change key binding';
+  display.dataset.besCaptureKeys = 'true';
 
   let isRecording = false;
   const abortController = new AbortController();
@@ -279,7 +280,7 @@ export function createKeyboardSettingsSection(
     controlsByCategory.get(category)!.push(control);
   });
 
-  const categoryOrder = [ActionCategory.PLAYBACK, ActionCategory.SEEKING, ActionCategory.VOLUME];
+  const categoryOrder = [ActionCategory.PLAYBACK, ActionCategory.ALBUM, ActionCategory.SEEKING, ActionCategory.VOLUME];
 
   categoryOrder.forEach(category => {
     const controls = controlsByCategory.get(category);

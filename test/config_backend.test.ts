@@ -274,6 +274,53 @@ describe('Config Backend', () => {
     });
   });
 
+  describe('setupDB keyboard settings', () => {
+    const makeDb = (config: Record<string, unknown>) => ({
+      get: vi.fn().mockResolvedValue(config),
+      put: vi.fn().mockResolvedValue(undefined)
+    });
+
+    const storedControls = (...actions: KeyboardAction[]) =>
+      DEFAULT_KEYBOARD_SETTINGS.controls
+        .filter(control => actions.includes(control.action))
+        .map(control => ({ ...control, binding: { ...control.binding } }));
+
+    it('should add controls the stored settings predate', async () => {
+      const mockDb = makeDb({
+        keyboardSettings: { ...DEFAULT_KEYBOARD_SETTINGS, controls: storedControls(KeyboardAction.PLAY_PAUSE) }
+      });
+
+      await setupDB(mockDb, new Logger());
+
+      const { keyboardSettings } = mockDb.put.mock.calls[0][1] as { keyboardSettings: KeyboardSettings };
+      expect(keyboardSettings.controls.map(control => control.action)).toEqual(
+        expect.arrayContaining([KeyboardAction.PREV_ALBUM, KeyboardAction.NEXT_ALBUM])
+      );
+    });
+
+    it('should keep the bindings a user has customized', async () => {
+      const controls = storedControls(KeyboardAction.PLAY_PAUSE);
+      controls[0].binding = { key: 'k' };
+      const mockDb = makeDb({ keyboardSettings: { ...DEFAULT_KEYBOARD_SETTINGS, controls } });
+
+      await setupDB(mockDb, new Logger());
+
+      const { keyboardSettings } = mockDb.put.mock.calls[0][1] as { keyboardSettings: KeyboardSettings };
+      expect(keyboardSettings.controls[0]).toMatchObject({
+        action: KeyboardAction.PLAY_PAUSE,
+        binding: { key: 'k' }
+      });
+    });
+
+    it('should store the defaults on a fresh install', async () => {
+      const mockDb = makeDb(undefined as any);
+
+      await setupDB(mockDb, new Logger());
+
+      expect(mockDb.put.mock.calls[0][1]).toMatchObject({ keyboardSettings: DEFAULT_KEYBOARD_SETTINGS });
+    });
+  });
+
   describe('setupDB dark theme registration', () => {
     const makeDb = (config: Record<string, unknown>) => ({
       get: vi.fn().mockResolvedValue(config),

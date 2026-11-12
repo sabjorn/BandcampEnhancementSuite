@@ -26,18 +26,31 @@ async function knownCrumbs(): Promise<Partial<Record<CrumbPath, string>>> {
   return crumbs;
 }
 
-async function rememberCrumb(path: CrumbPath, crumb: string): Promise<void> {
-  const known = await knownCrumbs();
-  if (known[path] === crumb) return;
-
-  known[path] = crumb;
-
+async function storeCrumbs(known: Partial<Record<CrumbPath, string>>): Promise<void> {
   try {
     const db = await getDB();
     await db.put(CRUMB_STORE, known, CRUMB_KEY);
   } catch (error) {
     log.error(`Could not store the wishlist crumb: ${error}`);
   }
+}
+
+async function rememberCrumb(path: CrumbPath, crumb: string): Promise<void> {
+  const known = await knownCrumbs();
+  if (known[path] === crumb) return;
+
+  known[path] = crumb;
+  await storeCrumbs(known);
+}
+
+// A crumb Bandcamp answers with InsistError rather than invalid_crumb comes back with no
+// replacement, so keeping it would fail every later write the same way.
+async function forgetCrumb(path: CrumbPath): Promise<void> {
+  const known = await knownCrumbs();
+  if (!(path in known)) return;
+
+  delete known[path];
+  await storeCrumbs(known);
 }
 
 export function resetWishlistCrumbs(): void {
@@ -113,10 +126,13 @@ async function writeItem(request: WriteRequest): Promise<void> {
   const path = CRUMB_PATHS[request.action];
   const crumb = (await knownCrumbs())[path] ?? request.crumb;
 
-  const accepted =
-    request.action === 'collect'
-      ? await collect(request.item, crumb, request.host)
-      : await uncollect(request.item, crumb);
+  const accepted = await (request.action === 'collect'
+    ? collect(request.item, crumb, request.host)
+    : uncollect(request.item, crumb)
+  ).catch(async error => {
+    await forgetCrumb(path);
+    throw error;
+  });
 
   if (accepted) await rememberCrumb(path, accepted);
 }

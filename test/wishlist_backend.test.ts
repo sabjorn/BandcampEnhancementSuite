@@ -241,6 +241,50 @@ describe('wishlist backend', () => {
       expect(vi.mocked(uncollectItem).mock.calls[0][1]).toBe('page_crumb');
     });
 
+    // The InsistError shape carries no replacement crumb, so a stored crumb that earns it would
+    // keep failing every later write until it is dropped.
+    it('should drop the stored crumb when the write fails', async () => {
+      mockDB.get.mockResolvedValue({ uncollect_item_cb: 'stored_crumb' });
+      vi.mocked(uncollectItem).mockRejectedValue(new Error('old or no crumb specified'));
+
+      write('uncollect');
+
+      await eventually(() =>
+        expect(mockDB.put).toHaveBeenCalledWith(
+          'config',
+          expect.not.objectContaining({ uncollect_item_cb: expect.anything() }),
+          'wishlistCrumbs'
+        )
+      );
+    });
+
+    it('should fall back to the page crumb on the write after a failure', async () => {
+      mockDB.get.mockResolvedValue({ uncollect_item_cb: 'stored_crumb' });
+      vi.mocked(uncollectItem).mockRejectedValueOnce(new Error('old or no crumb specified'));
+
+      write('uncollect');
+      await eventually(() => expect(uncollectItem).toHaveBeenCalledTimes(1));
+
+      write('uncollect');
+      await eventually(() => expect(uncollectItem).toHaveBeenCalledTimes(2));
+      expect(vi.mocked(uncollectItem).mock.calls[1][1]).toBe('page_crumb');
+    });
+
+    it('should keep the other path when one of them fails', async () => {
+      mockDB.get.mockResolvedValue({ collect_item_cb: 'add_crumb', uncollect_item_cb: 'stored_crumb' });
+      vi.mocked(uncollectItem).mockRejectedValue(new Error('old or no crumb specified'));
+
+      write('uncollect');
+
+      await eventually(() =>
+        expect(mockDB.put).toHaveBeenCalledWith(
+          'config',
+          expect.objectContaining({ collect_item_cb: 'add_crumb' }),
+          'wishlistCrumbs'
+        )
+      );
+    });
+
     it('should not store anything when the write used no crumb at all', async () => {
       vi.mocked(uncollectItem).mockResolvedValue(null);
 

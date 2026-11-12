@@ -31,13 +31,6 @@ export function boxClicked(event: Event, port: chrome.runtime.Port): void {
   port.postMessage({ toggle: id });
 }
 
-export function previewClicked(event: Event, port: chrome.runtime.Port): void {
-  const id = previewIdFrom(event);
-  if (!id) return;
-
-  setPreviewed(id, port);
-}
-
 const log = new Logger();
 
 let drawerController: ReturnType<typeof createPlayerDrawer> | null = null;

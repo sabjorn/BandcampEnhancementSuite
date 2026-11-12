@@ -5,6 +5,7 @@ import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicL
 import { extractBandId } from './utilities';
 import { createWishlistButton, WISHLIST_ICON_SIZES } from './components/wishlistButton';
 import { initCollectionState, Collection } from './collection';
+import { setPreviewed } from './previewHistory';
 
 export function setHistory(id: string, state: boolean): void {
   const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
@@ -19,9 +20,7 @@ export function setHistory(id: string, state: boolean): void {
   }
 }
 
-export function setPreviewed(id: string, port: chrome.runtime.Port): void {
-  port.postMessage({ setTrue: id });
-}
+export { setPreviewed };
 
 export function boxClicked(event: Event, port: chrome.runtime.Port): void {
   const id = (event.target as HTMLElement).parentElement?.getAttribute('id');

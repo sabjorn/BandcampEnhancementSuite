@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { getCollectionSummary, collectItem, uncollectItem } from '../src/bclient';
-import { processRequest, initWishlistBackend, WISHLIST_HEADER_RULE_ID } from '../src/background/wishlist_backend';
+import {
+  processRequest,
+  initWishlistBackend,
+  resetWishlistCrumbs,
+  WISHLIST_HEADER_RULE_ID
+} from '../src/background/wishlist_backend';
 import { eventually } from './utils';
 
 vi.mock('../src/logger', () => ({
@@ -19,6 +24,19 @@ vi.mock('../src/bclient', () => ({
   uncollectItem: vi.fn()
 }));
 
+const mockDB = {
+  get: vi.fn().mockResolvedValue(undefined),
+  put: vi.fn().mockResolvedValue(undefined)
+};
+
+vi.mock('../src/utilities', async () => {
+  const actual = await vi.importActual<typeof import('../src/utilities')>('../src/utilities');
+  return {
+    ...actual,
+    getDB: vi.fn(() => Promise.resolve(mockDB))
+  };
+});
+
 const summary = {
   fan_id: 896389,
   username: 'sabjorn',
@@ -34,8 +52,11 @@ describe('wishlist backend', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getCollectionSummary).mockResolvedValue(summary as any);
-    vi.mocked(uncollectItem).mockResolvedValue(true);
-    vi.mocked(collectItem).mockResolvedValue(true);
+    vi.mocked(uncollectItem).mockResolvedValue('page_crumb');
+    vi.mocked(collectItem).mockResolvedValue('page_crumb');
+    mockDB.get.mockResolvedValue(undefined);
+    mockDB.put.mockResolvedValue(undefined);
+    resetWishlistCrumbs();
     (globalThis as any).chrome = {
       runtime: { onMessage: { addListener: vi.fn() } },
       tabs: { TAB_ID_NONE: -1 },
@@ -141,6 +162,136 @@ describe('wishlist backend', () => {
       await eventually(() =>
         expect(sendResponse).toHaveBeenCalledWith({ ok: false, error: 'old or no crumb specified' })
       );
+    });
+  });
+
+  // A page carries a crumb for collect_item_cb but not for uncollect_item_cb, so a removal sends
+  // the wrong-path crumb, eats a 403 and recovers with the replacement Bandcamp hands back. Keeping
+  // that replacement spares every later write the same handshake.
+  describe('reusing the crumb Bandcamp accepted', () => {
+    const write = (action: string, crumb: string | null = 'page_crumb') =>
+      processRequest(
+        {
+          contentScriptQuery: 'writeWishlistItem',
+          action,
+          item: { fan_id: 896389, item_type: 't', item_id: 123456 },
+          host: 'https://band.bandcamp.com',
+          crumb
+        },
+        {} as any,
+        vi.fn()
+      );
+
+    it('should send the page crumb when nothing is stored yet', async () => {
+      write('uncollect');
+
+      await eventually(() => expect(uncollectItem).toHaveBeenCalled());
+      expect(vi.mocked(uncollectItem).mock.calls[0][1]).toBe('page_crumb');
+    });
+
+    it('should store the crumb the write came back with', async () => {
+      vi.mocked(uncollectItem).mockResolvedValue('fresh_crumb');
+
+      write('uncollect');
+
+      await eventually(() =>
+        expect(mockDB.put).toHaveBeenCalledWith(
+          'config',
+          expect.objectContaining({ uncollect_item_cb: 'fresh_crumb' }),
+          'wishlistCrumbs'
+        )
+      );
+    });
+
+    it('should prefer the stored crumb over the one the page gave', async () => {
+      mockDB.get.mockResolvedValue({ uncollect_item_cb: 'stored_crumb' });
+
+      write('uncollect');
+
+      await eventually(() => expect(uncollectItem).toHaveBeenCalled());
+      expect(vi.mocked(uncollectItem).mock.calls[0][1]).toBe('stored_crumb');
+    });
+
+    it('should keep the two paths apart, since a crumb is bound to one of them', async () => {
+      mockDB.get.mockResolvedValue({ collect_item_cb: 'add_crumb' });
+
+      write('uncollect');
+
+      await eventually(() => expect(uncollectItem).toHaveBeenCalled());
+      expect(vi.mocked(uncollectItem).mock.calls[0][1]).toBe('page_crumb');
+    });
+
+    it('should still write when the crumb store cannot be read', async () => {
+      mockDB.get.mockRejectedValue(new Error('no db'));
+      const sendResponse = vi.fn();
+
+      processRequest(
+        {
+          contentScriptQuery: 'writeWishlistItem',
+          action: 'uncollect',
+          item: { fan_id: 896389, item_type: 't', item_id: 123456 },
+          host: 'https://band.bandcamp.com',
+          crumb: 'page_crumb'
+        },
+        {} as any,
+        sendResponse
+      );
+
+      await eventually(() => expect(sendResponse).toHaveBeenCalledWith({ ok: true }));
+      expect(vi.mocked(uncollectItem).mock.calls[0][1]).toBe('page_crumb');
+    });
+
+    // The InsistError shape carries no replacement crumb, so a stored crumb that earns it would
+    // keep failing every later write until it is dropped.
+    it('should drop the stored crumb when the write fails', async () => {
+      mockDB.get.mockResolvedValue({ uncollect_item_cb: 'stored_crumb' });
+      vi.mocked(uncollectItem).mockRejectedValue(new Error('old or no crumb specified'));
+
+      write('uncollect');
+
+      await eventually(() =>
+        expect(mockDB.put).toHaveBeenCalledWith(
+          'config',
+          expect.not.objectContaining({ uncollect_item_cb: expect.anything() }),
+          'wishlistCrumbs'
+        )
+      );
+    });
+
+    it('should fall back to the page crumb on the write after a failure', async () => {
+      mockDB.get.mockResolvedValue({ uncollect_item_cb: 'stored_crumb' });
+      vi.mocked(uncollectItem).mockRejectedValueOnce(new Error('old or no crumb specified'));
+
+      write('uncollect');
+      await eventually(() => expect(uncollectItem).toHaveBeenCalledTimes(1));
+
+      write('uncollect');
+      await eventually(() => expect(uncollectItem).toHaveBeenCalledTimes(2));
+      expect(vi.mocked(uncollectItem).mock.calls[1][1]).toBe('page_crumb');
+    });
+
+    it('should keep the other path when one of them fails', async () => {
+      mockDB.get.mockResolvedValue({ collect_item_cb: 'add_crumb', uncollect_item_cb: 'stored_crumb' });
+      vi.mocked(uncollectItem).mockRejectedValue(new Error('old or no crumb specified'));
+
+      write('uncollect');
+
+      await eventually(() =>
+        expect(mockDB.put).toHaveBeenCalledWith(
+          'config',
+          expect.objectContaining({ collect_item_cb: 'add_crumb' }),
+          'wishlistCrumbs'
+        )
+      );
+    });
+
+    it('should not store anything when the write used no crumb at all', async () => {
+      vi.mocked(uncollectItem).mockResolvedValue(null);
+
+      write('uncollect', null);
+
+      await eventually(() => expect(uncollectItem).toHaveBeenCalled());
+      expect(mockDB.put).not.toHaveBeenCalled();
     });
   });
 
@@ -262,18 +413,18 @@ describe('wishlist backend', () => {
     // would otherwise send one request under the other's header.
     it('should not let a second write change the headers under the first', async () => {
       const order: string[] = [];
-      let releaseCollect: (value: boolean) => void = () => {};
+      let releaseCollect: (value: string) => void = () => {};
 
       vi.mocked(chrome.declarativeNetRequest.updateSessionRules).mockImplementation(async (options: any) => {
         order.push(options.addRules ? `rule:${options.addRules[0].action.requestHeaders[1].value}` : 'rule:off');
       });
       vi.mocked(collectItem).mockImplementation(async () => {
         order.push('collect');
-        return new Promise<boolean>(resolve => (releaseCollect = resolve));
+        return new Promise<string>(resolve => (releaseCollect = resolve));
       });
       vi.mocked(uncollectItem).mockImplementation(async () => {
         order.push('uncollect');
-        return true;
+        return 'page_crumb';
       });
 
       write('collect');
@@ -282,7 +433,7 @@ describe('wishlist backend', () => {
       await eventually(() => expect(order).toContain('collect'));
       expect(order).not.toContain('uncollect');
 
-      releaseCollect(true);
+      releaseCollect('page_crumb');
 
       await eventually(() => expect(order).toContain('uncollect'));
       expect(order).toEqual([

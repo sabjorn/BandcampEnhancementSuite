@@ -534,10 +534,18 @@ describe('bclient', () => {
       );
     });
 
-    it('should return true when the API returns ok: true', async () => {
+    // The accepted crumb is the return value so the backend can reuse it instead of paying the
+    // refresh handshake on every write.
+    it('should hand back the crumb the API accepted', async () => {
       fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
 
-      await expect(collectItem(item, 'valid_crumb')).resolves.toBe(true);
+      await expect(collectItem(item, 'valid_crumb')).resolves.toBe('valid_crumb');
+    });
+
+    it('should hand back null when it succeeded without a crumb', async () => {
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      await expect(collectItem(item)).resolves.toBeNull();
     });
 
     it('should name the status when the response is not json', async () => {
@@ -553,7 +561,7 @@ describe('bclient', () => {
         )
         .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
 
-      await expect(collectItem(item, 'stale_crumb')).resolves.toBe(true);
+      await expect(collectItem(item, 'stale_crumb')).resolves.toBe('fresh_crumb');
     });
 
     it('should throw with the reason Bandcamp gave when it rejects the change', async () => {
@@ -610,7 +618,7 @@ describe('bclient', () => {
           body: 'fan_id=896389&item_id=123456&item_type=t&crumb=fresh_crumb'
         })
       );
-      expect(result).toBe(true);
+      expect(result).toBe('fresh_crumb');
     });
 
     it('should retry when invalid_crumb arrives as a 403', async () => {
@@ -620,7 +628,7 @@ describe('bclient', () => {
         )
         .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
 
-      await expect(collectItem(item, 'stale_crumb')).resolves.toBe(true);
+      await expect(collectItem(item, 'stale_crumb')).resolves.toBe('fresh_crumb');
       expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
 
@@ -701,7 +709,7 @@ describe('bclient', () => {
         )
         .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
 
-      await expect(uncollectItem(item, 'stale_crumb')).resolves.toBe(true);
+      await expect(uncollectItem(item, 'stale_crumb')).resolves.toBe('fresh_crumb');
       expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
 

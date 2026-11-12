@@ -1,5 +1,6 @@
 import Logger from './logger';
 import { CollectionSummary, WishlistItem } from './bclient';
+import { WishlistAction, CrumbPath, CRUMB_PATHS } from './types/wishlist';
 import { isBandcampLoggedIn } from './utilities';
 
 const log = new Logger();
@@ -14,8 +15,6 @@ let owned: Set<string> | null = null;
 let bandIds: Map<string, number> | null = null;
 let loading: Promise<boolean> | null = null;
 const changing = new Set<string>();
-
-type CrumbPath = 'collect_item_cb' | 'uncollect_item_cb';
 
 function readCrumb(path: CrumbPath): string | null {
   const element = document.getElementById('js-crumbs-data');
@@ -100,13 +99,13 @@ export async function initCollectionState(): Promise<Collection> {
   return collection;
 }
 
-async function write(action: 'collect' | 'uncollect', item: WishlistItem, host: string): Promise<void> {
+async function write(action: WishlistAction, item: WishlistItem, host: string): Promise<void> {
   const written = await chrome.runtime.sendMessage({
     contentScriptQuery: 'writeWishlistItem',
     action,
     item,
     host,
-    crumb: writeCrumb(action === 'collect' ? 'collect_item_cb' : 'uncollect_item_cb')
+    crumb: writeCrumb(CRUMB_PATHS[action])
   });
 
   if (!written?.ok) throw new Error(written?.error ?? 'Bandcamp rejected the wishlist change');

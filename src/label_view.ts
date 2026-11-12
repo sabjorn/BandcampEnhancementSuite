@@ -20,8 +20,6 @@ export function setHistory(id: string, state: boolean): void {
   }
 }
 
-export { setPreviewed };
-
 function previewIdFrom(event: Event): string | undefined {
   return (event.target as HTMLElement).closest('.preview')?.id || undefined;
 }
@@ -97,8 +95,6 @@ export function fillFrame(
   previewState.previewId = target.id;
   previewState.previewOpen = true;
   player.openDrawer();
-
-  if (port) setPreviewed(target.id, port);
 
   currentPreview = target;
 

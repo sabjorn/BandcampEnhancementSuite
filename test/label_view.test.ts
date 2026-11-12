@@ -705,8 +705,7 @@ describe('toggling preview history by hand', () => {
     vi.clearAllMocks();
   });
 
-  // The history box sits inside .bes-preview-controls, so its parentElement carries no release id.
-  it('should toggle the release the clicked box belongs to', () => {
+  it('should toggle the release the clicked box belongs to, not its immediate parent', () => {
     const preview = generatePreview('123', 'album');
     document.body.appendChild(preview);
 

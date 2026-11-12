@@ -83,6 +83,10 @@ div.controls {
   float: left;
 }
 
+table#track_table {
+  clear: both;
+}
+
 div .prev,
 .next {
   display: inline-block;

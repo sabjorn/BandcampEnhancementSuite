@@ -108,17 +108,25 @@ describe('Player - wishlist stars on the album page track rows', () => {
       <table id="track_table">
         <tr class="track_row_view">
           <td class="info-col"></td>
-          <td class="download-col"></td>
+          <td class="download-col"><div class="dl_link"><a href="/track/x?action=download">buy track</a></div></td>
         </tr>
         <tr class="track_row_view">
           <td class="info-col"></td>
-          <td class="download-col"></td>
+          <td class="download-col"><div class="dl_link"><a href="/track/x?action=download">buy track</a></div></td>
         </tr>
       </table>
-      <ul class="tralbumCommands"><li class="buyItem digital"><h3 class="hd"></h3></li></ul>
+      <ul class="tralbumCommands">
+        <li class="buyItem digital"><h3 class="hd"></h3></li>
+        <li class="buyItem package"><h3 class="hd"></h3></li>
+      </ul>
     `);
 
   const stars = () => Array.from(document.querySelectorAll<HTMLElement>('.track_row_view .bes-wishlist-button'));
+
+  const markNativeOwned = () =>
+    document
+      .querySelector('ul.tralbumCommands li.buyItem.digital h3.hd')
+      ?.insertAdjacentHTML('afterbegin', '<span class="buyItemPackageTitle you-own-this">Digital Album</span>');
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -166,32 +174,73 @@ describe('Player - wishlist stars on the album page track rows', () => {
     expect(stars().map(star => star.dataset.wishlistState)).toEqual(['out', 'in']);
   });
 
-  it('should still show stars on a release the fan already owns', async () => {
+  it('should mark every track owned on a release the page reports as purchased', async () => {
     renderPage({ fan_tralbum_data: { is_purchased: true, part_of_purchased_album: false } });
 
     await initPlayer();
 
-    expect(stars().length).toBe(2);
+    expect(document.querySelectorAll('.track_row_view .bes-owned-indicator').length).toBe(2);
+    expect(stars().length).toBe(0);
   });
 
-  it('should not add one-click buy buttons to a release the fan already owns', async () => {
+  it('should mark every track owned when the page reports part of a purchased album', async () => {
+    renderPage({ fan_tralbum_data: { is_purchased: false, part_of_purchased_album: true } });
+
+    await initPlayer();
+
+    expect(document.querySelectorAll('.track_row_view .bes-owned-indicator').length).toBe(2);
+  });
+
+  it('should clear every buy affordance on a release the page reports as purchased', async () => {
     renderPage({ fan_tralbum_data: { is_purchased: true, part_of_purchased_album: false } });
+    markNativeOwned();
 
     await initPlayer();
 
     expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(0);
+    expect(document.querySelectorAll('.track_row_view .dl_link').length).toBe(0);
+    expect(document.querySelector('ul.tralbumCommands .one-click-button')).toBeNull();
   });
 
-  // tralbum_lookup carries the album entry, not one per track, so an owned album's tracks only
-  // look owned through the album.
-  it('should not offer a star on the tracks of an owned album', async () => {
+  it("should keep Bandcamp's own owned marker instead of removing the buy item it lives in", async () => {
+    renderPage({ fan_tralbum_data: { is_purchased: true, part_of_purchased_album: false } });
+    markNativeOwned();
+
+    await initPlayer();
+
+    expect(document.querySelector('ul.tralbumCommands li.buyItem.digital .you-own-this')).toBeTruthy();
+  });
+
+  // tralbum_lookup carries the album entry, not one per track, so an owned album's tracks are
+  // owned through the album rather than on their own.
+  it('should mark the tracks of an owned album owned rather than offering a star', async () => {
     collectionStub.isOwned.mockImplementation(type => type === 'a');
     renderPage();
 
     await initPlayer();
 
     expect(document.querySelectorAll('.track_row_view .bes-wishlist-button').length).toBe(0);
-    expect(document.querySelectorAll('.track_row_view .bes-owned-indicator').length).toBe(0);
+    expect(document.querySelectorAll('.track_row_view .bes-owned-indicator').length).toBe(2);
+  });
+
+  it("should strip Bandcamp's own buy track links from an owned album's rows", async () => {
+    collectionStub.isOwned.mockImplementation(type => type === 'a');
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelectorAll('.track_row_view .dl_link').length).toBe(0);
+    expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(0);
+  });
+
+  it("should strip Bandcamp's own buy track link from an owned track's row", async () => {
+    collectionStub.isOwned.mockImplementation((type, id) => type === 't' && id === 1001);
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelectorAll('.track_row_view .dl_link').length).toBe(0);
+    expect(document.querySelectorAll('.track_row_view .one-click-button').length).toBe(1);
   });
 
   it('should keep the rows aligned when only one track is owned', async () => {
@@ -222,6 +271,24 @@ describe('Player - wishlist stars on the album page track rows', () => {
     await initPlayer();
 
     expect(document.querySelector('ul.tralbumCommands .one-click-button')).toBeNull();
+  });
+
+  it("should remove Bandcamp's digital buy item for an owned album", async () => {
+    collectionStub.isOwned.mockImplementation(type => type === 'a');
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelector('ul.tralbumCommands li.buyItem.digital')).toBeNull();
+    expect(document.querySelector('ul.tralbumCommands li.buyItem.package')).toBeTruthy();
+  });
+
+  it("should keep Bandcamp's digital buy item for an album the fan does not own", async () => {
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelector('ul.tralbumCommands li.buyItem.digital')).toBeTruthy();
   });
 
   it('should leave the rows bare when the wishlist is unavailable', async () => {

@@ -156,7 +156,7 @@ function drawerIsOpen(): boolean {
 function registerDrawerShortcuts(): void {
   if (drawerShortcutsRegistered) return;
 
-  registerPlayerShortcuts(drawerCommands, drawerIsOpen);
+  registerPlayerShortcuts(drawerCommands, drawerIsOpen, '.bes-player-drawer');
   drawerShortcutsRegistered = true;
 }
 

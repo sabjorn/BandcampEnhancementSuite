@@ -20,6 +20,7 @@ interface KeyHandlers {
 interface Registration {
   commands: PlayerCommands;
   isActive: () => boolean;
+  controlsSelector?: string;
   handlers: KeyHandlers;
 }
 
@@ -65,21 +66,23 @@ function isBareModifier(event: KeyboardEvent): boolean {
 const KEY_CAPTURE_SELECTOR =
   'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [data-bes-capture-keys]';
 
-function isShortcutTarget(target: EventTarget | null): boolean {
+function ownsTarget(registration: Registration, target: EventTarget | null): boolean {
   if (target === document.body) return true;
-  if (!(target instanceof HTMLElement)) return false;
+  if (!registration.controlsSelector || !(target instanceof HTMLElement)) return false;
 
-  return Boolean(target.closest('.bes-player-drawer')) && !target.closest(KEY_CAPTURE_SELECTOR);
+  return Boolean(target.closest(registration.controlsSelector)) && !target.closest(KEY_CAPTURE_SELECTOR);
 }
 
-function activeRegistration(): Registration | undefined {
-  return [...registrations].reverse().find(registration => registration.isActive());
+function activeRegistration(target: EventTarget | null): Registration | undefined {
+  return [...registrations]
+    .reverse()
+    .find(registration => registration.isActive() && ownsTarget(registration, target));
 }
 
 export function handleShortcutKeydown(event: KeyboardEvent): void {
-  if (!isShortcutTarget(event.target) || isBareModifier(event)) return;
+  if (isBareModifier(event)) return;
 
-  const registration = activeRegistration();
+  const registration = activeRegistration(event.target);
   if (!registration) return;
 
   const combo = keyBindingToString({
@@ -98,10 +101,15 @@ export function handleShortcutKeydown(event: KeyboardEvent): void {
   event.preventDefault();
 }
 
-export function registerPlayerShortcuts(commands: PlayerCommands, isActive: () => boolean = () => true): void {
+export function registerPlayerShortcuts(
+  commands: PlayerCommands,
+  isActive: () => boolean = () => true,
+  controlsSelector?: string
+): void {
   registrations.push({
     commands,
     isActive,
+    controlsSelector,
     handlers: buildKeyHandlers(currentSettings, commands)
   });
 

@@ -178,6 +178,7 @@ describe('keyboardShortcuts', () => {
     });
 
     const pressInDrawer = (markup: string) => {
+      shortcuts.registerPlayerShortcuts(commands, () => true, '.bes-player-drawer');
       document.body.innerHTML = `<div class="bes-player-drawer open">${markup}</div>`;
 
       const event = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
@@ -305,6 +306,30 @@ describe('keyboardShortcuts', () => {
 
       expect(drawer.playPause).toHaveBeenCalledTimes(1);
       expect(commands.playPause).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not hand keys from one player’s controls to another player', () => {
+      const drawer: PlayerCommands = {
+        playPause: vi.fn(),
+        prevTrack: vi.fn(),
+        nextTrack: vi.fn(),
+        seekBy: vi.fn(),
+        adjustVolumeBy: vi.fn(),
+        prevAlbum: vi.fn(),
+        nextAlbum: vi.fn()
+      };
+
+      shortcuts.updateKeyboardSettings(DEFAULT_KEYBOARD_SETTINGS);
+      shortcuts.registerPlayerShortcuts(commands);
+      shortcuts.registerPlayerShortcuts(drawer, () => false, '.bes-player-drawer');
+
+      document.body.innerHTML = '<div class="bes-player-drawer"><button data-focused></button></div>';
+      const event = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
+      Object.defineProperty(event, 'target', { value: document.body.querySelector('[data-focused]') });
+      document.dispatchEvent(event);
+
+      expect(drawer.playPause).not.toHaveBeenCalled();
+      expect(commands.playPause).not.toHaveBeenCalled();
     });
   });
 });

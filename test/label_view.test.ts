@@ -34,6 +34,7 @@ import {
   fillFrame,
   renderDom,
   renderPreviews,
+  boxClicked,
   addGridWishlistStars,
   generatePreview,
   addedGridItems
@@ -696,6 +697,34 @@ describe('preview controls staying within the album art width', () => {
 
     expect(preview.querySelector('.bes-preview-controls .preview-frame')).toBeNull();
     expect(preview.querySelector('.preview-frame')?.id).toBe('album-123');
+  });
+});
+
+describe('toggling preview history by hand', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // The history box sits inside .bes-preview-controls, so its parentElement carries no release id.
+  it('should toggle the release the clicked box belongs to', () => {
+    const preview = generatePreview('123', 'album');
+    document.body.appendChild(preview);
+
+    const historybox = preview.querySelector('.historybox') as HTMLElement;
+    boxClicked({ target: historybox } as unknown as Event, mockPort as unknown as chrome.runtime.Port);
+
+    expect(mockPort.postMessage).toHaveBeenCalledWith({ toggle: '123' });
+    preview.remove();
+  });
+
+  it('should ignore a click outside any preview', () => {
+    const stray = document.createElement('button');
+    document.body.appendChild(stray);
+
+    boxClicked({ target: stray } as unknown as Event, mockPort as unknown as chrome.runtime.Port);
+
+    expect(mockPort.postMessage).not.toHaveBeenCalled();
+    stray.remove();
   });
 });
 

@@ -22,13 +22,21 @@ export function setHistory(id: string, state: boolean): void {
 
 export { setPreviewed };
 
+function previewIdFrom(event: Event): string | undefined {
+  return (event.target as HTMLElement).closest('.preview')?.id || undefined;
+}
+
 export function boxClicked(event: Event, port: chrome.runtime.Port): void {
-  const id = (event.target as HTMLElement).parentElement?.getAttribute('id');
+  const id = previewIdFrom(event);
+  if (!id) return;
+
   port.postMessage({ toggle: id });
 }
 
 export function previewClicked(event: Event, port: chrome.runtime.Port): void {
-  const id = (event.target as HTMLElement).parentElement?.getAttribute('id');
+  const id = previewIdFrom(event);
+  if (!id) return;
+
   setPreviewed(id, port);
 }
 

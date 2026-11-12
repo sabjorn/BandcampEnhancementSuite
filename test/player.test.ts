@@ -108,14 +108,17 @@ describe('Player - wishlist stars on the album page track rows', () => {
       <table id="track_table">
         <tr class="track_row_view">
           <td class="info-col"></td>
-          <td class="download-col"></td>
+          <td class="download-col"><a class="buyTrack">buy track</a></td>
         </tr>
         <tr class="track_row_view">
           <td class="info-col"></td>
-          <td class="download-col"></td>
+          <td class="download-col"><a class="buyTrack">buy track</a></td>
         </tr>
       </table>
-      <ul class="tralbumCommands"><li class="buyItem digital"><h3 class="hd"></h3></li></ul>
+      <ul class="tralbumCommands">
+        <li class="buyItem digital"><h3 class="hd"></h3></li>
+        <li class="buyItem package"><h3 class="hd"></h3></li>
+      </ul>
     `);
 
   const stars = () => Array.from(document.querySelectorAll<HTMLElement>('.track_row_view .bes-wishlist-button'));
@@ -196,21 +199,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
 
   it("should strip Bandcamp's own buy track links from an owned album's rows", async () => {
     collectionStub.isOwned.mockImplementation(type => type === 'a');
-    createDomNodes(`
-      <div id="pagedata" data-blob='{}'></div>
-      <div data-band-follow-info='{"tralbum_id":1609998585,"tralbum_type":"a"}'></div>
-      <div class="inline_player"></div>
-      <table id="track_table">
-        <tr class="track_row_view">
-          <td class="info-col"></td>
-          <td class="download-col"><a class="buyTrack">buy track</a></td>
-        </tr>
-        <tr class="track_row_view">
-          <td class="info-col"></td>
-          <td class="download-col"><a class="buyTrack">buy track</a></td>
-        </tr>
-      </table>
-    `);
+    renderPage();
 
     await initPlayer();
 
@@ -220,21 +209,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
 
   it("should strip Bandcamp's own buy track link from an owned track's row", async () => {
     collectionStub.isOwned.mockImplementation((type, id) => type === 't' && id === 1001);
-    createDomNodes(`
-      <div id="pagedata" data-blob='{}'></div>
-      <div data-band-follow-info='{"tralbum_id":1609998585,"tralbum_type":"a"}'></div>
-      <div class="inline_player"></div>
-      <table id="track_table">
-        <tr class="track_row_view">
-          <td class="info-col"></td>
-          <td class="download-col"><a class="buyTrack">buy track</a></td>
-        </tr>
-        <tr class="track_row_view">
-          <td class="info-col"></td>
-          <td class="download-col"><a class="buyTrack">buy track</a></td>
-        </tr>
-      </table>
-    `);
+    renderPage();
 
     await initPlayer();
 
@@ -279,6 +254,7 @@ describe('Player - wishlist stars on the album page track rows', () => {
     await initPlayer();
 
     expect(document.querySelector('ul.tralbumCommands li.buyItem.digital')).toBeNull();
+    expect(document.querySelector('ul.tralbumCommands li.buyItem.package')).toBeTruthy();
   });
 
   it("should keep Bandcamp's digital buy item for an album the fan does not own", async () => {

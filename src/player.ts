@@ -89,7 +89,7 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
     const { is_purchased, part_of_purchased_album } = extractFanTralbumData();
     if (is_purchased || part_of_purchased_album) return;
 
-    replaceNativeTrackCommands(tralbumDetails, log, collection);
+    replaceNativeTrackCommands(tralbumDetails, log, collection, albumOwned);
 
     const { price, currency, id: albumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
 
@@ -148,10 +148,9 @@ function addWishlistStars(tralbumDetails: TralbumDetailsResponse, log: Logger, c
 function replaceNativeTrackCommands(
   tralbumDetails: TralbumDetailsResponse,
   log: Logger,
-  collection: Collection
+  collection: Collection,
+  albumOwned: boolean
 ): void {
-  const albumOwned = collection.isOwned(tralbumDetails.type === 't' ? 't' : 'a', tralbumDetails.id);
-
   document.querySelectorAll('tr.track_row_view').forEach((row, i) => {
     if (tralbumDetails.tracks[i] === undefined) return;
 
@@ -162,11 +161,11 @@ function replaceNativeTrackCommands(
     if (infoCol) infoCol.remove();
 
     const downloadCol = row.querySelector('.download-col');
-    if (downloadCol) downloadCol.innerHTML = '';
+    if (!downloadCol) return;
 
-    if (!downloadCol || !is_purchasable) return;
+    downloadCol.innerHTML = '';
 
-    if (albumOwned || collection.isOwned('t', trackId)) return;
+    if (!is_purchasable || albumOwned || collection.isOwned('t', trackId)) return;
 
     const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
     if (!minimumPrice) return;

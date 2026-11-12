@@ -1,9 +1,49 @@
 import Logger from '../logger';
 import { getCollectionSummary, collectItem, uncollectItem, WishlistItem } from '../bclient';
+import { getDB } from '../utilities';
 
 const log = new Logger();
 
 const BASE_URL = 'https://bandcamp.com';
+
+const CRUMB_STORE = 'config';
+const CRUMB_KEY = 'wishlistCrumbs';
+
+type CrumbPath = 'collect_item_cb' | 'uncollect_item_cb';
+
+let crumbs: Partial<Record<CrumbPath, string>> | null = null;
+
+async function knownCrumbs(): Promise<Partial<Record<CrumbPath, string>>> {
+  if (crumbs) return crumbs;
+
+  try {
+    const db = await getDB();
+    crumbs = (await db.get(CRUMB_STORE, CRUMB_KEY)) ?? {};
+  } catch (error) {
+    log.error(`Could not read the stored wishlist crumbs: ${error}`);
+    crumbs = {};
+  }
+
+  return crumbs;
+}
+
+async function rememberCrumb(path: CrumbPath, crumb: string): Promise<void> {
+  const known = await knownCrumbs();
+  if (known[path] === crumb) return;
+
+  known[path] = crumb;
+
+  try {
+    const db = await getDB();
+    await db.put(CRUMB_STORE, known, CRUMB_KEY);
+  } catch (error) {
+    log.error(`Could not store the wishlist crumb: ${error}`);
+  }
+}
+
+export function resetWishlistCrumbs(): void {
+  crumbs = null;
+}
 
 export const WISHLIST_HEADER_RULE_ID = 1;
 
@@ -45,7 +85,7 @@ function oneAtATime<T>(task: () => Promise<T>): Promise<T> {
   return queued;
 }
 
-async function postAsHost(host: string, post: () => Promise<boolean>): Promise<boolean> {
+async function postAsHost<T>(host: string, post: () => Promise<T>): Promise<T> {
   await presentAsHost(host);
 
   try {
@@ -55,12 +95,24 @@ async function postAsHost(host: string, post: () => Promise<boolean>): Promise<b
   }
 }
 
-function collect(item: WishlistItem, crumb: string | null, host: string): Promise<boolean> {
+function collect(item: WishlistItem, crumb: string | null, host: string): Promise<string | null> {
   return postAsHost(host, () => collectItem(item, crumb, host));
 }
 
-function uncollect(item: WishlistItem, crumb: string | null): Promise<boolean> {
+function uncollect(item: WishlistItem, crumb: string | null): Promise<string | null> {
   return postAsHost(BASE_URL, () => uncollectItem(item, crumb, BASE_URL));
+}
+
+async function writeItem(request: any): Promise<void> {
+  const path: CrumbPath = request.action === 'collect' ? 'collect_item_cb' : 'uncollect_item_cb';
+  const crumb = (await knownCrumbs())[path] ?? request.crumb;
+
+  const accepted =
+    request.action === 'collect'
+      ? await collect(request.item, crumb, request.host)
+      : await uncollect(request.item, crumb);
+
+  if (accepted) await rememberCrumb(path, accepted);
 }
 
 export function processRequest(
@@ -79,9 +131,7 @@ export function processRequest(
   }
 
   if (request.contentScriptQuery === 'writeWishlistItem') {
-    const write = request.action === 'collect' ? collect : uncollect;
-
-    oneAtATime(() => write(request.item, request.crumb, request.host))
+    oneAtATime(() => writeItem(request))
       .then(() => sendResponse({ ok: true }))
       .catch(error => {
         log.error(`Failed to ${request.action} wishlist item: ${error}`);

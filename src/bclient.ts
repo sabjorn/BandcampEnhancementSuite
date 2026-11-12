@@ -328,7 +328,7 @@ async function postWishlistItem(
   crumb: string | null,
   baseUrl: string | null,
   includeRefToken: boolean
-): Promise<boolean> {
+): Promise<string | null> {
   const url = baseUrl ? `${baseUrl}/${path}` : `/${path}`;
 
   const makeRequest = (crumbValue: string | null) =>
@@ -354,24 +354,26 @@ async function postWishlistItem(
     return response.json();
   };
 
-  let data = await readResponse(await makeRequest(crumb));
+  let accepted = crumb;
+  let data = await readResponse(await makeRequest(accepted));
 
   if (data.error === 'invalid_crumb' && data.crumb) {
-    data = await readResponse(await makeRequest(data.crumb));
+    accepted = data.crumb;
+    data = await readResponse(await makeRequest(accepted));
   }
 
   if (data.ok !== true) {
     throw new Error(data.exception ?? data.error_message ?? 'Bandcamp rejected the wishlist change');
   }
 
-  return true;
+  return accepted;
 }
 
 export function collectItem(
   item: WishlistItem,
   crumb: string | null = null,
   baseUrl: string | null = null
-): Promise<boolean> {
+): Promise<string | null> {
   return postWishlistItem('collect_item_cb', item, crumb, baseUrl, true);
 }
 
@@ -379,7 +381,7 @@ export function uncollectItem(
   item: WishlistItem,
   crumb: string | null = null,
   baseUrl: string | null = null
-): Promise<boolean> {
+): Promise<string | null> {
   return postWishlistItem('uncollect_item_cb', item, crumb, baseUrl, false);
 }
 

@@ -1,3 +1,5 @@
+import { CrumbPath } from './types/wishlist';
+
 const API_RATE_LIMIT_DELAY_MS = 1000;
 
 type FetchFunction = (url: string, options?: RequestInit) => Promise<Response>;
@@ -323,7 +325,7 @@ function wishlistBody(item: WishlistItem, crumb: string | null, includeRefToken:
 }
 
 async function postWishlistItem(
-  path: 'collect_item_cb' | 'uncollect_item_cb',
+  path: CrumbPath,
   item: WishlistItem,
   crumb: string | null,
   baseUrl: string | null,

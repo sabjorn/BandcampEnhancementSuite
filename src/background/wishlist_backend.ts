@@ -1,5 +1,6 @@
 import Logger from '../logger';
 import { getCollectionSummary, collectItem, uncollectItem, WishlistItem } from '../bclient';
+import { WishlistAction, CrumbPath, CRUMB_PATHS } from '../types/wishlist';
 import { getDB } from '../utilities';
 
 const log = new Logger();
@@ -8,8 +9,6 @@ const BASE_URL = 'https://bandcamp.com';
 
 const CRUMB_STORE = 'config';
 const CRUMB_KEY = 'wishlistCrumbs';
-
-type CrumbPath = 'collect_item_cb' | 'uncollect_item_cb';
 
 let crumbs: Partial<Record<CrumbPath, string>> | null = null;
 
@@ -103,8 +102,15 @@ function uncollect(item: WishlistItem, crumb: string | null): Promise<string | n
   return postAsHost(BASE_URL, () => uncollectItem(item, crumb, BASE_URL));
 }
 
-async function writeItem(request: any): Promise<void> {
-  const path: CrumbPath = request.action === 'collect' ? 'collect_item_cb' : 'uncollect_item_cb';
+interface WriteRequest {
+  action: WishlistAction;
+  item: WishlistItem;
+  host: string;
+  crumb: string | null;
+}
+
+async function writeItem(request: WriteRequest): Promise<void> {
+  const path = CRUMB_PATHS[request.action];
   const crumb = (await knownCrumbs())[path] ?? request.crumb;
 
   const accepted =

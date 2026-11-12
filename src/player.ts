@@ -89,7 +89,7 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
     const { is_purchased, part_of_purchased_album } = extractFanTralbumData();
     if (is_purchased || part_of_purchased_album) return;
 
-    if (!albumOwned) addOneClickBuyButtons(tralbumDetails, log, collection);
+    replaceNativeTrackCommands(tralbumDetails, log, collection);
 
     const { price, currency, id: albumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
     if (!is_purchasable || collection.isOwned(type === 't' ? 't' : 'a', albumId)) return;
@@ -139,7 +139,13 @@ function addWishlistStars(tralbumDetails: TralbumDetailsResponse, log: Logger, c
   });
 }
 
-function addOneClickBuyButtons(tralbumDetails: TralbumDetailsResponse, log: Logger, collection: Collection): void {
+function replaceNativeTrackCommands(
+  tralbumDetails: TralbumDetailsResponse,
+  log: Logger,
+  collection: Collection
+): void {
+  const albumOwned = collection.isOwned(tralbumDetails.type === 't' ? 't' : 'a', tralbumDetails.id);
+
   document.querySelectorAll('tr.track_row_view').forEach((row, i) => {
     if (tralbumDetails.tracks[i] === undefined) return;
 
@@ -149,7 +155,12 @@ function addOneClickBuyButtons(tralbumDetails: TralbumDetailsResponse, log: Logg
     const infoCol = row.querySelector('.info-col');
     if (infoCol) infoCol.remove();
 
-    if (!is_purchasable || collection.isOwned('t', trackId)) return;
+    const downloadCol = row.querySelector('.download-col');
+    if (downloadCol) downloadCol.innerHTML = '';
+
+    if (!downloadCol || !is_purchasable) return;
+
+    if (albumOwned || collection.isOwned('t', trackId)) return;
 
     const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
     if (!minimumPrice) return;
@@ -163,8 +174,6 @@ function addOneClickBuyButtons(tralbumDetails: TralbumDetailsResponse, log: Logg
       log
     });
 
-    const downloadCol = row.querySelector('.download-col');
-    downloadCol.innerHTML = '';
     downloadCol.append(oneClick);
   });
 }

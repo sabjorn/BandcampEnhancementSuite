@@ -43,8 +43,6 @@ async function rememberCrumb(path: CrumbPath, crumb: string): Promise<void> {
   await storeCrumbs(known);
 }
 
-// A crumb Bandcamp answers with InsistError rather than invalid_crumb comes back with no
-// replacement, so keeping it would fail every later write the same way.
 async function forgetCrumb(path: CrumbPath): Promise<void> {
   const known = await knownCrumbs();
   if (!(path in known)) return;

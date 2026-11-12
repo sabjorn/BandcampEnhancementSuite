@@ -29,6 +29,14 @@ vi.mock('../src/logger', () => ({
   }))
 }));
 
+vi.mock('../src/previewHistory', () => ({
+  markPreviewed: vi.fn(async () => {}),
+  togglePreview: vi.fn(async () => true),
+  queryPreviews: vi.fn(async () => ({}))
+}));
+
+import { markPreviewed, togglePreview, queryPreviews } from '../src/previewHistory';
+
 import {
   initLabelView,
   fillFrame,
@@ -703,27 +711,74 @@ describe('preview controls staying within the album art width', () => {
 describe('toggling preview history by hand', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(togglePreview).mockResolvedValue(true);
   });
 
-  it('should toggle the release the clicked box belongs to, not its immediate parent', () => {
+  it('should toggle the release the clicked box belongs to, not its immediate parent', async () => {
     const preview = generatePreview('123', 'album');
     document.body.appendChild(preview);
 
-    const historybox = preview.querySelector('.historybox') as HTMLElement;
-    boxClicked({ target: historybox } as unknown as Event, mockPort as unknown as chrome.runtime.Port);
+    await boxClicked({ target: preview.querySelector('.historybox') } as unknown as Event);
 
-    expect(mockPort.postMessage).toHaveBeenCalledWith({ toggle: '123' });
+    expect(vi.mocked(togglePreview)).toHaveBeenCalledWith('123');
     preview.remove();
   });
 
-  it('should ignore a click outside any preview', () => {
+  it('should show the state the toggle settled on', async () => {
+    const preview = generatePreview('123', 'album');
+    document.body.appendChild(preview);
+    vi.mocked(togglePreview).mockResolvedValue(true);
+
+    await boxClicked({ target: preview.querySelector('.historybox') } as unknown as Event);
+
+    expect(preview.querySelector('.historybox')?.classList.contains('following')).toBe(true);
+    preview.remove();
+  });
+
+  it('should ignore a click outside any preview', async () => {
     const stray = document.createElement('button');
     document.body.appendChild(stray);
 
-    boxClicked({ target: stray } as unknown as Event, mockPort as unknown as chrome.runtime.Port);
+    await boxClicked({ target: stray } as unknown as Event);
 
-    expect(mockPort.postMessage).not.toHaveBeenCalled();
+    expect(vi.mocked(togglePreview)).not.toHaveBeenCalled();
     stray.remove();
+  });
+});
+
+describe('hydrating the history boxes on a label page', () => {
+  const previewState = () => ({ previewOpen: false, previewId: undefined as string | undefined });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(queryPreviews).mockResolvedValue({});
+    createDomNodes(`
+      <ol class="music-grid">
+        <li class="music-grid-item" data-item-id="album-111"></li>
+        <li class="music-grid-item" data-item-id="album-222"></li>
+      </ol>
+    `);
+  });
+
+  afterEach(() => {
+    cleanupTestNodes();
+  });
+
+  it('should ask for every release in the grid in a single request', async () => {
+    await renderPreviews(mockPort as unknown as chrome.runtime.Port, previewState());
+
+    expect(vi.mocked(queryPreviews)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(queryPreviews)).toHaveBeenCalledWith(['111', '222']);
+  });
+
+  it('should mark the boxes the backend reports as previewed', async () => {
+    vi.mocked(queryPreviews).mockResolvedValue({ '111': true, '222': false });
+
+    await renderPreviews(mockPort as unknown as chrome.runtime.Port, previewState());
+
+    const box = (id: string) => document.querySelector(`[data-item-id="album-${id}"] .historybox`);
+    expect(box('111')?.classList.contains('following')).toBe(true);
+    expect(box('222')?.classList.contains('following')).toBe(false);
   });
 });
 
@@ -741,6 +796,7 @@ describe('previews for grid items the page adds later', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(queryPreviews).mockResolvedValue({});
     createDomNodes(`
       <ol class="music-grid">
         <li class="music-grid-item" data-item-id="album-111"></li>
@@ -752,29 +808,46 @@ describe('previews for grid items the page adds later', () => {
     cleanupTestNodes();
   });
 
-  it('should render controls for an item appended after the first pass', () => {
+  it('should render controls for an item appended after the first pass', async () => {
     const state = previewState();
-    renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+    await renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
 
     const item = appendGridItem('album-222');
-    renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+    await renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
 
     expect(item.querySelector('.open-iframe')).toBeTruthy();
     expect(item.querySelector('.historybox')).toBeTruthy();
-    expect(mockPort.postMessage).toHaveBeenCalledWith({ query: '222' });
+    expect(vi.mocked(queryPreviews)).toHaveBeenLastCalledWith(['222']);
   });
 
-  it('should leave the items it already rendered alone', () => {
+  it('should leave the items it already rendered alone', async () => {
     const state = previewState();
-    renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+    await renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
 
     appendGridItem('album-222');
-    mockPort.postMessage.mockClear();
-    renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+    vi.mocked(queryPreviews).mockClear();
+    await renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
 
     const first = document.querySelector('[data-item-id="album-111"]') as HTMLElement;
     expect(first.querySelectorAll('.preview').length).toBe(1);
-    expect(mockPort.postMessage).not.toHaveBeenCalledWith({ query: '111' });
+    expect(vi.mocked(queryPreviews)).not.toHaveBeenCalledWith(expect.arrayContaining(['111']));
+  });
+});
+
+describe('marking the release an album page was opened for', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    createDomNodes(`<div id="pagedata" data-blob='{"lo_querystr": "item_id=789"}'></div>`);
+  });
+
+  afterEach(() => {
+    cleanupTestNodes();
+  });
+
+  it('should mark the item id the page was loaded with', async () => {
+    await renderDom(mockPort as unknown as chrome.runtime.Port, { previewOpen: false, previewId: undefined });
+
+    expect(vi.mocked(markPreviewed)).toHaveBeenCalledWith('789');
   });
 });
 

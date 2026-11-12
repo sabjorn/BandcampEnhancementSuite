@@ -92,7 +92,13 @@ export async function initPlayer(enableFetchCaching: boolean = false): Promise<v
     replaceNativeTrackCommands(tralbumDetails, log, collection);
 
     const { price, currency, id: albumId, title: itemTitle, is_purchasable, type } = tralbumDetails;
-    if (!is_purchasable || collection.isOwned(type === 't' ? 't' : 'a', albumId)) return;
+
+    if (albumOwned) {
+      document.querySelector('ul.tralbumCommands li.buyItem.digital')?.remove();
+      return;
+    }
+
+    if (!is_purchasable) return;
 
     const minimumPrice = price > 0.0 ? price : CURRENCY_MINIMUMS[currency];
     if (!minimumPrice) return;

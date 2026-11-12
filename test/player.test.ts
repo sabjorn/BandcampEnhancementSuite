@@ -272,6 +272,23 @@ describe('Player - wishlist stars on the album page track rows', () => {
     expect(document.querySelector('ul.tralbumCommands .one-click-button')).toBeNull();
   });
 
+  it("should remove Bandcamp's digital buy item for an owned album", async () => {
+    collectionStub.isOwned.mockImplementation(type => type === 'a');
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelector('ul.tralbumCommands li.buyItem.digital')).toBeNull();
+  });
+
+  it("should keep Bandcamp's digital buy item for an album the fan does not own", async () => {
+    renderPage();
+
+    await initPlayer();
+
+    expect(document.querySelector('ul.tralbumCommands li.buyItem.digital')).toBeTruthy();
+  });
+
   it('should leave the rows bare when the wishlist is unavailable', async () => {
     collectionStub.isAvailable.mockReturnValue(false);
     renderPage();

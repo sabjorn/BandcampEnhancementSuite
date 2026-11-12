@@ -66,51 +66,63 @@ const defaultConfig: Config = {
   keyboardSettings: DEFAULT_KEYBOARD_SETTINGS
 };
 
-export function connectionListenerCallback(
-  port: chrome.runtime.Port,
-  log: Logger,
-  portState: { port?: chrome.runtime.Port }
-): void {
-  log.info('connection listener callback');
+const TOGGLES = {
+  displayWaveform: toggleWaveformDisplay,
+  enableMetadataCaching: toggleMetadataCaching,
+  enableFetchCaching: toggleFetchCaching,
+  enablePlayedCaching: togglePlayedCaching,
+  themeName: toggleTheme
+} as const;
 
-  if (port.name !== 'bes') {
-    log.error(`Unexpected chrome.runtime.onConnect port name: ${port.name}`);
-    return;
+export type ToggleName = keyof typeof TOGGLES;
+
+export type ConfigResponse = Config | { keyboardSettingsError: string[] };
+
+function handlerFor(request: any, log: Logger): ((db: any) => Promise<ConfigResponse>) | null {
+  switch (request.contentScriptQuery) {
+    case 'requestConfig':
+      return db => readConfig(db);
+    case 'updateConfig':
+      return db => synchronizeConfig(db, request.config, log);
+    case 'toggleSetting': {
+      const toggle = TOGGLES[request.setting as ToggleName];
+      if (!toggle) return () => Promise.reject(new Error(`Unknown setting ${request.setting}`));
+
+      return db => toggle(db, log);
+    }
+    case 'updateKeyboardSettings':
+      return db => updateKeyboardSettings(db, request.settings, log);
+    case 'resetKeyboardSettings':
+      return db => resetKeyboardSettings(db, log);
+    case 'enableFindMusicCaching':
+      return db => enableFindMusicCaching(db, log);
+    default:
+      return null;
   }
-
-  portState.port = port;
-  portState.port.onMessage.addListener((msg: any) => portListenerCallback(msg, log, portState));
 }
 
-export async function portListenerCallback(
-  msg: any,
-  log: Logger,
-  portState: { port?: chrome.runtime.Port }
-): Promise<void> {
-  log.info('port listener callback');
+export function processRequest(
+  request: any,
+  _sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: any) => void
+): boolean {
+  const log = new Logger();
+  const handler = handlerFor(request, log);
+  if (!handler) return false;
 
-  const db = await getDB();
-  await ensureSeeded(db);
+  (async () => {
+    const db = await getDB();
+    await ensureSeeded(db);
 
-  if (msg.config) await synchronizeConfig(db, msg.config, log, portState.port);
+    return await handler(db);
+  })()
+    .then(sendResponse)
+    .catch((error: Error) => {
+      log.error(`${request.contentScriptQuery} failed: ${error.message}`);
+      sendResponse({ error: error.message });
+    });
 
-  if (msg.toggleWaveformDisplay) await toggleWaveformDisplay(db, log, portState.port);
-
-  if (msg.updateKeyboardSettings) await updateKeyboardSettings(db, msg.updateKeyboardSettings, log, portState.port);
-
-  if (msg.resetKeyboardSettings) await resetKeyboardSettings(db, log, portState.port);
-
-  if (msg.toggleMetadataCaching) await toggleMetadataCaching(db, log, portState.port);
-
-  if (msg.toggleFetchCaching) await toggleFetchCaching(db, log, portState.port);
-
-  if (msg.togglePlayedCaching) await togglePlayedCaching(db, log, portState.port);
-
-  if (msg.toggleTheme) await toggleTheme(db, log, portState.port);
-
-  if (msg.enableFindMusicCaching) await enableFindMusicCaching(db, log, portState.port);
-
-  if (msg.requestConfig) await broadcastConfig(db, log, portState.port);
+  return true;
 }
 
 let seedingPromise: Promise<void> | null = null;
@@ -130,33 +142,26 @@ export async function getConfig(): Promise<Config> {
 
 export async function initConfigBackend(): Promise<void> {
   const log = new Logger();
-  const portState: { port?: chrome.runtime.Port } = {};
 
   log.info('initializing ConfigBackend');
 
-  chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) =>
-    connectionListenerCallback(port, log, portState)
-  );
+  chrome.runtime.onMessage.addListener(processRequest);
 
   await getConfig();
   log.info('Config database initialized');
 }
 
-export async function synchronizeConfig(
-  db: any,
-  config: Partial<Config>,
-  log: Logger,
-  port?: chrome.runtime.Port
-): Promise<void> {
+export async function synchronizeConfig(db: any, config: Partial<Config>, log: Logger): Promise<Config> {
   const db_config = await db.get('config', 'config');
   const merged_config = mergeData(db_config, config);
 
   await db.put('config', merged_config, 'config');
   await syncDarkThemeRegistration(merged_config.themeName, log);
-  port?.postMessage({ config: merged_config });
+
+  return merged_config;
 }
 
-export async function toggleWaveformDisplay(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+export async function toggleWaveformDisplay(db: any, log: Logger): Promise<Config> {
   log.info('toggling waveform display');
 
   const db_config = await db.get('config', 'config');
@@ -168,10 +173,11 @@ export async function toggleWaveformDisplay(db: any, log: Logger, port?: chrome.
   }
 
   await db.put('config', db_config, 'config');
-  port?.postMessage({ config: db_config });
+
+  return db_config;
 }
 
-export async function toggleMetadataCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+export async function toggleMetadataCaching(db: any, log: Logger): Promise<Config> {
   log.info('toggling metadata caching');
 
   const db_config = await db.get('config', 'config');
@@ -183,28 +189,31 @@ export async function toggleMetadataCaching(db: any, log: Logger, port?: chrome.
   }
 
   await db.put('config', db_config, 'config');
-  port?.postMessage({ config: db_config });
+
+  return db_config;
 }
 
-export async function toggleFetchCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+export async function toggleFetchCaching(db: any, log: Logger): Promise<Config> {
   log.info('toggling fetch caching');
 
   const db_config = await db.get('config', 'config');
   db_config['enableFetchCaching'] = !db_config['enableFetchCaching'];
   await db.put('config', db_config, 'config');
-  port?.postMessage({ config: db_config });
+
+  return db_config;
 }
 
-export async function togglePlayedCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+export async function togglePlayedCaching(db: any, log: Logger): Promise<Config> {
   log.info('toggling played caching');
 
   const db_config = await db.get('config', 'config');
   db_config['enablePlayedCaching'] = !db_config['enablePlayedCaching'];
   await db.put('config', db_config, 'config');
-  port?.postMessage({ config: db_config });
+
+  return db_config;
 }
 
-export async function toggleTheme(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+export async function toggleTheme(db: any, log: Logger): Promise<Config> {
   log.info('toggling theme');
 
   const db_config = await db.get('config', 'config');
@@ -213,10 +222,11 @@ export async function toggleTheme(db: any, log: Logger, port?: chrome.runtime.Po
 
   await db.put('config', db_config, 'config');
   await syncDarkThemeRegistration(newThemeName, log);
-  port?.postMessage({ config: db_config });
+
+  return db_config;
 }
 
-export async function enableFindMusicCaching(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+export async function enableFindMusicCaching(db: any, log: Logger): Promise<Config> {
   log.info('enabling FindMusic.club caching after permission grant');
 
   const db_config = await db.get('config', 'config');
@@ -224,14 +234,12 @@ export async function enableFindMusicCaching(db: any, log: Logger, port?: chrome
   db_config['enableFetchCaching'] = true;
   db_config['enablePlayedCaching'] = true;
   await db.put('config', db_config, 'config');
-  port?.postMessage({ config: db_config });
+
+  return db_config;
 }
 
-export async function broadcastConfig(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
-  log.info('broadcasting config data');
-
-  const config = await db.get('config', 'config');
-  port?.postMessage({ config: config });
+export async function readConfig(db: any): Promise<Config> {
+  return await db.get('config', 'config');
 }
 
 export async function setupDB(db: any, log: Logger): Promise<void> {
@@ -250,29 +258,30 @@ export function mergeData(reference_config: Config, new_config: Partial<Config>)
 export async function updateKeyboardSettings(
   db: any,
   settings: KeyboardSettings,
-  log: Logger,
-  port?: chrome.runtime.Port
-): Promise<void> {
+  log: Logger
+): Promise<ConfigResponse> {
   log.info('updating keyboard settings');
 
   const errors = validateKeyboardSettings(settings);
   if (errors.length > 0) {
     log.error(`Invalid keyboard settings: ${errors.join(', ')}`);
-    port?.postMessage({ keyboardSettingsError: errors });
-    return;
+
+    return { keyboardSettingsError: errors };
   }
 
   const db_config = await db.get('config', 'config');
   db_config['keyboardSettings'] = settings;
   await db.put('config', db_config, 'config');
-  port?.postMessage({ config: db_config });
+
+  return db_config;
 }
 
-export async function resetKeyboardSettings(db: any, log: Logger, port?: chrome.runtime.Port): Promise<void> {
+export async function resetKeyboardSettings(db: any, log: Logger): Promise<Config> {
   log.info('resetting keyboard settings to defaults');
 
   const db_config = await db.get('config', 'config');
   db_config['keyboardSettings'] = DEFAULT_KEYBOARD_SETTINGS;
   await db.put('config', db_config, 'config');
-  port?.postMessage({ config: db_config });
+
+  return db_config;
 }

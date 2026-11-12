@@ -1,4 +1,5 @@
 import Logger from '../logger';
+import { requestConfig } from '../config';
 
 import { createButton } from '../components/buttons';
 import { downloadFile, dateString, loadTextFile, createFetchFunction } from '../utilities';
@@ -156,13 +157,13 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     log.info('Cart import complete, cleared processing flag');
   };
 
-  port.postMessage({ requestConfig: {} });
+  requestConfig()
+    .then(config => {
+      enableFetchCaching = config.enableFetchCaching ?? false;
+    })
+    .catch(error => log.error(`Failed to read the cart config: ${error}`));
 
   port.onMessage.addListener(async (msg: any) => {
-    if (msg.config) {
-      enableFetchCaching = msg.config.enableFetchCaching ?? false;
-    }
-
     if (msg.cartImportState) {
       const state = msg.cartImportState;
 

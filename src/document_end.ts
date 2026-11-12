@@ -11,6 +11,16 @@ import { createKeyboardSettingsSection } from './components/keyboardSettings';
 import { attachTooltip } from './components/tooltip';
 import { KeyboardSettings } from './types/keyboard';
 import { isBandcampLoggedIn } from './utilities';
+import {
+  requestConfig,
+  toggleSetting,
+  saveKeyboardSettings,
+  resetKeyboardSettings,
+  isKeyboardSettingsError,
+  Config,
+  ConfigResponse,
+  ToggleName
+} from './config';
 import { setTheme, startThemeEnforcement } from './theme';
 import { DARK_THEME, LIGHT_THEME } from './types/theme';
 
@@ -150,7 +160,7 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
 
     keyboardSection = createKeyboardSettingsSection(settings, updatedSettings => {
       log.info('Keyboard settings updated');
-      config_port.postMessage({ updateKeyboardSettings: updatedSettings });
+      void saveKeyboardSettings(updatedSettings).then(applyConfig).catch(reportConfigFailure);
     });
 
     if (!settingsSection.parentNode) {
@@ -167,65 +177,50 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
     settingsSection.parentNode.appendChild(keyboardSection);
   };
 
+  const applyConfig = (response: ConfigResponse): void => {
+    if (isKeyboardSettingsError(response)) {
+      const message = `Keyboard settings error: ${response.keyboardSettingsError.join(', ')}`;
+      log.error(message);
+      alert(message);
+      return;
+    }
+
+    if (typeof response.displayWaveform === 'boolean') waveformToggle.checked = response.displayWaveform;
+    if (typeof response.enableMetadataCaching === 'boolean')
+      metadataCachingToggle.checked = response.enableMetadataCaching;
+    if (typeof response.enableFetchCaching === 'boolean') fetchCachingToggle.checked = response.enableFetchCaching;
+    if (typeof response.enablePlayedCaching === 'boolean') playedCachingToggle.checked = response.enablePlayedCaching;
+
+    if (typeof response.themeName === 'string') {
+      darkModeToggle.checked = response.themeName === DARK_THEME.name;
+      setTheme(response.themeName);
+    }
+
+    if (response.keyboardSettings) initKeyboardSection(response.keyboardSettings);
+  };
+
+  const reportConfigFailure = (error: unknown): void => log.error(`Config request failed: ${error}`);
+
+  const applyToggle = (setting: ToggleName): void => {
+    void toggleSetting(setting).then(applyConfig).catch(reportConfigFailure);
+  };
+
   document.addEventListener('bes-reset-keyboard-settings', () => {
     log.info('Resetting keyboard settings');
-    config_port.postMessage({ resetKeyboardSettings: true });
-  });
-
-  config_port.onMessage.addListener((msg: any) => {
-    if (msg.config && typeof msg.config.displayWaveform === 'boolean') {
-      waveformToggle.checked = msg.config.displayWaveform;
-    }
-
-    if (msg.config && typeof msg.config.enableMetadataCaching === 'boolean') {
-      metadataCachingToggle.checked = msg.config.enableMetadataCaching;
-    }
-
-    if (msg.config && typeof msg.config.enableFetchCaching === 'boolean') {
-      fetchCachingToggle.checked = msg.config.enableFetchCaching;
-    }
-
-    if (msg.config && typeof msg.config.enablePlayedCaching === 'boolean') {
-      playedCachingToggle.checked = msg.config.enablePlayedCaching;
-    }
-
-    if (msg.config && typeof msg.config.themeName === 'string') {
-      darkModeToggle.checked = msg.config.themeName === DARK_THEME.name;
-      setTheme(msg.config.themeName);
-    }
-
-    if (msg.config && msg.config.keyboardSettings) {
-      initKeyboardSection(msg.config.keyboardSettings);
-    }
-
-    if (msg.keyboardSettingsError) {
-      log.error(`Keyboard settings error: ${msg.keyboardSettingsError.join(', ')}`);
-      alert(`Keyboard settings error: ${msg.keyboardSettingsError.join(', ')}`);
-    }
+    void resetKeyboardSettings().then(applyConfig).catch(reportConfigFailure);
   });
 
   darkModeToggle.addEventListener('change', () => {
     setTheme(darkModeToggle.checked ? DARK_THEME.name : LIGHT_THEME.name);
-    config_port.postMessage({ toggleTheme: {} });
+    applyToggle('themeName');
   });
 
-  waveformToggle.addEventListener('change', () => {
-    config_port.postMessage({ toggleWaveformDisplay: {} });
-  });
+  waveformToggle.addEventListener('change', () => applyToggle('displayWaveform'));
+  metadataCachingToggle.addEventListener('change', () => applyToggle('enableMetadataCaching'));
+  fetchCachingToggle.addEventListener('change', () => applyToggle('enableFetchCaching'));
+  playedCachingToggle.addEventListener('change', () => applyToggle('enablePlayedCaching'));
 
-  metadataCachingToggle.addEventListener('change', () => {
-    config_port.postMessage({ toggleMetadataCaching: {} });
-  });
-
-  fetchCachingToggle.addEventListener('change', () => {
-    config_port.postMessage({ toggleFetchCaching: {} });
-  });
-
-  playedCachingToggle.addEventListener('change', () => {
-    config_port.postMessage({ togglePlayedCaching: {} });
-  });
-
-  config_port.postMessage({ requestConfig: {} });
+  void requestConfig().then(applyConfig).catch(reportConfigFailure);
 
   const findMusicSection = document.createElement('div');
   findMusicSection.className = 'bes-drawer-section';
@@ -355,42 +350,6 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   log.info('BES drawer and button added to page');
 };
 
-interface ConfigPayload {
-  keyboardSettings?: KeyboardSettings;
-  enableFetchCaching?: boolean;
-  themeName?: string;
-}
-
-interface ResolvedConfig {
-  keyboardSettings?: KeyboardSettings;
-  enableFetchCaching: boolean;
-  themeName?: string;
-}
-
-const requestConfig = (port: chrome.runtime.Port): Promise<ResolvedConfig> =>
-  new Promise(resolve => {
-    const finish = (config: ResolvedConfig) => {
-      clearTimeout(timeout);
-      port.onMessage.removeListener(listener);
-      resolve(config);
-    };
-
-    const listener = (msg: { config?: ConfigPayload }) => {
-      if (!msg.config?.keyboardSettings) return;
-
-      finish({
-        keyboardSettings: msg.config.keyboardSettings,
-        enableFetchCaching: msg.config.enableFetchCaching ?? false,
-        themeName: msg.config.themeName
-      });
-    };
-
-    port.onMessage.addListener(listener);
-    port.postMessage({ requestConfig: {} });
-
-    const timeout = setTimeout(() => finish({ enableFetchCaching: false }), 1000);
-  });
-
 const documentEnd = async (): Promise<void> => {
   const checkIsDownloadPage: Element | null = document.querySelector('.download-item-container');
   if (checkIsDownloadPage) {
@@ -406,7 +365,10 @@ const documentEnd = async (): Promise<void> => {
     }
   })();
 
-  const configReady = requestConfig(config_port);
+  const configReady: Promise<Partial<Config>> = requestConfig().catch(error => {
+    log.error(`Failed to read the config: ${error}`);
+    return {};
+  });
 
   const themeReady = (async () => {
     const { themeName } = await configReady;
@@ -421,14 +383,7 @@ const documentEnd = async (): Promise<void> => {
 
     if (keyboardSettings) updateKeyboardSettings(keyboardSettings);
 
-    initLabelView(config_port, enableFetchCaching);
-
-    config_port.onMessage.addListener((msg: { config?: ConfigPayload }) => {
-      if (msg.config?.keyboardSettings) {
-        log.info('Keyboard settings changed, updating handlers');
-        updateKeyboardSettings(msg.config.keyboardSettings);
-      }
-    });
+    await initLabelView(config_port, enableFetchCaching ?? false);
   })().catch(error => log.error(`Label view initialization failed: ${error}`));
 
   const playerReady = (async () => {
@@ -437,9 +392,9 @@ const documentEnd = async (): Promise<void> => {
 
     const { enableFetchCaching } = await configReady;
 
-    await initPlayer(enableFetchCaching);
+    await initPlayer(enableFetchCaching ?? false);
 
-    initAudioFeatures(config_port);
+    initAudioFeatures();
   })().catch(error => log.error(`Player initialization failed: ${error}`));
 
   const hasStoredCartData =

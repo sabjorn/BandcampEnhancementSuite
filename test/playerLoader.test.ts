@@ -1226,8 +1226,18 @@ describe('PlayerLoader - Waveform config from the extension', () => {
   let audioFeatures: typeof import('../src/audioFeatures');
   let port: { postMessage: ReturnType<typeof vi.fn>; onMessage: { addListener: ReturnType<typeof vi.fn> } };
 
-  const broadcastConfig = (displayWaveform: boolean) => {
-    port.onMessage.addListener.mock.calls.forEach(([listener]) => listener({ config: { displayWaveform } }));
+  const configReports = async (displayWaveform: boolean) => {
+    vi.mocked(chrome.runtime.sendMessage).mockResolvedValue({ displayWaveform });
+
+    vi.resetModules();
+    player = await import('../src/components/player/loader');
+    audioFeatures = await import('../src/audioFeatures');
+    discography = await import('../src/discography');
+    discography.updateDiscographyOrder();
+    await player.loadAlbumIntoDrawer('123', 'album', false, port as never);
+    await vi.waitFor(() =>
+      expect(view('.bes-slider-container').classList.contains('bes-visible')).toBe(!displayWaveform)
+    );
   };
 
   const view = (selector: string) => document.querySelector(selector) as HTMLElement;
@@ -1259,26 +1269,26 @@ describe('PlayerLoader - Waveform config from the extension', () => {
   });
 
   it('should ask the extension for the current config on startup', () => {
-    expect(port.postMessage).toHaveBeenCalledWith({ requestConfig: {} });
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ contentScriptQuery: 'requestConfig' });
   });
 
-  it('should show the slider instead of the waveform when the config disables it', () => {
-    broadcastConfig(false);
+  it('should show the slider instead of the waveform when the config disables it', async () => {
+    await configReports(false);
 
     expect(view('.bes-slider-container').classList.contains('bes-visible')).toBe(true);
     expect(view('.bes-waveform-container').classList.contains('bes-visible')).toBe(false);
   });
 
-  it('should mark the matching toggle button as active', () => {
-    broadcastConfig(false);
+  it('should mark the matching toggle button as active', async () => {
+    await configReports(false);
 
     expect(view('.bes-toggle-slider').classList.contains('bes-toggle-active')).toBe(true);
     expect(view('.bes-toggle-waveform').classList.contains('bes-toggle-active')).toBe(false);
   });
 
-  it('should restore the waveform when the config enables it again', () => {
-    broadcastConfig(false);
-    broadcastConfig(true);
+  it('should restore the waveform when the config enables it again', async () => {
+    await configReports(false);
+    await configReports(true);
 
     expect(view('.bes-waveform-container').classList.contains('bes-visible')).toBe(true);
   });
@@ -1286,13 +1296,19 @@ describe('PlayerLoader - Waveform config from the extension', () => {
   it('should persist the choice when the user switches view', () => {
     view('.bes-toggle-slider').click();
 
-    expect(port.postMessage).toHaveBeenCalledWith({ toggleWaveformDisplay: {} });
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+      contentScriptQuery: 'toggleSetting',
+      setting: 'displayWaveform'
+    });
   });
 
   it('should not persist anything when the chosen view is already showing', () => {
     view('.bes-toggle-waveform').click();
 
-    expect(port.postMessage).not.toHaveBeenCalledWith({ toggleWaveformDisplay: {} });
+    expect(chrome.runtime.sendMessage).not.toHaveBeenCalledWith({
+      contentScriptQuery: 'toggleSetting',
+      setting: 'displayWaveform'
+    });
   });
 
   const analysisRuns = () => vi.mocked(audioFeatures.generateAudioFeatures).mock.calls.length;
@@ -1308,7 +1324,7 @@ describe('PlayerLoader - Waveform config from the extension', () => {
   });
 
   it('should skip analysis while the waveform is switched off', () => {
-    broadcastConfig(false);
+    view('.bes-toggle-slider').click();
     const audio = document.querySelector('audio') as HTMLAudioElement;
     audio.src = 'https://t4.bcbits.com/stream/hash/mp3-128/12345';
     const before = analysisRuns();

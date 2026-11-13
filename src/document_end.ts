@@ -419,7 +419,7 @@ const documentEnd = async (): Promise<void> => {
 
   const checkIsCollectionPage: Element | null = document.querySelector('ol.collection-grid.editable');
   if (checkIsCollectionPage) {
-    await initHideUnhide(config_port);
+    await initHideUnhide();
   }
 
   const checkIsFeedPage: Element | null = document.querySelector('#stories');

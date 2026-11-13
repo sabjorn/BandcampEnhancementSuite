@@ -1,6 +1,6 @@
 import { element } from './dom';
 
-export const TOOLTIP_CLASS = 'bes-tooltip';
+const TOOLTIP_CLASS = 'bes-tooltip';
 
 const VISIBLE_CLASS = 'visible';
 const BELOW_CLASS = 'bes-tooltip-below';

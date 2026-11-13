@@ -115,12 +115,12 @@ function parseUrlCartData(base64Str: string): ParsedUrlCartData | null {
   }
 }
 
-function addDonationHighlight(cartItem: Element, message?: string): void {
+function addDonationHighlight(cartItem: HTMLElement, message?: string): void {
   const displayMessage = message || 'Support this project';
 
   cartItem.classList.add('bes-donation-item');
 
-  attachTooltip(cartItem as HTMLElement, displayMessage);
+  attachTooltip(cartItem, displayMessage);
 }
 
 export async function initCart(port: chrome.runtime.Port): Promise<void> {

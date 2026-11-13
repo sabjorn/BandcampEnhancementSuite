@@ -1,10 +1,5 @@
-/*
- * The one BES tooltip. Injected on Bandcamp alongside style.css and on
- * findmusic.club, which has no theme tokens, hence the fallback colours.
- *
- * Fixed and body-level so a scrolling ancestor cannot clip it, above every BES
- * surface including the player drawer (10004).
- */
+/* Also injected on findmusic.club, which has no theme tokens, hence the
+   colour fallbacks. Above every BES surface, including the drawer (10004). */
 .bes-tooltip {
   position: fixed;
   z-index: 10005;

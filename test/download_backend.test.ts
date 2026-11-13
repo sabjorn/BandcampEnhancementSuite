@@ -35,6 +35,15 @@ Object.assign(global, {
 global.fetch = vi.fn();
 
 import { initDownloadBackend } from '../src/background/download_backend';
+import { DOWNLOAD_PORT } from '../src/types/ports';
+
+const stubPort = (name: string = DOWNLOAD_PORT) =>
+  ({
+    name,
+    postMessage: vi.fn(),
+    onMessage: { addListener: vi.fn() },
+    onDisconnect: { addListener: vi.fn() }
+  }) as any;
 
 describe('Download Backend', () => {
   beforeEach(() => {
@@ -66,13 +75,22 @@ describe('Download Backend', () => {
 
       const onConnectListener = mockOnConnect.mock.calls[0][0];
 
-      const correctPort = { name: 'bes', onMessage: { addListener: vi.fn() } };
+      const correctPort = stubPort();
       onConnectListener(correctPort);
       expect(correctPort.onMessage.addListener).toHaveBeenCalledWith(expect.any(Function));
 
-      const incorrectPort = { name: 'wrong', onMessage: { addListener: vi.fn() } };
+      const incorrectPort = stubPort('bes-cart-import');
       onConnectListener(incorrectPort);
       expect(incorrectPort.onMessage.addListener).not.toHaveBeenCalled();
+    });
+
+    it('should watch for the page going away so a download can be abandoned', () => {
+      initDownloadBackend();
+      const port = stubPort();
+
+      mockOnConnect.mock.calls[0][0](port);
+
+      expect(port.onDisconnect.addListener).toHaveBeenCalledWith(expect.any(Function));
     });
   });
 
@@ -81,11 +99,7 @@ describe('Download Backend', () => {
     let onMessageListener: any;
 
     beforeEach(() => {
-      mockPort = {
-        name: 'bes',
-        postMessage: vi.fn(),
-        onMessage: { addListener: vi.fn() }
-      };
+      mockPort = stubPort();
 
       initDownloadBackend();
       const onConnectListener = mockOnConnect.mock.calls[0][0];
@@ -398,6 +412,36 @@ describe('Download Backend', () => {
       const filename = urlObj.pathname.split('/').pop() + '.flac';
 
       expect(filename).toBe('song-title.flac');
+    });
+  });
+
+  describe('a page that goes away mid-download', () => {
+    it('should stop sending once the port disconnects', async () => {
+      initDownloadBackend();
+      const port = stubPort();
+      mockOnConnect.mock.calls[0][0](port);
+      const onMessage = port.onMessage.addListener.mock.calls[0][0];
+      const disconnected = port.onDisconnect.addListener.mock.calls[0][0] as () => void;
+
+      disconnected();
+      await onMessage({ type: 'downloadZip', urls: ['http://example.com/file1.flac'] });
+
+      expect(port.postMessage).not.toHaveBeenCalled();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should not let a send failure escape the listener', async () => {
+      initDownloadBackend();
+      const port = stubPort();
+      port.postMessage = vi.fn(() => {
+        throw new Error('Attempting to use a disconnected port object');
+      });
+      mockOnConnect.mock.calls[0][0](port);
+      const onMessage = port.onMessage.addListener.mock.calls[0][0];
+
+      await expect(
+        onMessage({ type: 'downloadZip', urls: ['http://example.com/file1.flac'] })
+      ).resolves.toBeUndefined();
     });
   });
 });

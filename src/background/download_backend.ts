@@ -1,4 +1,5 @@
 import Logger from '../logger';
+import { DOWNLOAD_PORT } from '../types/ports';
 import { downloadZip } from 'client-zip';
 import { dateString } from '../utilities';
 
@@ -34,14 +35,42 @@ interface ZipChunk {
   filename: string;
 }
 
-async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Promise<void> {
+class DownloadChannel {
+  private abandoned = false;
+
+  constructor(private readonly port: chrome.runtime.Port) {}
+
+  abandon(): void {
+    this.abandoned = true;
+    log.info('The page that started this download went away, abandoning it');
+  }
+
+  isAbandoned(): boolean {
+    return this.abandoned;
+  }
+
+  send(message: DownloadProgress | DownloadComplete | ZipChunk): void {
+    if (this.abandoned) return;
+
+    try {
+      this.port.postMessage(message);
+    } catch (error) {
+      log.warn(`Could not reach the page waiting on this download: ${error}`);
+      this.abandon();
+    }
+  }
+}
+
+async function handleDownloadZip(urls: string[], channel: DownloadChannel): Promise<void> {
+  if (channel.isAbandoned()) return;
+
   log.info(`Starting background download for ${urls.length} files`);
 
   const files: { name: string; input: Uint8Array }[] = [];
   let completed = 0;
   let failed = 0;
 
-  port.postMessage({
+  channel.send({
     type: 'downloadProgress',
     completed,
     failed,
@@ -82,7 +111,7 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
       log.error(`Error downloading ${url}: ${error}`);
     }
 
-    port.postMessage({
+    channel.send({
       type: 'downloadProgress',
       completed,
       failed,
@@ -92,6 +121,8 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
   };
 
   for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+    if (channel.isAbandoned()) return;
+
     const batch = urls.slice(i, i + BATCH_SIZE);
     const batchPromises = batch.map((url, batchIndex) => downloadFile(url, i + batchIndex));
 
@@ -99,7 +130,7 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
   }
 
   if (files.length === 0) {
-    port.postMessage({
+    channel.send({
       type: 'downloadComplete',
       success: false,
       message: 'No files could be downloaded'
@@ -108,7 +139,7 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
   }
 
   try {
-    port.postMessage({
+    channel.send({
       type: 'downloadProgress',
       completed,
       failed,
@@ -135,6 +166,8 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
     log.info(`Sending ${blob.size} bytes in ${totalChunks} chunks`);
 
     for (let i = 0; i < totalChunks; i++) {
+      if (channel.isAbandoned()) return;
+
       const start = i * chunkSize;
       const end = Math.min(start + chunkSize, uint8Array.length);
       const chunk = uint8Array.slice(start, end);
@@ -145,7 +178,7 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
       }
       const base64Chunk = btoa(binaryString);
 
-      port.postMessage({
+      channel.send({
         type: 'zipChunk',
         chunkIndex: i,
         totalChunks: totalChunks,
@@ -158,7 +191,7 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
 
     log.info('All chunks sent successfully');
 
-    port.postMessage({
+    channel.send({
       type: 'downloadComplete',
       success: true,
       filename: filename,
@@ -169,7 +202,7 @@ async function handleDownloadZip(urls: string[], port: chrome.runtime.Port): Pro
     } as DownloadComplete);
   } catch (error) {
     log.error(`Error creating or downloading zip file: ${error}`);
-    port.postMessage({
+    channel.send({
       type: 'downloadComplete',
       success: false,
       message: 'Failed to create or download zip file'
@@ -221,12 +254,25 @@ export function initDownloadBackend(): void {
   log.info('Initializing download backend');
 
   chrome.runtime.onConnect.addListener(port => {
-    if (port.name !== 'bes') return;
+    if (port.name !== DOWNLOAD_PORT) return;
+
+    const channel = new DownloadChannel(port);
+    port.onDisconnect.addListener(() => channel.abandon());
 
     port.onMessage.addListener(async (message: DownloadRequest) => {
-      if (message.type === 'downloadZip') {
-        log.info('Download backend handling zip request');
-        await handleDownloadZip(message.urls, port);
+      if (message.type !== 'downloadZip') return;
+
+      log.info('Download backend handling zip request');
+
+      try {
+        await handleDownloadZip(message.urls, channel);
+      } catch (error) {
+        log.error(`Download failed: ${error}`);
+        channel.send({
+          type: 'downloadComplete',
+          success: false,
+          message: 'Failed to create or download zip file'
+        } as DownloadComplete);
       }
     });
   });

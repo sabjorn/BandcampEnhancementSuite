@@ -133,7 +133,7 @@ describe('Cart', () => {
   });
 
   afterEach(() => {
-    document.querySelectorAll('.bes-donation-tooltip').forEach(el => el.remove());
+    document.querySelectorAll('.bes-tooltip').forEach(el => el.remove());
     cleanupTestNodes();
     mockButtons.length = 0;
     vi.clearAllMocks();
@@ -786,7 +786,7 @@ invalid line`;
       });
 
       const cartItem = document.querySelector('#sidecart_item_9999');
-      const tooltip = document.querySelector('.bes-donation-tooltip');
+      const tooltip = document.querySelector('.bes-tooltip');
 
       expect(cartItem?.classList.contains('bes-donation-item')).toBe(true);
       expect(tooltip).not.toBeNull();
@@ -813,7 +813,7 @@ invalid line`;
         }
       });
 
-      const tooltip = document.querySelector('.bes-donation-tooltip');
+      const tooltip = document.querySelector('.bes-tooltip');
       expect(tooltip?.textContent).toBe('Support this project');
     });
 
@@ -838,7 +838,7 @@ invalid line`;
         }
       });
 
-      const tooltip = document.querySelector('.bes-donation-tooltip');
+      const tooltip = document.querySelector('.bes-tooltip');
 
       expect(document.body.contains(tooltip)).toBe(true);
     });

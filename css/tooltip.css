@@ -1,0 +1,53 @@
+/*
+ * The one BES tooltip. Injected on Bandcamp alongside style.css and on
+ * findmusic.club, which has no theme tokens, hence the fallback colours.
+ *
+ * Fixed and body-level so a scrolling ancestor cannot clip it, above every BES
+ * surface including the player drawer (10004).
+ */
+.bes-tooltip {
+  position: fixed;
+  z-index: 10005;
+  /* intrinsic, so the box keeps its width near the viewport edge instead of
+     being squeezed by the space left of it */
+  width: max-content;
+  max-width: 260px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: var(--bes-text-strong, #333);
+  color: var(--bes-surface-0, #fff);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+  word-wrap: break-word;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+
+.bes-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.bes-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  /* kept on the target when the body is clamped to the viewport edge */
+  left: var(--bes-tooltip-arrow, 50%);
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--bes-text-strong, #333);
+}
+
+.bes-tooltip.bes-tooltip-below::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: var(--bes-text-strong, #333);
+}

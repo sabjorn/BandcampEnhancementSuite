@@ -1,4 +1,5 @@
 import Logger from './logger';
+import { attachTooltip } from './components/tooltip';
 
 const log = new Logger();
 const FINDMUSIC_BASE_URL = process.env.FINDMUSIC_BASE_URL as string;
@@ -154,35 +155,7 @@ async function injectLoginButton() {
     buttonWrapper.style.backgroundColor = '#9e9e9e';
     buttonWrapper.setAttribute('aria-disabled', 'true');
 
-    const tooltip = document.createElement('span');
-    tooltip.textContent = BANDCAMP_LOGIN_REQUIRED_MESSAGE;
-    tooltip.style.visibility = 'hidden';
-    tooltip.style.opacity = '0';
-    tooltip.style.transition = 'opacity 0.2s';
-    tooltip.style.pointerEvents = 'none';
-    tooltip.style.position = 'absolute';
-    tooltip.style.zIndex = '1000';
-    tooltip.style.bottom = '115%';
-    tooltip.style.left = '50%';
-    tooltip.style.marginLeft = '-100px';
-    tooltip.style.width = '200px';
-    tooltip.style.padding = '8px';
-    tooltip.style.borderRadius = '4px';
-    tooltip.style.backgroundColor = '#333';
-    tooltip.style.color = '#fff';
-    tooltip.style.fontSize = '0.75rem';
-    tooltip.style.lineHeight = '1.4';
-    tooltip.style.textAlign = 'left';
-    buttonWrapper.appendChild(tooltip);
-
-    buttonWrapper.addEventListener('mouseenter', () => {
-      tooltip.style.visibility = 'visible';
-      tooltip.style.opacity = '1';
-    });
-    buttonWrapper.addEventListener('mouseleave', () => {
-      tooltip.style.visibility = 'hidden';
-      tooltip.style.opacity = '0';
-    });
+    attachTooltip(buttonWrapper, BANDCAMP_LOGIN_REQUIRED_MESSAGE);
   }
 
   const buttonText = document.createElement('p');

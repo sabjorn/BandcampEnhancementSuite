@@ -8,6 +8,7 @@ import { initCart } from './pages/cart';
 import { initHideUnhide } from './pages/hide_unhide_collection';
 import { initFeed } from './pages/feed';
 import { createKeyboardSettingsSection } from './components/keyboardSettings';
+import { attachTooltip } from './components/tooltip';
 import { KeyboardSettings } from './types/keyboard';
 import { isBandcampLoggedIn } from './utilities';
 import { setTheme, startThemeEnforcement } from './theme';
@@ -37,59 +38,12 @@ function createToggleSetting(id: string, labelText: string, visible: boolean = t
   labelContainer.appendChild(label);
 
   if (tooltipText) {
-    const tooltipWrapper = document.createElement('span');
-    tooltipWrapper.style.position = 'relative';
-    tooltipWrapper.style.display = 'inline-flex';
-    tooltipWrapper.style.flexShrink = '0';
+    const tooltipIcon = document.createElement('span');
+    tooltipIcon.className = 'bes-tooltip-icon';
+    tooltipIcon.textContent = '?';
 
-    const tooltip = document.createElement('span');
-    tooltip.className = 'bes-tooltip-icon';
-    tooltip.textContent = '?';
-    tooltip.style.display = 'inline-flex';
-    tooltip.style.alignItems = 'center';
-    tooltip.style.justifyContent = 'center';
-    tooltip.style.width = '14px';
-    tooltip.style.height = '14px';
-    tooltip.style.fontSize = '11px';
-    tooltip.style.fontWeight = 'bold';
-    tooltip.style.borderRadius = '50%';
-    tooltip.style.border = '1px solid currentColor';
-    tooltip.style.opacity = '0.6';
-
-    const tooltipContent = document.createElement('span');
-    tooltipContent.className = 'bes-tooltip-text';
-    tooltipContent.textContent = tooltipText;
-    tooltipContent.style.visibility = 'hidden';
-    tooltipContent.style.width = '200px';
-    tooltipContent.style.backgroundColor = 'var(--bes-text-strong)';
-    tooltipContent.style.color = 'var(--bes-surface-0)';
-    tooltipContent.style.textAlign = 'left';
-    tooltipContent.style.borderRadius = '4px';
-    tooltipContent.style.padding = '8px';
-    tooltipContent.style.position = 'absolute';
-    tooltipContent.style.zIndex = '1000';
-    tooltipContent.style.bottom = '125%';
-    tooltipContent.style.left = '50%';
-    tooltipContent.style.marginLeft = '-100px';
-    tooltipContent.style.fontSize = '12px';
-    tooltipContent.style.lineHeight = '1.4';
-    tooltipContent.style.opacity = '0';
-    tooltipContent.style.transition = 'opacity 0.2s';
-    tooltipContent.style.pointerEvents = 'none';
-
-    tooltip.addEventListener('mouseenter', () => {
-      tooltipContent.style.visibility = 'visible';
-      tooltipContent.style.opacity = '1';
-    });
-
-    tooltip.addEventListener('mouseleave', () => {
-      tooltipContent.style.visibility = 'hidden';
-      tooltipContent.style.opacity = '0';
-    });
-
-    tooltipWrapper.appendChild(tooltip);
-    tooltipWrapper.appendChild(tooltipContent);
-    labelContainer.appendChild(tooltipWrapper);
+    attachTooltip(tooltipIcon, tooltipText);
+    labelContainer.appendChild(tooltipIcon);
   }
 
   const toggle = document.createElement('input');
@@ -289,19 +243,10 @@ export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
   const findMusicButtonWrapper = document.createElement('div');
   findMusicButtonWrapper.className = 'bes-drawer-button-wrapper';
 
-  const findMusicTooltip = document.createElement('span');
-  findMusicTooltip.className = 'bes-drawer-button-tooltip';
-  findMusicTooltip.textContent = BANDCAMP_LOGIN_REQUIRED_MESSAGE;
-
   findMusicButtonWrapper.appendChild(findMusicButton);
-  findMusicButtonWrapper.appendChild(findMusicTooltip);
 
-  findMusicButtonWrapper.addEventListener('mouseenter', () => {
-    findMusicTooltip.classList.toggle('visible', findMusicButton.disabled);
-  });
-
-  findMusicButtonWrapper.addEventListener('mouseleave', () => {
-    findMusicTooltip.classList.remove('visible');
+  attachTooltip(findMusicButtonWrapper, BANDCAMP_LOGIN_REQUIRED_MESSAGE, {
+    shouldShow: () => findMusicButton.disabled
   });
 
   const updateButtonText = async () => {

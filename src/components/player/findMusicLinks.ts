@@ -1,8 +1,10 @@
 import { element } from '../dom';
+import { attachTooltip, TooltipHandle } from '../tooltip';
 import { labelIcon, artistIcon } from './icons';
 
 const CONTAINER_CLASS = 'bes-findmusic-links';
-const TOOLTIP_CLASS = 'bes-findmusic-tooltip';
+
+let tooltips: TooltipHandle[] = [];
 
 export type FindMusicLinkKind = 'label' | 'artist';
 
@@ -10,24 +12,6 @@ export interface FindMusicLink {
   kind: FindMusicLinkKind;
   bandId: number;
   name?: string;
-}
-
-function attachTooltip(link: HTMLAnchorElement, text: string): void {
-  const tooltip = element('div', { className: TOOLTIP_CLASS });
-  tooltip.textContent = text;
-  document.body.appendChild(tooltip);
-
-  link.addEventListener('mouseenter', () => {
-    const { left, top, width } = link.getBoundingClientRect();
-
-    tooltip.style.left = `${left + width / 2}px`;
-    tooltip.style.top = `${top - tooltip.offsetHeight - 8}px`;
-    tooltip.classList.add('visible');
-  });
-
-  link.addEventListener('mouseleave', () => {
-    tooltip.classList.remove('visible');
-  });
 }
 
 function linkElement({ kind, bandId, name }: FindMusicLink): HTMLAnchorElement {
@@ -44,13 +28,16 @@ function linkElement({ kind, bandId, name }: FindMusicLink): HTMLAnchorElement {
     }
   });
 
-  attachTooltip(link, description);
+  tooltips.push(attachTooltip(link, description));
 
   return link;
 }
 
 export function setFindMusicLinks(links: FindMusicLink[]): void {
-  document.querySelectorAll(`.${CONTAINER_CLASS}, .${TOOLTIP_CLASS}`).forEach(stale => stale.remove());
+  document.querySelectorAll(`.${CONTAINER_CLASS}`).forEach(stale => stale.remove());
+  tooltips.forEach(tooltip => tooltip.remove());
+  tooltips = [];
+
   if (links.length === 0) return;
 
   const container = element('div', { className: CONTAINER_CLASS, children: links.map(linkElement) });

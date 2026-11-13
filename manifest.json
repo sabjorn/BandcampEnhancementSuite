@@ -34,12 +34,13 @@
     {
       "matches": ["http://*.bandcamp.com/*", "https://*.bandcamp.com/*"],
       "js": ["dist/document_end.js"],
-      "css": ["css/style.css"],
+      "css": ["css/style.css", "css/tooltip.css"],
       "run_at": "document_end"
     },
     {
       "matches": ["https://*.findmusic.club/*"],
-      "js": ["dist/findmusic_autologin.js"]
+      "js": ["dist/findmusic_autologin.js"],
+      "css": ["css/tooltip.css"]
     }
   ],
   "web_accessible_resources": [

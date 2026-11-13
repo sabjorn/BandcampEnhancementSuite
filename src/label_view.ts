@@ -5,10 +5,10 @@ import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicL
 import { extractBandId } from './utilities';
 import { createWishlistButton, WISHLIST_ICON_SIZES } from './components/wishlistButton';
 import { initCollectionState, Collection } from './collection';
-import { setPreviewed } from './previewHistory';
+import { markPreviewed, togglePreview, queryPreviews } from './previewHistory';
 
 export function setHistory(id: string, state: boolean): void {
-  const historybox = document.querySelector(`#${CSS.escape(id)} .historybox`);
+  const historybox = document.querySelector(`[id="${id}"] .historybox`);
   if (historybox) {
     historybox.classList.add('follow-unfollow');
 
@@ -24,11 +24,11 @@ function previewIdFrom(event: Event): string | undefined {
   return (event.target as HTMLElement).closest('.preview')?.id || undefined;
 }
 
-export function boxClicked(event: Event, port: chrome.runtime.Port): void {
+export async function boxClicked(event: Event): Promise<void> {
   const id = previewIdFrom(event);
   if (!id) return;
 
-  port.postMessage({ toggle: id });
+  setHistory(id, await togglePreview(id));
 }
 
 const log = new Logger();
@@ -68,8 +68,7 @@ function drawer(): ReturnType<typeof createPlayerDrawer> {
 export function fillFrame(
   event: Event,
   previewState: { previewOpen: boolean; previewId?: string },
-  enableFetchCaching: boolean = false,
-  port?: chrome.runtime.Port
+  enableFetchCaching: boolean = false
 ): void {
   const target = previewTargetFrom(event);
   if (!target) return;
@@ -93,7 +92,7 @@ export function fillFrame(
 
   const renderLinksForCurrentPreview = () => updateFindMusicLinks(currentPreview?.id, currentPreview?.idType);
 
-  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, port)
+  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching)
     .then(renderLinksForCurrentPreview)
     .catch(error => {
       log.error(`Failed to load album into drawer: ${error}`);
@@ -103,7 +102,6 @@ export function fillFrame(
 
 export function attachPreviewListeners(
   root: Document | HTMLElement,
-  port: chrome.runtime.Port,
   previewState: { previewOpen: boolean; previewId?: string },
   enableFetchCaching: boolean = false
 ): void {
@@ -113,7 +111,7 @@ export function attachPreviewListeners(
 
     button.dataset.besBound = 'true';
     button.addEventListener('click', event => {
-      fillFrame(event, previewState, enableFetchCaching, port);
+      fillFrame(event, previewState, enableFetchCaching);
     });
   });
 }
@@ -124,15 +122,11 @@ export function addedGridItems(mutations: MutationRecord[]): boolean {
   );
 }
 
-export async function initLabelView(port: chrome.runtime.Port, enableFetchCaching: boolean = false): Promise<void> {
+export async function initLabelView(enableFetchCaching: boolean = false): Promise<void> {
   const previewState = { previewOpen: false, previewId: undefined };
 
-  port.onMessage.addListener(msg => {
-    if (msg.id) setHistory(msg.id.key, msg.id.value);
-  });
-
   log.info('Rendering BES...');
-  renderDom(port, previewState, enableFetchCaching);
+  await renderDom(previewState, enableFetchCaching);
 
   updateDiscographyOrder();
 
@@ -145,7 +139,7 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
     if (!addedGridItems(mutations)) return;
 
     updateDiscographyOrder();
-    renderPreviews(port, previewState, enableFetchCaching);
+    void renderPreviews(previewState, enableFetchCaching);
     addGridWishlistStars(collection);
   });
 
@@ -272,58 +266,54 @@ export function generatePreview(id: string, idType: string): HTMLDivElement {
   return parent;
 }
 
-export function renderPreviews(
-  port: chrome.runtime.Port,
+export async function renderPreviews(
   previewState: { previewOpen: boolean; previewId?: string },
   enableFetchCaching: boolean = false
-): void {
+): Promise<void> {
+  const rendered: string[] = [];
+
   document.querySelectorAll<HTMLElement>('li.music-grid-item[data-item-id]').forEach(item => {
     const idAndType = item.dataset.itemId;
     if (!idAndType || item.querySelector('.preview')) return;
 
-    const id = idAndType.split('-')[1];
-    const idType = idAndType.split('-')[0];
-    const $preview = generatePreview(id, idType);
-    item.appendChild($preview);
-
-    port.postMessage({ query: id });
+    const [idType, id] = idAndType.split('-');
+    item.appendChild(generatePreview(id, idType));
+    rendered.push(id);
   });
 
   document.querySelectorAll<HTMLElement>('li.music-grid-item[data-tralbumid][data-tralbumtype="a"]').forEach(item => {
     const id = item.dataset.tralbumid;
     if (!id || item.querySelector('.preview')) return;
 
-    const preview = generatePreview(id, 'album');
-    item.appendChild(preview);
-
-    port.postMessage({ query: id });
+    item.appendChild(generatePreview(id, 'album'));
+    rendered.push(id);
   });
 
-  attachPreviewListeners(document, port, previewState, enableFetchCaching);
+  attachPreviewListeners(document, previewState, enableFetchCaching);
 
   document.querySelectorAll<HTMLElement>('.historybox').forEach(item => {
     if (item.dataset.besBound === 'true') return;
 
     item.dataset.besBound = 'true';
     item.addEventListener('click', event => {
-      boxClicked(event, port);
+      void boxClicked(event);
     });
   });
+
+  const states = await queryPreviews(rendered);
+  Object.entries(states).forEach(([id, previewed]) => setHistory(id, previewed));
 }
 
-export function renderDom(
-  port: chrome.runtime.Port,
+export async function renderDom(
   previewState: { previewOpen: boolean; previewId?: string },
   enableFetchCaching: boolean = false
-): void {
-  renderPreviews(port, previewState, enableFetchCaching);
+): Promise<void> {
+  await renderPreviews(previewState, enableFetchCaching);
 
   const pagedata = document.querySelector('#pagedata');
   if (!pagedata) return;
   const datablob = JSON.parse((pagedata as HTMLElement).dataset.blob!);
   const urlParams = new URLSearchParams(datablob.lo_querystr);
   const id = urlParams.get('item_id');
-  if (id) {
-    setPreviewed(id, port);
-  }
+  if (id) await markPreviewed(id);
 }

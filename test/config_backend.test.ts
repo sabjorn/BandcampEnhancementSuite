@@ -1,16 +1,22 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
+  processRequest,
+  initConfigBackend,
   syncDarkThemeRegistration,
   updateKeyboardSettings,
   resetKeyboardSettings,
   togglePlayedCaching,
-  enableFindMusicCaching,
   toggleTheme,
   setupDB
 } from '../src/background/config_backend';
 import { DARK_THEME, LIGHT_THEME } from '../src/types/theme';
 import { DEFAULT_KEYBOARD_SETTINGS, KeyboardSettings, KeyboardAction } from '../src/types/keyboard';
 import Logger from '../src/logger';
+import { getDB } from '../src/utilities';
+
+vi.mock('../src/utilities', () => ({
+  getDB: vi.fn()
+}));
 
 describe('Config Backend', () => {
   beforeEach(() => {
@@ -58,9 +64,6 @@ describe('Config Backend', () => {
         get: vi.fn().mockResolvedValue({ displayWaveform: false }),
         put: vi.fn().mockResolvedValue(undefined)
       };
-      const mockPort = {
-        postMessage: vi.fn()
-      };
       const mockLog = new Logger();
 
       const customSettings: KeyboardSettings = {
@@ -68,26 +71,17 @@ describe('Config Backend', () => {
         seekStepSize: 15
       };
 
-      await updateKeyboardSettings(mockDb, customSettings, mockLog, mockPort as any);
+      const response = await updateKeyboardSettings(mockDb, customSettings, mockLog);
 
       expect(mockDb.get).toHaveBeenCalledWith('config', 'config');
       expect(mockDb.put).toHaveBeenCalled();
-      expect(mockPort.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          config: expect.objectContaining({
-            keyboardSettings: customSettings
-          })
-        })
-      );
+      expect(response).toMatchObject({ keyboardSettings: customSettings });
     });
 
     it('should reject invalid settings', async () => {
       const mockDb = {
         get: vi.fn(),
         put: vi.fn()
-      };
-      const mockPort = {
-        postMessage: vi.fn()
       };
       const mockLog = new Logger();
 
@@ -98,23 +92,18 @@ describe('Config Backend', () => {
         volumeStep: 0.05
       };
 
-      await updateKeyboardSettings(mockDb, invalidSettings, mockLog, mockPort as any);
+      const response = await updateKeyboardSettings(mockDb, invalidSettings, mockLog);
 
       expect(mockDb.put).not.toHaveBeenCalled();
-      expect(mockPort.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          keyboardSettingsError: expect.arrayContaining([expect.stringContaining('Seek step size')])
-        })
-      );
+      expect(response).toMatchObject({
+        keyboardSettingsError: expect.arrayContaining([expect.stringContaining('Seek step size')])
+      });
     });
 
     it('should reject duplicate key bindings', async () => {
       const mockDb = {
         get: vi.fn(),
         put: vi.fn()
-      };
-      const mockPort = {
-        postMessage: vi.fn()
       };
       const mockLog = new Logger();
 
@@ -136,14 +125,12 @@ describe('Config Backend', () => {
         volumeStep: 0.05
       };
 
-      await updateKeyboardSettings(mockDb, settingsWithDuplicates, mockLog, mockPort as any);
+      const response = await updateKeyboardSettings(mockDb, settingsWithDuplicates, mockLog);
 
       expect(mockDb.put).not.toHaveBeenCalled();
-      expect(mockPort.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          keyboardSettingsError: expect.arrayContaining([expect.stringContaining('Duplicate key binding')])
-        })
-      );
+      expect(response).toMatchObject({
+        keyboardSettingsError: expect.arrayContaining([expect.stringContaining('Duplicate key binding')])
+      });
     });
   });
 
@@ -153,34 +140,24 @@ describe('Config Backend', () => {
         get: vi.fn().mockResolvedValue({ displayWaveform: true, keyboardSettings: { seekStepSize: 15 } }),
         put: vi.fn().mockResolvedValue(undefined)
       };
-      const mockPort = {
-        postMessage: vi.fn()
-      };
       const mockLog = new Logger();
 
-      await resetKeyboardSettings(mockDb, mockLog, mockPort as any);
+      const response = await resetKeyboardSettings(mockDb, mockLog);
 
       expect(mockDb.get).toHaveBeenCalledWith('config', 'config');
       expect(mockDb.put).toHaveBeenCalled();
-      expect(mockPort.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          config: expect.objectContaining({
-            keyboardSettings: DEFAULT_KEYBOARD_SETTINGS
-          })
-        })
-      );
+      expect(response).toMatchObject({ keyboardSettings: DEFAULT_KEYBOARD_SETTINGS });
     });
 
-    it('should work without a port', async () => {
+    it('should hand back the whole config, not just the settings it reset', async () => {
       const mockDb = {
         get: vi.fn().mockResolvedValue({ displayWaveform: true }),
         put: vi.fn().mockResolvedValue(undefined)
       };
-      const mockLog = new Logger();
 
-      await resetKeyboardSettings(mockDb, mockLog);
+      const response = await resetKeyboardSettings(mockDb, new Logger());
 
-      expect(mockDb.put).toHaveBeenCalled();
+      expect(response).toMatchObject({ displayWaveform: true, keyboardSettings: DEFAULT_KEYBOARD_SETTINGS });
     });
   });
 
@@ -216,29 +193,26 @@ describe('Config Backend', () => {
 
     it('should turn played caching off when it is on', async () => {
       const mockDb = makeDb({ enablePlayedCaching: true });
-      const mockPort = { postMessage: vi.fn() };
 
-      await togglePlayedCaching(mockDb, new Logger(), mockPort as any);
+      await togglePlayedCaching(mockDb, new Logger());
 
       expect(mockDb.put).toHaveBeenCalledWith('config', { enablePlayedCaching: false }, 'config');
     });
 
     it('should turn played caching on when it is off', async () => {
       const mockDb = makeDb({ enablePlayedCaching: false });
-      const mockPort = { postMessage: vi.fn() };
 
-      await togglePlayedCaching(mockDb, new Logger(), mockPort as any);
+      await togglePlayedCaching(mockDb, new Logger());
 
       expect(mockDb.put).toHaveBeenCalledWith('config', { enablePlayedCaching: true }, 'config');
     });
 
-    it('should broadcast the updated config', async () => {
+    it('should answer with the updated config', async () => {
       const mockDb = makeDb({ enablePlayedCaching: true });
-      const mockPort = { postMessage: vi.fn() };
 
-      await togglePlayedCaching(mockDb, new Logger(), mockPort as any);
+      const response = await togglePlayedCaching(mockDb, new Logger());
 
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ config: { enablePlayedCaching: false } });
+      expect(response).toEqual({ enablePlayedCaching: false });
     });
 
     it('should leave the other caching settings alone', async () => {
@@ -253,22 +227,6 @@ describe('Config Backend', () => {
       expect(mockDb.put).toHaveBeenCalledWith(
         'config',
         { enablePlayedCaching: false, enableMetadataCaching: true, enableFetchCaching: true },
-        'config'
-      );
-    });
-
-    it('should be enabled alongside the other caching settings on permission grant', async () => {
-      const mockDb = makeDb({
-        enablePlayedCaching: false,
-        enableMetadataCaching: false,
-        enableFetchCaching: false
-      });
-
-      await enableFindMusicCaching(mockDb, new Logger());
-
-      expect(mockDb.put).toHaveBeenCalledWith(
-        'config',
-        { enablePlayedCaching: true, enableMetadataCaching: true, enableFetchCaching: true },
         'config'
       );
     });
@@ -394,7 +352,7 @@ describe('Config Backend', () => {
     it('should switch from light to dark', async () => {
       const { mockDb, mockPort, mockLog } = setup(LIGHT_THEME.name);
 
-      await toggleTheme(mockDb, mockLog, mockPort as any);
+      await toggleTheme(mockDb, mockLog);
 
       expect(mockDb.put).toHaveBeenCalledWith('config', { themeName: DARK_THEME.name }, 'config');
     });
@@ -402,23 +360,23 @@ describe('Config Backend', () => {
     it('should switch from dark back to light', async () => {
       const { mockDb, mockPort, mockLog } = setup(DARK_THEME.name);
 
-      await toggleTheme(mockDb, mockLog, mockPort as any);
+      await toggleTheme(mockDb, mockLog);
 
       expect(mockDb.put).toHaveBeenCalledWith('config', { themeName: LIGHT_THEME.name }, 'config');
     });
 
-    it('should broadcast the updated config so open tabs re-theme', async () => {
-      const { mockDb, mockPort, mockLog } = setup(LIGHT_THEME.name);
+    it('should answer with the updated config so the caller can re-theme', async () => {
+      const { mockDb, mockLog } = setup(LIGHT_THEME.name);
 
-      await toggleTheme(mockDb, mockLog, mockPort as any);
+      const response = await toggleTheme(mockDb, mockLog);
 
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ config: { themeName: DARK_THEME.name } });
+      expect(response).toEqual({ themeName: DARK_THEME.name });
     });
 
     it('should register the script when switching to dark', async () => {
       const { mockDb, mockPort, mockLog } = setup(LIGHT_THEME.name);
 
-      await toggleTheme(mockDb, mockLog, mockPort as any);
+      await toggleTheme(mockDb, mockLog);
 
       expect((globalThis.chrome as any).scripting.registerContentScripts).toHaveBeenCalled();
     });
@@ -427,7 +385,7 @@ describe('Config Backend', () => {
       (globalThis.chrome as any).scripting.getRegisteredContentScripts.mockResolvedValue([{ id: 'bes-theme-dark' }]);
       const { mockDb, mockPort, mockLog } = setup(DARK_THEME.name);
 
-      await toggleTheme(mockDb, mockLog, mockPort as any);
+      await toggleTheme(mockDb, mockLog);
 
       expect((globalThis.chrome as any).scripting.unregisterContentScripts).toHaveBeenCalled();
     });
@@ -445,6 +403,107 @@ describe('Config Backend', () => {
         expect.objectContaining({ themeName: DARK_THEME.name }),
         'config'
       );
+    });
+  });
+
+  describe('processRequest', () => {
+    const storedConfig = () => ({ displayWaveform: true, enableFetchCaching: false });
+    let db: { get: ReturnType<typeof vi.fn>; put: ReturnType<typeof vi.fn> };
+
+    const respond = async (request: any) => {
+      const sendResponse = vi.fn();
+      const handled = processRequest(request, {} as chrome.runtime.MessageSender, sendResponse);
+
+      if (handled) await vi.waitFor(() => expect(sendResponse).toHaveBeenCalled());
+
+      return { handled, response: sendResponse.mock.calls[0]?.[0] };
+    };
+
+    beforeEach(async () => {
+      db = { get: vi.fn(async () => storedConfig()), put: vi.fn().mockResolvedValue(undefined) };
+      vi.mocked(getDB).mockResolvedValue(db as any);
+    });
+
+    it('should answer a config request with the stored config', async () => {
+      const { response } = await respond({ contentScriptQuery: 'requestConfig' });
+
+      expect(response).toMatchObject({ displayWaveform: true });
+    });
+
+    it('should answer a toggle with the config that resulted from it', async () => {
+      const { response } = await respond({ contentScriptQuery: 'toggleSetting', setting: 'displayWaveform' });
+
+      expect(db.put).toHaveBeenCalledWith('config', expect.objectContaining({ displayWaveform: false }), 'config');
+      expect(response).toMatchObject({ displayWaveform: false });
+    });
+
+    it('should route each toggle to its own setting', async () => {
+      const { response } = await respond({ contentScriptQuery: 'toggleSetting', setting: 'enableFetchCaching' });
+
+      expect(response).toMatchObject({ displayWaveform: true, enableFetchCaching: true });
+    });
+
+    it('should reject a setting it does not know how to toggle', async () => {
+      const { response } = await respond({ contentScriptQuery: 'toggleSetting', setting: 'nonsense' });
+
+      expect(db.put).not.toHaveBeenCalled();
+      expect(response).toMatchObject({ error: expect.stringContaining('nonsense') });
+    });
+
+    it('should answer invalid keyboard settings with the errors and write nothing', async () => {
+      const { response } = await respond({
+        contentScriptQuery: 'updateKeyboardSettings',
+        settings: { controls: [], seekStepSize: 0, largeSeekStepSize: 30, volumeStep: 0.05 }
+      });
+
+      expect(db.put).not.toHaveBeenCalled();
+      expect(response).toMatchObject({ keyboardSettingsError: expect.any(Array) });
+    });
+
+    it('should leave messages addressed to other backends alone', async () => {
+      const sendResponse = vi.fn();
+
+      const handled = processRequest(
+        { contentScriptQuery: 'queryPreviews', ids: [] },
+        {} as chrome.runtime.MessageSender,
+        sendResponse
+      );
+
+      expect(handled).toBe(false);
+      expect(sendResponse).not.toHaveBeenCalled();
+    });
+
+    it('should report a store failure instead of hanging the caller', async () => {
+      db.get.mockRejectedValueOnce(new Error('InvalidStateError'));
+
+      const { response } = await respond({ contentScriptQuery: 'requestConfig' });
+
+      expect(response).toMatchObject({ error: 'InvalidStateError' });
+    });
+  });
+
+  describe('initConfigBackend', () => {
+    beforeEach(() => {
+      (globalThis.chrome as any).runtime = {
+        onMessage: { addListener: vi.fn() },
+        onConnect: { addListener: vi.fn() }
+      };
+      vi.mocked(getDB).mockResolvedValue({
+        get: vi.fn().mockResolvedValue({}),
+        put: vi.fn().mockResolvedValue(undefined)
+      } as any);
+    });
+
+    it('should register its message listener without yielding first', () => {
+      void initConfigBackend();
+
+      expect((globalThis.chrome as any).runtime.onMessage.addListener).toHaveBeenCalledWith(processRequest);
+    });
+
+    it('should no longer take part in the shared bes port', () => {
+      void initConfigBackend();
+
+      expect((globalThis.chrome as any).runtime.onConnect.addListener).not.toHaveBeenCalled();
     });
   });
 });

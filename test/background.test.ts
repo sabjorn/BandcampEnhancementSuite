@@ -36,8 +36,8 @@ describe('background service worker', () => {
   it('registers every port and message listener without waiting on the config database', async () => {
     await import('../src/background');
 
-    expect(chrome.runtime.onConnect.addListener).toHaveBeenCalledTimes(5);
-    expect(chrome.runtime.onMessage.addListener).toHaveBeenCalledTimes(6);
+    expect(chrome.runtime.onConnect.addListener).toHaveBeenCalledTimes(3);
+    expect(chrome.runtime.onMessage.addListener).toHaveBeenCalledTimes(8);
   });
 
   it('does not resolve a config read until the store has been seeded', async () => {

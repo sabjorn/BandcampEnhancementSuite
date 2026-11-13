@@ -2,25 +2,21 @@ import { analyze } from 'web-audio-beat-detector';
 import { isThemeActive, themeToken } from './theme';
 
 import Logger from './logger';
+import { requestConfig, toggleSetting } from './config';
 import { mousedownCallback } from './utilities';
 
 const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
 
-interface PortMessage {
-  onMessage: {
-    addListener: (callback: (message: any) => void) => void;
-  };
-  postMessage: (message: any) => void;
-}
-
-interface AudioFeaturesConfig {
-  config: {
-    displayWaveform: boolean;
-  };
-}
-
-export function toggleWaveformCanvas(port: PortMessage): void {
-  port.postMessage({ toggleWaveformDisplay: {} });
+export async function toggleWaveformCanvas(
+  canvas: HTMLCanvasElement,
+  canvasDisplayToggle: HTMLInputElement,
+  log: Logger
+): Promise<void> {
+  try {
+    applyAudioConfig(await toggleSetting('displayWaveform'), canvas, canvasDisplayToggle, log);
+  } catch (error) {
+    log.error(`Failed to toggle the waveform display: ${error}`);
+  }
 }
 
 export function monitorAudioCanPlay(canvasDisplayToggle: HTMLInputElement, generateAudioFeatures: () => void): void {
@@ -44,16 +40,15 @@ export function monitorAudioTimeupdate(
 }
 
 export function applyAudioConfig(
-  msg: AudioFeaturesConfig,
+  config: { displayWaveform?: boolean },
   canvas: HTMLCanvasElement,
   canvasDisplayToggle: HTMLInputElement,
   _log: Logger
 ): void {
-  if (!msg.config) {
-    return;
-  }
-  canvas.style.display = msg.config.displayWaveform ? 'inherit' : 'none';
-  canvasDisplayToggle.checked = msg.config.displayWaveform;
+  if (typeof config?.displayWaveform !== 'boolean') return;
+
+  canvas.style.display = config.displayWaveform ? 'inherit' : 'none';
+  canvasDisplayToggle.checked = config.displayWaveform;
 }
 
 export function extractTrackId(audioSrc: string): number | null {
@@ -218,7 +213,7 @@ function resolveWaveformColours(): [string, string] {
   return [colour, invertColour(colour)];
 }
 
-export function initAudioFeatures(port: PortMessage): void {
+export function initAudioFeatures(): void {
   const log = new Logger();
 
   const currentTarget = { value: undefined as string | undefined };
@@ -229,7 +224,7 @@ export function initAudioFeatures(port: PortMessage): void {
   const canvasDisplayToggle = createCanvasDisplayToggle();
   const parentNode = canvasDisplayToggle.parentNode as HTMLElement;
   if (parentNode) {
-    parentNode.addEventListener('click', () => toggleWaveformCanvas(port));
+    parentNode.addEventListener('click', () => void toggleWaveformCanvas(canvas, canvasDisplayToggle, log));
   }
 
   const bpmDisplay = createBpmDisplay();
@@ -257,8 +252,9 @@ export function initAudioFeatures(port: PortMessage): void {
     );
   }
 
-  port.onMessage.addListener((msg: AudioFeaturesConfig) => applyAudioConfig(msg, canvas, canvasDisplayToggle, log));
-  port.postMessage({ requestConfig: {} });
+  requestConfig()
+    .then(config => applyAudioConfig(config, canvas, canvasDisplayToggle, log))
+    .catch(error => log.error(`Failed to read the waveform config: ${error}`));
 }
 
 export function createCanvas(): HTMLCanvasElement {

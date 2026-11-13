@@ -92,6 +92,7 @@ vi.mock('../src/components/svgIcons', () => ({
 }));
 
 import { initCart } from '../src/pages/cart';
+import { CART_IMPORT_PORT } from '../src/types/ports';
 import { loadTextFile, downloadFile } from '../src/utilities';
 import { getTralbumDetails } from '../src/bclient';
 import {
@@ -112,12 +113,17 @@ describe('Cart', () => {
       onMessage: {
         addListener: vi.fn()
       },
-      postMessage: vi.fn()
+      onDisconnect: {
+        addListener: vi.fn()
+      },
+      postMessage: vi.fn(),
+      disconnect: vi.fn()
     };
 
     global.chrome = {
       runtime: {
-        connect: vi.fn().mockReturnValue(mockPort)
+        connect: vi.fn().mockReturnValue(mockPort),
+        sendMessage: vi.fn().mockResolvedValue({ enableFetchCaching: false })
       }
     } as any;
 
@@ -151,7 +157,7 @@ describe('Cart', () => {
     });
 
     it('should initialize cart functionality', async () => {
-      await expect(initCart(mockPort)).resolves.not.toThrow();
+      await expect(initCart()).resolves.not.toThrow();
     });
   });
 
@@ -166,7 +172,7 @@ describe('Cart', () => {
         <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
       `);
 
-      initCart(mockPort);
+      initCart();
 
       importButton = mockButtons.find(btn => btn.textContent === 'import') as HTMLButtonElement;
     });
@@ -260,7 +266,7 @@ describe('Cart', () => {
         <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
       `);
 
-      initCart(mockPort);
+      initCart();
       importButton = mockButtons.find(btn => btn.textContent === 'import') as HTMLButtonElement;
     });
 
@@ -335,7 +341,7 @@ invalid line`;
     it('should export cart with price optimization', async () => {
       (getTralbumDetails as any).mockResolvedValue({ price: 10.0 });
 
-      initCart(mockPort);
+      initCart();
 
       const exportButton = mockButtons.find(btn => btn.textContent === 'export') as HTMLButtonElement;
 
@@ -356,7 +362,7 @@ invalid line`;
         <div data-cart='{"items": [{"cart_id": "test123", "item_type": "a", "item_id": 123, "band_name": "Test Band", "item_title": "Test Album", "unit_price": 15, "url": "https://test.bandcamp.com/album/test", "currency": "USD"}]}'></div>
       `);
 
-      initCart(mockPort);
+      initCart();
 
       const exportButton = mockButtons.find(btn => btn.textContent === 'export') as HTMLButtonElement;
 
@@ -371,7 +377,7 @@ invalid line`;
     it('should handle export errors gracefully', async () => {
       (getTralbumDetails as any).mockRejectedValue(new Error('HTTP 404: Not Found'));
 
-      initCart(mockPort);
+      initCart();
 
       const exportButton = mockButtons.find(btn => btn.textContent === 'export') as HTMLButtonElement;
 
@@ -393,7 +399,7 @@ invalid line`;
         <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
       `);
 
-      initCart(mockPort);
+      initCart();
 
       const exportButton = mockButtons.find(btn => btn.textContent === 'export') as HTMLButtonElement;
 
@@ -403,7 +409,75 @@ invalid line`;
     });
   });
 
+  describe('the import port', () => {
+    const pendingImport = JSON.stringify({
+      items: [
+        {
+          item_id: 123,
+          item_type: 'a',
+          item_title: 'Test Album',
+          band_name: 'Test Band',
+          currency: 'USD',
+          url: 'https://test.bandcamp.com/album/test',
+          unit_price: 10
+        }
+      ]
+    });
+
+    beforeEach(() => {
+      createDomNodes(`
+        <div id="sidecartReveal"></div>
+        <div id="sidecartSummary"></div>
+        <div id="item_list"></div>
+        <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
+      `);
+    });
+
+    afterEach(() => {
+      sessionStorage.clear();
+    });
+
+    it('should not open a port when there is nothing to import', async () => {
+      await initCart();
+
+      expect(chrome.runtime.connect).not.toHaveBeenCalled();
+    });
+
+    it('should open its own port for the import rather than sharing the config port', async () => {
+      sessionStorage.setItem('bes_pending_cart_import', pendingImport);
+
+      await initCart();
+
+      expect(chrome.runtime.connect).toHaveBeenCalledWith(null, { name: CART_IMPORT_PORT });
+    });
+
+    it('should close the port once the import completes with nothing else to send', async () => {
+      sessionStorage.setItem('bes_pending_cart_import', pendingImport);
+      await initCart();
+
+      const handler = mockPort.onMessage.addListener.mock.calls[0][0];
+      await handler({ cartImportComplete: { message: 'Successfully added 1 item to cart' } });
+
+      expect(mockPort.disconnect).toHaveBeenCalled();
+    });
+  });
+
   describe('cart import message handling', () => {
+    // The port only exists once an import is under way, which is the only time these messages arrive.
+    const pendingImport = JSON.stringify({
+      items: [
+        {
+          item_id: 123,
+          item_type: 'a',
+          item_title: 'Test Album',
+          band_name: 'Test Band',
+          currency: 'USD',
+          url: 'https://test.bandcamp.com/album/test',
+          unit_price: 10
+        }
+      ]
+    });
+
     beforeEach(async () => {
       createDomNodes(`
         <div id="sidecartReveal"></div>
@@ -411,7 +485,11 @@ invalid line`;
         <div id="item_list"></div>
         <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
       `);
-      initCart(mockPort);
+      sessionStorage.setItem('bes_pending_cart_import', pendingImport);
+
+      await initCart();
+
+      sessionStorage.clear();
     });
 
     it('should add successful cart items to DOM', async () => {
@@ -659,7 +737,7 @@ invalid line`;
         return null;
       });
 
-      await initCart(mockPort);
+      await initCart();
 
       expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_url_cart_param');
       expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_cart_processing');
@@ -675,7 +753,7 @@ invalid line`;
         return null;
       });
 
-      await initCart(mockPort);
+      await initCart();
 
       expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_url_cart_param');
       expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_cart_processing');
@@ -691,7 +769,7 @@ invalid line`;
         return null;
       });
 
-      await initCart(mockPort);
+      await initCart();
 
       expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_url_cart_param');
       expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('bes_cart_processing');
@@ -707,7 +785,7 @@ invalid line`;
         return null;
       });
 
-      await initCart(mockPort);
+      await initCart();
 
       const messageHandler = mockPort.onMessage.addListener.mock.calls[0][0];
 
@@ -746,8 +824,13 @@ invalid line`;
         onMessage: {
           addListener: vi.fn()
         },
-        postMessage: vi.fn()
+        onDisconnect: {
+          addListener: vi.fn()
+        },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
       };
+      vi.mocked(chrome.runtime.connect).mockReturnValue(localMockPort);
 
       createDomNodes(`
         <div id="sidecartReveal"></div>
@@ -757,8 +840,25 @@ invalid line`;
         </div>
         <div data-tralbum='{"current":{"id":1609998585,"type":"album"},"artist":"BES"}' style="display:none"></div>
       `);
+      sessionStorage.setItem(
+        'bes_pending_cart_import',
+        JSON.stringify({
+          items: [
+            {
+              item_id: 123,
+              item_type: 'a',
+              item_title: 'Test Album',
+              band_name: 'Test Band',
+              currency: 'USD',
+              url: 'https://test.bandcamp.com/album/test',
+              unit_price: 10
+            }
+          ]
+        })
+      );
 
-      initCart(localMockPort);
+      await initCart();
+      sessionStorage.clear();
 
       const calls = localMockPort.onMessage.addListener.mock.calls;
       messageHandler = calls[calls.length - 1][0];
@@ -877,10 +977,15 @@ invalid line`;
         onMessage: {
           addListener: vi.fn()
         },
-        postMessage: vi.fn()
+        onDisconnect: {
+          addListener: vi.fn()
+        },
+        postMessage: vi.fn(),
+        disconnect: vi.fn()
       } as any;
+      vi.mocked(chrome.runtime.connect).mockReturnValue(testPort);
 
-      await initCart(testPort);
+      await initCart();
 
       expect(testPort.postMessage).toHaveBeenCalledWith({
         cartImport: { items: expect.any(Array), isCreatingCart: false }

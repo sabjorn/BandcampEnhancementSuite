@@ -1,4 +1,5 @@
 import Logger from '../logger';
+import { DOWNLOAD_PORT } from '../types/ports';
 import { downloadFile, dateString } from '../utilities';
 import {
   showErrorMessage,
@@ -387,7 +388,7 @@ export async function downloadAsZip(): Promise<void> {
   log.info(`Starting zip download for ${urls.length} files via background script`);
 
   try {
-    const port = chrome.runtime.connect({ name: 'bes' });
+    const port = chrome.runtime.connect(null, { name: DOWNLOAD_PORT });
     const { handleMessage } = createZipMessageHandler();
 
     port.onMessage.addListener(async message => {

@@ -15,98 +15,134 @@ vi.mock('../src/utilities', () => ({
   getDB: vi.fn(async () => db)
 }));
 
-import { query, toggle, setTrue, initLabelViewBackend } from '../src/background/label_view_backend';
+import { query, toggle, setTrue, processRequest, initLabelViewBackend } from '../src/background/label_view_backend';
 
-const mockPort = { postMessage: vi.fn() } as unknown as chrome.runtime.Port;
+const respond = async (request: any) => {
+  const sendResponse = vi.fn();
+  const handled = processRequest(request, {} as chrome.runtime.MessageSender, sendResponse);
+
+  if (handled) await vi.waitFor(() => expect(sendResponse).toHaveBeenCalled());
+
+  return { handled, response: sendResponse.mock.calls[0]?.[0] };
+};
 
 describe('Label View Backend', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    db.get.mockResolvedValue(undefined);
   });
 
-  describe('query()', () => {
+  describe('the previews store', () => {
     it('should seed a release it has never seen with false', async () => {
       db.get.mockResolvedValue(undefined);
 
-      await query('previews', '123', mockPort);
+      await expect(query('previews', '123')).resolves.toBe(false);
 
       expect(db.get).toHaveBeenCalledWith('previews', '123');
       expect(db.put).toHaveBeenCalledWith('previews', false, '123');
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ id: { key: '123', value: false } });
     });
 
     it('should report a stored value without rewriting it', async () => {
       db.get.mockResolvedValue(true);
 
-      await query('previews', '123', mockPort);
+      await expect(query('previews', '123')).resolves.toBe(true);
 
       expect(db.put).not.toHaveBeenCalled();
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ id: { key: '123', value: true } });
     });
-  });
 
-  describe('toggle()', () => {
     it('should turn a previewed release off', async () => {
       db.get.mockResolvedValue(true);
 
-      await toggle('previews', '123', mockPort);
+      await expect(toggle('previews', '123')).resolves.toBe(false);
 
       expect(db.put).toHaveBeenCalledWith('previews', false, '123');
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ id: { key: '123', value: false } });
     });
 
     it('should turn an unpreviewed release on', async () => {
       db.get.mockResolvedValue(false);
 
-      await toggle('previews', '123', mockPort);
+      await expect(toggle('previews', '123')).resolves.toBe(true);
 
       expect(db.put).toHaveBeenCalledWith('previews', true, '123');
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ id: { key: '123', value: true } });
+    });
+
+    it('should mark a release previewed', async () => {
+      await setTrue('previews', '123');
+
+      expect(db.put).toHaveBeenCalledWith('previews', true, '123');
     });
   });
 
-  describe('setTrue()', () => {
-    it('should mark the release previewed and report it back', async () => {
-      await setTrue('previews', '123', mockPort);
+  describe('processRequest()', () => {
+    it('should answer a batched query with the state of every release asked for', async () => {
+      db.get.mockImplementation(async (_store: string, key: string) => key === '123');
+
+      const { response } = await respond({ contentScriptQuery: 'queryPreviews', ids: ['123', '456'] });
+
+      expect(response).toEqual({ '123': true, '456': false });
+    });
+
+    it('should answer a toggle with the state it settled on', async () => {
+      db.get.mockResolvedValue(false);
+
+      const { response } = await respond({ contentScriptQuery: 'togglePreview', id: '123' });
 
       expect(db.put).toHaveBeenCalledWith('previews', true, '123');
-      expect(mockPort.postMessage).toHaveBeenCalledWith({ id: { key: '123', value: true } });
+      expect(response).toEqual({ id: '123', value: true });
+    });
+
+    it('should write the mark before answering, so a caller that awaits it knows it landed', async () => {
+      const { response } = await respond({ contentScriptQuery: 'markPreviewed', id: '123' });
+
+      expect(db.put).toHaveBeenCalledWith('previews', true, '123');
+      expect(response).toEqual({ id: '123', value: true });
+    });
+
+    it('should leave messages addressed to other backends alone', async () => {
+      const sendResponse = vi.fn();
+
+      const handled = processRequest(
+        { contentScriptQuery: 'fetchCollectionSummary' },
+        {} as chrome.runtime.MessageSender,
+        sendResponse
+      );
+
+      expect(handled).toBe(false);
+      expect(sendResponse).not.toHaveBeenCalled();
+      expect(db.get).not.toHaveBeenCalled();
+    });
+
+    it('should report a store failure to the caller rather than hanging it', async () => {
+      db.put.mockRejectedValueOnce(new Error('QuotaExceededError'));
+
+      const { response } = await respond({ contentScriptQuery: 'markPreviewed', id: '123' });
+
+      expect(response).toEqual({ error: 'QuotaExceededError' });
     });
   });
 
   describe('initLabelViewBackend()', () => {
-    const connectListeners: ((port: chrome.runtime.Port) => void)[] = [];
-
     beforeEach(() => {
-      connectListeners.length = 0;
       globalThis.chrome = {
         runtime: {
-          onConnect: { addListener: vi.fn(listener => connectListeners.push(listener)) },
-          onInstalled: { addListener: vi.fn() }
+          onMessage: { addListener: vi.fn() },
+          onInstalled: { addListener: vi.fn() },
+          onConnect: { addListener: vi.fn() }
         }
       } as any;
     });
 
-    // #302: a listener registered after an await misses the port that woke the worker.
-    it('should register its listeners without yielding first', () => {
+    // #302: a listener registered after an await misses the message that woke the worker.
+    it('should register its message listener without yielding first', () => {
       void initLabelViewBackend();
 
-      expect(chrome.runtime.onConnect.addListener).toHaveBeenCalled();
-      expect(chrome.runtime.onInstalled.addListener).toHaveBeenCalled();
+      expect(chrome.runtime.onMessage.addListener).toHaveBeenCalledWith(processRequest);
     });
 
-    it('should write a release the content script reports as previewed', async () => {
+    it('should no longer take part in the shared bes port', () => {
       void initLabelViewBackend();
 
-      const messageListeners: ((msg: any) => void)[] = [];
-      connectListeners[0]({
-        name: 'bes',
-        postMessage: vi.fn(),
-        onMessage: { addListener: (listener: (msg: any) => void) => messageListeners.push(listener) }
-      } as unknown as chrome.runtime.Port);
-
-      messageListeners[0]({ setTrue: '123' });
-      await vi.waitFor(() => expect(db.put).toHaveBeenCalledWith('previews', true, '123'));
+      expect(chrome.runtime.onConnect.addListener).not.toHaveBeenCalled();
     });
   });
 });

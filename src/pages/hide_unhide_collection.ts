@@ -1,4 +1,5 @@
 import Logger from '../logger';
+import { HIDE_UNHIDE_PORT } from '../types/ports';
 import { createButton } from '../components/buttons';
 import {
   showSuccessMessage,
@@ -10,10 +11,19 @@ import {
 
 const log = new Logger();
 
-export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
+export async function initHideUnhide(): Promise<void> {
   log.info('hideUnhide init');
 
-  port.onMessage.addListener(msg => {
+  let port: chrome.runtime.Port | null = null;
+
+  const startRun = (request: { hide?: { crumb: string }; unhide?: { crumb: string } }): void => {
+    port?.disconnect();
+    port = chrome.runtime.connect(null, { name: HIDE_UNHIDE_PORT });
+    port.onMessage.addListener(handleMessage);
+    port.postMessage(request);
+  };
+
+  const handleMessage = (msg: any) => {
     if (msg.unhideState) {
       log.info(`Unhide state update: ${JSON.stringify(msg.unhideState)}`);
       updateUnhideButtonState(msg.unhideState);
@@ -40,7 +50,12 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
       log.error(`Hide error: ${JSON.stringify(msg.hideError)}`);
       showErrorMessage(`Hide error: ${msg.hideError.message}`);
     }
-  });
+
+    if (msg.hideComplete || msg.unhideComplete) {
+      port?.disconnect();
+      port = null;
+    }
+  };
 
   const hideButton = createButton({
     className: 'follow-unfollow bes-hide-unhide',
@@ -62,7 +77,7 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
 
       const crumbs = JSON.parse(document.getElementById('js-crumbs-data').getAttribute('data-crumbs'));
       const crumb = crumbs['api/collectionowner/1/hide_unhide_item'];
-      port.postMessage({ hide: { crumb } });
+      startRun({ hide: { crumb } });
     }
   });
   hideButton.id = 'bes-hide-button';
@@ -87,7 +102,7 @@ export async function initHideUnhide(port: chrome.runtime.Port): Promise<void> {
 
       const crumbs = JSON.parse(document.getElementById('js-crumbs-data').getAttribute('data-crumbs'));
       const crumb = crumbs['api/collectionowner/1/hide_unhide_item'];
-      port.postMessage({ unhide: { crumb } });
+      startRun({ unhide: { crumb } });
     }
   });
   unhideButton.id = 'bes-unhide-button';

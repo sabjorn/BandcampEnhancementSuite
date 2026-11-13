@@ -12,7 +12,8 @@ import { inDrawer, allInDrawer, setText, setStyle } from './query';
 import { streamUrlOf, findPlayableTrackAfter, findPlayableTrackBefore } from './trackSelection';
 import { applyTrackState, markRowPlayed } from './trackState';
 import { initCollectionState } from '../../collection';
-import { setPreviewed } from '../../previewHistory';
+import { requestConfig, toggleSetting } from '../../config';
+import { markPreviewed } from '../../previewHistory';
 import { buildAlbumNav, updateAlbumNav } from './albumNav';
 import {
   selectAlbum,
@@ -36,8 +37,6 @@ let audioElement: HTMLAudioElement | null = null;
 let drawerShortcutsRegistered = false;
 let drawerPlayerCreated = false;
 let previousVolume = 1.0;
-let configPort: chrome.runtime.Port | null = null;
-let previewHistoryPort: chrome.runtime.Port | null = null;
 let waveformEnabled = true;
 let requestedAlbumId: string | null = null;
 let fetchCaching = false;
@@ -131,7 +130,11 @@ function bindViewToggle(): void {
     if (enabled === waveformEnabled) return;
 
     showWaveform(enabled);
-    configPort?.postMessage({ toggleWaveformDisplay: {} });
+    void toggleSetting('displayWaveform')
+      .then(config => {
+        if (typeof config.displayWaveform === 'boolean') showWaveform(config.displayWaveform);
+      })
+      .catch(error => log.error(`Failed to toggle the waveform display: ${error}`));
   };
 
   const waveformButton = inDrawer('.bes-toggle-waveform');
@@ -162,7 +165,7 @@ function registerDrawerShortcuts(): void {
   drawerShortcutsRegistered = true;
 }
 
-export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
+export function initDrawerAudioFeatures(): void {
   const canvas = inDrawer<HTMLCanvasElement>('canvas.bes-waveform');
   const bpmDisplay = inDrawer<HTMLSpanElement>('.bes-bpm-number');
 
@@ -170,8 +173,6 @@ export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
     log.warn('Drawer audio feature elements not found');
     return;
   }
-
-  configPort = port;
 
   const audio = ensureAudioElement();
   const currentTarget = { value: undefined as string | undefined };
@@ -198,12 +199,11 @@ export function initDrawerAudioFeatures(port: chrome.runtime.Port): void {
 
   bindViewToggle();
 
-  port.onMessage.addListener((message: { config?: { displayWaveform?: boolean } }) => {
-    if (typeof message?.config?.displayWaveform !== 'boolean') return;
-
-    showWaveform(message.config.displayWaveform);
-  });
-  port.postMessage({ requestConfig: {} });
+  requestConfig()
+    .then(config => {
+      if (typeof config.displayWaveform === 'boolean') showWaveform(config.displayWaveform);
+    })
+    .catch(error => log.error(`Failed to read the waveform config: ${error}`));
 }
 
 type DrawerPlayerParts = ReturnType<typeof buildDrawerPlayer>;
@@ -229,13 +229,11 @@ function startPlayerOnce(): void {
 export async function loadAlbumIntoDrawer(
   albumId: string,
   albumType: string,
-  enableFetchCaching: boolean = false,
-  port?: chrome.runtime.Port
+  enableFetchCaching: boolean = false
 ): Promise<void> {
   log.info(`Loading album ${albumId} (${albumType}) into drawer`);
   requestedAlbumId = albumId;
   fetchCaching = enableFetchCaching;
-  if (port) previewHistoryPort = port;
 
   try {
     const [tralbumDetails, collection] = await Promise.all([
@@ -250,7 +248,7 @@ export async function loadAlbumIntoDrawer(
 
     currentAlbumData = tralbumDetails;
     selectAlbum(albumId);
-    if (previewHistoryPort) setPreviewed(albumId, previewHistoryPort);
+    void markPreviewed(albumId).catch(error => log.warn(`Failed to record preview for ${albumId}: ${error}`));
 
     const elements = getPlayerDrawerElements();
     if (!elements.playerContainer || !elements.tracklistContainer) {
@@ -274,7 +272,7 @@ export async function loadAlbumIntoDrawer(
       drawerPlayerCreated = true;
 
       startPlayerOnce();
-      if (port) initDrawerAudioFeatures(port);
+      initDrawerAudioFeatures();
     }
 
     attachTrackListHandlers();

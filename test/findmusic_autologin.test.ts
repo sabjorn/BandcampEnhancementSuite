@@ -195,4 +195,46 @@ describe('FindMusic Auto-login', () => {
     });
     expect(window.location.href).toBe('');
   });
+
+  it('should explain the disabled button through a tooltip', async () => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    document.body.innerHTML = '';
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { pathname: '/guide', href: '' }
+    });
+
+    mockSendMessage.mockImplementation((message: any) => {
+      if (message.contentScriptQuery === 'checkFindMusicPermissions') {
+        return Promise.resolve({ granted: true });
+      }
+      if (message.contentScriptQuery === 'checkBandcampLogin') {
+        return Promise.resolve({ loggedIn: false });
+      }
+      return Promise.resolve({});
+    });
+
+    document.body.innerHTML = `
+      <div class="MuiContainer-root MuiContainer-maxWidthMd">
+        <div class="MuiBox-root css-14jdev5">Header</div>
+      </div>
+    `;
+
+    await import('../src/findmusic_autologin');
+
+    await eventually(() => {
+      expect(document.querySelector('.bes-tooltip')).toBeTruthy();
+    });
+
+    const button = document.getElementById('bes-findmusic-login-button') as HTMLElement;
+
+    expect(document.querySelector('.bes-tooltip')?.parentElement).toBe(document.body);
+    expect(document.querySelector('.bes-tooltip.visible')).toBeNull();
+
+    button.dispatchEvent(new MouseEvent('mouseenter'));
+
+    const shown = document.querySelector('.bes-tooltip.visible');
+    expect(shown?.textContent).toBe('You must be signed in to Bandcamp');
+  });
 });

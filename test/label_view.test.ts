@@ -260,7 +260,7 @@ describe('FindMusic.club links in the player drawer', () => {
   });
 
   afterEach(() => {
-    document.querySelectorAll('.bes-player-drawer, .bes-findmusic-tooltip').forEach(node => node.remove());
+    document.querySelectorAll('.bes-player-drawer, .bes-tooltip').forEach(node => node.remove());
     cleanupTestNodes();
     delete (globalThis.chrome.runtime as any).sendMessage;
   });
@@ -334,7 +334,7 @@ describe('FindMusic.club links in the player drawer', () => {
     expect(artistLink.getAttribute('title')).toBeNull();
 
     const tooltips = () =>
-      Array.from(document.querySelectorAll('.bes-findmusic-tooltip')).map(tooltip => ({
+      Array.from(document.querySelectorAll('.bes-tooltip')).map(tooltip => ({
         text: tooltip.textContent,
         visible: tooltip.classList.contains('visible')
       }));
@@ -361,7 +361,7 @@ describe('FindMusic.club links in the player drawer', () => {
     clickPreviewFor('123');
     await eventually(() => expect(links()).toHaveLength(1));
 
-    expect(document.querySelectorAll('.bes-findmusic-tooltip')).toHaveLength(1);
+    expect(document.querySelectorAll('.bes-tooltip')).toHaveLength(1);
   });
 
   it('should place the links left of the buy album button', async () => {

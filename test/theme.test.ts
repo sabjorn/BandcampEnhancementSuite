@@ -43,14 +43,15 @@ describe('Theme', () => {
       expect([...referenced].filter(variable => !declared.has(variable))).toEqual([]);
     });
 
-    it('should only reference tokens the struct defines from css/style.css', () => {
-      const layoutProperties = ['--bes-drawer-width'];
+    it('should only reference tokens the struct defines from the injected stylesheets', () => {
+      const layoutProperties = ['--bes-drawer-width', '--bes-tooltip-arrow'];
       const declared = new Set([
         ...THEME_TOKENS.map(themeTokenToCssVariable),
         '--bes-sprite-filter',
         ...layoutProperties
       ]);
-      const referenced = new Set(readCss('style.css').match(/var\(\s*(--bes-[a-z0-9-]+)/g) ?? []);
+      const stylesheets = [readCss('style.css'), readCss('tooltip.css')].join('\n');
+      const referenced = new Set(stylesheets.match(/var\(\s*(--bes-[a-z0-9-]+)/g) ?? []);
       const names = [...referenced].map(match => match.replace(/^var\(\s*/, ''));
 
       expect(names.filter(variable => !declared.has(variable))).toEqual([]);

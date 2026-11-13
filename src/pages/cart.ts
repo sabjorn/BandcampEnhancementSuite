@@ -12,6 +12,7 @@ import {
 } from '../components/notifications';
 import { createShoppingCartItem } from '../components/shoppingCart';
 import { createAddToCartButton } from '../components/cartButton';
+import { attachTooltip } from '../components/tooltip';
 
 const log = new Logger();
 
@@ -114,37 +115,12 @@ function parseUrlCartData(base64Str: string): ParsedUrlCartData | null {
   }
 }
 
-function addDonationHighlight(cartItem: Element, message?: string): void {
+function addDonationHighlight(cartItem: HTMLElement, message?: string): void {
   const displayMessage = message || 'Support this project';
 
   cartItem.classList.add('bes-donation-item');
 
-  const tooltip = document.createElement('div');
-  tooltip.className = 'bes-donation-tooltip';
-  tooltip.textContent = displayMessage;
-  tooltip.style.maxWidth = '400px';
-  tooltip.style.whiteSpace = 'normal';
-  tooltip.style.overflowWrap = 'break-word';
-  tooltip.style.position = 'fixed';
-
-  document.body.appendChild(tooltip);
-
-  const positionTooltip = () => {
-    const itemRect = cartItem.getBoundingClientRect();
-
-    tooltip.style.left = `${itemRect.left + itemRect.width / 2}px`;
-    tooltip.style.top = `${itemRect.top - tooltip.offsetHeight - 8}px`;
-    tooltip.style.transform = 'translateX(-50%)';
-  };
-
-  cartItem.addEventListener('mouseenter', () => {
-    positionTooltip();
-    tooltip.classList.add('visible');
-  });
-
-  cartItem.addEventListener('mouseleave', () => {
-    tooltip.classList.remove('visible');
-  });
+  attachTooltip(cartItem, displayMessage);
 }
 
 export async function initCart(port: chrome.runtime.Port): Promise<void> {

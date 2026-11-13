@@ -2,6 +2,7 @@ import Logger from '../logger';
 import { getTralbumDetails, getTralbumDetailsFromPage, CURRENCY_MINIMUMS, TralbumDetailsResponse } from '../bclient';
 import { getDB, createFetchFunction } from '../utilities';
 import { CART_IMPORT_PORT } from '../types/ports';
+import { PortChannel, perPort } from './portChannel';
 import { getConfig } from './config_backend';
 
 const BASE_URL = 'http://bandcamp.com';
@@ -40,36 +41,27 @@ class CartImportTracker {
   private errors: string[] = [];
   private currentOperation: ImportOperation = 'import';
   private isCreatingCart = false;
-  private port?: chrome.runtime.Port;
-  private abandoned = false;
+  private readonly channel: PortChannel;
 
-  constructor(port?: chrome.runtime.Port) {
-    this.port = port;
+  constructor(port: chrome.runtime.Port) {
+    this.channel = new PortChannel(port);
   }
 
   abandon(): void {
-    this.abandoned = true;
     this.isProcessing = false;
-    log.info('The page that started this import went away, abandoning it');
+    this.channel.abandon();
   }
 
   isAbandoned(): boolean {
-    return this.abandoned;
+    return this.channel.isAbandoned();
   }
 
   send(message: Record<string, unknown>): void {
-    if (this.abandoned) return;
-
-    try {
-      this.port?.postMessage(message);
-    } catch (error) {
-      log.warn(`Could not report import progress, abandoning it: ${error}`);
-      this.abandon();
-    }
+    this.channel.send(message);
   }
 
   async processItems(items: (CartImportItem | string)[], isCreatingCart: boolean = false): Promise<void> {
-    if (this.abandoned) return;
+    if (this.isAbandoned()) return;
 
     if (items.length === 0) {
       this.send({
@@ -232,14 +224,7 @@ class CartImportTracker {
   }
 }
 
-const trackers = new WeakMap<chrome.runtime.Port, CartImportTracker>();
-
-function trackerFor(port: chrome.runtime.Port): CartImportTracker {
-  const tracker = trackers.get(port) ?? new CartImportTracker(port);
-  trackers.set(port, tracker);
-
-  return tracker;
-}
+const trackerFor = perPort(port => new CartImportTracker(port));
 
 export function connectionListenerCallback(port: chrome.runtime.Port): void {
   if (port.name !== CART_IMPORT_PORT) return;

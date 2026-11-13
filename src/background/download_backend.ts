@@ -1,5 +1,6 @@
 import Logger from '../logger';
 import { DOWNLOAD_PORT } from '../types/ports';
+import { PortChannel } from './portChannel';
 import { downloadZip } from 'client-zip';
 import { dateString } from '../utilities';
 
@@ -35,33 +36,7 @@ interface ZipChunk {
   filename: string;
 }
 
-class DownloadChannel {
-  private abandoned = false;
-
-  constructor(private readonly port: chrome.runtime.Port) {}
-
-  abandon(): void {
-    this.abandoned = true;
-    log.info('The page that started this download went away, abandoning it');
-  }
-
-  isAbandoned(): boolean {
-    return this.abandoned;
-  }
-
-  send(message: DownloadProgress | DownloadComplete | ZipChunk): void {
-    if (this.abandoned) return;
-
-    try {
-      this.port.postMessage(message);
-    } catch (error) {
-      log.warn(`Could not reach the page waiting on this download: ${error}`);
-      this.abandon();
-    }
-  }
-}
-
-async function handleDownloadZip(urls: string[], channel: DownloadChannel): Promise<void> {
+async function handleDownloadZip(urls: string[], channel: PortChannel): Promise<void> {
   if (channel.isAbandoned()) return;
 
   log.info(`Starting background download for ${urls.length} files`);
@@ -256,7 +231,7 @@ export function initDownloadBackend(): void {
   chrome.runtime.onConnect.addListener(port => {
     if (port.name !== DOWNLOAD_PORT) return;
 
-    const channel = new DownloadChannel(port);
+    const channel = new PortChannel(port);
     port.onDisconnect.addListener(() => channel.abandon());
 
     port.onMessage.addListener(async (message: DownloadRequest) => {

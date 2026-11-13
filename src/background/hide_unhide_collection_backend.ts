@@ -1,5 +1,6 @@
 import Logger from '../logger';
 import { HIDE_UNHIDE_PORT } from '../types/ports';
+import { PortChannel, perPort } from './portChannel';
 import {
   getCollectionSummary,
   getHiddenItemsRateLimited,
@@ -33,38 +34,33 @@ class ProgressTracker {
   private totalCount = 0;
   private errors: string[] = [];
   private currentAction: 'hide' | 'unhide' = 'unhide';
-  private port?: chrome.runtime.Port;
-  private abandoned = false;
+  private readonly channel: PortChannel;
 
-  constructor(port?: chrome.runtime.Port) {
-    this.port = port;
+  constructor(port: chrome.runtime.Port) {
+    this.channel = new PortChannel(port);
   }
 
   abandon(): void {
-    this.abandoned = true;
     this.isProcessing = false;
-    log.info('The page that started this run went away, abandoning it');
+    this.channel.abandon();
   }
 
   isAbandoned(): boolean {
-    return this.abandoned;
+    return this.channel.isAbandoned();
   }
 
   private send(message: Record<string, unknown>): void {
-    if (this.abandoned) return;
+    this.channel.send(message);
+  }
 
-    try {
-      this.port?.postMessage(message);
-    } catch (error) {
-      log.warn(`Could not report progress, abandoning the run: ${error}`);
-      this.abandon();
-    }
+  reportError(message: Record<string, unknown>): void {
+    this.channel.send(message);
   }
 
   async processItems(items: HideUnhideItem[], action: 'hide' | 'unhide'): Promise<void> {
     this.currentAction = action;
 
-    if (this.abandoned) return;
+    if (this.isAbandoned()) return;
 
     if (items.length === 0) {
       const messageKey = this.currentAction === 'hide' ? 'hideComplete' : 'unhideComplete';
@@ -83,7 +79,7 @@ class ProgressTracker {
     this.broadcastState();
 
     for (const item of items) {
-      if (this.abandoned) return;
+      if (this.isAbandoned()) return;
 
       try {
         log.info(`${item.action}ing item ${item.item_id} (${item.item_type})`);
@@ -145,14 +141,7 @@ class ProgressTracker {
   }
 }
 
-const trackers = new WeakMap<chrome.runtime.Port, ProgressTracker>();
-
-function trackerFor(port: chrome.runtime.Port): ProgressTracker {
-  const tracker = trackers.get(port) ?? new ProgressTracker(port);
-  trackers.set(port, tracker);
-
-  return tracker;
-}
+const trackerFor = perPort(port => new ProgressTracker(port));
 
 export function connectionListenerCallback(port: chrome.runtime.Port): void {
   if (port.name !== HIDE_UNHIDE_PORT) return;
@@ -173,14 +162,6 @@ export async function portListenerCallback(msg: any, port: chrome.runtime.Port):
 
   if (msg.hide) {
     await handleHideRequest(msg.hide.crumb, port);
-  }
-}
-
-function safeSend(port: chrome.runtime.Port, message: Record<string, unknown>): void {
-  try {
-    port.postMessage(message);
-  } catch (error) {
-    log.warn(`Could not reach the page that started this run: ${error}`);
   }
 }
 
@@ -274,7 +255,7 @@ async function handleUnhideRequest(crumb: string | null, port: chrome.runtime.Po
   } catch (error) {
     log.error(`Error in unhide process: ${error}`);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (!tracker.isAbandoned()) safeSend(port, { unhideError: { message: errorMessage } });
+    tracker.reportError({ unhideError: { message: errorMessage } });
   }
 }
 
@@ -376,7 +357,7 @@ async function handleHideRequest(crumb: string | null, port: chrome.runtime.Port
   } catch (error) {
     log.error(`Error in hide process: ${error}`);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (!tracker.isAbandoned()) safeSend(port, { hideError: { message: errorMessage } });
+    tracker.reportError({ hideError: { message: errorMessage } });
   }
 }
 

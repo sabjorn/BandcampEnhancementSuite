@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  requestConfig,
-  toggleSetting,
-  saveKeyboardSettings,
-  resetKeyboardSettings,
-  enableFindMusicCaching
-} from '../src/config';
+import { requestConfig, toggleSetting, saveKeyboardSettings, resetKeyboardSettings } from '../src/config';
 import { DEFAULT_KEYBOARD_SETTINGS } from '../src/types/keyboard';
 
 describe('config requests', () => {
@@ -45,12 +39,6 @@ describe('config requests', () => {
     await resetKeyboardSettings();
 
     expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ contentScriptQuery: 'resetKeyboardSettings' });
-  });
-
-  it('should enable the FindMusic caches after a permission grant', async () => {
-    await enableFindMusicCaching();
-
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ contentScriptQuery: 'enableFindMusicCaching' });
   });
 
   it('should surface a rejected keyboard save as an error the caller can show', async () => {

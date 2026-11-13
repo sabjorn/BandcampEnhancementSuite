@@ -92,8 +92,6 @@ function handlerFor(request: any, log: Logger): ((db: any) => Promise<ConfigResp
       return db => updateKeyboardSettings(db, request.settings, log);
     case 'resetKeyboardSettings':
       return db => resetKeyboardSettings(db, log);
-    case 'enableFindMusicCaching':
-      return db => enableFindMusicCaching(db, log);
     default:
       return null;
   }
@@ -210,18 +208,6 @@ export async function toggleTheme(db: any, log: Logger): Promise<Config> {
 
   await db.put('config', db_config, 'config');
   await syncDarkThemeRegistration(newThemeName, log);
-
-  return db_config;
-}
-
-export async function enableFindMusicCaching(db: any, log: Logger): Promise<Config> {
-  log.info('enabling FindMusic.club caching after permission grant');
-
-  const db_config = await db.get('config', 'config');
-  db_config['enableMetadataCaching'] = true;
-  db_config['enableFetchCaching'] = true;
-  db_config['enablePlayedCaching'] = true;
-  await db.put('config', db_config, 'config');
 
   return db_config;
 }

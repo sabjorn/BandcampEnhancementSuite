@@ -8,8 +8,7 @@ export type BesRequest =
   | { contentScriptQuery: 'requestConfig' }
   | { contentScriptQuery: 'toggleSetting'; setting: ToggleName }
   | { contentScriptQuery: 'updateKeyboardSettings'; settings: KeyboardSettings }
-  | { contentScriptQuery: 'resetKeyboardSettings' }
-  | { contentScriptQuery: 'enableFindMusicCaching' };
+  | { contentScriptQuery: 'resetKeyboardSettings' };
 
 export async function sendRequest<T>(message: BesRequest): Promise<T> {
   const response = (await chrome.runtime.sendMessage(message)) as T | undefined;

@@ -6,7 +6,6 @@ import {
   updateKeyboardSettings,
   resetKeyboardSettings,
   togglePlayedCaching,
-  enableFindMusicCaching,
   toggleTheme,
   setupDB
 } from '../src/background/config_backend';
@@ -228,22 +227,6 @@ describe('Config Backend', () => {
       expect(mockDb.put).toHaveBeenCalledWith(
         'config',
         { enablePlayedCaching: false, enableMetadataCaching: true, enableFetchCaching: true },
-        'config'
-      );
-    });
-
-    it('should be enabled alongside the other caching settings on permission grant', async () => {
-      const mockDb = makeDb({
-        enablePlayedCaching: false,
-        enableMetadataCaching: false,
-        enableFetchCaching: false
-      });
-
-      await enableFindMusicCaching(mockDb, new Logger());
-
-      expect(mockDb.put).toHaveBeenCalledWith(
-        'config',
-        { enablePlayedCaching: true, enableMetadataCaching: true, enableFetchCaching: true },
         'config'
       );
     });

@@ -20,10 +20,6 @@ export function resetKeyboardSettings(): Promise<Config> {
   return sendRequest<Config>({ contentScriptQuery: 'resetKeyboardSettings' });
 }
 
-export function enableFindMusicCaching(): Promise<Config> {
-  return sendRequest<Config>({ contentScriptQuery: 'enableFindMusicCaching' });
-}
-
 export function isKeyboardSettingsError(response: ConfigResponse): response is { keyboardSettingsError: string[] } {
   return 'keyboardSettingsError' in response;
 }

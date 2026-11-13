@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   requestConfig,
-  updateConfig,
   toggleSetting,
   saveKeyboardSettings,
   resetKeyboardSettings,
@@ -30,15 +29,6 @@ describe('config requests', () => {
     expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
       contentScriptQuery: 'toggleSetting',
       setting: 'displayWaveform'
-    });
-  });
-
-  it('should write a partial config', async () => {
-    await updateConfig({ albumOnCheckoutDisabled: true });
-
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
-      contentScriptQuery: 'updateConfig',
-      config: { albumOnCheckoutDisabled: true }
     });
   });
 

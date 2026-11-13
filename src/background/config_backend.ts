@@ -82,8 +82,6 @@ function handlerFor(request: any, log: Logger): ((db: any) => Promise<ConfigResp
   switch (request.contentScriptQuery) {
     case 'requestConfig':
       return db => readConfig(db);
-    case 'updateConfig':
-      return db => synchronizeConfig(db, request.config, log);
     case 'toggleSetting': {
       const toggle = TOGGLES[request.setting as ToggleName];
       if (!toggle) return () => Promise.reject(new Error(`Unknown setting ${request.setting}`));
@@ -149,16 +147,6 @@ export async function initConfigBackend(): Promise<void> {
 
   await getConfig();
   log.info('Config database initialized');
-}
-
-export async function synchronizeConfig(db: any, config: Partial<Config>, log: Logger): Promise<Config> {
-  const db_config = await db.get('config', 'config');
-  const merged_config = mergeData(db_config, config);
-
-  await db.put('config', merged_config, 'config');
-  await syncDarkThemeRegistration(merged_config.themeName, log);
-
-  return merged_config;
 }
 
 export async function toggleWaveformDisplay(db: any, log: Logger): Promise<Config> {

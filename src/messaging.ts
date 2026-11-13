@@ -6,7 +6,6 @@ export type BesRequest =
   | { contentScriptQuery: 'togglePreview'; id: string }
   | { contentScriptQuery: 'markPreviewed'; id: string }
   | { contentScriptQuery: 'requestConfig' }
-  | { contentScriptQuery: 'updateConfig'; config: Partial<Config> }
   | { contentScriptQuery: 'toggleSetting'; setting: ToggleName }
   | { contentScriptQuery: 'updateKeyboardSettings'; settings: KeyboardSettings }
   | { contentScriptQuery: 'resetKeyboardSettings' }

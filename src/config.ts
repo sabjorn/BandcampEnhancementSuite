@@ -8,10 +8,6 @@ export function requestConfig(): Promise<Config> {
   return sendRequest<Config>({ contentScriptQuery: 'requestConfig' });
 }
 
-export function updateConfig(config: Partial<Config>): Promise<Config> {
-  return sendRequest<Config>({ contentScriptQuery: 'updateConfig', config });
-}
-
 export function toggleSetting(setting: ToggleName): Promise<Config> {
   return sendRequest<Config>({ contentScriptQuery: 'toggleSetting', setting });
 }

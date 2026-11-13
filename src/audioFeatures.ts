@@ -7,13 +7,6 @@ import { mousedownCallback } from './utilities';
 
 const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
 
-interface PortMessage {
-  onMessage: {
-    addListener: (callback: (message: any) => void) => void;
-  };
-  postMessage: (message: any) => void;
-}
-
 export async function toggleWaveformCanvas(
   canvas: HTMLCanvasElement,
   canvasDisplayToggle: HTMLInputElement,

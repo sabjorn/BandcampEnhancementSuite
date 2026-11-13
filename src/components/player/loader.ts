@@ -229,8 +229,7 @@ function startPlayerOnce(): void {
 export async function loadAlbumIntoDrawer(
   albumId: string,
   albumType: string,
-  enableFetchCaching: boolean = false,
-  port?: chrome.runtime.Port
+  enableFetchCaching: boolean = false
 ): Promise<void> {
   log.info(`Loading album ${albumId} (${albumType}) into drawer`);
   requestedAlbumId = albumId;

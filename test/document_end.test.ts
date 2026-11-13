@@ -78,7 +78,7 @@ describe('BES Drawer', () => {
     const endModule = await import('../src/document_end');
     initBESDrawer = endModule.initBESDrawer;
 
-    initBESDrawer(mockPort as any);
+    initBESDrawer();
   });
 
   afterEach(() => {
@@ -283,7 +283,7 @@ describe('BES Drawer', () => {
     document.body.innerHTML = '';
     createPagedataWithLoginState(false);
     createDomNodes('<body></body>');
-    initBESDrawer(mockPort as any);
+    initBESDrawer();
 
     const findMusicButton = document.querySelector('.bes-drawer-button') as HTMLButtonElement;
     expect(findMusicButton).toBeTruthy();
@@ -310,7 +310,7 @@ describe('Played caching setting', () => {
 
     const endModule = await import('../src/document_end');
     initBESDrawer = endModule.initBESDrawer;
-    initBESDrawer(mockPort as any);
+    initBESDrawer();
 
     await new Promise(resolve => setTimeout(resolve, 0));
   };
@@ -386,7 +386,7 @@ describe('Dark mode setting', () => {
     );
 
     const endModule = await import('../src/document_end');
-    endModule.initBESDrawer(mockPort as any);
+    endModule.initBESDrawer();
 
     await new Promise(resolve => setTimeout(resolve, 0));
   };

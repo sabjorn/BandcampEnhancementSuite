@@ -11,10 +11,7 @@ export function tralbumTypeToIdType(tralbumType?: string): string | null {
   return null;
 }
 
-export function renderFeedPreviews(
-  port: chrome.runtime.Port,
-  previewState: { previewOpen: boolean; previewId?: string }
-): void {
+export function renderFeedPreviews(previewState: { previewOpen: boolean; previewId?: string }): void {
   document.querySelectorAll(FEED_ITEM_SELECTOR).forEach(item => {
     const container = item as HTMLElement;
     if (container.dataset.besPreview === 'true') return;
@@ -35,7 +32,7 @@ export function renderFeedPreviews(
       : container;
     anchor.appendChild(preview);
 
-    attachPreviewListeners(preview, port, previewState, false);
+    attachPreviewListeners(preview, previewState, false);
   });
 }
 
@@ -82,12 +79,12 @@ function revealFeedItem(item: DiscographyItem): void {
   story.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
 }
 
-export async function initFeed(port: chrome.runtime.Port): Promise<void> {
+export async function initFeed(): Promise<void> {
   const log = new Logger();
   const previewState: { previewOpen: boolean; previewId?: string } = { previewOpen: false, previewId: undefined };
 
   log.info('Rendering BES feed previews...');
-  renderFeedPreviews(port, previewState);
+  renderFeedPreviews(previewState);
   setAlbumSource({
     extract: extractFeedOrder,
     loadMore: loadMoreFeedItems,
@@ -98,7 +95,7 @@ export async function initFeed(port: chrome.runtime.Port): Promise<void> {
   const feedContainer = document.getElementById('stories') || document.body;
   const observer = new MutationObserver(() => {
     observer.disconnect();
-    renderFeedPreviews(port, previewState);
+    renderFeedPreviews(previewState);
     updateDiscographyOrder();
     observer.observe(feedContainer, { childList: true, subtree: true });
   });

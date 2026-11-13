@@ -76,7 +76,7 @@ function createToggleSetting(id: string, labelText: string, visible: boolean = t
   return { row, toggle };
 }
 
-export const initBESDrawer = (config_port: chrome.runtime.Port): void => {
+export const initBESDrawer = (): void => {
   if (document.querySelector('.bes-drawer')) {
     log.debug('BES drawer already exists');
     return;
@@ -356,15 +356,6 @@ const documentEnd = async (): Promise<void> => {
     initDownload();
   }
 
-  const config_port: chrome.runtime.Port = (() => {
-    try {
-      return chrome.runtime.connect(null, { name: 'bes' });
-    } catch (e: unknown) {
-      log.error(`Failed to connect to the background port: ${e}`);
-      throw e;
-    }
-  })();
-
   const configReady: Promise<Partial<Config>> = requestConfig().catch(error => {
     log.error(`Failed to read the config: ${error}`);
     return {};
@@ -383,7 +374,7 @@ const documentEnd = async (): Promise<void> => {
 
     if (keyboardSettings) updateKeyboardSettings(keyboardSettings);
 
-    await initLabelView(config_port, enableFetchCaching ?? false);
+    await initLabelView(enableFetchCaching ?? false);
   })().catch(error => log.error(`Label view initialization failed: ${error}`));
 
   const playerReady = (async () => {
@@ -424,10 +415,10 @@ const documentEnd = async (): Promise<void> => {
 
   const checkIsFeedPage: Element | null = document.querySelector('#stories');
   if (checkIsFeedPage) {
-    await initFeed(config_port);
+    await initFeed();
   }
 
-  initBESDrawer(config_port);
+  initBESDrawer();
 
   await Promise.all([themeReady, labelViewReady, playerReady, cartReady]);
 };

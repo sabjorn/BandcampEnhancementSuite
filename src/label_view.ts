@@ -68,8 +68,7 @@ function drawer(): ReturnType<typeof createPlayerDrawer> {
 export function fillFrame(
   event: Event,
   previewState: { previewOpen: boolean; previewId?: string },
-  enableFetchCaching: boolean = false,
-  port?: chrome.runtime.Port
+  enableFetchCaching: boolean = false
 ): void {
   const target = previewTargetFrom(event);
   if (!target) return;
@@ -93,7 +92,7 @@ export function fillFrame(
 
   const renderLinksForCurrentPreview = () => updateFindMusicLinks(currentPreview?.id, currentPreview?.idType);
 
-  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching, port)
+  loadAlbumIntoDrawer(target.id, target.idType, enableFetchCaching)
     .then(renderLinksForCurrentPreview)
     .catch(error => {
       log.error(`Failed to load album into drawer: ${error}`);
@@ -103,7 +102,6 @@ export function fillFrame(
 
 export function attachPreviewListeners(
   root: Document | HTMLElement,
-  port: chrome.runtime.Port,
   previewState: { previewOpen: boolean; previewId?: string },
   enableFetchCaching: boolean = false
 ): void {
@@ -113,7 +111,7 @@ export function attachPreviewListeners(
 
     button.dataset.besBound = 'true';
     button.addEventListener('click', event => {
-      fillFrame(event, previewState, enableFetchCaching, port);
+      fillFrame(event, previewState, enableFetchCaching);
     });
   });
 }
@@ -124,11 +122,11 @@ export function addedGridItems(mutations: MutationRecord[]): boolean {
   );
 }
 
-export async function initLabelView(port: chrome.runtime.Port, enableFetchCaching: boolean = false): Promise<void> {
+export async function initLabelView(enableFetchCaching: boolean = false): Promise<void> {
   const previewState = { previewOpen: false, previewId: undefined };
 
   log.info('Rendering BES...');
-  await renderDom(port, previewState, enableFetchCaching);
+  await renderDom(previewState, enableFetchCaching);
 
   updateDiscographyOrder();
 
@@ -141,7 +139,7 @@ export async function initLabelView(port: chrome.runtime.Port, enableFetchCachin
     if (!addedGridItems(mutations)) return;
 
     updateDiscographyOrder();
-    void renderPreviews(port, previewState, enableFetchCaching);
+    void renderPreviews(previewState, enableFetchCaching);
     addGridWishlistStars(collection);
   });
 
@@ -269,7 +267,6 @@ export function generatePreview(id: string, idType: string): HTMLDivElement {
 }
 
 export async function renderPreviews(
-  port: chrome.runtime.Port,
   previewState: { previewOpen: boolean; previewId?: string },
   enableFetchCaching: boolean = false
 ): Promise<void> {
@@ -292,7 +289,7 @@ export async function renderPreviews(
     rendered.push(id);
   });
 
-  attachPreviewListeners(document, port, previewState, enableFetchCaching);
+  attachPreviewListeners(document, previewState, enableFetchCaching);
 
   document.querySelectorAll<HTMLElement>('.historybox').forEach(item => {
     if (item.dataset.besBound === 'true') return;
@@ -308,11 +305,10 @@ export async function renderPreviews(
 }
 
 export async function renderDom(
-  port: chrome.runtime.Port,
   previewState: { previewOpen: boolean; previewId?: string },
   enableFetchCaching: boolean = false
 ): Promise<void> {
-  await renderPreviews(port, previewState, enableFetchCaching);
+  await renderPreviews(previewState, enableFetchCaching);
 
   const pagedata = document.querySelector('#pagedata');
   if (!pagedata) return;

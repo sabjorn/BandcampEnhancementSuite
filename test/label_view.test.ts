@@ -76,7 +76,7 @@ describe('LabelView', () => {
     });
 
     it('should initialize label view functionality', async () => {
-      await expect(initLabelView(mockPort as any)).resolves.not.toThrow();
+      await expect(initLabelView()).resolves.not.toThrow();
     });
   });
 
@@ -568,7 +568,7 @@ describe('album wishlist star on the label page grid', () => {
   // The collection summary needs a round trip through the service worker, so the grid is rendered
   // first and decorated once the state lands.
   it('should not depend on the grid render, which happens before the collection state arrives', () => {
-    render(mockPort as any, { previewOpen: false });
+    render({ previewOpen: false });
     expect(stars().length).toBe(0);
 
     addStars(collection);
@@ -765,7 +765,7 @@ describe('hydrating the history boxes on a label page', () => {
   });
 
   it('should ask for every release in the grid in a single request', async () => {
-    await renderPreviews(mockPort as unknown as chrome.runtime.Port, previewState());
+    await renderPreviews(previewState());
 
     expect(vi.mocked(queryPreviews)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(queryPreviews)).toHaveBeenCalledWith(['111', '222']);
@@ -774,7 +774,7 @@ describe('hydrating the history boxes on a label page', () => {
   it('should mark the boxes the backend reports as previewed', async () => {
     vi.mocked(queryPreviews).mockResolvedValue({ '111': true, '222': false });
 
-    await renderPreviews(mockPort as unknown as chrome.runtime.Port, previewState());
+    await renderPreviews(previewState());
 
     const box = (id: string) => document.querySelector(`[data-item-id="album-${id}"] .historybox`);
     expect(box('111')?.classList.contains('following')).toBe(true);
@@ -810,10 +810,10 @@ describe('previews for grid items the page adds later', () => {
 
   it('should render controls for an item appended after the first pass', async () => {
     const state = previewState();
-    await renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+    await renderPreviews(state);
 
     const item = appendGridItem('album-222');
-    await renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+    await renderPreviews(state);
 
     expect(item.querySelector('.open-iframe')).toBeTruthy();
     expect(item.querySelector('.historybox')).toBeTruthy();
@@ -822,11 +822,11 @@ describe('previews for grid items the page adds later', () => {
 
   it('should leave the items it already rendered alone', async () => {
     const state = previewState();
-    await renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+    await renderPreviews(state);
 
     appendGridItem('album-222');
     vi.mocked(queryPreviews).mockClear();
-    await renderPreviews(mockPort as unknown as chrome.runtime.Port, state);
+    await renderPreviews(state);
 
     const first = document.querySelector('[data-item-id="album-111"]') as HTMLElement;
     expect(first.querySelectorAll('.preview').length).toBe(1);
@@ -845,7 +845,7 @@ describe('marking the release an album page was opened for', () => {
   });
 
   it('should mark the item id the page was loaded with', async () => {
-    await renderDom(mockPort as unknown as chrome.runtime.Port, { previewOpen: false, previewId: undefined });
+    await renderDom({ previewOpen: false, previewId: undefined });
 
     expect(vi.mocked(markPreviewed)).toHaveBeenCalledWith('789');
   });

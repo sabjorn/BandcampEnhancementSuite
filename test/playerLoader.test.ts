@@ -1234,7 +1234,7 @@ describe('PlayerLoader - Waveform config from the extension', () => {
     audioFeatures = await import('../src/audioFeatures');
     discography = await import('../src/discography');
     discography.updateDiscographyOrder();
-    await player.loadAlbumIntoDrawer('123', 'album', false, port as never);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
     await vi.waitFor(() =>
       expect(view('.bes-slider-container').classList.contains('bes-visible')).toBe(!displayWaveform)
     );
@@ -1261,7 +1261,7 @@ describe('PlayerLoader - Waveform config from the extension', () => {
     discography = await import('../src/discography');
     audioFeatures = await import('../src/audioFeatures');
     discography.updateDiscographyOrder();
-    await player.loadAlbumIntoDrawer('123', 'album', false, port as never);
+    await player.loadAlbumIntoDrawer('123', 'album', false);
   });
 
   afterEach(() => {

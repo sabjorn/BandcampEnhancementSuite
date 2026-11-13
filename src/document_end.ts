@@ -414,7 +414,7 @@ const documentEnd = async (): Promise<void> => {
     const { has_cart }: { has_cart: boolean } = JSON.parse(dataBlobAttr);
     if (!has_cart && !hasStoredCartData) return;
 
-    await initCart(config_port);
+    await initCart();
   })().catch(error => log.error(`Cart initialization failed: ${error}`));
 
   const checkIsCollectionPage: Element | null = document.querySelector('ol.collection-grid.editable');

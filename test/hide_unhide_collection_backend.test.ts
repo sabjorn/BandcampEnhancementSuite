@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   connectionListenerCallback,
-  portListenerCallback,
   initHideUnhideCollectionBackend
 } from '../src/background/hide_unhide_collection_backend';
 import { HIDE_UNHIDE_PORT } from '../src/types/ports';
@@ -29,6 +28,12 @@ const stubPort = (name: string = HIDE_UNHIDE_PORT) => ({
   onMessage: { addListener: vi.fn() },
   onDisconnect: { addListener: vi.fn() }
 });
+
+const handlerFor = (port: any) => {
+  connectionListenerCallback(port);
+
+  return port.onMessage.addListener.mock.calls[0][0];
+};
 
 describe('unhide_backend', () => {
   let mockPort: any;
@@ -65,7 +70,7 @@ describe('unhide_backend', () => {
     });
   });
 
-  describe('portListenerCallback', () => {
+  describe('handling a message on the port', () => {
     beforeEach(() => {
       connectionListenerCallback(mockPort);
     });
@@ -173,7 +178,7 @@ describe('unhide_backend', () => {
         }
       };
 
-      await portListenerCallback(message, mockPort);
+      await handlerFor(mockPort)(message);
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com');
       expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(
@@ -217,7 +222,7 @@ describe('unhide_backend', () => {
         }
       };
 
-      await portListenerCallback(message, mockPort);
+      await handlerFor(mockPort)(message);
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com');
       expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(
@@ -240,7 +245,7 @@ describe('unhide_backend', () => {
         }
       };
 
-      await portListenerCallback(message, mockPort);
+      await handlerFor(mockPort)(message);
 
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         unhideError: { message: 'Failed to get collection summary: Error: API Error' }
@@ -375,7 +380,7 @@ describe('unhide_backend', () => {
         }
       };
 
-      await portListenerCallback(message, mockPort);
+      await handlerFor(mockPort)(message);
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com');
       expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(
@@ -436,7 +441,7 @@ describe('unhide_backend', () => {
         }
       };
 
-      await portListenerCallback(message, mockPort);
+      await handlerFor(mockPort)(message);
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com');
       expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(
@@ -459,7 +464,7 @@ describe('unhide_backend', () => {
         }
       };
 
-      await portListenerCallback(message, mockPort);
+      await handlerFor(mockPort)(message);
 
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         hideError: { message: 'Failed to get collection summary: Error: Collection API Error' }
@@ -583,7 +588,7 @@ describe('unhide_backend', () => {
         }
       };
 
-      const hidePromise = portListenerCallback(hideMessage, mockPort);
+      const hidePromise = handlerFor(mockPort)(hideMessage);
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
@@ -708,7 +713,7 @@ describe('unhide_backend', () => {
         }
       };
 
-      await portListenerCallback(message, mockPort);
+      await handlerFor(mockPort)(message);
 
       expect(getCollectionSummary).toHaveBeenCalledWith('https://bandcamp.com');
       expect(getHiddenItemsRateLimited).toHaveBeenCalledWith(
@@ -750,10 +755,9 @@ describe('unhide_backend', () => {
     it('should answer the port that asked, not the one that connected first', async () => {
       const first = stubPort();
       const second = stubPort();
-      connectionListenerCallback(first as any);
-      connectionListenerCallback(second as any);
+      handlerFor(first);
 
-      await portListenerCallback({ unhide: { crumb: 'test-crumb' } }, second as any);
+      await handlerFor(second)({ unhide: { crumb: 'test-crumb' } });
 
       expect(second.postMessage).toHaveBeenCalled();
       expect(first.postMessage).not.toHaveBeenCalled();
@@ -761,11 +765,11 @@ describe('unhide_backend', () => {
 
     it('should stop reporting once the page it was started from goes away', async () => {
       const port = stubPort();
-      connectionListenerCallback(port as any);
+      const handle = handlerFor(port);
       const disconnected = port.onDisconnect.addListener.mock.calls[0][0] as () => void;
 
       disconnected();
-      await portListenerCallback({ unhide: { crumb: 'test-crumb' } }, port as any);
+      await handle({ unhide: { crumb: 'test-crumb' } });
 
       expect(port.postMessage).not.toHaveBeenCalled();
       expect(hideUnhideRateLimited).not.toHaveBeenCalled();

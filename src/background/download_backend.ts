@@ -1,6 +1,6 @@
 import Logger from '../logger';
 import { DOWNLOAD_PORT } from '../types/ports';
-import { PortChannel } from './portChannel';
+import { PortChannel, createPortChannel } from './portChannel';
 import { downloadZip } from 'client-zip';
 import { dateString } from '../utilities';
 
@@ -231,7 +231,7 @@ export function initDownloadBackend(): void {
   chrome.runtime.onConnect.addListener(port => {
     if (port.name !== DOWNLOAD_PORT) return;
 
-    const channel = new PortChannel(port);
+    const channel = createPortChannel(port);
     port.onDisconnect.addListener(() => channel.abandon());
 
     port.onMessage.addListener(async (message: DownloadRequest) => {

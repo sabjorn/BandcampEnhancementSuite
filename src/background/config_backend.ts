@@ -78,12 +78,29 @@ export type ToggleName = keyof typeof TOGGLES;
 
 export type ConfigResponse = Config | { keyboardSettingsError: string[] };
 
-function handlerFor(request: any, log: Logger): ((db: any) => Promise<ConfigResponse>) | null {
+export type ConfigRequest =
+  | { contentScriptQuery: 'requestConfig' }
+  | { contentScriptQuery: 'toggleSetting'; setting: ToggleName }
+  | { contentScriptQuery: 'updateKeyboardSettings'; settings: KeyboardSettings }
+  | { contentScriptQuery: 'resetKeyboardSettings' };
+
+const CONFIG_QUERIES: ConfigRequest['contentScriptQuery'][] = [
+  'requestConfig',
+  'toggleSetting',
+  'updateKeyboardSettings',
+  'resetKeyboardSettings'
+];
+
+function isConfigRequest(request: any): request is ConfigRequest {
+  return CONFIG_QUERIES.includes(request?.contentScriptQuery);
+}
+
+function handlerFor(request: ConfigRequest, log: Logger): (db: any) => Promise<ConfigResponse> {
   switch (request.contentScriptQuery) {
     case 'requestConfig':
       return db => readConfig(db);
     case 'toggleSetting': {
-      const toggle = TOGGLES[request.setting as ToggleName];
+      const toggle = TOGGLES[request.setting];
       if (!toggle) return () => Promise.reject(new Error(`Unknown setting ${request.setting}`));
 
       return db => toggle(db, log);
@@ -92,8 +109,10 @@ function handlerFor(request: any, log: Logger): ((db: any) => Promise<ConfigResp
       return db => updateKeyboardSettings(db, request.settings, log);
     case 'resetKeyboardSettings':
       return db => resetKeyboardSettings(db, log);
-    default:
-      return null;
+    default: {
+      const unhandled: never = request;
+      return () => Promise.reject(new Error(`Unhandled config request ${JSON.stringify(unhandled)}`));
+    }
   }
 }
 
@@ -102,9 +121,10 @@ export function processRequest(
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: any) => void
 ): boolean {
+  if (!isConfigRequest(request)) return false;
+
   const log = new Logger();
   const handler = handlerFor(request, log);
-  if (!handler) return false;
 
   (async () => {
     const db = await getDB();

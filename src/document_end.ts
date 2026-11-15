@@ -16,7 +16,6 @@ import {
   toggleSetting,
   saveKeyboardSettings,
   resetKeyboardSettings,
-  isKeyboardSettingsError,
   Config,
   ConfigResponse,
   ToggleName
@@ -178,7 +177,7 @@ export const initBESDrawer = (): void => {
   };
 
   const applyConfig = (response: ConfigResponse): void => {
-    if (isKeyboardSettingsError(response)) {
+    if ('keyboardSettingsError' in response) {
       const message = `Keyboard settings error: ${response.keyboardSettingsError.join(', ')}`;
       log.error(message);
       alert(message);

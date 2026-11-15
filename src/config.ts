@@ -19,7 +19,3 @@ export function saveKeyboardSettings(settings: KeyboardSettings): Promise<Config
 export function resetKeyboardSettings(): Promise<Config> {
   return sendRequest<Config>({ contentScriptQuery: 'resetKeyboardSettings' });
 }
-
-export function isKeyboardSettingsError(response: ConfigResponse): response is { keyboardSettingsError: string[] } {
-  return 'keyboardSettingsError' in response;
-}

@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import {
-  connectionListenerCallback,
-  portListenerCallback,
-  getSupportTralbumDetails
-} from '../src/background/cart_import_backend';
+import { connectionListenerCallback, getSupportTralbumDetails } from '../src/background/cart_import_backend';
 import { CART_IMPORT_PORT } from '../src/types/ports';
 
 vi.mock('../src/logger', () => ({
@@ -41,6 +37,12 @@ const stubPort = (name: string = CART_IMPORT_PORT) =>
     postMessage: vi.fn()
   }) as any;
 
+const handlerFor = (port: any) => {
+  connectionListenerCallback(port);
+
+  return port.onMessage.addListener.mock.calls[0][0];
+};
+
 describe('cart_import_backend', () => {
   let mockPort: any;
 
@@ -76,7 +78,7 @@ describe('cart_import_backend', () => {
       connectionListenerCallback(first);
       connectionListenerCallback(second);
 
-      await portListenerCallback({ cartImport: { items: [] } }, second);
+      await handlerFor(second)({ cartImport: { items: [] } });
 
       expect(second.postMessage).toHaveBeenCalled();
       expect(first.postMessage).not.toHaveBeenCalled();
@@ -88,13 +90,13 @@ describe('cart_import_backend', () => {
       const disconnected = port.onDisconnect.addListener.mock.calls[0][0] as () => void;
 
       disconnected();
-      await portListenerCallback({ cartImport: { items: [] } }, port);
+      await handlerFor(port)({ cartImport: { items: [] } });
 
       expect(port.postMessage).not.toHaveBeenCalled();
     });
   });
 
-  describe('portListenerCallback', () => {
+  describe('handling a message on the port', () => {
     beforeEach(() => {
       connectionListenerCallback(mockPort);
     });
@@ -123,7 +125,7 @@ describe('cart_import_backend', () => {
       it('should process cart import with existing prices and skip API call (optimization)', async () => {
         (getTralbumDetails as any).mockResolvedValue({ is_purchasable: true });
 
-        await portListenerCallback({ cartImport: { items: [mockCartItems[0]] } }, mockPort);
+        await handlerFor(mockPort)({ cartImport: { items: [mockCartItems[0]] } });
 
         expect(
           getTralbumDetails,
@@ -144,7 +146,7 @@ describe('cart_import_backend', () => {
       });
 
       it('should send successful completion message', async () => {
-        await portListenerCallback({ cartImport: { items: [mockCartItems[0]] } }, mockPort);
+        await handlerFor(mockPort)({ cartImport: { items: [mockCartItems[0]] } });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartImportComplete: { message: 'Successfully added 1 item to cart' }
@@ -161,7 +163,7 @@ describe('cart_import_backend', () => {
           bandcamp_url: 'https://test.bandcamp.com/track/test'
         });
 
-        await portListenerCallback({ cartImport: { items: [mockCartItems[1]] } }, mockPort);
+        await handlerFor(mockPort)({ cartImport: { items: [mockCartItems[1]] } });
 
         expect(getTralbumDetails).toHaveBeenCalledWith(456, 't', 'http://bandcamp.com', expect.any(Function));
         expect(mockPort.postMessage).toHaveBeenCalledWith({
@@ -187,7 +189,7 @@ describe('cart_import_backend', () => {
           bandcamp_url: 'https://test.bandcamp.com/track/test'
         });
 
-        await portListenerCallback({ cartImport: { items: [mockCartItems[1]] } }, mockPort);
+        await handlerFor(mockPort)({ cartImport: { items: [mockCartItems[1]] } });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartAddRequest: {
@@ -205,7 +207,7 @@ describe('cart_import_backend', () => {
       it('should handle errors when fetching price fails', async () => {
         (getTralbumDetails as any).mockRejectedValue(new Error('HTTP 404: Not Found'));
 
-        await portListenerCallback({ cartImport: { items: [mockCartItems[1]] } }, mockPort);
+        await handlerFor(mockPort)({ cartImport: { items: [mockCartItems[1]] } });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -226,7 +228,7 @@ describe('cart_import_backend', () => {
         const mixedItems = [mockCartItems[0], mockCartItems[1]];
         (getTralbumDetails as any).mockRejectedValue(new Error('HTTP 404: Not Found'));
 
-        await portListenerCallback({ cartImport: { items: mixedItems } }, mockPort);
+        await handlerFor(mockPort)({ cartImport: { items: mixedItems } });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartImportComplete: { message: 'Successfully added 1 item to cart. 1 items could not be added' }
@@ -237,7 +239,7 @@ describe('cart_import_backend', () => {
         const multipleItems = [mockCartItems[0], mockCartItems[1]];
         (getTralbumDetails as any).mockResolvedValue({ price: 5.0, is_purchasable: true });
 
-        await portListenerCallback({ cartImport: { items: multipleItems } }, mockPort);
+        await handlerFor(mockPort)({ cartImport: { items: multipleItems } });
 
         const stateCalls = (mockPort.postMessage as any).mock.calls.filter(
           (call: any) => call[0].cartImportState !== undefined
@@ -257,7 +259,7 @@ describe('cart_import_backend', () => {
       });
 
       it('should handle empty items array', async () => {
-        await portListenerCallback({ cartImport: { items: [] } }, mockPort);
+        await handlerFor(mockPort)({ cartImport: { items: [] } });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartImportComplete: { message: 'No items found to import' }
@@ -287,7 +289,7 @@ describe('cart_import_backend', () => {
           bandcamp_url: mockUrls[0]
         });
 
-        await portListenerCallback({ cartUrlImport: { urls: [mockUrls[0]] } }, mockPort);
+        await handlerFor(mockPort)({ cartUrlImport: { urls: [mockUrls[0]] } });
 
         expect(getTralbumDetailsFromPage).toHaveBeenCalledWith(mockUrls[0]);
         expect(getTralbumDetails).toHaveBeenCalledWith(123, 'a', 'http://bandcamp.com', expect.any(Function));
@@ -307,7 +309,7 @@ describe('cart_import_backend', () => {
       it('should handle URL extraction errors', async () => {
         (getTralbumDetailsFromPage as any).mockRejectedValue(new Error('Invalid URL'));
 
-        await portListenerCallback({ cartUrlImport: { urls: [mockUrls[0]] } }, mockPort);
+        await handlerFor(mockPort)({ cartUrlImport: { urls: [mockUrls[0]] } });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -319,7 +321,7 @@ describe('cart_import_backend', () => {
       });
 
       it('should handle empty URLs array', async () => {
-        await portListenerCallback({ cartUrlImport: { urls: [] } }, mockPort);
+        await handlerFor(mockPort)({ cartUrlImport: { urls: [] } });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartImportComplete: { message: 'No items found to import' }
@@ -345,7 +347,7 @@ describe('cart_import_backend', () => {
           bandcamp_url: mockUrls[0]
         });
 
-        await portListenerCallback({ cartUrlImport: { urls: [mockUrls[0]] } }, mockPort);
+        await handlerFor(mockPort)({ cartUrlImport: { urls: [mockUrls[0]] } });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartImportComplete: { message: 'Successfully added 1 item to cart' }
@@ -381,7 +383,7 @@ describe('cart_import_backend', () => {
           bandcamp_url: 'https://test.bandcamp.com'
         });
 
-        await portListenerCallback({ cartUrlImport: { urls: mockUrls } }, mockPort);
+        await handlerFor(mockPort)({ cartUrlImport: { urls: mockUrls } });
 
         const stateCalls = (mockPort.postMessage as any).mock.calls.filter(
           (call: any) => call[0].cartImportState !== undefined
@@ -412,16 +414,13 @@ describe('cart_import_backend', () => {
           bandcamp_url: 'https://test.bandcamp.com/album/support'
         });
 
-        await portListenerCallback(
-          {
-            cartDonationItem: {
-              item_id: 9999,
-              item_type: 'a',
-              message: 'Thank you for your support!'
-            }
-          },
-          mockPort
-        );
+        await handlerFor(mockPort)({
+          cartDonationItem: {
+            item_id: 9999,
+            item_type: 'a',
+            message: 'Thank you for your support!'
+          }
+        });
 
         expect(getTralbumDetails).toHaveBeenCalledWith(9999, 'a', 'http://bandcamp.com', expect.any(Function));
 
@@ -456,15 +455,12 @@ describe('cart_import_backend', () => {
           bandcamp_url: 'https://test.bandcamp.com/album/support'
         });
 
-        await portListenerCallback(
-          {
-            cartDonationItem: {
-              item_id: 9999,
-              item_type: 'a'
-            }
-          },
-          mockPort
-        );
+        await handlerFor(mockPort)({
+          cartDonationItem: {
+            item_id: 9999,
+            item_type: 'a'
+          }
+        });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartDonationAdded: {
@@ -485,16 +481,13 @@ describe('cart_import_backend', () => {
           bandcamp_url: 'https://test.bandcamp.com/album/support'
         });
 
-        await portListenerCallback(
-          {
-            cartDonationItem: {
-              item_id: 9999,
-              item_type: 'a',
-              message: 'Thanks!'
-            }
-          },
-          mockPort
-        );
+        await handlerFor(mockPort)({
+          cartDonationItem: {
+            item_id: 9999,
+            item_type: 'a',
+            message: 'Thanks!'
+          }
+        });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartAddRequest: expect.objectContaining({
@@ -512,16 +505,13 @@ describe('cart_import_backend', () => {
           is_purchasable: false
         });
 
-        await portListenerCallback(
-          {
-            cartDonationItem: {
-              item_id: 9999,
-              item_type: 'a',
-              message: 'Thank you!'
-            }
-          },
-          mockPort
-        );
+        await handlerFor(mockPort)({
+          cartDonationItem: {
+            item_id: 9999,
+            item_type: 'a',
+            message: 'Thank you!'
+          }
+        });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartItemError: {
@@ -537,16 +527,13 @@ describe('cart_import_backend', () => {
       it('should handle donation item error when API call fails', async () => {
         (getTralbumDetails as any).mockRejectedValue(new Error('HTTP 404: Not Found'));
 
-        await portListenerCallback(
-          {
-            cartDonationItem: {
-              item_id: 9999,
-              item_type: 'a',
-              message: 'Thank you!'
-            }
-          },
-          mockPort
-        );
+        await handlerFor(mockPort)({
+          cartDonationItem: {
+            item_id: 9999,
+            item_type: 'a',
+            message: 'Thank you!'
+          }
+        });
 
         expect(mockPort.postMessage).toHaveBeenCalledWith({
           cartItemError: {

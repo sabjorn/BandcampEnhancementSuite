@@ -131,9 +131,7 @@ function bindViewToggle(): void {
 
     showWaveform(enabled);
     void toggleSetting('displayWaveform')
-      .then(config => {
-        if (typeof config.displayWaveform === 'boolean') showWaveform(config.displayWaveform);
-      })
+      .then(config => showWaveform(config.displayWaveform))
       .catch(error => log.error(`Failed to toggle the waveform display: ${error}`));
   };
 
@@ -200,9 +198,7 @@ export function initDrawerAudioFeatures(): void {
   bindViewToggle();
 
   requestConfig()
-    .then(config => {
-      if (typeof config.displayWaveform === 'boolean') showWaveform(config.displayWaveform);
-    })
+    .then(config => showWaveform(config.displayWaveform))
     .catch(error => log.error(`Failed to read the waveform config: ${error}`));
 }
 

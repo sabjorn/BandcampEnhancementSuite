@@ -1,6 +1,6 @@
 import Logger from '../logger';
 import { HIDE_UNHIDE_PORT } from '../types/ports';
-import { PortChannel, perPort } from './portChannel';
+import { PortChannel, createPortChannel } from './portChannel';
 import {
   getCollectionSummary,
   getHiddenItemsRateLimited,
@@ -34,11 +34,7 @@ class ProgressTracker {
   private totalCount = 0;
   private errors: string[] = [];
   private currentAction: 'hide' | 'unhide' = 'unhide';
-  private readonly channel: PortChannel;
-
-  constructor(port: chrome.runtime.Port) {
-    this.channel = new PortChannel(port);
-  }
+  constructor(readonly channel: PortChannel) {}
 
   abandon(): void {
     this.isProcessing = false;
@@ -49,14 +45,6 @@ class ProgressTracker {
     return this.channel.isAbandoned();
   }
 
-  private send(message: Record<string, unknown>): void {
-    this.channel.send(message);
-  }
-
-  reportError(message: Record<string, unknown>): void {
-    this.channel.send(message);
-  }
-
   async processItems(items: HideUnhideItem[], action: 'hide' | 'unhide'): Promise<void> {
     this.currentAction = action;
 
@@ -64,7 +52,7 @@ class ProgressTracker {
 
     if (items.length === 0) {
       const messageKey = this.currentAction === 'hide' ? 'hideComplete' : 'unhideComplete';
-      this.send({
+      this.channel.send({
         [messageKey]: { message: `No ${this.currentAction === 'hide' ? 'visible' : 'hidden'} items found` }
       });
       return;
@@ -124,7 +112,7 @@ class ProgressTracker {
         : `Successfully ${actionPastTense} ${this.processedCount} items`;
 
     const messageKey = this.currentAction === 'hide' ? 'hideComplete' : 'unhideComplete';
-    this.send({ [messageKey]: { message: completionMessage } });
+    this.channel.send({ [messageKey]: { message: completionMessage } });
   }
 
   private broadcastState(): void {
@@ -137,37 +125,33 @@ class ProgressTracker {
     };
 
     const messageKey = this.currentAction === 'hide' ? 'hideState' : 'unhideState';
-    this.send({ [messageKey]: state });
+    this.channel.send({ [messageKey]: state });
   }
 }
-
-const trackerFor = perPort(port => new ProgressTracker(port));
 
 export function connectionListenerCallback(port: chrome.runtime.Port): void {
   if (port.name !== HIDE_UNHIDE_PORT) return;
 
   log.info('hide/unhide backend connection listener callback');
 
-  const tracker = trackerFor(port);
+  const tracker = new ProgressTracker(createPortChannel(port));
   port.onDisconnect.addListener(() => tracker.abandon());
-  port.onMessage.addListener((msg: any) => void portListenerCallback(msg, port));
+  port.onMessage.addListener((msg: any) => portListenerCallback(msg, tracker));
 }
 
-export async function portListenerCallback(msg: any, port: chrome.runtime.Port): Promise<void> {
+export async function portListenerCallback(msg: any, tracker: ProgressTracker): Promise<void> {
   log.info('hide/unhide backend port listener callback');
 
   if (msg.unhide) {
-    await handleUnhideRequest(msg.unhide.crumb, port);
+    await handleUnhideRequest(msg.unhide.crumb, tracker);
   }
 
   if (msg.hide) {
-    await handleHideRequest(msg.hide.crumb, port);
+    await handleHideRequest(msg.hide.crumb, tracker);
   }
 }
 
-async function handleUnhideRequest(crumb: string | null, port: chrome.runtime.Port): Promise<void> {
-  const tracker = trackerFor(port);
-
+async function handleUnhideRequest(crumb: string | null, tracker: ProgressTracker): Promise<void> {
   try {
     log.info('Starting unhide all process');
 
@@ -255,13 +239,11 @@ async function handleUnhideRequest(crumb: string | null, port: chrome.runtime.Po
   } catch (error) {
     log.error(`Error in unhide process: ${error}`);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    tracker.reportError({ unhideError: { message: errorMessage } });
+    tracker.channel.send({ unhideError: { message: errorMessage } });
   }
 }
 
-async function handleHideRequest(crumb: string | null, port: chrome.runtime.Port): Promise<void> {
-  const tracker = trackerFor(port);
-
+async function handleHideRequest(crumb: string | null, tracker: ProgressTracker): Promise<void> {
   try {
     log.info('Starting hide all process');
 
@@ -357,7 +339,7 @@ async function handleHideRequest(crumb: string | null, port: chrome.runtime.Port
   } catch (error) {
     log.error(`Error in hide process: ${error}`);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    tracker.reportError({ hideError: { message: errorMessage } });
+    tracker.channel.send({ hideError: { message: errorMessage } });
   }
 }
 

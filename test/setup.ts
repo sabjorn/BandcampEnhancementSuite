@@ -12,7 +12,8 @@ const mockChrome = {
     onMessage: {
       addListener: () => {},
       removeListener: () => {}
-    }
+    },
+    sendMessage: vi.fn().mockResolvedValue({})
   },
   storage: {
     local: {
@@ -31,6 +32,9 @@ globalThis.fetch = vi.fn().mockResolvedValue(new Response('{"mock": true}', { st
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  if (vi.isMockFunction(globalThis.chrome?.runtime?.sendMessage)) {
+    vi.mocked(globalThis.chrome.runtime.sendMessage).mockClear();
+  }
 });
 
 afterEach(() => {

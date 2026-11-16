@@ -1,4 +1,5 @@
 import { createLogger } from './logger';
+import { requestConfig } from './config';
 import { Theme, resolveTheme, themeToCssVariables, themeTokenToCssVariable, DEFAULT_THEME_NAME } from './types/theme';
 
 const log = createLogger();
@@ -57,13 +58,9 @@ function enforceCustomDesignState(): void {
 }
 
 export function applyThemeFromConfig(): void {
-  const port = chrome.runtime.connect(null, { name: 'bes' });
-
-  port.onMessage.addListener((msg: { config?: { themeName?: string } }) => {
-    if (msg.config) setTheme(msg.config.themeName);
-  });
-
-  port.postMessage({ requestConfig: {} });
+  requestConfig()
+    .then(config => setTheme(config.themeName))
+    .catch(error => log.error(`Failed to read the theme config: ${error}`));
 }
 
 const NATIVE_RAMP = `

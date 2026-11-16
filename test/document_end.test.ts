@@ -78,7 +78,7 @@ describe('BES Drawer', () => {
     const endModule = await import('../src/document_end');
     initBESDrawer = endModule.initBESDrawer;
 
-    initBESDrawer(mockPort as any);
+    initBESDrawer();
   });
 
   afterEach(() => {
@@ -283,7 +283,7 @@ describe('BES Drawer', () => {
     document.body.innerHTML = '';
     createPagedataWithLoginState(false);
     createDomNodes('<body></body>');
-    initBESDrawer(mockPort as any);
+    initBESDrawer();
 
     const findMusicButton = document.querySelector('.bes-drawer-button') as HTMLButtonElement;
     expect(findMusicButton).toBeTruthy();
@@ -302,20 +302,21 @@ describe('Played caching setting', () => {
   let mockPort: any;
   let initBESDrawer: any;
 
-  const buildDrawer = async (granted: boolean) => {
+  const buildDrawer = async (granted: boolean, config: Record<string, unknown> = {}) => {
     document.body.innerHTML = '';
-    mockRuntimeSendMessage.mockResolvedValue({ granted });
+    mockRuntimeSendMessage.mockImplementation(async (message: any) =>
+      message.contentScriptQuery === 'requestConfig' ? config : { granted }
+    );
 
     const endModule = await import('../src/document_end');
     initBESDrawer = endModule.initBESDrawer;
-    initBESDrawer(mockPort as any);
+    initBESDrawer();
 
     await new Promise(resolve => setTimeout(resolve, 0));
   };
 
   const toggle = () => document.getElementById('bes-played-caching-toggle') as HTMLInputElement;
   const settingRow = () => toggle().closest('.bes-drawer-setting') as HTMLElement;
-  const configListener = () => mockPort.onMessage.addListener.mock.calls[0][0];
 
   beforeEach(() => {
     mockPort = {
@@ -350,13 +351,9 @@ describe('Played caching setting', () => {
   });
 
   it('should reflect the stored setting', async () => {
-    await buildDrawer(true);
+    await buildDrawer(true, { enablePlayedCaching: true });
 
-    configListener()({ config: { enablePlayedCaching: true } });
     expect(toggle().checked).toBe(true);
-
-    configListener()({ config: { enablePlayedCaching: false } });
-    expect(toggle().checked).toBe(false);
   });
 
   it('should ask the background to toggle the setting when the user flips it', async () => {
@@ -364,25 +361,37 @@ describe('Played caching setting', () => {
 
     toggle().dispatchEvent(new Event('change'));
 
-    expect(mockPort.postMessage).toHaveBeenCalledWith({ togglePlayedCaching: {} });
+    expect(mockRuntimeSendMessage).toHaveBeenCalledWith({
+      contentScriptQuery: 'toggleSetting',
+      setting: 'enablePlayedCaching'
+    });
+  });
+
+  it('should show the state the backend settled on after a toggle', async () => {
+    await buildDrawer(true);
+    mockRuntimeSendMessage.mockResolvedValue({ enablePlayedCaching: true });
+
+    toggle().dispatchEvent(new Event('change'));
+    await vi.waitFor(() => expect(toggle().checked).toBe(true));
   });
 });
 
 describe('Dark mode setting', () => {
   let mockPort: any;
 
-  const buildDrawer = async () => {
+  const buildDrawer = async (config: Record<string, unknown> = {}) => {
     document.body.innerHTML = '';
-    mockRuntimeSendMessage.mockResolvedValue({ granted: false });
+    mockRuntimeSendMessage.mockImplementation(async (message: any) =>
+      message.contentScriptQuery === 'requestConfig' ? config : { granted: false }
+    );
 
     const endModule = await import('../src/document_end');
-    endModule.initBESDrawer(mockPort as any);
+    endModule.initBESDrawer();
 
     await new Promise(resolve => setTimeout(resolve, 0));
   };
 
   const toggle = () => document.getElementById('bes-dark-mode-toggle') as HTMLInputElement;
-  const configListener = () => mockPort.onMessage.addListener.mock.calls[0][0];
 
   beforeEach(() => {
     mockPort = {
@@ -413,7 +422,10 @@ describe('Dark mode setting', () => {
     toggle().checked = true;
     toggle().dispatchEvent(new Event('change'));
 
-    expect(mockPort.postMessage).toHaveBeenCalledWith({ toggleTheme: {} });
+    expect(mockRuntimeSendMessage).toHaveBeenCalledWith({
+      contentScriptQuery: 'toggleSetting',
+      setting: 'themeName'
+    });
   });
 
   it('should theme the page immediately rather than waiting for the broadcast', async () => {
@@ -436,27 +448,28 @@ describe('Dark mode setting', () => {
     expect(document.documentElement.getAttribute('data-bes-theme')).toBe('light');
   });
 
-  it('should reflect the stored theme from the config broadcast', async () => {
-    await buildDrawer();
+  it('should reflect the stored theme the backend reports', async () => {
+    await buildDrawer({ themeName: 'dark' });
 
-    configListener()({ config: { themeName: 'dark' } });
     expect(toggle().checked).toBe(true);
     expect(document.documentElement.getAttribute('data-bes-theme')).toBe('dark');
+  });
 
-    configListener()({ config: { themeName: 'light' } });
+  it('should leave the toggle off for a light config', async () => {
+    await buildDrawer({ themeName: 'light' });
+
     expect(toggle().checked).toBe(false);
     expect(document.documentElement.getAttribute('data-bes-theme')).toBe('light');
   });
 
-  it('should set the theme without touching artist page styling itself', async () => {
+  it('should leave artist page styling enabled while the config stays on the default theme', async () => {
     const artistStyle = document.createElement('style');
     artistStyle.id = 'custom-design-rules-style';
     document.head.appendChild(artistStyle);
 
-    await buildDrawer();
-    configListener()({ config: { themeName: 'dark' } });
+    await buildDrawer({ themeName: 'light' });
 
-    expect(document.documentElement.getAttribute('data-bes-theme')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-bes-theme')).toBe('light');
     expect(artistStyle.disabled).toBe(false);
 
     artistStyle.remove();

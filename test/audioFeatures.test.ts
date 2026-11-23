@@ -76,30 +76,40 @@ describe('AudioFeatures', () => {
   });
 
   it('should toggle waveform canvas display', async () => {
-    const canvasFake = { style: { display: 'inherit' } };
-    const displayToggle = { checked: true };
     vi.mocked(chrome.runtime.sendMessage).mockResolvedValue({ displayWaveform: false });
 
-    await toggleWaveformCanvas(canvasFake as any, displayToggle as any, { error: vi.fn() } as any);
+    await toggleWaveformCanvas({ error: vi.fn() } as any);
 
     expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
       contentScriptQuery: 'toggleSetting',
       setting: 'displayWaveform'
     });
-    expect(canvasFake.style.display).toBe('none');
-    expect(displayToggle.checked).toBe(false);
   });
 
-  it('should keep the canvas as it is when the toggle request fails', async () => {
-    const canvasFake = { style: { display: 'inherit' } };
-    const displayToggle = { checked: true };
+  it('should report a failed toggle rather than throwing at the click handler', async () => {
     const log = { error: vi.fn() };
     vi.mocked(chrome.runtime.sendMessage).mockRejectedValue(new Error('no backend'));
 
-    await toggleWaveformCanvas(canvasFake as any, displayToggle as any, log as any);
+    await expect(toggleWaveformCanvas(log as any)).resolves.toBeUndefined();
 
-    expect(canvasFake.style.display).toBe('inherit');
     expect(log.error).toHaveBeenCalled();
+  });
+
+  it('should follow the setting when it is changed somewhere else on the page', async () => {
+    vi.mocked(chrome.runtime.sendMessage).mockResolvedValue({ displayWaveform: true });
+    initAudioFeatures();
+
+    const canvas = document.querySelector('canvas.waveform') as HTMLCanvasElement;
+    const displayToggle = document.getElementById('switch') as HTMLInputElement;
+    await vi.waitFor(() => expect(canvas.style.display).toBe('inherit'));
+    expect(displayToggle.checked).toBe(true);
+
+    const { toggleSetting } = await import('../src/config');
+    vi.mocked(chrome.runtime.sendMessage).mockResolvedValue({ displayWaveform: false });
+    await toggleSetting('displayWaveform');
+
+    expect(canvas.style.display).toBe('none');
+    expect(displayToggle.checked).toBe(false);
   });
 
   it('should apply audio configuration correctly', () => {

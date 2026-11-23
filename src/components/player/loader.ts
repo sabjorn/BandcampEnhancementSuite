@@ -12,7 +12,7 @@ import { inDrawer, allInDrawer, setText, setStyle } from './query';
 import { streamUrlOf, findPlayableTrackAfter, findPlayableTrackBefore } from './trackSelection';
 import { applyTrackState, markRowPlayed } from './trackState';
 import { initCollectionState } from '../../collection';
-import { requestConfig, toggleSetting } from '../../config';
+import { requestConfig, toggleSetting, onConfigChanged } from '../../config';
 import { markPreviewed } from '../../previewHistory';
 import { buildAlbumNav, updateAlbumNav } from './albumNav';
 import {
@@ -130,9 +130,7 @@ function bindViewToggle(): void {
     if (enabled === waveformEnabled) return;
 
     showWaveform(enabled);
-    void toggleSetting('displayWaveform')
-      .then(config => showWaveform(config.displayWaveform))
-      .catch(error => log.error(`Failed to toggle the waveform display: ${error}`));
+    void toggleSetting('displayWaveform').catch(error => log.error(`Failed to toggle the waveform display: ${error}`));
   };
 
   const waveformButton = inDrawer('.bes-toggle-waveform');
@@ -196,6 +194,8 @@ export function initDrawerAudioFeatures(): void {
   });
 
   bindViewToggle();
+
+  onConfigChanged(config => showWaveform(config.displayWaveform));
 
   requestConfig()
     .then(config => showWaveform(config.displayWaveform))

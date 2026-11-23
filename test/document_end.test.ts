@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes, eventually } from './utils';
+import { DEFAULT_KEYBOARD_SETTINGS } from '../src/types/keyboard';
 
 const mockRuntimeSendMessage = vi.fn();
 const mockRuntimeConnect = vi.fn(() => ({
@@ -15,6 +16,11 @@ const mockRuntimeGetURL = vi.fn((path: string) => `chrome-extension://mock/${pat
     connect: mockRuntimeConnect
   }
 };
+
+vi.mock('../src/keyboardShortcuts', async importOriginal => ({
+  ...(await importOriginal<typeof import('../src/keyboardShortcuts')>()),
+  updateKeyboardSettings: vi.fn()
+}));
 
 vi.mock('../src/logger', () => ({
   default: class MockLogger {
@@ -295,6 +301,33 @@ describe('BES Drawer', () => {
     // If documentEnd() is called twice, should only have one drawer
     const drawers = document.querySelectorAll('.bes-drawer');
     expect(drawers.length).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('keyboard settings taking effect', () => {
+  // The listener that re-registered the live handlers on every config change was a port
+  // broadcast before the messaging migration.
+  it('should re-register the shortcut handlers when the settings change', async () => {
+    document.body.innerHTML = '';
+    mockRuntimeSendMessage.mockImplementation(async (message: any) =>
+      message.contentScriptQuery === 'requestConfig'
+        ? { keyboardSettings: DEFAULT_KEYBOARD_SETTINGS, enableFetchCaching: false }
+        : { granted: false }
+    );
+
+    vi.resetModules();
+    await import('../src/document_end');
+    const { updateKeyboardSettings } = await import('../src/keyboardShortcuts');
+    await eventually(() => expect(vi.mocked(updateKeyboardSettings)).toHaveBeenCalled());
+
+    const changed = { ...DEFAULT_KEYBOARD_SETTINGS, seekStepSize: 25 };
+    vi.mocked(updateKeyboardSettings).mockClear();
+    mockRuntimeSendMessage.mockResolvedValue({ keyboardSettings: changed });
+
+    const { saveKeyboardSettings } = await import('../src/config');
+    await saveKeyboardSettings(changed);
+
+    expect(vi.mocked(updateKeyboardSettings)).toHaveBeenCalledWith(changed);
   });
 });
 

@@ -13,6 +13,7 @@ import { KeyboardSettings } from './types/keyboard';
 import { isBandcampLoggedIn } from './utilities';
 import {
   requestConfig,
+  onConfigChanged,
   toggleSetting,
   saveKeyboardSettings,
   resetKeyboardSettings,
@@ -200,13 +201,15 @@ export const initBESDrawer = (): void => {
 
   const reportConfigFailure = (error: unknown): void => log.error(`Config request failed: ${error}`);
 
+  onConfigChanged(applyConfig);
+
   const applyToggle = (setting: ToggleName): void => {
-    void toggleSetting(setting).then(applyConfig).catch(reportConfigFailure);
+    void toggleSetting(setting).catch(reportConfigFailure);
   };
 
   document.addEventListener('bes-reset-keyboard-settings', () => {
     log.info('Resetting keyboard settings');
-    void resetKeyboardSettings().then(applyConfig).catch(reportConfigFailure);
+    void resetKeyboardSettings().catch(reportConfigFailure);
   });
 
   darkModeToggle.addEventListener('change', () => {
@@ -372,6 +375,13 @@ const documentEnd = async (): Promise<void> => {
     const { keyboardSettings, enableFetchCaching } = await configReady;
 
     if (keyboardSettings) updateKeyboardSettings(keyboardSettings);
+
+    onConfigChanged(config => {
+      if (!config.keyboardSettings) return;
+
+      log.info('Keyboard settings changed, updating handlers');
+      updateKeyboardSettings(config.keyboardSettings);
+    });
 
     await initLabelView(enableFetchCaching ?? false);
   })().catch(error => log.error(`Label view initialization failed: ${error}`));

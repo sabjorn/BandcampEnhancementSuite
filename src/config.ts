@@ -8,14 +8,26 @@ export function requestConfig(): Promise<Config> {
   return sendRequest<Config>({ contentScriptQuery: 'requestConfig' });
 }
 
-export function toggleSetting(setting: ToggleName): Promise<Config> {
-  return sendRequest<Config>({ contentScriptQuery: 'toggleSetting', setting });
+const listeners: ((config: Config) => void)[] = [];
+
+export function onConfigChanged(listener: (config: Config) => void): void {
+  listeners.push(listener);
 }
 
-export function saveKeyboardSettings(settings: KeyboardSettings): Promise<ConfigResponse> {
-  return sendRequest<ConfigResponse>({ contentScriptQuery: 'updateKeyboardSettings', settings });
+function announce<T extends ConfigResponse>(response: T): T {
+  if (!('keyboardSettingsError' in response)) listeners.forEach(listener => listener(response));
+
+  return response;
 }
 
-export function resetKeyboardSettings(): Promise<Config> {
-  return sendRequest<Config>({ contentScriptQuery: 'resetKeyboardSettings' });
+export async function toggleSetting(setting: ToggleName): Promise<Config> {
+  return announce(await sendRequest<Config>({ contentScriptQuery: 'toggleSetting', setting }));
+}
+
+export async function saveKeyboardSettings(settings: KeyboardSettings): Promise<ConfigResponse> {
+  return announce(await sendRequest<ConfigResponse>({ contentScriptQuery: 'updateKeyboardSettings', settings }));
+}
+
+export async function resetKeyboardSettings(): Promise<Config> {
+  return announce(await sendRequest<Config>({ contentScriptQuery: 'resetKeyboardSettings' }));
 }

@@ -1,5 +1,51 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { queryPreviews } from '../src/previewHistory';
+import { markPreviewed, queryPreviews, setHistory } from '../src/previewHistory';
+
+describe('marking a release previewed', () => {
+  const grid = (id: string) => {
+    document.body.innerHTML = `
+      <li class="music-grid-item" data-item-id="album-${id}">
+        <div id="${id}" class="preview">
+          <div class="bes-preview-controls">
+            <button class="follow-unfollow open-iframe">Preview</button>
+            <button class="follow-unfollow historybox"></button>
+          </div>
+        </div>
+      </li>
+    `;
+
+    return document.querySelector(`[id="${id}"] .historybox`) as HTMLElement;
+  };
+
+  beforeEach(() => {
+    globalThis.chrome = {
+      runtime: { sendMessage: vi.fn().mockResolvedValue({ id: '123', value: true }) }
+    } as any;
+  });
+
+  it('should fill in the history box as soon as the write lands', async () => {
+    const box = grid('123');
+
+    await markPreviewed('123');
+
+    expect(box.classList.contains('following')).toBe(true);
+  });
+
+  it('should leave the box alone when the write fails', async () => {
+    const box = grid('123');
+    vi.mocked(chrome.runtime.sendMessage).mockRejectedValue(new Error('no backend'));
+
+    await expect(markPreviewed('123')).rejects.toThrow('no backend');
+
+    expect(box.classList.contains('following')).toBe(false);
+  });
+
+  it('should not care when the release has no box on this page', async () => {
+    document.body.innerHTML = '';
+
+    await expect(markPreviewed('123')).resolves.toBeUndefined();
+  });
+});
 
 describe('hydrating preview history', () => {
   beforeEach(() => {

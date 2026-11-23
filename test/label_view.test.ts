@@ -29,7 +29,8 @@ vi.mock('../src/logger', () => ({
   }))
 }));
 
-vi.mock('../src/previewHistory', () => ({
+vi.mock('../src/previewHistory', async importOriginal => ({
+  ...(await importOriginal<typeof import('../src/previewHistory')>()),
   markPreviewed: vi.fn(async () => {}),
   togglePreview: vi.fn(async () => true),
   queryPreviews: vi.fn(async () => ({}))

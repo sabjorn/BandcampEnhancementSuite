@@ -5,20 +5,7 @@ import { setFindMusicLinks, FindMusicLink } from './components/player/findMusicL
 import { extractBandId } from './utilities';
 import { createWishlistButton, WISHLIST_ICON_SIZES } from './components/wishlistButton';
 import { initCollectionState, Collection } from './collection';
-import { markPreviewed, togglePreview, queryPreviews } from './previewHistory';
-
-export function setHistory(id: string, state: boolean): void {
-  const historybox = document.querySelector(`[id="${id}"] .historybox`);
-  if (historybox) {
-    historybox.classList.add('follow-unfollow');
-
-    if (state) {
-      historybox.classList.add('following');
-    } else {
-      historybox.classList.remove('following');
-    }
-  }
-}
+import { markPreviewed, togglePreview, queryPreviews, setHistory } from './previewHistory';
 
 function previewIdFrom(event: Event): string | undefined {
   return (event.target as HTMLElement).closest('.preview')?.id || undefined;

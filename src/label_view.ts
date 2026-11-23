@@ -15,7 +15,11 @@ export async function boxClicked(event: Event): Promise<void> {
   const id = previewIdFrom(event);
   if (!id) return;
 
-  setHistory(id, await togglePreview(id));
+  try {
+    setHistory(id, await togglePreview(id));
+  } catch (error) {
+    log.error(`Could not toggle the preview history for ${id}: ${error}`);
+  }
 }
 
 const log = new Logger();
@@ -287,8 +291,12 @@ export async function renderPreviews(
     });
   });
 
-  const states = await queryPreviews(rendered);
-  Object.entries(states).forEach(([id, previewed]) => setHistory(id, previewed));
+  try {
+    const states = await queryPreviews(rendered);
+    Object.entries(states).forEach(([id, previewed]) => setHistory(id, previewed));
+  } catch (error) {
+    log.error(`Could not read the preview history: ${error}`);
+  }
 }
 
 export async function renderDom(
@@ -302,5 +310,11 @@ export async function renderDom(
   const datablob = JSON.parse((pagedata as HTMLElement).dataset.blob!);
   const urlParams = new URLSearchParams(datablob.lo_querystr);
   const id = urlParams.get('item_id');
-  if (id) await markPreviewed(id);
+  if (!id) return;
+
+  try {
+    await markPreviewed(id);
+  } catch (error) {
+    log.error(`Could not record the preview for ${id}: ${error}`);
+  }
 }

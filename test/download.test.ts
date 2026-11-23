@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDomNodes, cleanupTestNodes, eventually } from './utils';
+import { DOWNLOAD_PORT } from '../src/types/ports';
 
 vi.mock('../src/logger', () => {
   const mockLogMethods = {
@@ -202,7 +203,7 @@ describe('DownloadHelper', () => {
       expect(buttonClickedCallback).toBeDefined();
       await buttonClickedCallback!();
 
-      expect(global.chrome.runtime.connect).toHaveBeenCalledWith({ name: 'bes' });
+      expect(global.chrome.runtime.connect).toHaveBeenCalledWith(null, { name: DOWNLOAD_PORT });
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadZip',
         urls: ['http://example.com/file1.flac']
@@ -371,7 +372,7 @@ describe('DownloadHelper', () => {
 
       await downloadAsZip();
 
-      expect(global.chrome.runtime.connect).toHaveBeenCalledWith({ name: 'bes' });
+      expect(global.chrome.runtime.connect).toHaveBeenCalledWith(null, { name: DOWNLOAD_PORT });
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: 'downloadZip',
         urls: ['http://example.com/file1.flac', 'http://example.com/file2.flac']

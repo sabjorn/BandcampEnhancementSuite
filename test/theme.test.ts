@@ -283,20 +283,12 @@ describe('Theme', () => {
   });
 
   describe('applyThemeFromConfig', () => {
-    let listener: ((msg: unknown) => void) | undefined;
-    let port: { onMessage: { addListener: ReturnType<typeof vi.fn> }; postMessage: ReturnType<typeof vi.fn> };
+    const configWith = (themeName?: string) => {
+      globalThis.chrome = { runtime: { sendMessage: vi.fn().mockResolvedValue({ themeName }) } } as any;
+    };
 
     beforeEach(() => {
-      listener = undefined;
-      port = {
-        onMessage: {
-          addListener: vi.fn((fn: (msg: unknown) => void) => {
-            listener = fn;
-          })
-        },
-        postMessage: vi.fn()
-      };
-      globalThis.chrome = { runtime: { connect: vi.fn(() => port) } } as any;
+      configWith('light');
       document.documentElement.removeAttribute(THEME_ATTRIBUTE);
       document.documentElement.removeAttribute('style');
     });
@@ -307,40 +299,51 @@ describe('Theme', () => {
       document.documentElement.removeAttribute('style');
     });
 
-    it('should request config over the bes port', () => {
-      applyThemeFromConfig();
+    it('should ask the backend for the config rather than opening a port', async () => {
+      configWith('dark');
 
-      expect((globalThis.chrome as any).runtime.connect).toHaveBeenCalledWith(null, { name: 'bes' });
-      expect(port.postMessage).toHaveBeenCalledWith({ requestConfig: {} });
+      applyThemeFromConfig();
+      await vi.waitFor(() => expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe('dark'));
+
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ contentScriptQuery: 'requestConfig' });
+      expect((globalThis.chrome as any).runtime.connect).toBeUndefined();
     });
 
-    it('should apply the theme the config reports', () => {
-      applyThemeFromConfig();
-      listener?.({ config: { themeName: 'dark' } });
+    it('should apply the theme the config reports', async () => {
+      configWith('dark');
 
-      expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe('dark');
-      expect(document.documentElement.getAttribute('style')).toContain(`--bes-surface-0: ${DARK_THEME.surface0}`);
+      applyThemeFromConfig();
+
+      await vi.waitFor(() => {
+        expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe('dark');
+        expect(document.documentElement.getAttribute('style')).toContain(`--bes-surface-0: ${DARK_THEME.surface0}`);
+      });
     });
 
-    it('should fall back to the default for a theme it does not know', () => {
-      applyThemeFromConfig();
-      listener?.({ config: { themeName: 'solarized' } });
+    it('should fall back to the default for a theme it does not know', async () => {
+      configWith('solarized');
 
-      expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe(DEFAULT_THEME_NAME);
+      applyThemeFromConfig();
+
+      await vi.waitFor(() => expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBe(DEFAULT_THEME_NAME));
     });
 
-    it('should ignore messages that carry no config', () => {
+    it('should leave the theme alone when the config cannot be read', async () => {
+      globalThis.chrome = {
+        runtime: { sendMessage: vi.fn().mockRejectedValue(new Error('no backend')) }
+      } as any;
+
       applyThemeFromConfig();
-      listener?.({ keyboardSettingsError: ['nope'] });
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(document.documentElement.getAttribute(THEME_ATTRIBUTE)).toBeNull();
     });
 
-    it('should not start enforcement', () => {
+    it('should not start enforcement', async () => {
       const observe = vi.spyOn(MutationObserver.prototype, 'observe');
 
       applyThemeFromConfig();
-      listener?.({ config: { themeName: 'dark' } });
+      await vi.waitFor(() => expect(chrome.runtime.sendMessage).toHaveBeenCalled());
 
       expect(observe).not.toHaveBeenCalled();
     });

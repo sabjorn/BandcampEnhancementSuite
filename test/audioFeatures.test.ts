@@ -34,12 +34,11 @@ vi.mock('../src/logger', () => ({
 }));
 
 describe('AudioFeatures', () => {
-  const mockPort = {
-    onMessage: { addListener: vi.fn() },
-    postMessage: vi.fn()
-  };
-
   beforeEach(() => {
+    globalThis.chrome = {
+      runtime: { sendMessage: vi.fn().mockResolvedValue({ displayWaveform: true }) }
+    } as any;
+
     globalThis.AudioContext = vi.fn(function () {
       return {
         decodeAudioData: vi.fn().mockResolvedValue({}),
@@ -64,8 +63,8 @@ describe('AudioFeatures', () => {
   });
 
   it('should initialize AudioFeatures functionality', () => {
-    expect(() => initAudioFeatures(mockPort)).not.toThrow();
-    expect(mockPort.postMessage).toHaveBeenCalledWith({ requestConfig: {} });
+    expect(() => initAudioFeatures()).not.toThrow();
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ contentScriptQuery: 'requestConfig' });
   });
 
   it('should invert colors correctly', () => {
@@ -76,10 +75,31 @@ describe('AudioFeatures', () => {
     expect(inverted).toBe('rgb(255,255,255)');
   });
 
-  it('should toggle waveform canvas display', () => {
-    const expectedMessage = { toggleWaveformDisplay: {} };
-    toggleWaveformCanvas(mockPort);
-    expect(mockPort.postMessage).toHaveBeenCalledWith(expect.objectContaining(expectedMessage));
+  it('should toggle waveform canvas display', async () => {
+    const canvasFake = { style: { display: 'inherit' } };
+    const displayToggle = { checked: true };
+    vi.mocked(chrome.runtime.sendMessage).mockResolvedValue({ displayWaveform: false });
+
+    await toggleWaveformCanvas(canvasFake as any, displayToggle as any, { error: vi.fn() } as any);
+
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+      contentScriptQuery: 'toggleSetting',
+      setting: 'displayWaveform'
+    });
+    expect(canvasFake.style.display).toBe('none');
+    expect(displayToggle.checked).toBe(false);
+  });
+
+  it('should keep the canvas as it is when the toggle request fails', async () => {
+    const canvasFake = { style: { display: 'inherit' } };
+    const displayToggle = { checked: true };
+    const log = { error: vi.fn() };
+    vi.mocked(chrome.runtime.sendMessage).mockRejectedValue(new Error('no backend'));
+
+    await toggleWaveformCanvas(canvasFake as any, displayToggle as any, log as any);
+
+    expect(canvasFake.style.display).toBe('inherit');
+    expect(log.error).toHaveBeenCalled();
   });
 
   it('should apply audio configuration correctly', () => {
@@ -87,7 +107,7 @@ describe('AudioFeatures', () => {
     const displayToggle = { checked: false };
     const mockLog = { info: vi.fn() };
 
-    applyAudioConfig({ config: { displayWaveform: false } }, canvasFake as any, displayToggle as any, mockLog as any);
+    applyAudioConfig({ displayWaveform: false }, canvasFake as any, displayToggle as any, mockLog as any);
     expect(canvasFake.style.display).toBe('none');
   });
 

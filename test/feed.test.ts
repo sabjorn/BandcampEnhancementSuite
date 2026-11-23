@@ -92,7 +92,7 @@ describe('Feed', () => {
     });
 
     it('adds a preview button and frame to each previewable feed item', () => {
-      renderFeedPreviews(mockPort as any, createPreviewState());
+      renderFeedPreviews(createPreviewState());
 
       const previews = document.querySelectorAll('.collection-item-container .preview');
       expect(previews.length).toBe(2);
@@ -106,7 +106,7 @@ describe('Feed', () => {
     });
 
     it('skips items whose tralbum type is unknown', () => {
-      renderFeedPreviews(mockPort as any, createPreviewState());
+      renderFeedPreviews(createPreviewState());
 
       const unknown = document.querySelector('.collection-item-container[data-tralbumid="111"]')!;
       expect(unknown.querySelector('.preview')).toBeNull();
@@ -114,7 +114,7 @@ describe('Feed', () => {
     });
 
     it('does not render the artist-page history toggle on feed items', () => {
-      renderFeedPreviews(mockPort as any, createPreviewState());
+      renderFeedPreviews(createPreviewState());
 
       expect(document.querySelectorAll('.collection-item-container .historybox').length).toBe(0);
       expect(document.querySelectorAll('.collection-item-container button.open-iframe').length).toBe(2);
@@ -122,14 +122,14 @@ describe('Feed', () => {
 
     it('is idempotent and does not add duplicate previews when run again', () => {
       const previewState = createPreviewState();
-      renderFeedPreviews(mockPort as any, previewState);
-      renderFeedPreviews(mockPort as any, previewState);
+      renderFeedPreviews(previewState);
+      renderFeedPreviews(previewState);
 
       expect(document.querySelectorAll('.collection-item-container .preview').length).toBe(2);
     });
 
     it('opens the drawer player when the preview button is clicked', () => {
-      renderFeedPreviews(mockPort as any, createPreviewState());
+      renderFeedPreviews(createPreviewState());
 
       const button = document.querySelector(
         '.collection-item-container[data-tralbumid="12345"] button.open-iframe'
@@ -142,8 +142,8 @@ describe('Feed', () => {
     });
 
     it('handles a click once when the label view also binds the page', () => {
-      renderFeedPreviews(mockPort as any, createPreviewState());
-      attachPreviewListeners(document, mockPort as any, createPreviewState());
+      renderFeedPreviews(createPreviewState());
+      attachPreviewListeners(document, createPreviewState());
 
       const button = document.querySelector(
         '.collection-item-container[data-tralbumid="12345"] button.open-iframe'
@@ -155,39 +155,29 @@ describe('Feed', () => {
     });
 
     it('asks the drawer for the album the story is about', () => {
-      renderFeedPreviews(mockPort as any, createPreviewState());
+      renderFeedPreviews(createPreviewState());
 
       const button = document.querySelector(
         '.collection-item-container[data-tralbumid="12345"] button.open-iframe'
       ) as HTMLButtonElement;
       button.click();
 
-      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith(
-        '12345',
-        'album',
-        expect.anything(),
-        expect.anything()
-      );
+      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith('12345', 'album', expect.anything());
     });
 
     it('asks for a track when the story is about a track', () => {
-      renderFeedPreviews(mockPort as any, createPreviewState());
+      renderFeedPreviews(createPreviewState());
 
       const button = document.querySelector(
         '.collection-item-container[data-tralbumid="67890"] button.open-iframe'
       ) as HTMLButtonElement;
       button.click();
 
-      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith(
-        '67890',
-        'track',
-        expect.anything(),
-        expect.anything()
-      );
+      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith('67890', 'track', expect.anything());
     });
 
     it('no longer injects an embedded player iframe', () => {
-      renderFeedPreviews(mockPort as any, createPreviewState());
+      renderFeedPreviews(createPreviewState());
 
       const button = document.querySelector(
         '.collection-item-container[data-tralbumid="12345"] button.open-iframe'
@@ -197,15 +187,15 @@ describe('Feed', () => {
       expect(document.querySelector('.preview-frame iframe')).toBeNull();
     });
 
-    it('hands the loader the port it records the preview over', () => {
-      renderFeedPreviews(mockPort as any, createPreviewState());
+    it('asks the drawer to load the story so the preview gets recorded', () => {
+      renderFeedPreviews(createPreviewState());
 
       const button = document.querySelector(
         '.collection-item-container[data-tralbumid="12345"] button.open-iframe'
       ) as HTMLButtonElement;
       button.click();
 
-      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith('12345', 'album', expect.anything(), mockPort);
+      expect(vi.mocked(loadAlbumIntoDrawer)).toHaveBeenCalledWith('12345', 'album', expect.anything());
     });
 
     it('places the preview next to the details of a main feed story rather than at the bottom', () => {
@@ -220,7 +210,7 @@ describe('Feed', () => {
         </div>
       `);
 
-      renderFeedPreviews(mockPort as any, createPreviewState());
+      renderFeedPreviews(createPreviewState());
 
       const story = document.querySelector('.story-innards[data-tralbumid="555"]')!;
       const details = story.querySelector('.tralbum-details')!;
@@ -246,7 +236,7 @@ describe('Feed', () => {
     });
 
     it('initializes feed preview functionality without throwing', async () => {
-      await expect(initFeed(mockPort as any)).resolves.not.toThrow();
+      await expect(initFeed()).resolves.not.toThrow();
       expect(document.querySelector('.collection-item-container .preview')).toBeTruthy();
       expect(document.querySelector('.collection-item-container .historybox')).toBeNull();
     });
@@ -309,7 +299,7 @@ describe('Feed', () => {
     });
 
     it('makes the feed the source for drawer album navigation', async () => {
-      await initFeed(mockPort as any);
+      await initFeed();
 
       expect(discography.getDiscographyLength()).toBe(2);
       discography.selectAlbum('1');

@@ -1,6 +1,8 @@
 import Logger from '../logger';
 import { getTralbumDetails, getTralbumDetailsFromPage, CURRENCY_MINIMUMS, TralbumDetailsResponse } from '../bclient';
 import { getDB, createFetchFunction } from '../utilities';
+import { CART_IMPORT_PORT } from '../types/ports';
+import { PortChannel, createPortChannel } from './portChannel';
 import { getConfig } from './config_backend';
 
 const BASE_URL = 'http://bandcamp.com';
@@ -39,15 +41,22 @@ class CartImportTracker {
   private errors: string[] = [];
   private currentOperation: ImportOperation = 'import';
   private isCreatingCart = false;
-  private port?: chrome.runtime.Port;
+  constructor(readonly channel: PortChannel) {}
 
-  constructor(port?: chrome.runtime.Port) {
-    this.port = port;
+  abandon(): void {
+    this.isProcessing = false;
+    this.channel.abandon();
+  }
+
+  isAbandoned(): boolean {
+    return this.channel.isAbandoned();
   }
 
   async processItems(items: (CartImportItem | string)[], isCreatingCart: boolean = false): Promise<void> {
+    if (this.isAbandoned()) return;
+
     if (items.length === 0) {
-      this.port?.postMessage({
+      this.channel.send({
         cartImportComplete: { message: 'No items found to import' }
       });
       return;
@@ -73,7 +82,7 @@ class CartImportTracker {
           );
           this.processedCount += 1;
 
-          this.port?.postMessage({
+          this.channel.send({
             cartAddRequest: {
               item_id: originalItem.item_id,
               item_type: originalItem.item_type,
@@ -129,7 +138,7 @@ class CartImportTracker {
         this.processedCount += 1;
 
         log.info(`Sending cart add request for item ${tralbumInfo.id} with price ${tralbumInfo.price}`);
-        this.port?.postMessage({
+        this.channel.send({
           cartAddRequest: {
             item_id: tralbumInfo.id,
             item_type: tralbumInfo.type,
@@ -150,7 +159,7 @@ class CartImportTracker {
         this.errors.push(fullErrorMsg);
         log.error(fullErrorMsg);
 
-        this.port?.postMessage({
+        this.channel.send({
           cartItemError: {
             message: `Failed to add "${itemTitle}" to cart`
           }
@@ -191,7 +200,7 @@ class CartImportTracker {
       return `Successfully added ${successCount} items to cart. ${failureCount} items could not be added`;
     })();
 
-    this.port?.postMessage({ cartImportComplete: { message: completionMessage } });
+    this.channel.send({ cartImportComplete: { message: completionMessage } });
   }
 
   private broadcastState(): void {
@@ -203,40 +212,21 @@ class CartImportTracker {
       operation: this.currentOperation
     };
 
-    this.port?.postMessage({ cartImportState: state });
-  }
-
-  getState(): CartImportState {
-    return {
-      isProcessing: this.isProcessing,
-      processedCount: this.processedCount,
-      totalCount: this.totalCount,
-      errors: [...this.errors],
-      operation: this.currentOperation
-    };
+    this.channel.send({ cartImportState: state });
   }
 }
 
-let importTracker: CartImportTracker;
+export function connectionListenerCallback(port: chrome.runtime.Port): void {
+  if (port.name !== CART_IMPORT_PORT) return;
 
-export function connectionListenerCallback(
-  port: chrome.runtime.Port,
-  portState: { port?: chrome.runtime.Port }
-): void {
   log.info('cart import backend connection listener callback');
 
-  if (port.name !== 'bes') {
-    log.error(`Unexpected chrome.runtime.onConnect port name: ${port.name}`);
-    return;
-  }
-
-  portState.port = port;
-  importTracker = new CartImportTracker(port);
-
-  portState.port.onMessage.addListener((msg: any) => portListenerCallback(msg, portState));
+  const tracker = new CartImportTracker(createPortChannel(port));
+  port.onDisconnect.addListener(() => tracker.abandon());
+  port.onMessage.addListener((msg: any) => portListenerCallback(msg, tracker));
 }
 
-export async function portListenerCallback(msg: any, portState: { port?: chrome.runtime.Port }): Promise<void> {
+export async function portListenerCallback(msg: any, importTracker: CartImportTracker): Promise<void> {
   log.info('cart import backend port listener callback');
 
   if (msg.cartImport) {
@@ -247,7 +237,7 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
     } catch (error) {
       log.error(`Error in cart import process: ${error}`);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      portState.port?.postMessage({ cartImportError: { message: errorMessage } });
+      importTracker.channel.send({ cartImportError: { message: errorMessage } });
     }
   }
 
@@ -258,7 +248,7 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
     } catch (error) {
       log.error(`Error in cart URL import process: ${error}`);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      portState.port?.postMessage({ cartImportError: { message: errorMessage } });
+      importTracker.channel.send({ cartImportError: { message: errorMessage } });
     }
   }
 
@@ -281,7 +271,7 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
 
       log.info(`Sending donation cart add request for item ${item_id} with price ${finalPrice}`);
 
-      portState.port?.postMessage({
+      importTracker.channel.send({
         cartAddRequest: {
           item_id,
           item_type,
@@ -293,7 +283,7 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
         }
       });
 
-      portState.port?.postMessage({
+      importTracker.channel.send({
         cartDonationAdded: {
           item_id,
           item_title: apiDetails.title,
@@ -303,13 +293,8 @@ export async function portListenerCallback(msg: any, portState: { port?: chrome.
     } catch (error) {
       log.error(`Error processing donation item: ${error}`);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      portState.port?.postMessage({ cartItemError: { message: `Failed to add donation item: ${errorMessage}` } });
+      importTracker.channel.send({ cartItemError: { message: `Failed to add donation item: ${errorMessage}` } });
     }
-  }
-
-  if (msg.getCartImportState) {
-    const state = importTracker?.getState();
-    portState.port?.postMessage({ cartImportState: state });
   }
 }
 
@@ -357,10 +342,8 @@ export function processRequest(
 }
 
 export async function initCartImportBackend(): Promise<void> {
-  const portState: { port?: chrome.runtime.Port } = {};
-
   log.info('initializing CartImportBackend');
 
-  chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) => connectionListenerCallback(port, portState));
+  chrome.runtime.onConnect.addListener(connectionListenerCallback);
   chrome.runtime.onMessage.addListener(processRequest);
 }

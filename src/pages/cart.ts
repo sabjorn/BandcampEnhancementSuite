@@ -1,4 +1,6 @@
 import Logger from '../logger';
+import { requestConfig } from '../config';
+import { CART_IMPORT_PORT } from '../types/ports';
 
 import { createButton } from '../components/buttons';
 import { downloadFile, dateString, loadTextFile, createFetchFunction } from '../utilities';
@@ -123,7 +125,7 @@ function addDonationHighlight(cartItem: HTMLElement, message?: string): void {
   attachTooltip(cartItem, displayMessage);
 }
 
-export async function initCart(port: chrome.runtime.Port): Promise<void> {
+export async function initCart(): Promise<void> {
   log.info('cart init');
 
   let enableFetchCaching = false;
@@ -141,7 +143,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       log.info(
         `Cart import complete, now sending donation item: id=${pendingDonation.id}, type=${pendingDonation.type}`
       );
-      port.postMessage({
+      sendToImport({
         cartDonationItem: {
           item_id: pendingDonation.id,
           item_type: pendingDonation.type,
@@ -154,15 +156,35 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
 
     sessionStorage.removeItem('bes_cart_processing');
     log.info('Cart import complete, cleared processing flag');
+    closeImportPort();
   };
 
-  port.postMessage({ requestConfig: {} });
+  requestConfig()
+    .then(config => {
+      enableFetchCaching = config.enableFetchCaching ?? false;
+    })
+    .catch(error => log.error(`Failed to read the cart config: ${error}`));
 
-  port.onMessage.addListener(async (msg: any) => {
-    if (msg.config) {
-      enableFetchCaching = msg.config.enableFetchCaching ?? false;
+  let importPort: chrome.runtime.Port | null = null;
+
+  const closeImportPort = (): void => {
+    importPort?.disconnect();
+    importPort = null;
+  };
+
+  const sendToImport = (request: Record<string, unknown>): void => {
+    if (!importPort) {
+      importPort = chrome.runtime.connect(null, { name: CART_IMPORT_PORT });
+      importPort.onMessage.addListener(handleImportMessage);
+      importPort.onDisconnect.addListener(() => {
+        importPort = null;
+      });
     }
 
+    importPort.postMessage(request);
+  };
+
+  const handleImportMessage = async (msg: any) => {
     if (msg.cartImportState) {
       const state = msg.cartImportState;
 
@@ -261,6 +283,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       sessionStorage.removeItem('bes_url_cart_param');
       sessionStorage.removeItem('bes_cart_processing');
       log.info('Cart import error, cleared all cart import sessionStorage flags');
+      closeImportPort();
       return;
     }
 
@@ -271,7 +294,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
       donationMessage = message;
       return;
     }
-  });
+  };
 
   log.debug(`Checking for bes_cart data`);
 
@@ -346,7 +369,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
         type: 'info'
       });
 
-      port.postMessage({ cartImport: { items: [firstItem], isCreatingCart: true } });
+      sendToImport({ cartImport: { items: [firstItem], isCreatingCart: true } });
 
       const urlWithoutParam = new URL(window.location.href);
       urlWithoutParam.searchParams.delete('bes_cart');
@@ -375,7 +398,7 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
     });
 
     log.info(`Sending cartImport message with ${parsedData.items.length} items to backend`);
-    port.postMessage({ cartImport: { items: parsedData.items, isCreatingCart: false } });
+    sendToImport({ cartImport: { items: parsedData.items, isCreatingCart: false } });
 
     if (parsedData.donation) {
       const { id, type, message } = parsedData.donation;
@@ -437,11 +460,11 @@ export async function initCart(port: chrome.runtime.Port): Promise<void> {
         });
 
         if (importType === 'json') {
-          port.postMessage({ cartImport: { items: importData.tracks_export, isCreatingCart: false } });
+          sendToImport({ cartImport: { items: importData.tracks_export, isCreatingCart: false } });
           return;
         }
 
-        port.postMessage({ cartUrlImport: { urls: importData } });
+        sendToImport({ cartUrlImport: { urls: importData } });
       } catch (error) {
         showErrorMessage('Error loading file: ' + String(error));
         log.error('Error importing: ' + String(error));

@@ -1,5 +1,5 @@
 import Logger from '../logger';
-import { requestConfig } from '../config';
+import { requestConfig, onConfigChanged } from '../config';
 import { CART_IMPORT_PORT } from '../types/ports';
 
 import { createButton } from '../components/buttons';
@@ -158,6 +158,10 @@ export async function initCart(): Promise<void> {
     log.info('Cart import complete, cleared processing flag');
     closeImportPort();
   };
+
+  onConfigChanged(config => {
+    enableFetchCaching = config.enableFetchCaching ?? false;
+  });
 
   requestConfig()
     .then(config => {

@@ -32,6 +32,23 @@ describe('sendRequest()', () => {
     await expect(sendRequest({ contentScriptQuery: 'markPreviewed', id: '123' })).rejects.toThrow(/markPreviewed/);
   });
 
+  // Both routers answer a failure with { error }, which a caller must not read as a value.
+  it('should throw when the backend reports the request failed', async () => {
+    vi.mocked(chrome.runtime.sendMessage).mockResolvedValue({ error: 'QuotaExceededError' });
+
+    await expect(sendRequest({ contentScriptQuery: 'markPreviewed', id: '123' })).rejects.toThrow(
+      'QuotaExceededError'
+    );
+  });
+
+  it('should not mistake a payload that happens to mention an error for a failure', async () => {
+    vi.mocked(chrome.runtime.sendMessage).mockResolvedValue({ keyboardSettingsError: ['Duplicate key binding'] });
+
+    await expect(
+      sendRequest({ contentScriptQuery: 'updateKeyboardSettings', settings: {} as any })
+    ).resolves.toMatchObject({ keyboardSettingsError: ['Duplicate key binding'] });
+  });
+
   it('should let a transport failure reach the caller', async () => {
     vi.mocked(chrome.runtime.sendMessage).mockRejectedValue(new Error('Could not establish connection'));
 

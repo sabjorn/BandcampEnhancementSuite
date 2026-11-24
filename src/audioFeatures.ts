@@ -2,18 +2,14 @@ import { analyze } from 'web-audio-beat-detector';
 import { isThemeActive, themeToken } from './theme';
 
 import Logger from './logger';
-import { requestConfig, toggleSetting } from './config';
+import { requestConfig, toggleSetting, onConfigChanged } from './config';
 import { mousedownCallback } from './utilities';
 
 const metadataCache: Map<number, { waveform: number[]; bpm: number }> = new Map();
 
-export async function toggleWaveformCanvas(
-  canvas: HTMLCanvasElement,
-  canvasDisplayToggle: HTMLInputElement,
-  log: Logger
-): Promise<void> {
+export async function toggleWaveformCanvas(log: Logger): Promise<void> {
   try {
-    applyAudioConfig(await toggleSetting('displayWaveform'), canvas, canvasDisplayToggle, log);
+    await toggleSetting('displayWaveform');
   } catch (error) {
     log.error(`Failed to toggle the waveform display: ${error}`);
   }
@@ -224,7 +220,7 @@ export function initAudioFeatures(): void {
   const canvasDisplayToggle = createCanvasDisplayToggle();
   const parentNode = canvasDisplayToggle.parentNode as HTMLElement;
   if (parentNode) {
-    parentNode.addEventListener('click', () => void toggleWaveformCanvas(canvas, canvasDisplayToggle, log));
+    parentNode.addEventListener('click', () => void toggleWaveformCanvas(log));
   }
 
   const bpmDisplay = createBpmDisplay();
@@ -251,6 +247,8 @@ export function initAudioFeatures(): void {
       monitorAudioTimeupdate(e, canvas, waveformOverlayColour, waveformColour)
     );
   }
+
+  onConfigChanged(config => applyAudioConfig(config, canvas, canvasDisplayToggle, log));
 
   requestConfig()
     .then(config => applyAudioConfig(config, canvas, canvasDisplayToggle, log))

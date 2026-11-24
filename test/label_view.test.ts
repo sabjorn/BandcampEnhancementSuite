@@ -29,7 +29,8 @@ vi.mock('../src/logger', () => ({
   }))
 }));
 
-vi.mock('../src/previewHistory', () => ({
+vi.mock('../src/previewHistory', async importOriginal => ({
+  ...(await importOriginal<typeof import('../src/previewHistory')>()),
   markPreviewed: vi.fn(async () => {}),
   togglePreview: vi.fn(async () => true),
   queryPreviews: vi.fn(async () => ({}))
@@ -735,6 +736,19 @@ describe('toggling preview history by hand', () => {
     preview.remove();
   });
 
+  it('should leave the box as it was when the toggle could not be written', async () => {
+    const preview = generatePreview('123', 'album');
+    document.body.appendChild(preview);
+    vi.mocked(togglePreview).mockRejectedValue(new Error('togglePreview failed: QuotaExceededError'));
+
+    await expect(
+      boxClicked({ target: preview.querySelector('.historybox') } as unknown as Event)
+    ).resolves.toBeUndefined();
+
+    expect(preview.querySelector('.historybox')?.classList.contains('following')).toBe(false);
+    preview.remove();
+  });
+
   it('should ignore a click outside any preview', async () => {
     const stray = document.createElement('button');
     document.body.appendChild(stray);
@@ -769,6 +783,14 @@ describe('hydrating the history boxes on a label page', () => {
 
     expect(vi.mocked(queryPreviews)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(queryPreviews)).toHaveBeenCalledWith(['111', '222']);
+  });
+
+  it('should still bind the controls when the state cannot be read', async () => {
+    vi.mocked(queryPreviews).mockRejectedValue(new Error('queryPreviews failed: InvalidStateError'));
+
+    await expect(renderPreviews(previewState())).resolves.toBeUndefined();
+
+    expect(document.querySelectorAll('.open-iframe').length).toBe(2);
   });
 
   it('should mark the boxes the backend reports as previewed', async () => {
@@ -848,6 +870,12 @@ describe('marking the release an album page was opened for', () => {
     await renderDom({ previewOpen: false, previewId: undefined });
 
     expect(vi.mocked(markPreviewed)).toHaveBeenCalledWith('789');
+  });
+
+  it('should carry on with the rest of the page when the mark cannot be written', async () => {
+    vi.mocked(markPreviewed).mockRejectedValue(new Error('markPreviewed failed: QuotaExceededError'));
+
+    await expect(renderDom({ previewOpen: false, previewId: undefined })).resolves.toBeUndefined();
   });
 });
 
